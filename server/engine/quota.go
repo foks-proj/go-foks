@@ -8,13 +8,13 @@ import (
 	"sync"
 	"time"
 
-	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/foks-proj/go-foks/lib/core"
 	"github.com/foks-proj/go-foks/proto/infra"
 	proto "github.com/foks-proj/go-foks/proto/lib"
 	"github.com/foks-proj/go-foks/server/shared"
 	"github.com/foks-proj/go-snowpack-rpc/rpc"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type QuotaServer struct {
@@ -92,8 +92,8 @@ func (q *QuotaServer) Setup(m shared.MetaContext) error {
 
 func (q *QuotaServer) IsInternal() bool { return true }
 
-func (c *QuotaClientConn) RegisterProtocols(m shared.MetaContext, srv *rpc.Server) {
-	srv.RegisterV2(infra.QuotaProtocol(c))
+func (c *QuotaClientConn) RegisterProtocols(m shared.MetaContext, srv *rpc.Server) error {
+	return srv.RegisterV2(infra.QuotaProtocol(c))
 }
 
 func (s *QuotaServer) RunBackgroundLoops(m shared.MetaContext, shutdownCh chan<- error) error {

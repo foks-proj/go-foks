@@ -4,10 +4,10 @@
 package libgit
 
 import (
-	"github.com/go-git/go-git/v5/storage"
 	"github.com/foks-proj/go-foks/client/libclient"
 	"github.com/foks-proj/go-foks/client/libkv"
 	proto "github.com/foks-proj/go-foks/proto/lib"
+	"github.com/go-git/go-git/v5/storage"
 )
 
 type StorageOpts struct {

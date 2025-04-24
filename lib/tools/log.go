@@ -100,8 +100,8 @@ func (l *LogView) Run(ctx context.Context) error {
 
 		err = l.processLine(ctx, s)
 		if err != nil {
-			l.output.Write([]byte(fmt.Sprintf("Error on line %d: %s\n", c, err)))
-			err = nil
+			// Ignore error and return value
+			_, _ = fmt.Fprintf(l.output, "Error on line %d: %s\n", c, err)
 		}
 	}
 }

@@ -4,11 +4,11 @@
 package main
 
 import (
-	"github.com/spf13/cobra"
-	"github.com/spf13/pflag"
 	"github.com/foks-proj/go-foks/lib/core"
 	proto "github.com/foks-proj/go-foks/proto/lib"
 	"github.com/foks-proj/go-foks/server/shared"
+	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 )
 
 type CKSAssetType struct {

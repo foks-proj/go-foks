@@ -13,11 +13,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/mattn/go-sqlite3"
 	clisql "github.com/foks-proj/go-foks/client/sql"
 	"github.com/foks-proj/go-foks/lib/core"
 	"github.com/foks-proj/go-foks/proto/lcl"
 	proto "github.com/foks-proj/go-foks/proto/lib"
+	"github.com/mattn/go-sqlite3"
 )
 
 type DbType int
@@ -65,7 +65,7 @@ func scopeLabelToMapKey(lab lcl.ScopeLabel) (scopeMapKey, error) {
 	return ret, nil
 }
 
-func initDB(ctx context.Context, db *sql.DB, which DbType) error {
+func initDB(ctx context.Context, db *sql.DB, which DbType) (err error) {
 
 	schm, ok := schema[which]
 	if !ok {
@@ -77,7 +77,12 @@ func initDB(ctx context.Context, db *sql.DB, which DbType) error {
 	if err != nil {
 		return err
 	}
-	defer tx.Rollback()
+	defer func() {
+		tmp := tx.Rollback()
+		if err == nil && tmp != nil && !errors.Is(tmp, sql.ErrTxDone) {
+			err = tmp
+		}
+	}()
 	for _, stmt := range statements {
 		_, err := tx.ExecContext(ctx, stmt)
 		if err != nil {
@@ -159,12 +164,19 @@ func RetryTx(m MetaContext, db *sql.DB, nm string, tryFn func(m MetaContext, tx 
 	backoff := 1 * time.Millisecond
 	m = m.WithLogTag("dbtx")
 
-	tryOnce := func(i int) (bool, error) {
+	tryOnce := func(i int) (ret bool, err error) {
 		tx, err := db.BeginTx(m.Ctx(), nil)
 		if err != nil {
 			return false, err
 		}
-		defer tx.Rollback()
+
+		defer func() {
+			tmp := tx.Rollback()
+			if err == nil && tmp != nil && !errors.Is(tmp, sql.ErrTxDone) {
+				err = tmp
+			}
+		}()
+
 		err = tryFn(m, tx)
 		if err != nil {
 			return false, err
@@ -182,7 +194,7 @@ func RetryTx(m MetaContext, db *sql.DB, nm string, tryFn func(m MetaContext, tx 
 		return true, nil
 	}
 
-	for i := 0; i < nTries; i++ {
+	for i := range nTries {
 		if retry, err := tryOnce(i); !retry {
 			return err
 		}

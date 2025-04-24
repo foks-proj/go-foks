@@ -242,18 +242,6 @@ func (v *vhostDataLoader) loadMine(
 	return nil
 }
 
-func (v *vhostDataLoader) usageFor(
-	shid core.ShortHostID,
-) *VHostUsage {
-	ret, ok := v.usageMap[shid]
-	if ok {
-		return ret
-	}
-	ret = &VHostUsage{}
-	v.usageMap[shid] = ret
-	return ret
-}
-
 func (v *vhostDataLoader) loadSeatUsage(
 	m shared.MetaContext,
 ) error {

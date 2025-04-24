@@ -4,10 +4,10 @@
 package cmd
 
 import (
-	"github.com/spf13/cobra"
 	cmdTools "github.com/foks-proj/go-foks/client/foks/cmd/tools"
 	"github.com/foks-proj/go-foks/client/libclient"
 	"github.com/foks-proj/go-foks/lib/tools"
+	"github.com/spf13/cobra"
 )
 
 func toolsCmd(m libclient.MetaContext) *cobra.Command {

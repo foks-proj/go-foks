@@ -13,7 +13,17 @@ import (
 func MerkleBackpointerSequence(e proto.MerkleEpno) []proto.MerkleEpno {
 	cursor := proto.MerkleEpno(1)
 	var ret []proto.MerkleEpno
-	for cursor < e || (cursor <= e && e < proto.MerkleEpno(3)) {
+	switch e {
+	case proto.MerkleEpno(1), proto.MerkleEpno(0):
+		return nil
+	case proto.MerkleEpno(2):
+		return []proto.MerkleEpno{1}
+	case proto.MerkleEpno(3):
+		return []proto.MerkleEpno{2, 1}
+	case proto.MerkleEpno(4):
+		return []proto.MerkleEpno{3, 2, 1}
+	}
+	for (e - cursor).IsValid() {
 		ptr := e - cursor
 		ret = append(ret, ptr)
 		if (e & cursor) != 0 {

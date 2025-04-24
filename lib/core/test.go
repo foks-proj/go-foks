@@ -7,9 +7,9 @@ import (
 	"crypto/rand"
 	"errors"
 
-	"github.com/keybase/saltpack/encoding/basex"
 	lcl "github.com/foks-proj/go-foks/proto/lcl"
 	proto "github.com/foks-proj/go-foks/proto/lib"
+	"github.com/keybase/saltpack/encoding/basex"
 )
 
 func randomReadPanic(b []byte) {
@@ -21,7 +21,10 @@ func randomReadPanic(b []byte) {
 
 func RandomPassphraseSalt() proto.PassphraseSalt {
 	var ret proto.PassphraseSalt
-	rand.Read(ret[:])
+	_, err := rand.Read(ret[:])
+	if err != nil {
+		panic(err)
+	}
 	return ret
 }
 
@@ -79,7 +82,10 @@ func RandomFQU() proto.FQUser {
 
 func randomSKMWK() lcl.SKMWK {
 	var skmwk lcl.SKMWK
-	rand.Read(skmwk[:])
+	_, err := rand.Read(skmwk[:])
+	if err != nil {
+		panic(err)
+	}
 	return skmwk
 }
 

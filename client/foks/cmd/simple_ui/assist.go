@@ -4,10 +4,10 @@
 package simple_ui
 
 import (
-	"github.com/manifoldco/promptui"
 	"github.com/foks-proj/go-foks/client/libclient"
 	"github.com/foks-proj/go-foks/lib/core"
 	proto "github.com/foks-proj/go-foks/proto/lib"
+	"github.com/manifoldco/promptui"
 )
 
 type AssistUI struct {

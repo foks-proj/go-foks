@@ -178,13 +178,18 @@ func (a *assistState) runKex(m libclient.MetaContext, ourHesp proto.KexHESP) err
 	)
 }
 
-func (a *assistState) runSimpleUI(m libclient.MetaContext) error {
+func (a *assistState) runSimpleUI(m libclient.MetaContext) (err error) {
 
-	err := a.init(m)
+	err = a.init(m)
 	if err != nil {
 		return err
 	}
-	defer a.cleanup(m)
+	defer func() {
+		tmp := a.cleanup(m)
+		if tmp != nil && err == nil {
+			err = tmp
+		}
+	}()
 
 	err = a.confirmUser(m)
 	if err != nil {
@@ -290,12 +295,17 @@ func (s *provisionState) startKex(m libclient.MetaContext) (proto.KexHESP, error
 	return s.cli.StartKex(m.Ctx(), s.sessId)
 }
 
-func (s *provisionState) runSimpleUI(m libclient.MetaContext) error {
-	err := s.init(m)
+func (s *provisionState) runSimpleUI(m libclient.MetaContext) (err error) {
+	err = s.init(m)
 	if err != nil {
 		return err
 	}
-	defer s.cleanup(m)
+	defer func() {
+		tmp := s.cleanup(m)
+		if tmp != nil && err == nil {
+			err = tmp
+		}
+	}()
 	err = s.startUI(m)
 	if err != nil {
 		return err

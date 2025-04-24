@@ -1,4 +1,4 @@
-// Auto-generated to Go types and interfaces using @foks-proj/snowpack-compiler 1.0.7 (git+https://github.com/foks-proj/node-snowpack-compiler.git)
+// Auto-generated to Go types and interfaces using @foks-proj/snowpack-compiler 1.0.8 (git+https://github.com/foks-proj/node-snowpack-compiler.git)
 //  Input file: ../../proto-src/lib/common.snowp
 
 package lib
@@ -1066,7 +1066,7 @@ type DHPublicKeyInternal__ struct {
 }
 
 type DHPublicKeyInternalSwitch__ struct {
-	_struct struct{}                            `codec:",omitempty"`
+	_struct struct{}                            `codec:",omitempty"` //lint:ignore U1000 msgpack internal field
 	F_0__   *Curve25519PublicKeyInternal__      `codec:"0"`
 	F_1__   *ECDSACompressedPublicKeyInternal__ `codec:"1"`
 }
@@ -2946,7 +2946,7 @@ type KemEncapKeyInternal__ struct {
 }
 
 type KemEncapKeyInternalSwitch__ struct {
-	_struct struct{} `codec:",omitempty"`
+	_struct struct{} `codec:",omitempty"` //lint:ignore U1000 msgpack internal field
 	F_1__   *[]byte  `codec:"1"`
 }
 
@@ -3282,7 +3282,7 @@ type SecretBoxInternal__ struct {
 }
 
 type SecretBoxInternalSwitch__ struct {
-	_struct struct{}                 `codec:",omitempty"`
+	_struct struct{}                 `codec:",omitempty"` //lint:ignore U1000 msgpack internal field
 	F_0__   *NaclSecretBoxInternal__ `codec:"0"`
 }
 
@@ -3457,7 +3457,7 @@ type BoxInternal__ struct {
 }
 
 type BoxInternalSwitch__ struct {
-	_struct struct{}             `codec:",omitempty"`
+	_struct struct{}             `codec:",omitempty"` //lint:ignore U1000 msgpack internal field
 	F_0__   *NaclBoxInternal__   `codec:"0"`
 	F_1__   *YubiBoxInternal__   `codec:"1"`
 	F_2__   *BoxHybridInternal__ `codec:"2"`
@@ -3662,7 +3662,7 @@ type SignatureInternal__ struct {
 }
 
 type SignatureInternalSwitch__ struct {
-	_struct struct{}                    `codec:",omitempty"`
+	_struct struct{}                    `codec:",omitempty"` //lint:ignore U1000 msgpack internal field
 	F_0__   *Ed25519SignatureInternal__ `codec:"0"`
 	F_1__   *ECDSASignatureInternal__   `codec:"1"`
 }
@@ -4839,7 +4839,7 @@ type ParsedTeamInternal__ struct {
 }
 
 type ParsedTeamInternalSwitch__ struct {
-	_struct struct{}            `codec:",omitempty"`
+	_struct struct{}            `codec:",omitempty"` //lint:ignore U1000 msgpack internal field
 	F_0__   *TeamIDInternal__   `codec:"0"`
 	F_1__   *NameUtf8Internal__ `codec:"1"`
 }
@@ -4862,7 +4862,7 @@ func (p ParsedTeam) False() TeamID {
 	if p.F_0__ == nil {
 		panic("unexepected nil case; should have been checked")
 	}
-	if p.S != false {
+	if p.S {
 		panic(fmt.Sprintf("unexpected switch value (%v) when False is called", p.S))
 	}
 	return *p.F_0__
@@ -4872,7 +4872,7 @@ func (p ParsedTeam) True() NameUtf8 {
 	if p.F_1__ == nil {
 		panic("unexepected nil case; should have been checked")
 	}
-	if p.S != true {
+	if !p.S {
 		panic(fmt.Sprintf("unexpected switch value (%v) when True is called", p.S))
 	}
 	return *p.F_1__
@@ -5049,7 +5049,7 @@ type ParsedPartyInternal__ struct {
 }
 
 type ParsedPartyInternalSwitch__ struct {
-	_struct struct{}             `codec:",omitempty"`
+	_struct struct{}             `codec:",omitempty"` //lint:ignore U1000 msgpack internal field
 	F_0__   *PartyIDInternal__   `codec:"0"`
 	F_1__   *PartyNameInternal__ `codec:"1"`
 }
@@ -5072,7 +5072,7 @@ func (p ParsedParty) False() PartyID {
 	if p.F_0__ == nil {
 		panic("unexepected nil case; should have been checked")
 	}
-	if p.S != false {
+	if p.S {
 		panic(fmt.Sprintf("unexpected switch value (%v) when False is called", p.S))
 	}
 	return *p.F_0__
@@ -5082,7 +5082,7 @@ func (p ParsedParty) True() PartyName {
 	if p.F_1__ == nil {
 		panic("unexepected nil case; should have been checked")
 	}
-	if p.S != true {
+	if !p.S {
 		panic(fmt.Sprintf("unexpected switch value (%v) when True is called", p.S))
 	}
 	return *p.F_1__
@@ -5181,7 +5181,7 @@ type ParsedUserInternal__ struct {
 }
 
 type ParsedUserInternalSwitch__ struct {
-	_struct struct{}            `codec:",omitempty"`
+	_struct struct{}            `codec:",omitempty"` //lint:ignore U1000 msgpack internal field
 	F_0__   *UIDInternal__      `codec:"0"`
 	F_1__   *NameUtf8Internal__ `codec:"1"`
 }
@@ -5204,7 +5204,7 @@ func (p ParsedUser) False() UID {
 	if p.F_0__ == nil {
 		panic("unexepected nil case; should have been checked")
 	}
-	if p.S != false {
+	if p.S {
 		panic(fmt.Sprintf("unexpected switch value (%v) when False is called", p.S))
 	}
 	return *p.F_0__
@@ -5214,7 +5214,7 @@ func (p ParsedUser) True() NameUtf8 {
 	if p.F_1__ == nil {
 		panic("unexepected nil case; should have been checked")
 	}
-	if p.S != true {
+	if !p.S {
 		panic(fmt.Sprintf("unexpected switch value (%v) when True is called", p.S))
 	}
 	return *p.F_1__
@@ -5313,7 +5313,7 @@ type ParsedHostnameInternal__ struct {
 }
 
 type ParsedHostnameInternalSwitch__ struct {
-	_struct struct{}           `codec:",omitempty"`
+	_struct struct{}           `codec:",omitempty"` //lint:ignore U1000 msgpack internal field
 	F_0__   *HostIDInternal__  `codec:"0"`
 	F_1__   *TCPAddrInternal__ `codec:"1"`
 }
@@ -5336,7 +5336,7 @@ func (p ParsedHostname) False() HostID {
 	if p.F_0__ == nil {
 		panic("unexepected nil case; should have been checked")
 	}
-	if p.S != false {
+	if p.S {
 		panic(fmt.Sprintf("unexpected switch value (%v) when False is called", p.S))
 	}
 	return *p.F_0__
@@ -5346,7 +5346,7 @@ func (p ParsedHostname) True() TCPAddr {
 	if p.F_1__ == nil {
 		panic("unexepected nil case; should have been checked")
 	}
-	if p.S != true {
+	if !p.S {
 		panic(fmt.Sprintf("unexpected switch value (%v) when True is called", p.S))
 	}
 	return *p.F_1__
@@ -5720,7 +5720,7 @@ type HEPKInternal__ struct {
 }
 
 type HEPKInternalSwitch__ struct {
-	_struct struct{}          `codec:",omitempty"`
+	_struct struct{}          `codec:",omitempty"` //lint:ignore U1000 msgpack internal field
 	F_1__   *HEPKv1Internal__ `codec:"1"`
 }
 
@@ -6051,7 +6051,7 @@ type BoxHybridInternal__ struct {
 }
 
 type BoxHybridInternalSwitch__ struct {
-	_struct struct{}               `codec:",omitempty"`
+	_struct struct{}               `codec:",omitempty"` //lint:ignore U1000 msgpack internal field
 	F_1__   *BoxHybridV1Internal__ `codec:"1"`
 }
 
@@ -6816,9 +6816,7 @@ func (c CKSCertChain) Export() *CKSCertChainInternal__ {
 				return nil
 			}
 			ret := make([]([]byte), len(x))
-			for k, v := range x {
-				ret[k] = v
-			}
+			copy(ret, x)
 			return &ret
 		})(c.Certs),
 	}
@@ -6934,7 +6932,7 @@ type CKSCertKeyInternal__ struct {
 }
 
 type CKSCertKeyInternalSwitch__ struct {
-	_struct struct{}                    `codec:",omitempty"`
+	_struct struct{}                    `codec:",omitempty"` //lint:ignore U1000 msgpack internal field
 	F_1__   *Ed25519SecretKeyInternal__ `codec:"1"`
 	F_2__   *[]byte                     `codec:"2"`
 }

@@ -1,4 +1,4 @@
-// Auto-generated to Go types and interfaces using @foks-proj/snowpack-compiler 1.0.7 (git+https://github.com/foks-proj/node-snowpack-compiler.git)
+// Auto-generated to Go types and interfaces using @foks-proj/snowpack-compiler 1.0.8 (git+https://github.com/foks-proj/node-snowpack-compiler.git)
 //  Input file: ../../proto-src/lib/web.snowp
 
 package lib
@@ -162,7 +162,7 @@ type CSRFTokenInternal__ struct {
 }
 
 type CSRFTokenInternalSwitch__ struct {
-	_struct struct{}               `codec:",omitempty"`
+	_struct struct{}               `codec:",omitempty"` //lint:ignore U1000 msgpack internal field
 	F_1__   *CSRFTokenV1Internal__ `codec:"1"`
 }
 

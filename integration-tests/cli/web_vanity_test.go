@@ -14,7 +14,6 @@ import (
 	"time"
 
 	"github.com/PuerkitoBio/goquery"
-	"github.com/stretchr/testify/require"
 	"github.com/foks-proj/go-foks/client/libclient"
 	"github.com/foks-proj/go-foks/integration-tests/common"
 	"github.com/foks-proj/go-foks/lib/core"
@@ -23,6 +22,7 @@ import (
 	proto "github.com/foks-proj/go-foks/proto/lib"
 	"github.com/foks-proj/go-foks/proto/rem"
 	"github.com/foks-proj/go-foks/server/shared"
+	"github.com/stretchr/testify/require"
 )
 
 type vanityHostTester struct {
@@ -105,7 +105,7 @@ func newVanityHostTester(t *testing.T) *vanityHostTester {
 		hostingWildcard: hostingWildcard,
 		cleeanupHooks: []func(){func() {
 			base.G.SetVanityHelper(vh)
-			base.Shutdown()
+			_ = base.Shutdown()
 		},
 		},
 	}
@@ -150,13 +150,6 @@ func (v *vanityHostTester) makePlan(t *testing.T, dn string) {
 		},
 	)
 	v.plan = plan
-}
-
-// cleanup should not be used if we're going to be sharing this vanityHostTester for other tests
-func (v *vanityHostTester) cleanup() {
-	for _, fn := range v.cleeanupHooks {
-		fn()
-	}
 }
 
 func (v *vanityHostTester) newAgent(t *testing.T, vn proto.Hostname) *testAgent {

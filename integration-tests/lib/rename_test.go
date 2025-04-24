@@ -7,11 +7,11 @@ import (
 	"context"
 	"testing"
 
-	"github.com/stretchr/testify/require"
 	"github.com/foks-proj/go-foks/lib/core"
 	proto "github.com/foks-proj/go-foks/proto/lib"
 	"github.com/foks-proj/go-foks/proto/rem"
 	"github.com/foks-proj/go-foks/server/shared"
+	"github.com/stretchr/testify/require"
 )
 
 func readUsername(t *testing.T, m shared.MetaContext, u proto.UID) proto.NameUtf8 {

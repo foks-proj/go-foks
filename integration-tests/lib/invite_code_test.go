@@ -6,10 +6,10 @@ package lib
 import (
 	"testing"
 
-	"github.com/stretchr/testify/require"
 	"github.com/foks-proj/go-foks/integration-tests/common"
 	"github.com/foks-proj/go-foks/lib/core"
 	"github.com/foks-proj/go-foks/server/shared"
+	"github.com/stretchr/testify/require"
 )
 
 func TestMultiUserInviteCode(t *testing.T) {

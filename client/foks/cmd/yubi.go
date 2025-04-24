@@ -326,12 +326,12 @@ func (s *yubiSetPinState) init(m libclient.MetaContext) error {
 }
 
 func (s *yubiSetPinState) cleanup(m libclient.MetaContext) error {
-	if s.cleanupFn != nil {
-		s.cleanupFn()
-	}
 	err := s.gencli.FinishSession(m.Ctx(), s.sid)
 	if err != nil {
 		return err
+	}
+	if s.cleanupFn != nil {
+		s.cleanupFn()
 	}
 	return nil
 }
@@ -397,13 +397,18 @@ func (s *yubiSetPinState) putSerial(m libclient.MetaContext) error {
 	})
 }
 
-func (s *yubiSetPinState) run(m libclient.MetaContext) error {
+func (s *yubiSetPinState) run(m libclient.MetaContext) (err error) {
 
-	err := s.init(m)
+	err = s.init(m)
 	if err != nil {
 		return err
 	}
-	defer s.cleanup(m)
+	defer func() {
+		tmp := s.cleanup(m)
+		if err == nil && tmp != nil {
+			err = tmp
+		}
+	}()
 
 	err = s.putSerial(m)
 	if err != nil {

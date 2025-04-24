@@ -6,8 +6,8 @@ package lib
 import (
 	"testing"
 
-	"github.com/stretchr/testify/require"
 	"github.com/foks-proj/go-foks/client/libclient"
+	"github.com/stretchr/testify/require"
 )
 
 func TestSubkeyMinder(t *testing.T) {

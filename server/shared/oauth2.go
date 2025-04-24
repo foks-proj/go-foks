@@ -13,12 +13,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/foks-proj/go-foks/lib/core"
 	"github.com/foks-proj/go-foks/lib/sso"
 	proto "github.com/foks-proj/go-foks/proto/lib"
 	"github.com/foks-proj/go-foks/proto/rem"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type oauth2Session struct {
@@ -859,7 +859,10 @@ func (s *oauth2AccessSession) openSig(m MetaContext) error {
 	if err != nil {
 		return err
 	}
-	payload, err := core.Verify2[*proto.OAuth2IDTokenBindingPayload](ep, sig.Sig, &sig.Inner)
+	payload, err := core.Verify2(ep, sig.Sig, &sig.Inner)
+	if err != nil {
+		return err
+	}
 	if payload.IdToken == "" {
 		return core.OAuth2Error("id token missing from binding")
 	}

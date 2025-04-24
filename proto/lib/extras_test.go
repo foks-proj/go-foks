@@ -16,7 +16,8 @@ func TestFixUnfix(t *testing.T) {
 	devid := DeviceID(make([]byte, 33))
 	// hack a random devid
 	devid[0] = byte(EntityType_Device)
-	rand.Read(devid[1:])
+	_, err := rand.Read(devid[1:])
+	require.NoError(t, err)
 	fix, err := EntityID(devid).Fixed()
 	require.NoError(t, err)
 	devid2 := DeviceID(fix.Unfix())
@@ -24,7 +25,8 @@ func TestFixUnfix(t *testing.T) {
 
 	yubi := YubiID(make([]byte, 34))
 	yubi[0] = byte(EntityType_Yubi)
-	rand.Read(yubi[1:])
+	_, err = rand.Read(yubi[1:])
+	require.NoError(t, err)
 	fix, err = EntityID(yubi).Fixed()
 	require.NoError(t, err)
 	yubi2 := YubiID(fix.Unfix())

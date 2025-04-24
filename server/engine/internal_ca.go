@@ -40,8 +40,8 @@ type InternalCAClientConn struct {
 	xp  rpc.Transporter
 }
 
-func (c *InternalCAClientConn) RegisterProtocols(m shared.MetaContext, srv *rpc.Server) {
-	srv.RegisterV2(infra.InternalCAProtocol(c))
+func (c *InternalCAClientConn) RegisterProtocols(m shared.MetaContext, srv *rpc.Server) error {
+	return srv.RegisterV2(infra.InternalCAProtocol(c))
 }
 
 func (c *InternalCAClientConn) ErrorWrapper() func(error) proto.Status {

@@ -125,7 +125,10 @@ func (p *PlistStatus) String() string {
 	buf := bytes.NewBuffer(nil)
 	je := json.NewEncoder(buf)
 	je.SetIndent("", "  ")
-	je.Encode(p)
+	err := je.Encode(p)
+	if err != nil {
+		return fmt.Sprintf("failed to encode plist status: %v", err)
+	}
 	return buf.String()
 }
 

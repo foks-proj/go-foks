@@ -6,9 +6,9 @@ package core
 import (
 	"testing"
 
-	"github.com/stretchr/testify/require"
 	proto "github.com/foks-proj/go-foks/proto/lib"
 	"github.com/foks-proj/go-foks/proto/rem"
+	"github.com/stretchr/testify/require"
 )
 
 func TestEmailValidator(t *testing.T) {

@@ -9,9 +9,9 @@ import (
 	"testing"
 	"time"
 
+	proto "github.com/foks-proj/go-foks/proto/lib"
 	"github.com/keybase/clockwork"
 	"github.com/stretchr/testify/require"
-	proto "github.com/foks-proj/go-foks/proto/lib"
 )
 
 func TestAutocertSwitchboardSimple(t *testing.T) {
@@ -28,13 +28,16 @@ func TestAutocertSwitchboardSimple(t *testing.T) {
 	}
 	ctx := context.Background()
 
-	brd.Broadcast(ctx, good, nil)
+	err := brd.Broadcast(ctx, good, nil)
+	require.NoError(t, err)
 
-	err := brd.Wait(ctx, good, time.Hour)
+	err = brd.Wait(ctx, good, time.Hour)
 	require.NoError(t, err)
 	baderr := errors.New("my error")
 
-	brd.Broadcast(ctx, bad, baderr)
+	err = brd.Broadcast(ctx, bad, baderr)
+	require.NoError(t, err)
+
 	err = brd.Wait(ctx, bad, time.Hour)
 	require.Error(t, err)
 	require.Equal(t, baderr, err)
@@ -55,7 +58,8 @@ func TestAutocertSwitchboardSimple(t *testing.T) {
 			}()
 		}
 
-		brd.Broadcast(ctx, key, res)
+		err = brd.Broadcast(ctx, key, res)
+		require.NoError(t, err)
 		for i := 0; i < n; i++ {
 			<-doneCh
 		}

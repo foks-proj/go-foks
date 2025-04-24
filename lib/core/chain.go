@@ -8,9 +8,9 @@ import (
 	"crypto/sha512"
 	"fmt"
 
-	"github.com/keybase/go-codec/codec"
 	proto "github.com/foks-proj/go-foks/proto/lib"
 	"github.com/foks-proj/go-foks/proto/rem"
+	"github.com/keybase/go-codec/codec"
 )
 
 type PublicSuiterWithSeqno struct {
@@ -96,7 +96,10 @@ func computeCommitment(v Verifiable, key *proto.RandomCommitmentKey) (*proto.Com
 }
 
 func MakeTreeLocation() (*proto.TreeLocation, *proto.TreeLocationCommitment, error) {
-	loc := RandomTreeLocation()
+	loc, err := RandomTreeLocation()
+	if err != nil {
+		return nil, nil, err
+	}
 	com, err := PrefixedHash(&loc)
 	if err != nil {
 		return nil, nil, err
@@ -892,10 +895,13 @@ func OpenDeviceChange(
 	}, nil
 }
 
-func RandomTreeLocation() proto.TreeLocation {
+func RandomTreeLocation() (proto.TreeLocation, error) {
 	var ret proto.TreeLocation
-	RandomFill((ret[:]))
-	return ret
+	err := RandomFill((ret[:]))
+	if err != nil {
+		return ret, err
+	}
+	return ret, nil
 }
 
 type MakeLinkResBase struct {

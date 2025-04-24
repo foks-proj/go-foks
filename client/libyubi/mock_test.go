@@ -9,10 +9,10 @@ import (
 	"crypto/ecdsa"
 	"testing"
 
-	"github.com/go-piv/piv-go/v2/piv"
-	"github.com/stretchr/testify/require"
 	"github.com/foks-proj/go-foks/lib/core"
 	proto "github.com/foks-proj/go-foks/proto/lib"
+	"github.com/go-piv/piv-go/v2/piv"
+	"github.com/stretchr/testify/require"
 )
 
 func TestDeterminism(t *testing.T) {

@@ -6,9 +6,9 @@ package core
 import (
 	"testing"
 
-	"github.com/stretchr/testify/require"
 	proto "github.com/foks-proj/go-foks/proto/lib"
 	rem "github.com/foks-proj/go-foks/proto/rem"
+	"github.com/stretchr/testify/require"
 )
 
 func TestEldest(t *testing.T) {

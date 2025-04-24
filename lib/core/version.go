@@ -15,5 +15,5 @@ const CurrentCompatibilityVersion proto.CompatibilityVersion = 1
 var CurrentClientVersion = lcl.SemVer{
 	Major: 0,
 	Minor: 0,
-	Patch: 15,
+	Patch: 16,
 }

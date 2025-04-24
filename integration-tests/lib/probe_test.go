@@ -12,13 +12,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/require"
 	"github.com/foks-proj/go-foks/client/libclient"
 	"github.com/foks-proj/go-foks/integration-tests/common"
 	"github.com/foks-proj/go-foks/lib/chains"
 	"github.com/foks-proj/go-foks/lib/core"
 	proto "github.com/foks-proj/go-foks/proto/lib"
 	"github.com/foks-proj/go-foks/server/shared"
+	"github.com/stretchr/testify/require"
 )
 
 func pumpSigchain(t *testing.T, m shared.MetaContext, n int) {
@@ -28,7 +28,7 @@ func pumpSigchain(t *testing.T, m shared.MetaContext, n int) {
 
 	hk := m.G().HostChain()
 
-	for i := 0; i < n; i++ {
+	for i := range n {
 
 		typ := proto.EntityType_HostMetadataSigner
 		fn := core.Path(filepath.Join(dir, fmt.Sprintf("host.mds-%d.key", i)))
@@ -74,7 +74,9 @@ func TestProbe(t *testing.T) {
 	env := globalTestEnv.Fork(t, common.SetupOpts{
 		MerklePollWait: time.Hour,
 	})
-	defer env.ShutdownFn()
+	defer func() {
+		_ = env.ShutdownFn()
+	}()
 	m := env.MetaContext()
 
 	// Setup the client-side context
@@ -135,7 +137,9 @@ func TestProbeMerkleRace(t *testing.T) {
 	env := globalTestEnv.Fork(t, common.SetupOpts{
 		MerklePollWait: time.Hour,
 	})
-	defer env.Shutdown()
+	defer func() {
+		_ = env.Shutdown()
+	}()
 	m := env.MetaContext()
 
 	// Setup the client-side context
@@ -222,7 +226,9 @@ func TestHostPin(t *testing.T) {
 	}
 
 	m1, addr1, rootCAs1, shutdown1 := setupEnv()
-	defer shutdown1()
+	defer func() {
+		_ = shutdown1()
+	}()
 
 	// Setup the client-side context
 	cm := libclient.NewMetaContextMain()
@@ -243,7 +249,9 @@ func TestHostPin(t *testing.T) {
 	require.NoError(t, err)
 
 	m2, addr2, rootCAs2, shutdown2 := setupEnv()
-	defer shutdown2()
+	defer func() {
+		_ = shutdown2()
+	}()
 
 	// Second probe hits the second server instance, which has stole the
 	// first server's hostname, but is not advertising a different HostID.

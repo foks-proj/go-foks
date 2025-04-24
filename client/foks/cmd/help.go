@@ -155,7 +155,7 @@ Additional help topics:{{range .Commands}}{{if .IsAdditionalHelpTopicCommand}}
 Use "{{.CommandPath}} [command] --help" for more information about a command.{{end}}
 `
 		var usageBuf bytes.Buffer
-		Tmpl(&usageBuf, usage, hd)
+		_ = Tmpl(&usageBuf, usage, hd)
 
 		hd.UsageString = usageBuf.String()
 
@@ -163,6 +163,6 @@ Use "{{.CommandPath}} [command] --help" for more information about a command.{{e
 
 {{end}}{{if or .Runnable .HasSubCommands}}{{.UsageString}}{{end}}`
 
-		Tmpl(c.OutOrStdout(), help, hd)
+		_ = Tmpl(c.OutOrStdout(), help, hd)
 	})
 }

@@ -7,8 +7,8 @@ import (
 	"context"
 
 	"github.com/foks-proj/go-ctxlog"
-	"go.uber.org/zap"
 	"github.com/foks-proj/go-snowpack-rpc/rpc"
+	"go.uber.org/zap"
 )
 
 type ZapLogWrapper struct {

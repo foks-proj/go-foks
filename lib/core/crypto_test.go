@@ -7,14 +7,15 @@ import (
 	"crypto/rand"
 	"testing"
 
-	"github.com/stretchr/testify/require"
 	lcl "github.com/foks-proj/go-foks/proto/lcl"
 	proto "github.com/foks-proj/go-foks/proto/lib"
+	"github.com/stretchr/testify/require"
 )
 
-func randomSecretBoxKey() proto.SecretBoxKey {
+func randomSecretBoxKey(t *testing.T) proto.SecretBoxKey {
 	var ret proto.SecretBoxKey
-	rand.Read(ret[:])
+	_, err := rand.Read(ret[:])
+	require.NoError(t, err)
 	return ret
 }
 
@@ -23,7 +24,7 @@ func TestSealOpenSecretBox(t *testing.T) {
 	testWithPadding := func(padding int) int {
 
 		lst := RandomSKMWKList()
-		key := randomSecretBoxKey()
+		key := randomSecretBoxKey(t)
 
 		box, err := SealIntoSecretBoxWithPadding(&lst, &key, padding)
 		require.NoError(t, err)

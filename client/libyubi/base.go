@@ -138,7 +138,7 @@ func forAllSlots(ctx context.Context, bus Bus, f func(proto.YubiSlot, piv.Slot) 
 			return nil
 		}
 	}
-	return core.NotFoundError("slot iteration failed")
+	return nil
 }
 
 type findSlotsRes struct {

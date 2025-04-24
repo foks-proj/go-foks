@@ -490,13 +490,19 @@ func kvLs(
 					keepGoing = false
 				}
 			}
+
 			if len(json) != 0 {
 				ret := lcl.CliKVListRes{
 					Ents:   json,
 					Parent: prefix,
 				}
-				JSONOutput(m, ret)
+				err := JSONOutput(m, ret)
+				if err != nil {
+					return err
+				}
+				return nil
 			}
+
 			return PartingConsoleMessage(m)
 		},
 	)

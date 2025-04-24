@@ -4,14 +4,14 @@
 package kvStore
 
 import (
-	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgxpool"
-	"golang.org/x/crypto/nacl/secretbox"
 	"github.com/foks-proj/go-foks/lib/core"
 	"github.com/foks-proj/go-foks/lib/kv"
 	proto "github.com/foks-proj/go-foks/proto/lib"
 	"github.com/foks-proj/go-foks/proto/rem"
 	"github.com/foks-proj/go-foks/server/shared"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
+	"golang.org/x/crypto/nacl/secretbox"
 )
 
 func fileRef(
@@ -684,6 +684,9 @@ func mLoadSmallFilesOrSymlinks(
 		var nodeIdRaw []byte
 
 		err := rows.Scan(&g, &box, &rt, &vl, &nodeIdRaw)
+		if err != nil {
+			return nil, err
+		}
 		var fileRole proto.Role
 		err = fileRole.ImportFromDB(rt, vl)
 		if err != nil {

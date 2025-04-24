@@ -90,7 +90,7 @@ func (w *TestEnvWrapper) Shutdown() {
 	for _, f := range w.shutdownFns {
 		f()
 	}
-	w.TestEnv.Shutdown()
+	_ = w.TestEnv.Shutdown()
 }
 
 var _testEnvBetaLock sync.Mutex

@@ -111,7 +111,7 @@ func ClearNoiseFile(
 	ctx context.Context,
 	dir string,
 	fn string,
-) error {
+) (err error) {
 	fn = filepath.Join(dir, fn)
 	fh, err := os.OpenFile(fn, os.O_RDWR, 0)
 	if err != nil {
@@ -119,7 +119,10 @@ func ClearNoiseFile(
 	}
 	defer func() {
 		if fh != nil {
-			fh.Close()
+			tmp := fh.Close()
+			if err == nil && tmp != nil {
+				err = tmp
+			}
 		}
 	}()
 	stat, err := fh.Stat()
@@ -129,7 +132,10 @@ func ClearNoiseFile(
 	sz := stat.Size()
 
 	for j := 0; j < 3; j++ {
-		fh.Seek(0, 0)
+		_, err := fh.Seek(0, 0)
+		if err != nil {
+			return err
+		}
 		var buf [4 * 1024]byte
 		for i := int64(0); i < sz; i += int64(len(buf)) {
 			_, err := rand.Read(buf[:])
@@ -142,8 +148,11 @@ func ClearNoiseFile(
 			}
 		}
 	}
-	fh.Close()
+	err = fh.Close()
 	fh = nil
+	if err != nil {
+		return err
+	}
 	return os.Remove(fn)
 }
 

@@ -19,10 +19,6 @@ import (
 	"github.com/foks-proj/go-foks/proto/rem"
 )
 
-type OAuth2SignedAssets struct {
-	issuer proto.URLString
-}
-
 type SignupSession struct {
 	SessionBase
 	id                  proto.UISessionID

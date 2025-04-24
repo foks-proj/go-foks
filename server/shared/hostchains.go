@@ -7,11 +7,11 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/jackc/pgx/v5"
 	"github.com/foks-proj/go-foks/lib/cks"
 	"github.com/foks-proj/go-foks/lib/core"
 	"github.com/foks-proj/go-foks/lib/merkle"
 	proto "github.com/foks-proj/go-foks/proto/lib"
+	"github.com/jackc/pgx/v5"
 )
 
 func lastElem[T any](s []*T) *T {
@@ -346,19 +346,20 @@ func (h *HostChain) pruneState(keys []proto.EntityID) error {
 	return nil
 }
 
-func (h *HostChain) Revoke(m MetaContext, keys []proto.EntityID) error {
+func (h *HostChain) Revoke(m MetaContext, keys []proto.EntityID) (err error) {
 
 	db, err := m.Db(DbTypeServerConfig)
 	if err != nil {
 		return err
 	}
-
 	defer db.Release()
 	tx, err := db.Begin(m.Ctx())
 	if err != nil {
 		return err
 	}
-	defer tx.Rollback(m.Ctx())
+	defer func() {
+		err = TxRollback(m.Ctx(), tx, err)
+	}()
 
 	link, seqno, err := h.makeRevokeLink(m, keys)
 	if err != nil {
@@ -381,16 +382,18 @@ func (h *HostChain) Revoke(m MetaContext, keys []proto.EntityID) error {
 	}
 
 	h.links = append(h.links, *link)
-	h.pruneState(keys)
+	err = h.pruneState(keys)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
 
-func (h *HostChain) NewKey(m MetaContext, fn core.Path, typ proto.EntityType) error {
+func (h *HostChain) NewKey(m MetaContext, fn core.Path, typ proto.EntityType) (err error) {
 
 	var newCert []byte
 	var newKey *HostKey
-	var err error
 
 	if typ == proto.EntityType_HostTLSCA {
 		newKey, newCert, err = h.generateCA(m)
@@ -412,7 +415,9 @@ func (h *HostChain) NewKey(m MetaContext, fn core.Path, typ proto.EntityType) er
 	if err != nil {
 		return err
 	}
-	defer tx.Rollback(m.Ctx())
+	defer func() {
+		err = TxRollback(m.Ctx(), tx, err)
+	}()
 
 	link, seqno, err := h.makeNewKeyLink(m, newKey, newCert)
 	if err != nil {
@@ -443,15 +448,6 @@ func (h *HostChain) NewKey(m MetaContext, fn core.Path, typ proto.EntityType) er
 	v := h.keys[typ]
 	v = append(v, newKey)
 	h.keys[typ] = v
-	return nil
-}
-
-func (h *HostChain) storeCert(key *HostKey, cert []byte) error {
-	caid, err := key.HostTLSCAID()
-	if err != nil {
-		return err
-	}
-	h.certs[*caid] = cert
 	return nil
 }
 
@@ -776,7 +772,10 @@ func (h *HostChain) generate(m MetaContext, d core.Path) error {
 			if err != nil {
 				return err
 			}
-			h.addGeneratedKey(typ, key)
+			err = h.addGeneratedKey(typ, key)
+			if err != nil {
+				return err
+			}
 		}
 	}
 	return nil
@@ -799,7 +798,7 @@ func (h *HostChain) writeNewCertToDB(m MetaContext, tx pgx.Tx) error {
 	return nil
 }
 
-func (h *HostChain) writeChainToDB(m MetaContext, eld proto.HostchainLinkOuter, seqno proto.Seqno) error {
+func (h *HostChain) writeChainToDB(m MetaContext, eld proto.HostchainLinkOuter, seqno proto.Seqno) (err error) {
 	db, err := m.Db(DbTypeServerConfig)
 	if err != nil {
 		return err
@@ -809,7 +808,9 @@ func (h *HostChain) writeChainToDB(m MetaContext, eld proto.HostchainLinkOuter, 
 	if err != nil {
 		return err
 	}
-	defer tx.Rollback(m.Ctx())
+	defer func() {
+		err = TxRollback(m.Ctx(), tx, err)
+	}()
 
 	// important: we need to write the host ID first, so that we can get our
 	// short host ID. It's a function of what's already in the database.

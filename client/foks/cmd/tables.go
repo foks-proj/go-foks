@@ -387,10 +387,7 @@ func outputKeyListTable(m libclient.MetaContext, opts outputTableOpts, lst []lcl
 		}
 		oa := a.(deviceRow)
 		ob := b.(deviceRow)
-		if oa.revoked != ob.revoked {
-			return true
-		}
-		return false
+		return (oa.revoked != ob.revoked)
 	}
 	return convertAndOutputRows(m, opts, lst, conv, doSep)
 }

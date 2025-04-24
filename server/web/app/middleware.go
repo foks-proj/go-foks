@@ -7,8 +7,8 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/go-chi/chi/v5"
 	"github.com/foks-proj/go-foks/server/web/lib"
+	"github.com/go-chi/chi/v5"
 )
 
 func TextHTMLMiddleware(next http.Handler) http.Handler {

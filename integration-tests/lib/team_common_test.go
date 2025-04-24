@@ -761,7 +761,8 @@ func (tm *teamObj) makeChangesFull(
 		i := cmap[newMem]
 		comm, err := core.ComputeKeyCommitment(rk)
 		require.NoError(t, err)
-		mr[i].Member.AddRemovalKeyCommitment(comm)
+		err = mr[i].Member.AddRemovalKeyCommitment(comm)
+		require.NoError(t, err)
 	}
 
 	for _, item := range sched.Items {

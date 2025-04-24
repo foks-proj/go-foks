@@ -6,13 +6,13 @@ package lib
 import (
 	"testing"
 
-	"github.com/stretchr/testify/require"
 	"github.com/foks-proj/go-foks/client/libclient"
 	"github.com/foks-proj/go-foks/lib/core"
 	"github.com/foks-proj/go-foks/proto/lcl"
 	proto "github.com/foks-proj/go-foks/proto/lib"
 	"github.com/foks-proj/go-foks/proto/rem"
 	"github.com/foks-proj/go-foks/server/shared"
+	"github.com/stretchr/testify/require"
 )
 
 func TestOpenUserViewAndTeamAdd(t *testing.T) {

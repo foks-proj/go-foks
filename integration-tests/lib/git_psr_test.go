@@ -12,11 +12,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/require"
 	"github.com/foks-proj/go-foks/client/libgit"
 	"github.com/foks-proj/go-foks/lib/core"
 	proto "github.com/foks-proj/go-foks/proto/lib"
 	remhelp "github.com/foks-proj/go-git-remhelp"
+	"github.com/stretchr/testify/require"
 )
 
 type rawIndexAndPack struct {

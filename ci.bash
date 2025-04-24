@@ -31,8 +31,13 @@ run() {
   if [ "$prot" = true ]; then 
       (cd proto && sh -x build.sh)
   fi
-  
-  
+
+  go tool golangci-lint run 
+  if [ $? -ne 0 ]; then
+      echo "golangci-lint failed"
+      exit 1
+  fi
+  echo "ok      golangci-lint passed"
   
   if [ "$yubi" = true ]; then
       export USE_REAL_YUBIKEY=1

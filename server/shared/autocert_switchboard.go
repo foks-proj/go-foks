@@ -8,9 +8,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/keybase/clockwork"
 	"github.com/foks-proj/go-foks/lib/core"
 	proto "github.com/foks-proj/go-foks/proto/lib"
+	"github.com/keybase/clockwork"
 )
 
 type AutocertHost struct {

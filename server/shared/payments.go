@@ -263,10 +263,14 @@ func CancelStripeSession(
 	err = m.Stripe().ExpireSession(m, sessId)
 	if err != nil {
 		m.Warnw("CancelStripeSession", "err", err, "sessId", sessId, "action", "ignore")
-		err = nil
 	}
 
-	return markSessionCancelled(m, db, uid, sessId, nil)
+	err = markSessionCancelled(m, db, uid, sessId, nil)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func markSessionCancelled(
@@ -816,7 +820,6 @@ func LoadAndUpdatePlanForUser(
 
 	switch err.(type) {
 	case core.NoActivePlanError:
-		err = nil
 	case nil:
 		if !curr.SubscriptionId.Eq(sub) {
 			canc = true

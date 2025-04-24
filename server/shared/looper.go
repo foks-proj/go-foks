@@ -80,20 +80,20 @@ func (b *BaseServer) runPoolLoopWithLooper(
 			m.Warnw("heartbeat", "err", err)
 			shutdownCh <- err
 			keepGoing = false
-			break
-		}
+		} else {
 
-		select {
-		case <-time.After(looper.GetConfig().PollWait()):
-			err := b.DoOnePoll(m, looper)
-			if err != nil {
-				m.Warnw("runPollLoop", "stage", "doOnePoll", "err", err)
+			select {
+			case <-time.After(looper.GetConfig().PollWait()):
+				err := b.DoOnePoll(m, looper)
+				if err != nil {
+					m.Warnw("runPollLoop", "stage", "doOnePoll", "err", err)
+				}
+			case retCh := <-looper.GetPokeCh():
+				err := b.DoOnePoll(m, looper)
+				retCh <- err
+			case <-m.Ctx().Done():
+				keepGoing = false
 			}
-		case retCh := <-looper.GetPokeCh():
-			err := b.DoOnePoll(m, looper)
-			retCh <- err
-		case <-m.Ctx().Done():
-			keepGoing = false
 		}
 	}
 	m.Infow("runPollLoop", "stage", "exit")

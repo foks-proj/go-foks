@@ -13,10 +13,10 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/jackc/pgx/v5"
 	"github.com/foks-proj/go-foks/lib/cks"
 	"github.com/foks-proj/go-foks/lib/core"
 	proto "github.com/foks-proj/go-foks/proto/lib"
+	"github.com/jackc/pgx/v5"
 )
 
 type CertGenerator struct {

@@ -6,10 +6,10 @@ package lib
 import (
 	"testing"
 
-	"github.com/stretchr/testify/require"
 	"github.com/foks-proj/go-foks/lib/core"
 	proto "github.com/foks-proj/go-foks/proto/lib"
 	"github.com/foks-proj/go-foks/server/shared"
+	"github.com/stretchr/testify/require"
 )
 
 func findKey(state *proto.HostchainState, typ proto.EntityType) *proto.KeyAtSeqno {
@@ -56,7 +56,7 @@ func initHostchainTest(t *testing.T) (
 	require.NoError(t, err)
 
 	cleanup = func() {
-		dir.RemoveAll()
+		_ = dir.RemoveAll()
 	}
 	return m, dir, hk, cleanup
 }

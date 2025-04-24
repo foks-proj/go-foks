@@ -39,7 +39,7 @@ func (baseItemDelegate) renderString(w io.Writer, m list.Model, index int, s str
 			return selectedItemStyle.Render(" > " + strings.Join(s, ""))
 		}
 	}
-	w.Write([]byte(fn(s)))
+	_, _ = w.Write([]byte(fn(s)))
 }
 
 func (u userInfoItemDelegate) Render(w io.Writer, m list.Model, index int, listItem list.Item) {

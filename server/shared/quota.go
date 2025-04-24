@@ -8,11 +8,11 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/foks-proj/go-foks/lib/core"
 	"github.com/foks-proj/go-foks/proto/infra"
 	proto "github.com/foks-proj/go-foks/proto/lib"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type QuotaUser struct {
@@ -389,46 +389,6 @@ func CancelPlanForUser(
 	}
 	return &cancelId, nil
 
-}
-
-func loadSeatLimitForUser(
-	m MetaContext,
-	q Querier,
-	shid core.ShortHostID,
-	uid proto.UID,
-) (
-	int,
-	infra.QuotaScope,
-	error,
-) {
-	var maxTeams int
-	var quotaScopeRaw string
-	var scopeRet infra.QuotaScope
-
-	err := q.QueryRow(
-		m.Ctx(),
-		`SELECT max_seats, quota_scope FROM quota_plans
-		 JOIN user_plans USING(plan_id)
-		 WHERE short_host_id=$1 
-		 AND uid=$2 
-		 AND cancel_id=$3`,
-		shid.ExportToDB(),
-		uid.ExportToDB(),
-		proto.NilCancelID(),
-	).Scan(&maxTeams, &quotaScopeRaw)
-
-	if errors.Is(err, pgx.ErrNoRows) {
-		return 0, scopeRet, core.NoActivePlanError{}
-	}
-	if err != nil {
-		return 0, scopeRet, err
-	}
-
-	err = scopeRet.ImportFromDB(quotaScopeRaw)
-	if err != nil {
-		return 0, scopeRet, err
-	}
-	return maxTeams, scopeRet, nil
 }
 
 func checkMaxTeamsQuota(

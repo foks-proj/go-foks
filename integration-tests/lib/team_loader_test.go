@@ -6,11 +6,11 @@ package lib
 import (
 	"testing"
 
-	"github.com/stretchr/testify/require"
 	"github.com/foks-proj/go-foks/client/libclient"
 	"github.com/foks-proj/go-foks/lib/core"
 	proto "github.com/foks-proj/go-foks/proto/lib"
 	"github.com/foks-proj/go-foks/proto/rem"
+	"github.com/stretchr/testify/require"
 )
 
 func TestServerSimpleTeamLoadHappyPath(t *testing.T) {
@@ -41,7 +41,7 @@ func TestServerSimpleTeamLoadHappyPath(t *testing.T) {
 	vHostID := tew.VHostMakeI(t, 0)
 	x := tew.NewTestUserAtVHost(t, vHostID)
 	runRemoteJoinSequenceForUser(t, m, team, x, u, mem)
-	xtok := makeVOBearerTokenForUser(t, team, x, &mem)
+	xtok := makeVOBearerTokenForUser(t, team, x, nil)
 	xtcli, xcloser := x.newTeamLoaderClient(t, m.Ctx(), false)
 	defer xcloser()
 

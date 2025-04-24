@@ -225,7 +225,7 @@ func (s stateNewPassphrase) update(mctx libclient.MetaContext, mdl model, msg te
 		return s, cmd, nil
 	case stateNewPassphrasePostRes:
 		if msg.err != nil {
-			s.fail = genericFailure{err: msg.err}
+			s.fail = genericFailure(msg)
 			s.inputErr = msg.err
 			s.subState = subStatePicking
 			s.ti.SetValue("")

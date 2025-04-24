@@ -614,14 +614,20 @@ func (s *Session) checkSkipPointersFromAtoB(
 	for i, root := range newRoots {
 		epno := neededRoots[i]
 		if epno != right.Epno() {
-			s.ci.Store(ctx, epno, allRootHashesMap[epno], &root, false)
+			err := s.ci.Store(ctx, epno, allRootHashesMap[epno], &root, false)
+			if err != nil {
+				return err
+			}
 		}
 	}
 
 	for i, hash := range newHashes {
 		epno := neededHashes[i]
 		if epno != right.Epno() {
-			s.ci.Store(ctx, epno, &hash, nil, false)
+			err := s.ci.Store(ctx, epno, &hash, nil, false)
+			if err != nil {
+				return err
+			}
 		}
 	}
 	return nil

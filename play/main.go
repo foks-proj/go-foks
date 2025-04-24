@@ -27,6 +27,7 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -41,7 +42,7 @@ var pinNew = "654321"
 var pukOld = piv.DefaultPUK
 var pukNew = "87654321"
 
-func main() {
+func MainOld1() {
 
 	yk := openFirstYubiKey()
 	defer yk.Close()
@@ -180,4 +181,24 @@ func must(err error) {
 	if err != nil {
 		log.Fatal(err)
 	}
+}
+
+func ff(doErr bool) (err error) {
+	defer func() {
+		tmp := errors.New("error B")
+		if err == nil && tmp != nil {
+			err = tmp
+		}
+	}()
+	if doErr {
+		err := errors.New("error A")
+		return err
+	}
+	return nil
+}
+
+func main() {
+	fmt.Printf("%v\n", ff(true))
+	fmt.Printf("%v\n", ff(false))
+
 }

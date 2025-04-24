@@ -1,4 +1,4 @@
-// Auto-generated to Go types and interfaces using @foks-proj/snowpack-compiler 1.0.7 (git+https://github.com/foks-proj/node-snowpack-compiler.git)
+// Auto-generated to Go types and interfaces using @foks-proj/snowpack-compiler 1.0.8 (git+https://github.com/foks-proj/node-snowpack-compiler.git)
 //  Input file: ../../proto-src/lib/compat.snowp
 
 package lib
@@ -45,7 +45,7 @@ type HeaderInternal__ struct {
 }
 
 type HeaderInternalSwitch__ struct {
-	_struct struct{}            `codec:",omitempty"`
+	_struct struct{}            `codec:",omitempty"` //lint:ignore U1000 msgpack internal field
 	F_1__   *HeaderV1Internal__ `codec:"1"`
 }
 

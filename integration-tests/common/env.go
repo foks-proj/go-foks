@@ -12,7 +12,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/require"
 	"github.com/foks-proj/go-foks/client/libyubi"
 	"github.com/foks-proj/go-foks/lib/core"
 	"github.com/foks-proj/go-foks/proto/infra"
@@ -22,6 +21,7 @@ import (
 	kvStore "github.com/foks-proj/go-foks/server/kv-store"
 	"github.com/foks-proj/go-foks/server/shared"
 	"github.com/foks-proj/go-foks/server/web/app"
+	"github.com/stretchr/testify/require"
 )
 
 // Only used in tests, but we don't put it in _test.go, since we want other libraries
@@ -55,7 +55,6 @@ type TestEnv struct {
 	vHostMap            map[int]*core.HostIDAndName
 	hostname            proto.Hostname
 	ydisp               *libyubi.Dispatch
-	idp                 *FakeIdP
 }
 
 func (e *TestEnv) Dir() core.Path           { return e.dir }
@@ -177,12 +176,6 @@ func (t *TestEnv) Shutdown() error {
 	return t.ShutdownFn()
 }
 
-func randomHostPart(t *testing.T) string {
-	s, err := randomHostPartErr()
-	require.NoError(t, err)
-	return s
-}
-
 func randomHostPartErr() (string, error) {
 	return core.RandomBase36String(6)
 }
@@ -192,9 +185,8 @@ func (e *TestEnv) Fork(t *testing.T, opts SetupOpts) *TestEnv {
 
 	// Make a new config file but copy over the Dbs from our
 	// base image
-	config := shared.JSonnetTemplate{
-		Listen: make(map[string]shared.ListenConfigJSON),
-	}
+	config := shared.JSonnetTemplate{}
+	config.Listen = make(map[string]shared.ListenConfigJSON)
 	config.Db = e.config.Db
 	config.DbKVShards = e.config.DbKVShards
 	opts.ForkFrom = &config
@@ -244,7 +236,7 @@ func (t *TestEnv) Setup(opts SetupOpts) error {
 	)
 	if err != nil {
 		if t.ShutdownFn != nil {
-			t.ShutdownFn()
+			_ = t.ShutdownFn()
 		}
 		t.G.Shutdown()
 		return err
@@ -314,15 +306,24 @@ func TestQuotaSrvCli(t *testing.T, m shared.MetaContext) (*infra.QuotaClient, fu
 
 func PokeMerklePipelineInTest(t *testing.T, m shared.MetaContext) {
 	btch, btchClean := TestMerkleBatcherCli(t, m)
-	defer btchClean()
+	defer func() {
+		err := btchClean()
+		require.NoError(t, err)
+	}()
 	err := btch.Poke(m.Ctx())
 	require.NoError(t, err)
 	build, buildClean := TestMerkleBuilderCli(t, m)
-	defer buildClean()
+	defer func() {
+		err := buildClean()
+		require.NoError(t, err)
+	}()
 	err = build.Poke(m.Ctx())
 	require.NoError(t, err)
 	sig, sigClean := TestMerkleSignerCli(t, m)
-	defer sigClean()
+	defer func() {
+		err := sigClean()
+		require.NoError(t, err)
+	}()
 	err = sig.Poke(m.Ctx())
 	require.NoError(t, err)
 }

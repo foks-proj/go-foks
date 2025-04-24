@@ -30,7 +30,8 @@ func (c *AgentConn) keyList(m libclient.MetaContext) ([]lcl.ActiveDeviceInfo, er
 
 	if errors.Is(err, core.PassphraseLockedError{}) || errors.Is(err, core.KeyNotFoundError{}) {
 		err = nil
-	} else if err != nil {
+	}
+	if err != nil {
 		return nil, err
 	}
 	var pub proto.EntityID

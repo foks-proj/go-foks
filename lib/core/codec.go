@@ -6,8 +6,8 @@ package core
 import (
 	"crypto/hmac"
 
-	"github.com/keybase/go-codec/codec"
 	"github.com/foks-proj/go-snowpack-rpc/rpc"
+	"github.com/keybase/go-codec/codec"
 )
 
 func Codec() *codec.MsgpackHandle {

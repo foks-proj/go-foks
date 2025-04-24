@@ -4,9 +4,9 @@
 package shared
 
 import (
-	"github.com/jackc/pgx/v5"
 	"github.com/foks-proj/go-foks/lib/core"
 	proto "github.com/foks-proj/go-foks/proto/lib"
+	"github.com/jackc/pgx/v5"
 )
 
 func InsertTreeLocationMachinery(

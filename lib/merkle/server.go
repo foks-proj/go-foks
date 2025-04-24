@@ -337,7 +337,7 @@ func (e *Engine) storeUpdatedPath(
 	arg InsertKeyValueArg,
 ) error {
 
-	epno := proto.MerkleEpno(0)
+	epno := proto.MerkleEpnoFirst
 	if lookupRes != nil {
 		epno = lookupRes.Epno + 1
 	}

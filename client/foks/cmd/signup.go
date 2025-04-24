@@ -410,12 +410,17 @@ func (s *baseSignupProvisionState) doSSOLogin(m libclient.MetaContext) error {
 	return nil
 }
 
-func (s *signupState) runSimpleUI(m libclient.MetaContext) error {
-	err := s.init(m)
+func (s *signupState) runSimpleUI(m libclient.MetaContext) (err error) {
+	err = s.init(m)
 	if err != nil {
 		return err
 	}
-	defer s.cleanup(m)
+	defer func() {
+		tmp := s.cleanup(m)
+		if err == nil && tmp != nil {
+			err = tmp
+		}
+	}()
 
 	err = s.startUI(m)
 	if err != nil {

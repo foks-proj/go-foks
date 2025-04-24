@@ -8,9 +8,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/keybase/clockwork"
 	"github.com/foks-proj/go-foks/lib/core"
 	"github.com/foks-proj/go-foks/proto/infra"
+	"github.com/keybase/clockwork"
 )
 
 type LaneID struct {

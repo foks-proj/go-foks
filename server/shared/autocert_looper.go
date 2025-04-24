@@ -8,11 +8,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/foks-proj/go-foks/lib/core"
 	"github.com/foks-proj/go-foks/proto/infra"
 	proto "github.com/foks-proj/go-foks/proto/lib"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type AutocertHostError struct {
@@ -521,13 +521,27 @@ func (a *AutocertLooper) doOne(
 	err = a.acdoer.DoOne(m, *pkg)
 	m.Infow("AutocertLooper.doOne", "hn", pkg.Hostname, "stage", "exit", "err", err)
 
-	a.logAction(m, db, item, err)
+	logErr := a.logAction(m, db, item, err)
+
+	var markError error
 
 	if err == nil {
-		return a.markSuccess(m, db, item)
+		markError = a.markSuccess(m, db, item)
+	} else {
+		markError = a.markFailure(m, db, item)
 	}
 
-	return a.markFailure(m, db, item)
+	if err != nil {
+		return err
+	}
+	if markError != nil {
+		return markError
+	}
+	if logErr != nil {
+		return logErr
+	}
+
+	return nil
 }
 
 func (a *AutocertLooper) doSome(
@@ -564,9 +578,15 @@ func (a *AutocertLooper) run(m MetaContext) {
 	for keepGoing {
 		select {
 		case pkg := <-a.pkgCh:
-			a.doHost(m, pkg)
+			err := a.doHost(m, pkg)
+			if err != nil {
+				m.Warnw("AutocertLooper.run", "stage", "doHost", "err", err)
+			}
 		case shid := <-a.shidCh:
-			a.doSome(m, shid)
+			err := a.doSome(m, shid)
+			if err != nil {
+				m.Warnw("AutocertLooper.run", "stage", "doSome", "err", err)
+			}
 		case <-a.eofCh:
 			keepGoing = false
 		}

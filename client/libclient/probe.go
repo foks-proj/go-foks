@@ -103,6 +103,10 @@ func (e *DiscoveryEngine) CheckPin(mc chains.MetaContext, hn proto.Hostname, hid
 		found = true
 	}
 
+	if err != nil {
+		return err
+	}
+
 	if found && !existing.Eq(hid) {
 		return core.HostPinError{
 			Host: hn,

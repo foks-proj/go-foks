@@ -6,9 +6,14 @@ package core
 import (
 	"testing"
 
-	"github.com/stretchr/testify/require"
 	proto "github.com/foks-proj/go-foks/proto/lib"
+	"github.com/stretchr/testify/require"
 )
+
+func randomFill(t *testing.T, b []byte) {
+	err := RandomFill(b)
+	require.NoError(t, err)
+}
 
 func TestSigs2(t *testing.T) {
 	e1, err := NewEntityPrivateEd25519(proto.EntityType_Device)
@@ -17,10 +22,11 @@ func TestSigs2(t *testing.T) {
 	var mr1 proto.MerkleRootV1
 	mr1.Epno = 100
 	mr1.Time = proto.Now()
-	RandomFill(mr1.BackPointers[:])
-	RandomFill(mr1.RootNode[:])
+	randomFill(t, mr1.BackPointers[:])
+	require.NoError(t, err)
+	randomFill(t, mr1.RootNode[:])
 	mr1.Hostchain.Seqno = 10
-	RandomFill(mr1.Hostchain.Hash[:])
+	randomFill(t, mr1.Hostchain.Hash[:])
 
 	mr := proto.NewMerkleRootWithV1(mr1)
 	sig, blob, err := Sign2(e1, &mr)

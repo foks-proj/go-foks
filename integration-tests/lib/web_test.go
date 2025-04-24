@@ -7,10 +7,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/keybase/clockwork"
-	"github.com/stretchr/testify/require"
 	"github.com/foks-proj/go-foks/lib/core"
 	"github.com/foks-proj/go-foks/server/web/lib"
+	"github.com/keybase/clockwork"
+	"github.com/stretchr/testify/require"
 )
 
 func TestCSRFToken(t *testing.T) {

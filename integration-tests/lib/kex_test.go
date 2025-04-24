@@ -7,12 +7,12 @@ import (
 	"context"
 	"testing"
 
-	"github.com/stretchr/testify/require"
 	"github.com/foks-proj/go-foks/lib/core"
 	"github.com/foks-proj/go-foks/proto/lcl"
 	proto "github.com/foks-proj/go-foks/proto/lib"
 	"github.com/foks-proj/go-foks/proto/rem"
 	"github.com/foks-proj/go-foks/server/shared"
+	"github.com/stretchr/testify/require"
 )
 
 func newKexClient(ctx context.Context) (*rem.KexClient, func(), error) {
@@ -27,7 +27,8 @@ func newKexClient(ctx context.Context) (*rem.KexClient, func(), error) {
 
 func randomDeviceID(t *testing.T) proto.DeviceID {
 	b := make([]byte, 32)
-	core.RandomFill(b)
+	err := core.RandomFill(b)
+	require.NoError(t, err)
 	eid, err := proto.EntityType_Device.MakeEntityID(b)
 	require.NoError(t, err)
 	return proto.DeviceID(eid)
@@ -45,13 +46,15 @@ func TestKexSendAndReceive(t *testing.T) {
 	require.NoError(t, err)
 
 	var secret proto.HMACKey
-	core.RandomFill(secret[:])
+	err = core.RandomFill(secret[:])
+	require.NoError(t, err)
 	deriv := lcl.NewKexKeyDerivationDefault(lcl.KexDerivationType_SessionID)
 	sessionIdRaw, err := core.Hmac(&deriv, &secret)
 	require.NoError(t, err)
 	sessionId := proto.KexSessionID(*sessionIdRaw)
 	nbox := proto.NaclSecretBox{}
-	core.RandomFill(nbox.Nonce[:])
+	err = core.RandomFill(nbox.Nonce[:])
+	require.NoError(t, err)
 	nbox.Ciphertext = proto.NaclCiphertext([]byte{0x1, 0x2, 0x3, 0x4})
 	sbox := proto.NewSecretBoxWithNacl(nbox)
 	wmsg := rem.KexWrapperMsg{

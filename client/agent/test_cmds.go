@@ -6,10 +6,10 @@ package agent
 import (
 	"context"
 
-	"github.com/foks-proj/go-snowpack-rpc/rpc"
 	"github.com/foks-proj/go-foks/client/libclient"
 	"github.com/foks-proj/go-foks/lib/core"
 	"github.com/foks-proj/go-foks/proto/lcl"
+	"github.com/foks-proj/go-snowpack-rpc/rpc"
 )
 
 func (c *AgentConn) DeleteMacOSKeychainItem(ctx context.Context) error {

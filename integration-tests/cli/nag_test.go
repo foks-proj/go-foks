@@ -6,9 +6,9 @@ package cli
 import (
 	"testing"
 
-	"github.com/stretchr/testify/require"
 	"github.com/foks-proj/go-foks/integration-tests/common"
 	"github.com/foks-proj/go-foks/proto/lcl"
+	"github.com/stretchr/testify/require"
 )
 
 func TestNagAndClear(t *testing.T) {

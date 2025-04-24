@@ -182,7 +182,7 @@ func (s *MerkleSignerServer) initVhostState(m shared.MetaContext) (*MerkleSigner
 
 }
 
-func (s *MerkleSignerServer) doOnePollForHost(m shared.MetaContext) error {
+func (s *MerkleSignerServer) doOnePollForHost(m shared.MetaContext) (err error) {
 
 	vhs, err := s.initVhostState(m)
 	if err != nil {
@@ -242,7 +242,10 @@ func (s *MerkleSignerServer) doOnePollForHost(m shared.MetaContext) error {
 
 	m.Infow("doOnePollForHost", "shortHostID", m.ShortHostID(), "roots", roots)
 
-	defer tx.Rollback(m.Ctx())
+	defer func() {
+		err = shared.TxRollback(m.Ctx(), tx, err)
+	}()
+
 	var lst *rootAndEpno
 	for _, root := range roots {
 		sig, blob, err := core.Sign2(vhs.key, &root.root)
@@ -341,8 +344,8 @@ type MerkleSignerClientConn struct {
 	xp  rpc.Transporter
 }
 
-func (c *MerkleSignerClientConn) RegisterProtocols(m shared.MetaContext, srv *rpc.Server) {
-	srv.RegisterV2(proto.MerkleSignerProtocol(c))
+func (c *MerkleSignerClientConn) RegisterProtocols(m shared.MetaContext, srv *rpc.Server) error {
+	return srv.RegisterV2(proto.MerkleSignerProtocol(c))
 }
 
 func (c *MerkleSignerClientConn) Poke(ctx context.Context) error {

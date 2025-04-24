@@ -6,11 +6,11 @@ package app
 import (
 	"net/http"
 
-	"github.com/go-chi/chi/v5"
 	proto "github.com/foks-proj/go-foks/proto/lib"
 	"github.com/foks-proj/go-foks/server/shared"
 	"github.com/foks-proj/go-foks/server/web/app/admin"
 	"github.com/foks-proj/go-foks/server/web/app/oauth2"
+	"github.com/go-chi/chi/v5"
 )
 
 type WebServer struct {

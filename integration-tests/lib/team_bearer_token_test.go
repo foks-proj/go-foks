@@ -8,11 +8,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/require"
 	"github.com/foks-proj/go-foks/lib/core"
 	proto "github.com/foks-proj/go-foks/proto/lib"
 	"github.com/foks-proj/go-foks/proto/rem"
 	"github.com/foks-proj/go-foks/server/shared"
+	"github.com/stretchr/testify/require"
 )
 
 type voBearerTokenOpts struct {
@@ -36,7 +36,7 @@ func makeVOBearerTokenForUserFull(t *testing.T, tm *teamObj, u *TestUser, srcRol
 		Team:    tm.FQTeam(t).ToFQTeamIDOrName(),
 		Member:  u.FQUser().FQParty(),
 		Gen:     proto.FirstGeneration,
-		SrcRole: proto.OwnerRole,
+		SrcRole: *srcRole,
 	}
 
 	if opts.byName {

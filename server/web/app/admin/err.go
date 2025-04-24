@@ -19,7 +19,7 @@ func handleVHostCheckError(
 	w.Header().Set("Content-Type", "text/html")
 	w.Header().Add("HX-Retarget", "#vhost-check-error")
 	w.WriteHeader(http.StatusUnprocessableEntity)
-	templates.VHostCheckError(ve).Render(r.Context(), w)
+	_ = templates.VHostCheckError(ve).Render(r.Context(), w)
 
 }
 
@@ -32,7 +32,7 @@ func handleVHostSetupError(
 	w.Header().Add("HX-Retarget", "#vhost-setup-error")
 	w.Header().Add("HX-Reswap", "outerHTML")
 	w.WriteHeader(http.StatusUnprocessableEntity)
-	templates.VHostSetupError(ve).Render(r.Context(), w)
+	_ = templates.VHostSetupError(ve).Render(r.Context(), w)
 }
 
 func HandleErr(
@@ -68,5 +68,5 @@ func HandleErr(
 	w.Header().Add("HX-Reswap", "none")
 	w.WriteHeader(code)
 
-	templates.ErrorToast(desc).Render(r.Context(), w)
+	_ = templates.ErrorToast(desc).Render(r.Context(), w)
 }

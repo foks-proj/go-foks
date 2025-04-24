@@ -51,8 +51,8 @@ type ProbeClientConn struct {
 
 var _ shared.ClientConn = (*ProbeClientConn)(nil)
 
-func (c *ProbeClientConn) RegisterProtocols(m shared.MetaContext, srv *rpc.Server) {
-	srv.RegisterV2(rem.ProbeProtocol(c))
+func (c *ProbeClientConn) RegisterProtocols(m shared.MetaContext, srv *rpc.Server) error {
+	return srv.RegisterV2(rem.ProbeProtocol(c))
 }
 
 func (c *ProbeClientConn) ErrorWrapper() func(error) proto.Status {

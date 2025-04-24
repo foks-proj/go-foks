@@ -6,9 +6,9 @@ package main
 import (
 	"errors"
 
-	"github.com/spf13/cobra"
 	"github.com/foks-proj/go-foks/lib/core"
 	"github.com/foks-proj/go-foks/server/shared"
+	"github.com/spf13/cobra"
 )
 
 type WritePublicZone struct {
@@ -41,7 +41,10 @@ func (i *WritePublicZone) Run(m shared.MetaContext) error {
 		return err
 	}
 	hkc := shared.NewHostChain()
-	hkc.LoadKeyIntoState(hk)
+	err = hkc.LoadKeyIntoState(hk)
+	if err != nil {
+		return err
+	}
 	err = hkc.LoadFromDB(m)
 	if err != nil {
 		return err

@@ -49,9 +49,11 @@ func newTestSecretStore() *SecretStore {
 }
 
 // there's not a good reason to delete a secret store in the main program
-// but it's polite to clean up after ourselves for testing
+// but it's polite to clean up after ourselves for testing. if removal fails because
+// nothing is there, don't worry about it.
 func (s *SecretStore) cleanup() error {
-	return os.Remove(s.path)
+	_ = os.Remove(s.path)
+	return nil
 }
 
 func TestSaveAndLoad(t *testing.T) {
@@ -60,7 +62,10 @@ func TestSaveAndLoad(t *testing.T) {
 
 	fullFn := testSecretStoreFilename()
 	ss := NewSecretStore(fullFn)
-	defer ss.cleanup()
+	defer func() {
+		err := ss.cleanup()
+		require.NoError(t, err)
+	}()
 	require.NotNil(t, ss)
 
 	// Ensure that it doesn't load, since it shouldn't be there
@@ -268,7 +273,10 @@ func (s *SecretStore) clearForTest(t *testing.T) {
 func TestDelete(t *testing.T) {
 	fnm := testSecretStoreFilename()
 	ss := NewSecretStore(fnm)
-	defer ss.cleanup()
+	defer func() {
+		err := ss.cleanup()
+		require.NoError(t, err)
+	}()
 	ctx := context.Background()
 	err := ss.LoadOrCreate(ctx)
 	require.NoError(t, err)
@@ -325,7 +333,10 @@ func TestPassphraseLock(t *testing.T) {
 
 	fnm := testSecretStoreFilename()
 	ss := NewSecretStore(fnm)
-	defer ss.cleanup()
+	defer func() {
+		err := ss.cleanup()
+		require.NoError(t, err)
+	}()
 	ctx := context.Background()
 	err := ss.LoadOrCreate(ctx)
 	require.NoError(t, err)

@@ -9,10 +9,10 @@ import (
 	"crypto/x509/pkix"
 	"time"
 
-	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/foks-proj/go-foks/lib/core"
 	proto "github.com/foks-proj/go-foks/proto/lib"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 func IssueCertChain(m MetaContext, uhc UserHostContext, key core.DevicePublicKeyer) ([][]byte, error) {

@@ -8,10 +8,10 @@ import (
 	"sort"
 	"testing"
 
-	"github.com/stretchr/testify/require"
 	"github.com/foks-proj/go-foks/lib/core"
 	proto "github.com/foks-proj/go-foks/proto/lib"
 	"github.com/foks-proj/go-foks/proto/rem"
+	"github.com/stretchr/testify/require"
 )
 
 func (u *TestUser) RevokeDevice(t *testing.T, signer core.PrivateSuiter, target core.PrivateSuiter) {

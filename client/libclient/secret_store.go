@@ -135,11 +135,18 @@ func overwrite(fh *os.File) error {
 
 }
 
-func cleanup(fh *os.File) {
+func cleanup(fh *os.File) error {
 	// TODO: Warn! We need to set up some debugging, etc, to handle both errors that
 	// we are ignoring
-	overwrite(fh)
-	os.Remove(fh.Name())
+	err := overwrite(fh)
+	if err != nil {
+		return err
+	}
+	err = os.Remove(fh.Name())
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (s *SecretStore) exportData() ([]byte, error) {
@@ -177,7 +184,7 @@ func (s *SecretStore) Export() *lcl.SecretStore {
 	return &ret
 }
 
-func (s *SecretStore) saveWithLock(ctx context.Context) error {
+func (s *SecretStore) saveWithLock(ctx context.Context) (err error) {
 
 	if !s.dirty {
 		return nil
@@ -199,7 +206,10 @@ func (s *SecretStore) saveWithLock(ctx context.Context) error {
 	success := false
 	defer func() {
 		if !success {
-			cleanup(fh)
+			tmp := cleanup(fh)
+			if err == nil && tmp != nil {
+				err = tmp
+			}
 		}
 	}()
 
@@ -375,10 +385,13 @@ func (s *SecretStore) FilterDeviceIDs(
 	defer s.RUnlock()
 
 	var ret []proto.DeviceID
-	s.foreachMatchedRowLocked(fqu, whitelist, func(row *lcl.LabeledSecretKeyBundle) (bool, error) {
+	err := s.foreachMatchedRowLocked(fqu, whitelist, func(row *lcl.LabeledSecretKeyBundle) (bool, error) {
 		ret = append(ret, row.KeyID)
 		return false, nil
 	})
+	if err != nil {
+		return nil, err
+	}
 	return ret, nil
 }
 

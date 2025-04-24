@@ -12,6 +12,6 @@ import (
 	"github.com/coreos/go-systemd/v22/dbus"
 )
 
-func dummy() {
+func Dummy() {
 	_, _ = dbus.NewUserConnectionContext(context.Background())
 }

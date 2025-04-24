@@ -6,9 +6,9 @@ package lib
 import (
 	"testing"
 
-	"github.com/stretchr/testify/require"
 	"github.com/foks-proj/go-foks/lib/core"
 	remhelp "github.com/foks-proj/go-git-remhelp"
+	"github.com/stretchr/testify/require"
 )
 
 func randomGitProtocol(t *testing.T) string {
@@ -27,7 +27,9 @@ func TestSimplePushFetch(t *testing.T) {
 		RepoName: "xxxx",
 	})
 	require.NoError(t, err)
-	defer te.Cleanup()
+	defer func() {
+		_ = te.Cleanup()
+	}()
 	sr := te.NewScratchRepo(t)
 
 	sr.Mkdir(t, "a/b")

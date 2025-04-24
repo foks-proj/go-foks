@@ -10,12 +10,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/keybase/clockwork"
-	"github.com/stretchr/testify/require"
 	"github.com/foks-proj/go-foks/integration-tests/common"
 	"github.com/foks-proj/go-foks/lib/core"
 	"github.com/foks-proj/go-foks/proto/infra"
 	proto "github.com/foks-proj/go-foks/proto/lib"
+	"github.com/keybase/clockwork"
+	"github.com/stretchr/testify/require"
 )
 
 func TestPlanExpiration(t *testing.T) {
@@ -27,7 +27,10 @@ func TestPlanExpiration(t *testing.T) {
 
 	m := awc.env.MetaContext()
 	qcli, fn := common.TestQuotaSrvCli(t, m)
-	defer fn()
+	defer func() {
+		err := fn()
+		require.NoError(t, err)
+	}()
 	ctx := m.Ctx()
 	err := qcli.TestSetConfig(ctx, infra.QuotaConfig{
 		Delay: 1,
@@ -116,7 +119,10 @@ func TestRenew(t *testing.T) {
 
 		m := awc.env.MetaContext()
 		qcli, fn := common.TestQuotaSrvCli(t, m)
-		defer fn()
+		defer func() {
+			err := fn()
+			require.NoError(t, err)
+		}()
 		ctx := m.Ctx()
 		err := qcli.TestSetConfig(ctx, infra.QuotaConfig{
 			Delay: 1,

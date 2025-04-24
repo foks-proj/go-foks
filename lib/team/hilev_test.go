@@ -6,9 +6,9 @@ package team
 import (
 	"testing"
 
-	"github.com/stretchr/testify/require"
 	"github.com/foks-proj/go-foks/lib/core"
 	proto "github.com/foks-proj/go-foks/proto/lib"
+	"github.com/stretchr/testify/require"
 )
 
 func testFQEInHostScope(t *testing.T, teamHost byte, memberHost byte, u byte) proto.FQEntityInHostScope {

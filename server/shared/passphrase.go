@@ -6,10 +6,10 @@ package shared
 import (
 	"fmt"
 
-	"github.com/jackc/pgx/v5"
 	"github.com/foks-proj/go-foks/lib/core"
 	proto "github.com/foks-proj/go-foks/proto/lib"
 	"github.com/foks-proj/go-foks/proto/rem"
+	"github.com/jackc/pgx/v5"
 )
 
 func UpdatePassphrase(
@@ -116,11 +116,11 @@ func UpdatePassphrase(
 	if err != nil {
 		return err
 	}
+
 	if ppgen.IsFirst() {
 		if cnt != 0 {
 			return core.InsertError("passphrase already set, cannot establish a new one")
 		}
-		err = nil
 	} else {
 		var max int
 		err = tx.QueryRow(

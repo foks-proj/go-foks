@@ -253,7 +253,10 @@ func (c *AgentConn) Serve(m libclient.MetaContext) {
 	otherProtocols := OtherProtocols(c)
 	protocols = append(protocols, otherProtocols...)
 	for _, p := range protocols {
-		c.srv.RegisterV2(p)
+		err = c.srv.RegisterV2(p)
+		if err != nil {
+			m.Warnw("serve", "stage", "registerv2", "protocol", p, "err", err)
+		}
 	}
 	c.g = m.G()
 	<-c.srv.Run()

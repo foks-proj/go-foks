@@ -1,0 +1,42 @@
+# .golangci.yml
+
+run:
+  timeout: 5m               # overall timeout for the linter run
+  concurrency: 4            # number of threads to use
+  tests: true               # include _test.go files
+
+linters:
+  disable-all: true         # start from zero and opt into linters
+  enable:
+    - govet                # Go vet checks
+    - errcheck             # check for unchecked errors
+    - staticcheck          # advanced static analysis
+    - gosimple             # code simplifications
+    - unused               # unused variables/functions
+    - gofmt                # gofmt formatting
+    - ineffassign          # ineffectual assignments
+    - revive               # configurable linter
+
+linters-settings:
+  gocyclo:
+    min-complexity: 30     # functions with complexity ≥30 will error
+  revive:
+    ignore-generated-header: true
+    severity: warning
+  gofmt:
+    simplify: true         # run gofmt -s
+  goimports:
+    local-prefixes: github.com/foks-proj/go-foks
+
+issues:
+  exclude-use-default: true
+  max-same-issues: 3       # cap identical issues
+  max-per-linter: 0        # no limit per linter
+  exclude-rules:
+    - linters:
+        - revive
+      text: "don't use underscores in Go names"
+    - linters:
+        - errcheck
+      text: "Close.* should be checked"  # allow unchecked Close errs
+

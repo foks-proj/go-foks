@@ -48,8 +48,8 @@ type QueueClientConn struct {
 	xp  rpc.Transporter
 }
 
-func (c *QueueClientConn) RegisterProtocols(m shared.MetaContext, srv *rpc.Server) {
-	srv.RegisterV2(infra.QueueProtocol(c))
+func (c *QueueClientConn) RegisterProtocols(m shared.MetaContext, srv *rpc.Server) error {
+	return srv.RegisterV2(infra.QueueProtocol(c))
 }
 
 func (c *QueueClientConn) ErrorWrapper() func(error) proto.Status {

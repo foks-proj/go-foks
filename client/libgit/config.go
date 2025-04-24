@@ -7,8 +7,8 @@ import (
 	"bytes"
 	"context"
 
-	"github.com/go-git/go-git/v5/config"
 	"github.com/foks-proj/go-foks/lib/core"
+	"github.com/go-git/go-git/v5/config"
 )
 
 type ConfigStorage struct {

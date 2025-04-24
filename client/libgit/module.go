@@ -4,8 +4,8 @@
 package libgit
 
 import (
-	"github.com/go-git/go-git/v5/storage"
 	proto "github.com/foks-proj/go-foks/proto/lib"
+	"github.com/go-git/go-git/v5/storage"
 )
 
 type ModuleStorage struct {

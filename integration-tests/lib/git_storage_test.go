@@ -8,14 +8,14 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/go-git/go-git/v5/plumbing"
-	"github.com/go-git/go-git/v5/storage"
-	"github.com/stretchr/testify/require"
 	"github.com/foks-proj/go-foks/client/libgit"
 	"github.com/foks-proj/go-foks/client/libkv"
 	"github.com/foks-proj/go-foks/lib/core"
 	"github.com/foks-proj/go-foks/proto/lcl"
 	proto "github.com/foks-proj/go-foks/proto/lib"
+	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/go-git/go-git/v5/storage"
+	"github.com/stretchr/testify/require"
 )
 
 func newRandomObject(t *testing.T, typ plumbing.ObjectType, sz int) plumbing.EncodedObject {

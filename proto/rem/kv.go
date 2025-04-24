@@ -1,4 +1,4 @@
-// Auto-generated to Go types and interfaces using @foks-proj/snowpack-compiler 1.0.7 (git+https://github.com/foks-proj/node-snowpack-compiler.git)
+// Auto-generated to Go types and interfaces using @foks-proj/snowpack-compiler 1.0.8 (git+https://github.com/foks-proj/node-snowpack-compiler.git)
 //  Input file: ../../proto-src/rem/kv.snowp
 
 package rem
@@ -52,7 +52,7 @@ type KVAuthInternal__ struct {
 }
 
 type KVAuthInternalSwitch__ struct {
-	_struct struct{}                     `codec:",omitempty"`
+	_struct struct{}                     `codec:",omitempty"` //lint:ignore U1000 msgpack internal field
 	F_1__   *TeamVOBearerTokenInternal__ `codec:"1"`
 }
 
@@ -367,7 +367,7 @@ type KVGetNodeResInternal__ struct {
 }
 
 type KVGetNodeResInternalSwitch__ struct {
-	_struct struct{}                         `codec:",omitempty"`
+	_struct struct{}                         `codec:",omitempty"` //lint:ignore U1000 msgpack internal field
 	F_0__   *lib.LargeFileMetadataInternal__ `codec:"0"`
 	F_2__   *lib.SmallFileBoxInternal__      `codec:"2"`
 	F_3__   *lib.SmallFileBoxInternal__      `codec:"3"`

@@ -6,8 +6,8 @@ package core
 import (
 	"testing"
 
-	"github.com/stretchr/testify/require"
 	proto "github.com/foks-proj/go-foks/proto/lib"
+	"github.com/stretchr/testify/require"
 )
 
 func TestSignVerify(t *testing.T) {

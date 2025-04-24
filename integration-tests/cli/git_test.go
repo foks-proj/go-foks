@@ -101,7 +101,9 @@ func compileTap(t *testing.T) string {
 	}
 	cd, err := os.Getwd()
 	require.NoError(t, err)
-	defer os.Chdir(cd)
+	defer func() {
+		_ = os.Chdir(cd)
+	}()
 
 	tmpDir := os.TempDir()
 	tapBinPath := filepath.Join(tmpDir, "foks_test_tap")

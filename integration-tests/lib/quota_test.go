@@ -8,7 +8,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/require"
 	"github.com/foks-proj/go-foks/client/libkv"
 	"github.com/foks-proj/go-foks/integration-tests/common"
 	"github.com/foks-proj/go-foks/lib/core"
@@ -16,6 +15,7 @@ import (
 	"github.com/foks-proj/go-foks/proto/lcl"
 	proto "github.com/foks-proj/go-foks/proto/lib"
 	"github.com/foks-proj/go-foks/server/shared"
+	"github.com/stretchr/testify/require"
 )
 
 func TestLargeFileUsage(t *testing.T) {
@@ -43,7 +43,10 @@ func TestWritesOverQuotaFail(t *testing.T) {
 	m := mdt.tew.MetaContext()
 	ctx := m.Ctx()
 	cli, fn := common.TestQuotaSrvCli(t, m)
-	defer fn()
+	defer func() {
+		err := fn()
+		require.NoError(t, err)
+	}()
 	dev := mdt.dev[0]
 	au := dev.mc.G().ActiveUser()
 
@@ -148,7 +151,10 @@ func TestQuotaAndTeams(t *testing.T) {
 	m := mdt.tew.MetaContext()
 	ctx := m.Ctx()
 	cli, fn := common.TestQuotaSrvCli(t, m)
-	defer fn()
+	defer func() {
+		err := fn()
+		require.NoError(t, err)
+	}()
 
 	err := cli.TestSetConfig(ctx, infra.QuotaConfig{
 		Delay: 1,

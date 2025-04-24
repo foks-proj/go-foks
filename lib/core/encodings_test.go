@@ -6,8 +6,8 @@ package core
 import (
 	"testing"
 
-	"github.com/stretchr/testify/require"
 	rem "github.com/foks-proj/go-foks/proto/rem"
+	"github.com/stretchr/testify/require"
 )
 
 func TestInviteCodeEncoding(t *testing.T) {

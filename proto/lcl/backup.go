@@ -1,4 +1,4 @@
-// Auto-generated to Go types and interfaces using @foks-proj/snowpack-compiler 1.0.7 (git+https://github.com/foks-proj/node-snowpack-compiler.git)
+// Auto-generated to Go types and interfaces using @foks-proj/snowpack-compiler 1.0.8 (git+https://github.com/foks-proj/node-snowpack-compiler.git)
 //  Input file: ../../proto-src/lcl/backup.snowp
 
 package lcl
@@ -22,9 +22,7 @@ func (b BackupHESP) Export() *BackupHESPInternal__ {
 			return nil
 		}
 		ret := make([](string), len(x))
-		for k, v := range x {
-			ret[k] = v
-		}
+		copy(ret, x)
 		return &ret
 	})(tmp)))
 }

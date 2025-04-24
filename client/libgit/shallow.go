@@ -9,9 +9,9 @@ import (
 	"context"
 	"strings"
 
+	"github.com/foks-proj/go-foks/lib/core"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/storer"
-	"github.com/foks-proj/go-foks/lib/core"
 )
 
 type ShallowStorage struct {

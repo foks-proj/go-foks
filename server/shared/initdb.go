@@ -8,8 +8,8 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/foks-proj/go-foks/server/sql"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type InitDB struct {
@@ -60,13 +60,15 @@ func (i *InitDB) readSQLFile(m MetaContext, d DbType) ([]string, error) {
 	return strings.Split(b, ";"), nil
 }
 
-func (i *InitDB) runMakeTablesOne(m MetaContext, db *pgxpool.Conn, typ DbType, name string) error {
+func (i *InitDB) runMakeTablesOne(m MetaContext, db *pgxpool.Conn, typ DbType, name string) (err error) {
 	statements, err := i.readSQLFile(m, typ)
 	if err != nil {
 		return err
 	}
 	tx, err := db.Begin(m.Ctx())
-	defer tx.Rollback(m.Ctx())
+	defer func() {
+		err = TxRollback(m.Ctx(), tx, err)
+	}()
 	if err != nil {
 		return err
 	}

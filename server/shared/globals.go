@@ -258,7 +258,7 @@ func (g *GlobalContext) Shutdown() {
 		return
 	}
 	g.didShutdown = true
-	g.log.Sync()
+	_ = g.log.Sync()
 	if g.merkleGCli != nil {
 		g.merkleGCli.Close()
 	}
@@ -297,7 +297,7 @@ func (g *GlobalContext) swapLog() error {
 	}
 	oldLog := g.log
 	g.log = newLog.Sugar()
-	oldLog.Sync()
+	_ = oldLog.Sync()
 	return nil
 }
 
@@ -447,7 +447,10 @@ func (g *GlobalContext) Configure(ctx context.Context, opts GlobalCLIConfigOpts)
 
 	if opts.ForceJSONLog {
 		g.logCfg.Encoding = "json"
-		g.swapLog()
+		err := g.swapLog()
+		if err != nil {
+			return err
+		}
 	}
 
 	if opts.LogLevel != "" {

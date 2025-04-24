@@ -7,16 +7,18 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/require"
 	"github.com/foks-proj/go-foks/integration-tests/common"
 	"github.com/foks-proj/go-foks/lib/core"
 	proto "github.com/foks-proj/go-foks/proto/lib"
 	"github.com/foks-proj/go-foks/server/shared"
+	"github.com/stretchr/testify/require"
 )
 
 func TestHostIdMapFilter(t *testing.T) {
 	env := globalTestEnv.Fork(t, common.SetupOpts{})
-	defer env.ShutdownFn()
+	defer func() {
+		_ = env.ShutdownFn()
+	}()
 	m := env.MetaContext()
 
 	mainId := m.G().ShortHostID()

@@ -10,14 +10,14 @@ import (
 	"os"
 	"strings"
 
-	"github.com/foks-proj/go-snowpack-rpc/rpc"
-	"github.com/spf13/cobra"
 	"github.com/foks-proj/go-foks/client/agent"
 	"github.com/foks-proj/go-foks/client/libclient"
 	"github.com/foks-proj/go-foks/lib/core"
 	"github.com/foks-proj/go-foks/proto/lcl"
 	proto "github.com/foks-proj/go-foks/proto/lib"
 	"github.com/foks-proj/go-foks/proto/rem"
+	"github.com/foks-proj/go-snowpack-rpc/rpc"
+	"github.com/spf13/cobra"
 )
 
 var gitOpts = agent.StartupOpts{
@@ -57,11 +57,15 @@ func (h *HelperLogger) ErrorWrapper() func(error) proto.Status {
 func (h *HelperLogger) Run(mctx libclient.MetaContext) {
 	wef := rem.RegMakeGenericErrorWrapper(core.ErrorToStatus)
 	srv := rpc.NewServer(h.xp, wef)
-	srv.RegisterV2(
+	err := srv.RegisterV2(
 		lcl.GitHelperLogProtocol(h),
 	)
+	if err != nil {
+		mctx.Errorw("failed to register git helper log protocol", "err", err)
+		return
+	}
 	<-srv.Run()
-	err := srv.Err()
+	err = srv.Err()
 	if err != nil && err != io.EOF {
 		mctx.Errorw("server error", "err", err)
 	}

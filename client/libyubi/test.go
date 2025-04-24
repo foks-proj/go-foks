@@ -14,11 +14,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-type testKeyLoader struct {
-	slot proto.YubiSlot
-	card proto.YubiCardName
-}
-
 func (d *Dispatch) testInit(ctx context.Context, t *testing.T) *nextSlotter {
 	if d.test != nil {
 		return d.test

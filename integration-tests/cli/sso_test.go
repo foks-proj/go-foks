@@ -10,12 +10,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/require"
 	"github.com/foks-proj/go-foks/client/libclient"
 	"github.com/foks-proj/go-foks/integration-tests/common"
 	"github.com/foks-proj/go-foks/lib/core"
 	proto "github.com/foks-proj/go-foks/proto/lib"
 	"github.com/foks-proj/go-foks/server/shared"
+	"github.com/stretchr/testify/require"
 )
 
 func (a *adminWebClient) enableSSO(t *testing.T, app *common.FakeIdPApp) proto.URLString {
@@ -116,7 +116,10 @@ func TestSSOHappyPath(t *testing.T) {
 	require.NoError(t, err)
 	err = idp.Launch()
 	require.NoError(t, err)
-	defer idp.Shutdown(ctx)
+	defer func() {
+		err := idp.Shutdown(ctx)
+		require.NoError(t, err)
+	}()
 
 	mh.setCNAMEMapping(t, vn, hostingHost)
 	awc.checkCNAME(t)

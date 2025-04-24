@@ -5,13 +5,14 @@ package shared
 
 import (
 	"context"
+	"errors"
 	"time"
 
+	"github.com/foks-proj/go-foks/lib/core"
+	proto "github.com/foks-proj/go-foks/proto/lib"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/foks-proj/go-foks/lib/core"
-	proto "github.com/foks-proj/go-foks/proto/lib"
 )
 
 type DbExecer interface {
@@ -65,7 +66,7 @@ func (g *GlobalContext) Db(ctx context.Context, which DbType) (*pgxpool.Conn, er
 	return conn, nil
 }
 
-func (g *GlobalContext) DbTx(ctx context.Context, which DbType) (pgx.Tx, func(), error) {
+func (g *GlobalContext) DbTx(ctx context.Context, which DbType) (pgx.Tx, func() error, error) {
 	db, err := g.Db(ctx, which)
 	if err != nil {
 		return nil, nil, err
@@ -75,9 +76,16 @@ func (g *GlobalContext) DbTx(ctx context.Context, which DbType) (pgx.Tx, func(),
 		db.Release()
 		return nil, nil, err
 	}
-	retFn := func() {
-		tx.Rollback(ctx)
+	retFn := func() error {
+		err := tx.Rollback(ctx)
 		db.Release()
+		if err == nil {
+			return nil
+		}
+		if errors.Is(err, pgx.ErrTxClosed) {
+			return nil
+		}
+		return err
 	}
 	return tx, retFn, nil
 }
@@ -110,12 +118,14 @@ func RetryTx(m MetaContext, db *pgxpool.Conn, nm string, tryFn func(m MetaContex
 	backoff := 1 * time.Millisecond
 	m = m.WithLogTag("dbtx")
 
-	tryOnce := func(i int) (bool, error) {
+	tryOnce := func(i int) (ret bool, err error) {
 		tx, err := db.Begin(m.Ctx())
 		if err != nil {
 			return false, err
 		}
-		defer tx.Rollback(m.Ctx())
+		defer func() {
+			err = TxRollback(m.Ctx(), tx, err)
+		}()
 		err = tryFn(m, tx)
 		if err != nil {
 			return false, err
@@ -319,4 +329,12 @@ func ShortPartyIns(m MetaContext, tx pgx.Tx, p proto.PartyID) error {
 		return core.InsertError("short_party")
 	}
 	return nil
+}
+
+func TxRollback(ctx context.Context, tx pgx.Tx, err error) error {
+	rberr := tx.Rollback(ctx)
+	if err == nil && rberr != nil && !errors.Is(rberr, pgx.ErrTxClosed) {
+		return rberr
+	}
+	return err
 }

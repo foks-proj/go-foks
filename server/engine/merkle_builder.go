@@ -8,12 +8,12 @@ import (
 	"errors"
 	"flag"
 
-	"github.com/jackc/pgx/v5"
 	"github.com/foks-proj/go-foks/lib/core"
 	"github.com/foks-proj/go-foks/lib/merkle"
 	proto "github.com/foks-proj/go-foks/proto/lib"
 	"github.com/foks-proj/go-foks/server/shared"
 	"github.com/foks-proj/go-snowpack-rpc/rpc"
+	"github.com/jackc/pgx/v5"
 )
 
 type MerkleBuilderServer struct {
@@ -50,8 +50,8 @@ func (b *MerkleBuilderServer) Setup(m shared.MetaContext) error {
 	return nil
 }
 
-func (c *MerkleBuilderClientConn) RegisterProtocols(m shared.MetaContext, srv *rpc.Server) {
-	srv.RegisterV2(proto.MerkleBuilderProtocol(c))
+func (c *MerkleBuilderClientConn) RegisterProtocols(m shared.MetaContext, srv *rpc.Server) error {
+	return srv.RegisterV2(proto.MerkleBuilderProtocol(c))
 }
 
 func (c *MerkleBuilderClientConn) Poke(ctx context.Context) error {

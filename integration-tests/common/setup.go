@@ -12,13 +12,13 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/testcontainers/testcontainers-go"
-	"github.com/testcontainers/testcontainers-go/wait"
 	"github.com/foks-proj/go-foks/lib/core"
 	"github.com/foks-proj/go-foks/lib/merkle"
 	proto "github.com/foks-proj/go-foks/proto/lib"
 	"github.com/foks-proj/go-foks/proto/rem"
 	"github.com/foks-proj/go-foks/server/shared"
+	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/wait"
 )
 
 // For a regular server
@@ -446,8 +446,7 @@ func cookConfig(m shared.MetaContext, dir core.Path, config shared.JSonnetTempla
 		return err
 	}
 	enc := json.NewEncoder(fh)
-	config.Log.ZapConfig = nil
-	err = enc.Encode(config)
+	err = enc.Encode(config.JSonnetTemplateNoLog)
 	if err != nil {
 		return err
 	}
@@ -470,8 +469,10 @@ func SetupEnv(
 ) {
 
 	config := shared.JSonnetTemplate{
-		Db:     make(map[string]shared.DbConfigJSON),
-		Listen: make(map[string]shared.ListenConfigJSON),
+		JSonnetTemplateNoLog: shared.JSonnetTemplateNoLog{
+			Db:     make(map[string]shared.DbConfigJSON),
+			Listen: make(map[string]shared.ListenConfigJSON),
+		},
 	}
 
 	// Need template DB type to create the other DBs

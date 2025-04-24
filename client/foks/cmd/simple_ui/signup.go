@@ -10,13 +10,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/manifoldco/promptui"
-	"golang.org/x/term"
 	"github.com/foks-proj/go-foks/client/foks/cmd/common_ui"
 	"github.com/foks-proj/go-foks/client/libclient"
 	"github.com/foks-proj/go-foks/lib/core"
 	"github.com/foks-proj/go-foks/proto/lcl"
 	proto "github.com/foks-proj/go-foks/proto/lib"
+	"github.com/manifoldco/promptui"
+	"golang.org/x/term"
 )
 
 type SignupUI struct {

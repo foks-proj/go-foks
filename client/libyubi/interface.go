@@ -50,9 +50,6 @@ type Handle struct {
 	// by the given pin, that will be present here too.
 	pin  *proto.YubiPIN
 	mgmt *proto.YubiManagementKey
-
-	// keep track of the owners of the various slots on the card.
-	owners map[proto.FQUser]map[proto.YubiSlot]proto.YubiID
 }
 
 type Card interface {

@@ -7,9 +7,9 @@ import (
 	"net"
 	"time"
 
-	"github.com/miekg/dns"
 	"github.com/foks-proj/go-foks/lib/core"
 	proto "github.com/foks-proj/go-foks/proto/lib"
+	"github.com/miekg/dns"
 )
 
 // Check that the CNAME record From points to To, and use the specified DNS servers to

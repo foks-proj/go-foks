@@ -13,11 +13,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/keybase/clockwork"
-	"go.uber.org/zap"
 	proto "github.com/foks-proj/go-foks/proto/lib"
 	"github.com/foks-proj/go-foks/proto/rem"
 	"github.com/foks-proj/go-snowpack-rpc/rpc"
+	"github.com/keybase/clockwork"
+	"go.uber.org/zap"
 )
 
 type RpcClientMetaContexter interface {

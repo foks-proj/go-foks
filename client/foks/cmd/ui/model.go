@@ -268,12 +268,15 @@ func newModel(g *libclient.GlobalContext, s state, typ proto.UISessionType) mode
 	}
 }
 
-func RunNewModelForStateAndSessionType(m libclient.MetaContext, s state, typ proto.UISessionType) error {
+func RunNewModelForStateAndSessionType(m libclient.MetaContext, s state, typ proto.UISessionType) (err error) {
 
 	mdl := newModel(m.G(), s, typ)
 
 	defer func() {
-		cancelSession(m, mdl)
+		tmp := cancelSession(m, mdl)
+		if err == nil && tmp != nil {
+			err = tmp
+		}
 	}()
 
 	// In general, the model is passed by value across the different states, with

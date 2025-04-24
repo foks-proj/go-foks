@@ -9,11 +9,11 @@ import (
 	"strings"
 	"unicode"
 
+	lcl "github.com/foks-proj/go-foks/proto/lcl"
+	proto "github.com/foks-proj/go-foks/proto/lib"
 	"golang.org/x/text/runes"
 	"golang.org/x/text/transform"
 	"golang.org/x/text/unicode/norm"
-	lcl "github.com/foks-proj/go-foks/proto/lcl"
-	proto "github.com/foks-proj/go-foks/proto/lib"
 )
 
 // We're going to keep this list small and slowly add to it

@@ -104,5 +104,5 @@ func HandleErr(
 	w.Header().Set("Content-Type", "text/html")
 	w.WriteHeader(code)
 
-	w.Write([]byte(desc))
+	_, _ = w.Write([]byte(desc))
 }

@@ -1,4 +1,4 @@
-// Auto-generated to Go types and interfaces using @foks-proj/snowpack-compiler 1.0.7 (git+https://github.com/foks-proj/node-snowpack-compiler.git)
+// Auto-generated to Go types and interfaces using @foks-proj/snowpack-compiler 1.0.8 (git+https://github.com/foks-proj/node-snowpack-compiler.git)
 //  Input file: ../../proto-src/rem/user.snowp
 
 package rem
@@ -186,7 +186,7 @@ type LoadUserChainAuthInternal__ struct {
 }
 
 type LoadUserChainAuthInternalSwitch__ struct {
-	_struct struct{}                       `codec:",omitempty"`
+	_struct struct{}                       `codec:",omitempty"` //lint:ignore U1000 msgpack internal field
 	F_1__   *lib.PermissionTokenInternal__ `codec:"1"`
 	F_2__   *lib.PermissionTokenInternal__ `codec:"2"`
 	F_3__   *TeamVOBearerTokenInternal__   `codec:"3"`
@@ -1456,7 +1456,7 @@ type EntityIDMerkleValueInternal__ struct {
 }
 
 type EntityIDMerkleValueInternalSwitch__ struct {
-	_struct struct{}                `codec:",omitempty"`
+	_struct struct{}                `codec:",omitempty"` //lint:ignore U1000 msgpack internal field
 	F_1__   *lib.EntityIDInternal__ `codec:"1"`
 }
 

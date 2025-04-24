@@ -5,14 +5,15 @@ package merkle
 
 import (
 	"context"
+	cryptoRand "crypto/rand"
 	"errors"
 	"math/rand"
 	"testing"
 
-	"github.com/stretchr/testify/require"
 	"github.com/foks-proj/go-foks/lib/core"
 	proto "github.com/foks-proj/go-foks/proto/lib"
 	"github.com/foks-proj/go-foks/proto/rem"
+	"github.com/stretchr/testify/require"
 )
 
 type testRoot struct {
@@ -55,7 +56,7 @@ func (t *testDB) RunRead(m MetaContext, s string, f func(MetaContext, StorageRea
 func (t *testDB) InsertRoot(m MetaContext, epno proto.MerkleEpno, time proto.Time,
 	rootHash proto.MerkleRootHash, body []byte, topNode *PrefixedHash, hct *proto.HostchainTail,
 ) error {
-	if int(epno) != len(t.roots) {
+	if int(epno) != len(t.roots)+1 {
 		return errors.New("got out-of-order root updates")
 	}
 	root := testRoot{
@@ -176,10 +177,13 @@ func (t *testDB) CheckLeafExists(m MetaContext, h proto.MerkleTreeRFOutput) (rem
 func (t *testDB) SelectRootHashes(m MetaContext, seq []proto.MerkleEpno) ([]proto.MerkleRootHash, error) {
 	var ret []proto.MerkleRootHash
 	for _, ep := range seq {
-		if int(ep) >= len(t.roots) {
+		if !ep.IsValid() {
+			return nil, errors.New("invalid epno in SelectRootHashes")
+		}
+		if int(ep) >= len(t.roots)+1 {
 			return nil, errors.New("overflow error in SelectRootHashes")
 		}
-		ret = append(ret, t.roots[ep].hash)
+		ret = append(ret, t.roots[ep-1].hash)
 	}
 	return ret, nil
 }
@@ -187,10 +191,13 @@ func (t *testDB) SelectRootHashes(m MetaContext, seq []proto.MerkleEpno) ([]prot
 func (t *testDB) SelectRoots(m MetaContext, seq []proto.MerkleEpno) ([]proto.MerkleRoot, error) {
 	var ret []proto.MerkleRoot
 	for _, ep := range seq {
-		if int(ep) >= len(t.roots) {
+		if !ep.IsValid() {
+			return nil, errors.New("invalid epno in SelectRoots")
+		}
+		if int(ep) >= len(t.roots)+1 {
 			return nil, errors.New("overflow error in SelectRoots")
 		}
-		body := t.roots[ep].Body
+		body := t.roots[ep-1].Body
 		var tmp proto.MerkleRoot
 		err := core.DecodeFromBytes(&tmp, body)
 		if err != nil {
@@ -420,7 +427,7 @@ func TestSimpleInserts(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, path.Leaf)
 
-	require.Equal(t, proto.MerkleEpno(1), path.Epno)
+	require.Equal(t, proto.MerkleEpno(2), path.Epno)
 	require.Equal(t, 1, len(path.Path))
 	require.Equal(t, 6, path.Path[0].Node.Prefix.BitCount)
 	require.Equal(t, 0, path.Path[0].Node.Prefix.BitStart)
@@ -431,7 +438,7 @@ func TestSimpleInserts(t *testing.T) {
 
 	path, err = eng.LookupPath(m, lookupArg(makeDummyKey(0x1)))
 	require.NoError(t, err)
-	require.Equal(t, proto.MerkleEpno(1), path.Epno)
+	require.Equal(t, proto.MerkleEpno(2), path.Epno)
 	require.Equal(t, 1, len(path.Path))
 	require.Equal(t, 6, path.Path[0].Node.Prefix.BitCount)
 	require.Equal(t, 0, path.Path[0].Node.Prefix.BitStart)
@@ -444,7 +451,7 @@ func TestSimpleInserts(t *testing.T) {
 	ins(0x1f)
 	path, err = eng.LookupPath(m, lookupArg(makeDummyKey(0x2)))
 	require.NoError(t, err)
-	require.Equal(t, proto.MerkleEpno(2), path.Epno)
+	require.Equal(t, proto.MerkleEpno(3), path.Epno)
 	require.Equal(t, 2, len(path.Path))
 	require.Equal(t, 3, path.Path[0].Node.Prefix.BitCount)
 	require.Equal(t, 0, path.Path[0].Node.Prefix.BitStart)
@@ -460,7 +467,7 @@ func TestSimpleInserts(t *testing.T) {
 
 	path, err = eng.LookupPath(m, lookupArg(makeDummyKey(0x1f)))
 	require.NoError(t, err)
-	require.Equal(t, proto.MerkleEpno(2), path.Epno)
+	require.Equal(t, proto.MerkleEpno(3), path.Epno)
 	require.Equal(t, 1, len(path.Path))
 	require.Equal(t, 3, path.Path[0].Node.Prefix.BitCount)
 	require.Equal(t, 0, path.Path[0].Node.Prefix.BitStart)
@@ -473,7 +480,7 @@ func TestSimpleInserts(t *testing.T) {
 	ins4(0x1EF00000)
 	path, err = eng.LookupPath(m, lookupArg(makeDummyKey(0x1f)))
 	require.NoError(t, err)
-	require.Equal(t, proto.MerkleEpno(3), path.Epno)
+	require.Equal(t, proto.MerkleEpno(4), path.Epno)
 	require.Equal(t, 2, len(path.Path))
 	require.Equal(t, 3, path.Path[0].Node.Prefix.BitCount)
 	require.Equal(t, 0, path.Path[0].Node.Prefix.BitStart)
@@ -489,7 +496,7 @@ func TestSimpleInserts(t *testing.T) {
 
 	path, err = eng.LookupPath(m, lookupArg(makeDummyKey4(0x1ef00000)))
 	require.NoError(t, err)
-	require.Equal(t, proto.MerkleEpno(3), path.Epno)
+	require.Equal(t, proto.MerkleEpno(4), path.Epno)
 	require.Equal(t, 2, len(path.Path))
 	require.Equal(t, 3, path.Path[0].Node.Prefix.BitCount)
 	require.Equal(t, 0, path.Path[0].Node.Prefix.BitStart)
@@ -507,7 +514,7 @@ func TestSimpleInserts(t *testing.T) {
 	ins4(0x1ef00800)
 	path, err = eng.LookupPath(m, lookupArg(makeDummyKey4(0x1ef00000)))
 	require.NoError(t, err)
-	require.Equal(t, proto.MerkleEpno(4), path.Epno)
+	require.Equal(t, proto.MerkleEpno(5), path.Epno)
 	require.Equal(t, 3, len(path.Path))
 	require.Equal(t, 3, path.Path[0].Node.Prefix.BitCount)
 	require.Equal(t, 0, path.Path[0].Node.Prefix.BitStart)
@@ -529,7 +536,7 @@ func TestSimpleInserts(t *testing.T) {
 	ins4(0x1ef00a00)
 	path, err = eng.LookupPath(m, lookupArg(makeDummyKey4(0x1ef00800)))
 	require.NoError(t, err)
-	require.Equal(t, proto.MerkleEpno(5), path.Epno)
+	require.Equal(t, proto.MerkleEpno(6), path.Epno)
 	require.Equal(t, 4, len(path.Path))
 	require.Equal(t, 3, path.Path[0].Node.Prefix.BitCount)
 	require.Equal(t, 0, path.Path[0].Node.Prefix.BitStart)
@@ -560,6 +567,11 @@ func TestSimpleInserts(t *testing.T) {
 	require.NotEqual(t, makeDummyKey4(0x1ef00801), path.Leaf.Leaf.Key)
 }
 
+func randomFill(t *testing.T, b []byte) {
+	_, err := cryptoRand.Read(b)
+	require.NoError(t, err)
+}
+
 func TestSlowGetRacingFastGet(t *testing.T) {
 	d := NewTestDB()
 	eng := NewEngine(d)
@@ -568,8 +580,8 @@ func TestSlowGetRacingFastGet(t *testing.T) {
 
 	insLeaf := func() {
 		var leaf proto.MerkleLeaf
-		core.RandomFill(leaf.Key[:])
-		core.RandomFill(leaf.Value[:])
+		randomFill(t, leaf.Key[:])
+		randomFill(t, leaf.Value[:])
 		err := eng.InsertKeyValue(m, InsertKeyValueArg{Key: leaf.Key, Val: leaf.Value})
 		require.NoError(t, err)
 	}
@@ -582,7 +594,7 @@ func TestSlowGetRacingFastGet(t *testing.T) {
 
 	lookup := func() *LookupPathRes {
 		var key proto.MerkleTreeRFOutput
-		core.RandomFill(key[:])
+		randomFill(t, key[:])
 		res, err := eng.LookupPath(m, lookupArg(key))
 		require.NoError(t, err)
 		require.True(t, res.Leaf == nil || !res.Leaf.Matches)
@@ -649,8 +661,8 @@ func TestLotsOfInserts(t *testing.T) {
 	m := newTestMetaContext()
 	for i := 0; i < n; i++ {
 		var tmp proto.MerkleLeaf
-		core.RandomFill(tmp.Key[:])
-		core.RandomFill(tmp.Value[:])
+		randomFill(t, tmp.Key[:])
+		randomFill(t, tmp.Value[:])
 		leaves = append(leaves, tmp)
 	}
 
@@ -671,8 +683,8 @@ func TestRandomInserts(t *testing.T) {
 	m := newTestMetaContext()
 	for i := 0; i < n; i++ {
 		var tmp proto.MerkleLeaf
-		core.RandomFill(tmp.Key[:])
-		core.RandomFill(tmp.Value[:])
+		randomFill(t, tmp.Key[:])
+		randomFill(t, tmp.Value[:])
 		leaves = append(leaves, tmp)
 	}
 

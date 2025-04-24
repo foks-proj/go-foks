@@ -7,9 +7,9 @@ import (
 	"context"
 	"testing"
 
-	"github.com/stretchr/testify/require"
 	"github.com/foks-proj/go-foks/lib/core"
 	"github.com/foks-proj/go-foks/proto/infra"
+	"github.com/stretchr/testify/require"
 )
 
 // Simple test of the inter-server native queue service. Checks that frontend servers
@@ -26,7 +26,8 @@ func TestQueueService(t *testing.T) {
 	defer closeFn()
 
 	var rbuf [32]byte
-	core.RandomFill(rbuf[:])
+	err = core.RandomFill(rbuf[:])
+	require.NoError(t, err)
 	var laneId infra.QueueLaneID
 	laneId[0] = 0x4
 	laneId[len(laneId)-1] = 0xf

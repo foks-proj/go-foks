@@ -6,8 +6,8 @@ package lib
 import (
 	"testing"
 
-	"github.com/stretchr/testify/require"
 	"github.com/foks-proj/go-foks/lib/core"
+	"github.com/stretchr/testify/require"
 )
 
 func TestHostname(t *testing.T) {

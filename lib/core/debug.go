@@ -15,7 +15,9 @@ func DebugStop() {
 	}
 	pid := os.Getpid()
 	fmt.Fprintf(os.Stderr, "FOKS_DEBUG_STOP: pid %d\n", pid)
-	fmt.Fprintf(os.Stderr, "Attach debugger and press enter to continue...")
+	fmt.Fprintf(os.Stderr, "Attach debugger and press any key to continue...")
 	var buf [1]byte
-	os.Stdin.Read(buf[:])
+
+	// Read any one byte and then go
+	_, _ = os.Stdin.Read(buf[:])
 }

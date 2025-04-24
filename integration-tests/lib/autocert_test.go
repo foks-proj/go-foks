@@ -7,13 +7,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/keybase/clockwork"
-	"github.com/stretchr/testify/require"
 	"github.com/foks-proj/go-foks/integration-tests/common"
 	"github.com/foks-proj/go-foks/lib/core"
 	"github.com/foks-proj/go-foks/proto/infra"
 	proto "github.com/foks-proj/go-foks/proto/lib"
 	"github.com/foks-proj/go-foks/server/shared"
+	"github.com/keybase/clockwork"
+	"github.com/stretchr/testify/require"
 )
 
 func TestAutocertLooper(t *testing.T) {
@@ -35,7 +35,9 @@ func TestAutocertLooper(t *testing.T) {
 	require.True(t, ok)
 	dir, err := core.MkdirTemp("autocert_test")
 	require.NoError(t, err)
-	defer dir.RemoveAll()
+	defer func() {
+		_ = dir.RemoveAll()
+	}()
 
 	var ca common.X509CA
 	err = ca.Generate(dir, "autocert_test_ca")

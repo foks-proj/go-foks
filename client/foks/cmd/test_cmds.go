@@ -57,7 +57,10 @@ func dumpSecretStore(m libclient.MetaContext, top *cobra.Command) {
 				if err != nil {
 					return err
 				}
-				JSONOutput(m, res)
+				err = JSONOutput(m, res)
+				if err != nil {
+					return err
+				}
 				return nil
 			})
 		},
@@ -75,7 +78,10 @@ func getUnlockedSKMWK(m libclient.MetaContext, top *cobra.Command) {
 				if err != nil {
 					return err
 				}
-				JSONOutput(m, res)
+				err = JSONOutput(m, res)
+				if err != nil {
+					return err
+				}
 				return nil
 			})
 		},
@@ -165,7 +171,10 @@ func getNag(m libclient.MetaContext, top *cobra.Command) {
 			if err != nil {
 				return err
 			}
-			JSONOutput(m, ret)
+			err = JSONOutput(m, ret)
+			if err != nil {
+				return err
+			}
 			return nil
 		},
 	}

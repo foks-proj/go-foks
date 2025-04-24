@@ -8,13 +8,13 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgconn"
-	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/foks-proj/go-foks/lib/core"
 	"github.com/foks-proj/go-foks/lib/merkle"
 	proto "github.com/foks-proj/go-foks/proto/lib"
 	"github.com/foks-proj/go-foks/proto/rem"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type Querier interface {
@@ -136,7 +136,7 @@ func (t *Tx) InsertRoot(
 			return core.InsertError("failed to insert a merkle hostchain tail")
 		}
 	}
-	if epno == 0 {
+	if epno.IsFirst() {
 		tag, err := t.tx.Exec(m.Ctx(),
 			`INSERT INTO merkle_tree_metadata(short_host_id, first_node) VALUES($1, $2)`,
 			m.ShortHostID().ExportToDB(),
@@ -158,12 +158,12 @@ func (t *Tx) InsertRoot(
 		}
 	}
 
-	if epno == 0 {
+	if epno.IsFirst() {
 		tag, err = t.tx.Exec(m.Ctx(),
 			`INSERT INTO merkle_bookkeeping(short_host_id, build_next_batchno, batch_next_batchno, pos, mtime)
 			 VALUES($1, $2, $2, $3, NOW())`,
 			m.ShortHostID().ExportToDB(),
-			1,  // the next batch to build and batch on is 1
+			1,  // the next batch to build and batch on is 2
 			-1, // -1 means is the state when we need to write a hostchain update
 		)
 		if err != nil {

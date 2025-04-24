@@ -6,11 +6,11 @@ package cmd
 import (
 	"strings"
 
-	"github.com/spf13/cobra"
 	"github.com/foks-proj/go-foks/client/agent"
 	"github.com/foks-proj/go-foks/client/libclient"
 	"github.com/foks-proj/go-foks/proto/lcl"
 	proto "github.com/foks-proj/go-foks/proto/lib"
+	"github.com/spf13/cobra"
 )
 
 func skmCmd(m libclient.MetaContext) *cobra.Command {

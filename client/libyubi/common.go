@@ -410,13 +410,16 @@ func explore(ctx context.Context, bus Bus, i proto.YubiCardID) (*proto.YubiCardI
 		return nil
 	}
 
-	forAllSlots(ctx, bus, func(raw proto.YubiSlot, slot piv.Slot) (bool, error) {
+	err = forAllSlots(ctx, bus, func(raw proto.YubiSlot, slot piv.Slot) (bool, error) {
 		err := exploreSlot(raw, slot)
 		if err != nil {
 			return false, err
 		}
 		return true, nil
 	})
+	if err != nil {
+		return nil, err
+	}
 
 	if h.ManagementKey() != nil {
 		ret.Mks = proto.ManagementKeyState_PINRetrieved
@@ -552,6 +555,10 @@ func inputPIN(
 	} else if _, ok := err.(core.KeyNotFoundError); ok {
 		mks = proto.ManagementKeyState_Unknown
 		err = nil
+	}
+
+	if err != nil {
+		return mks, err
 	}
 
 	return mks, nil

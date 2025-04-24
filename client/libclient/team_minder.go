@@ -587,48 +587,6 @@ func newExploreState(puks *PUKSet) *ExploreState {
 	}
 }
 
-// sortedTeamSeedSet starts with the StartNodes that seeded the
-// exploration of the team graph, and sorts them in an order where
-// b comes after a in the list implies that b is not less than a.
-// We perform this sort quite naively and make an "edge" between
-// all teams where a < b. Then we do a simple topological sort.
-func (e *ExploreState) sortedTeamSeedSet() ([]proto.FQTeam, error) {
-
-	type pair struct {
-		fqt proto.FQTeam
-		tir core.RationalRange
-	}
-
-	pairs := make([]pair, 0, len(e.StartNodes))
-
-	for _, fqt := range e.StartNodes {
-		tr := e.Teams[fqt]
-		if tr == nil {
-			return nil, core.InternalError("missing team in sortedTeamSeedSet")
-		}
-		tw := tr.Tw()
-		tir := tw.IndexRange()
-		pairs = append(pairs,
-			pair{
-				fqt: fqt,
-				tir: tir,
-			})
-	}
-
-	err := core.TopoSort(
-		pairs,
-		func(a, b pair) bool { return a.tir.LessThan(b.tir) },
-	)
-	if err != nil {
-		return nil, err
-	}
-	ret := make([]proto.FQTeam, len(pairs))
-	for i, p := range pairs {
-		ret[i] = p.fqt
-	}
-	return ret, nil
-}
-
 // SortedTeams takes the output of an exploration and provides a topological sort of
 // the team visited, from lowest index to highest index. The output is randomized, with
 // sibling nodes sorted randomly. This will prevent mashing the same teams in the same order,
@@ -999,7 +957,10 @@ func (t *TeamMinder) ExploreAndIndex(m MetaContext) error {
 	if err != nil {
 		return err
 	}
-	t.reindex(state)
+	err = t.reindex(state)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 

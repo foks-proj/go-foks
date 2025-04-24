@@ -50,7 +50,7 @@ func (r *RpcBatchedLineIO) setDone() {
 	for {
 		select {
 		case arg := <-r.nextCh:
-			arg.out.Output(nil, core.InternalError("RPC batched line IO shut down"))
+			_ = arg.out.Output(nil, core.InternalError("RPC batched line IO shut down"))
 		default:
 			close(r.nextCh)
 			return

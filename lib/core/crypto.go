@@ -10,11 +10,11 @@ import (
 	"errors"
 	"fmt"
 
+	proto "github.com/foks-proj/go-foks/proto/lib"
 	"github.com/keybase/go-codec/codec"
 	"golang.org/x/crypto/nacl/box"
 	"golang.org/x/crypto/nacl/secretbox"
 	"golang.org/x/crypto/sha3"
-	proto "github.com/foks-proj/go-foks/proto/lib"
 )
 
 func OpenSecretBoxInto(res CryptoPayloader, box proto.SecretBox, key *proto.SecretBoxKey) error {

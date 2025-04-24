@@ -7,9 +7,9 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/stripe/stripe-go/v81/webhook"
 	"github.com/foks-proj/go-foks/server/shared"
 	"github.com/foks-proj/go-foks/server/web/lib"
+	"github.com/stripe/stripe-go/v81/webhook"
 )
 
 func StripeSuccessHandler(

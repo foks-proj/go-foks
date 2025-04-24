@@ -8,11 +8,11 @@ import (
 	"io"
 	"net"
 
-	"go.uber.org/zap"
 	"github.com/foks-proj/go-foks/lib/core"
 	proto "github.com/foks-proj/go-foks/proto/lib"
 	"github.com/foks-proj/go-foks/proto/rem"
 	"github.com/foks-proj/go-snowpack-rpc/rpc"
+	"go.uber.org/zap"
 )
 
 func RPCServeWithSignals(m MetaContext, s RPCServer, launchCh chan<- error) error {
@@ -172,7 +172,15 @@ func serveConnection(m MetaContext, s RPCServer, conn net.Conn, doneCh chan<- st
 	xp := rpc.NewTransport(m.Ctx(), conn, lf, nil, wef, core.RpcMaxSz)
 	srv := rpc.NewServer(xp, wef)
 	cliCon := s.NewClientConn(xp, uhc)
-	cliCon.RegisterProtocols(m, srv)
+
+	rerr := cliCon.RegisterProtocols(m, srv)
+
+	if rerr != nil {
+		m.Warnw("serveConnection",
+			"stage", "registerProtocols",
+			"err", rerr,
+		)
+	}
 
 	if authErr != nil {
 		xp.KillIncoming(authErr)

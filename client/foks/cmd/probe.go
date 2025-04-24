@@ -4,12 +4,12 @@
 package cmd
 
 import (
-	"github.com/spf13/cobra"
 	"github.com/foks-proj/go-foks/client/agent"
 	"github.com/foks-proj/go-foks/client/libclient"
 	"github.com/foks-proj/go-foks/lib/core"
 	"github.com/foks-proj/go-foks/proto/lcl"
 	proto "github.com/foks-proj/go-foks/proto/lib"
+	"github.com/spf13/cobra"
 )
 
 // linked into foks CLI program via the `tools` command

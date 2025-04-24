@@ -218,7 +218,7 @@ func (g *GlobalContext) SetUIs(u UIs) {
 func (g *GlobalContext) Shutdown() {
 	g.Lock()
 	defer g.Unlock()
-	g.log.Sync()
+	_ = g.log.Sync()
 	hook := g.shutdownHook
 	if hook == nil {
 		return
@@ -347,7 +347,7 @@ func (g *GlobalContext) configureLogging(ctx context.Context) error {
 	cfg.ErrorOutputPaths = []string{errLog}
 	log := zap.Must(cfg.Build())
 	tmp := g.log
-	tmp.Sync()
+	_ = tmp.Sync()
 	g.logMu.Lock()
 	g.log = log
 	g.logMu.Unlock()

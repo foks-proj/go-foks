@@ -9,9 +9,9 @@ import (
 	"math/big"
 	"strings"
 
-	"github.com/keybase/saltpack/encoding/basex"
 	proto "github.com/foks-proj/go-foks/proto/lib"
 	"github.com/foks-proj/go-foks/proto/rem"
+	"github.com/keybase/saltpack/encoding/basex"
 )
 
 const SingleUsePrefix = "s."

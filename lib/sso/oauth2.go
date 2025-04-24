@@ -17,9 +17,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/golang-jwt/jwt"
 	"github.com/foks-proj/go-foks/lib/core"
 	proto "github.com/foks-proj/go-foks/proto/lib"
+	"github.com/golang-jwt/jwt"
 )
 
 func Base64URLEncode(data []byte) string {

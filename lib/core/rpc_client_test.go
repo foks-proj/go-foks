@@ -14,15 +14,15 @@ import (
 	"sort"
 	"testing"
 
+	lcl "github.com/foks-proj/go-foks/proto/lcl"
+	proto "github.com/foks-proj/go-foks/proto/lib"
+	"github.com/foks-proj/go-foks/proto/rem"
+	"github.com/foks-proj/go-snowpack-rpc/rpc"
 	"github.com/keybase/clockwork"
 	"github.com/mattn/go-isatty"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
-	lcl "github.com/foks-proj/go-foks/proto/lcl"
-	proto "github.com/foks-proj/go-foks/proto/lib"
-	"github.com/foks-proj/go-foks/proto/rem"
-	"github.com/foks-proj/go-snowpack-rpc/rpc"
 )
 
 type rpcLogMetaContext struct {
@@ -174,7 +174,8 @@ func (s *testServer) handleConn(t *testing.T, conn net.Conn) {
 	xp := rpc.NewTransport(context.Background(), conn, lf, nil, wef, RpcMaxSz)
 	srv := rpc.NewServer(xp, wef)
 	h := handler{s: s, t: t, conn: ctls, xp: xp, srv: srv}
-	srv.RegisterV2(lcl.TestLibsProtocol(&h))
+	err = srv.RegisterV2(lcl.TestLibsProtocol(&h))
+	require.NoError(t, err)
 	<-srv.Run()
 	err = srv.Err()
 	if err == io.EOF {

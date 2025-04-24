@@ -237,10 +237,13 @@ func WriteCACertPEM(caBytes []byte, certFile core.Path) error {
 	}
 
 	// pem encode
-	pem.Encode(pubFh, &pem.Block{
+	err = pem.Encode(pubFh, &pem.Block{
 		Type:  "CERTIFICATE",
 		Bytes: caBytes,
 	})
+	if err != nil {
+		return err
+	}
 	err = pubFh.Close()
 	if err != nil {
 		return err
@@ -274,10 +277,13 @@ func WriteCAKeyPEM(caPrivKey crypto.PrivateKey, keyFile core.Path) error {
 	if err != nil {
 		return err
 	}
-	pem.Encode(privFh, &pem.Block{
+	err = pem.Encode(privFh, &pem.Block{
 		Type:  "PRIVATE KEY",
 		Bytes: b,
 	})
+	if err != nil {
+		return err
+	}
 
 	err = privFh.Close()
 	if err != nil {

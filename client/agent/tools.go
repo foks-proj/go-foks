@@ -36,7 +36,10 @@ func initDevToolsProfiler(
 	go func() {
 		bind := fmt.Sprintf("localhost:%d", port)
 		m.Infow("profiler", "bind", bind)
-		http.ListenAndServe(bind, nil)
+		err := http.ListenAndServe(bind, nil)
+		if err != nil {
+			m.Warnw("profiler", "stage", "http.ListenAndServe", "bind", bind, "err", err)
+		}
 	}()
 	return nil
 }

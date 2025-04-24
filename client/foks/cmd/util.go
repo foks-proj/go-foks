@@ -4,9 +4,9 @@
 package cmd
 
 import (
-	"github.com/spf13/cobra"
 	"github.com/foks-proj/go-foks/client/libclient"
 	"github.com/foks-proj/go-foks/proto/lcl"
+	"github.com/spf13/cobra"
 )
 
 func triggerBgCLKR(m libclient.MetaContext, top *cobra.Command) {

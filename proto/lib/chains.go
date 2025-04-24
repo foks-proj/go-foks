@@ -1,4 +1,4 @@
-// Auto-generated to Go types and interfaces using @foks-proj/snowpack-compiler 1.0.7 (git+https://github.com/foks-proj/node-snowpack-compiler.git)
+// Auto-generated to Go types and interfaces using @foks-proj/snowpack-compiler 1.0.8 (git+https://github.com/foks-proj/node-snowpack-compiler.git)
 //  Input file: ../../proto-src/lib/chains.snowp
 
 package lib
@@ -493,7 +493,7 @@ type RoleInternal__ struct {
 }
 
 type RoleInternalSwitch__ struct {
-	_struct struct{}            `codec:",omitempty"`
+	_struct struct{}            `codec:",omitempty"` //lint:ignore U1000 msgpack internal field
 	F_0__   *VizLevelInternal__ `codec:"0"`
 }
 
@@ -785,7 +785,7 @@ type MemberKeysInternal__ struct {
 }
 
 type MemberKeysInternalSwitch__ struct {
-	_struct struct{}                  `codec:",omitempty"`
+	_struct struct{}                  `codec:",omitempty"` //lint:ignore U1000 msgpack internal field
 	F_1__   *UserMemberKeysInternal__ `codec:"1"`
 	F_2__   *TeamMemberKeysInternal__ `codec:"2"`
 }
@@ -1608,7 +1608,7 @@ type LinkInnerInternal__ struct {
 }
 
 type LinkInnerInternalSwitch__ struct {
-	_struct struct{}               `codec:",omitempty"`
+	_struct struct{}               `codec:",omitempty"` //lint:ignore U1000 msgpack internal field
 	F_0__   *GroupChangeInternal__ `codec:"0"`
 	F_1__   *GenericLinkInternal__ `codec:"1"`
 }
@@ -2200,7 +2200,7 @@ type ChangeMetadataInternal__ struct {
 }
 
 type ChangeMetadataInternalSwitch__ struct {
-	_struct struct{}                  `codec:",omitempty"`
+	_struct struct{}                  `codec:",omitempty"` //lint:ignore U1000 msgpack internal field
 	F_0__   *CommitmentInternal__     `codec:"0"`
 	F_1__   *EldestMetadataInternal__ `codec:"1"`
 	F_2__   *RationalRangeInternal__  `codec:"2"`
@@ -2405,7 +2405,7 @@ type LinkOuterInternal__ struct {
 }
 
 type LinkOuterInternalSwitch__ struct {
-	_struct struct{}               `codec:",omitempty"`
+	_struct struct{}               `codec:",omitempty"` //lint:ignore U1000 msgpack internal field
 	F_1__   *LinkOuterV1Internal__ `codec:"1"`
 }
 
@@ -2503,7 +2503,7 @@ type GenericLinkPayloadInternal__ struct {
 }
 
 type GenericLinkPayloadInternalSwitch__ struct {
-	_struct struct{}                      `codec:",omitempty"`
+	_struct struct{}                      `codec:",omitempty"` //lint:ignore U1000 msgpack internal field
 	F_0__   *UserSettingsLinkInternal__   `codec:"0"`
 	F_1__   *TeamMembershipLinkInternal__ `codec:"1"`
 }
@@ -2699,7 +2699,7 @@ type UserSettingsLinkInternal__ struct {
 }
 
 type UserSettingsLinkInternalSwitch__ struct {
-	_struct struct{}                  `codec:",omitempty"`
+	_struct struct{}                  `codec:",omitempty"` //lint:ignore U1000 msgpack internal field
 	F_0__   *PassphraseInfoInternal__ `codec:"0"`
 }
 

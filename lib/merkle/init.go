@@ -34,7 +34,7 @@ func InitTree(m MetaContext, storage StorageWriter) error {
 	}
 
 	r1 := proto.MerkleRootV1{
-		Epno:         proto.MerkleEpno(0),
+		Epno:         proto.MerkleEpnoFirst,
 		Time:         proto.Now(),
 		RootNode:     hash,
 		BackPointers: bkpHash,

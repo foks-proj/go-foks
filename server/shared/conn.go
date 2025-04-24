@@ -9,12 +9,12 @@ import (
 	"sync"
 	"time"
 
-	"go.uber.org/zap"
 	"github.com/foks-proj/go-foks/lib/core"
 	"github.com/foks-proj/go-foks/proto/infra"
 	proto "github.com/foks-proj/go-foks/proto/lib"
 	"github.com/foks-proj/go-foks/proto/rem"
 	"github.com/foks-proj/go-snowpack-rpc/rpc"
+	"go.uber.org/zap"
 )
 
 func Connect(m MetaContext, t proto.ServerType, clientCert *tls.Certificate) (rpc.Transporter, error) {

@@ -17,12 +17,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/go-chi/chi/v5"
-	"github.com/golang-jwt/jwt"
-	"github.com/keybase/clockwork"
 	"github.com/foks-proj/go-foks/lib/core"
 	proto "github.com/foks-proj/go-foks/proto/lib"
 	"github.com/foks-proj/go-foks/server/shared"
+	"github.com/go-chi/chi/v5"
+	"github.com/golang-jwt/jwt"
+	"github.com/keybase/clockwork"
 )
 
 type AppName string
@@ -546,7 +546,10 @@ func (f *FakeIdP) Launch() error {
 		Handler: mux,
 	}
 
-	go server.Serve(listener)
+	go func() {
+		_ = server.Serve(listener)
+
+	}()
 	f.srv = server
 
 	return nil

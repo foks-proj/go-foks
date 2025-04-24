@@ -8,12 +8,12 @@ import (
 	"io"
 	"time"
 
-	"golang.org/x/crypto/nacl/secretbox"
 	"github.com/foks-proj/go-foks/lib/core"
 	"github.com/foks-proj/go-foks/lib/kv"
 	"github.com/foks-proj/go-foks/proto/lcl"
 	proto "github.com/foks-proj/go-foks/proto/lib"
 	"github.com/foks-proj/go-foks/proto/rem"
+	"golang.org/x/crypto/nacl/secretbox"
 )
 
 func (k *Minder) prepSmallFile(

@@ -11,12 +11,12 @@ import (
 	"sort"
 	"testing"
 
-	"github.com/stretchr/testify/require"
 	"github.com/foks-proj/go-foks/client/libclient"
 	"github.com/foks-proj/go-foks/lib/core"
 	"github.com/foks-proj/go-foks/lib/merkle"
 	"github.com/foks-proj/go-foks/proto/lcl"
 	proto "github.com/foks-proj/go-foks/proto/lib"
+	"github.com/stretchr/testify/require"
 )
 
 func setupTestAgent(t *testing.T) (libclient.MetaContext, func()) {
@@ -84,6 +84,11 @@ func TestDB(t *testing.T) {
 	putGetGlobalKV(libclient.DbTypeSoft)
 }
 
+func randomFill(t *testing.T, b []byte) {
+	err := core.RandomFill(b)
+	require.NoError(t, err)
+}
+
 func TestMerkleLocalStorage(t *testing.T) {
 	m, cleanup := setupTestAgent(t)
 	defer cleanup()
@@ -92,13 +97,12 @@ func TestMerkleLocalStorage(t *testing.T) {
 
 	hostID := core.RandomHostID()
 	var hash proto.MerkleRootHash
-	err := core.RandomFill(hash[:])
-	require.NoError(t, err)
+	randomFill(t, hash[:])
 	v1 := proto.MerkleRootV1{
 		Epno: epno,
 		Time: proto.Now(),
 	}
-	core.RandomFill(v1.RootNode[:])
+	randomFill(t, v1.RootNode[:])
 	root := proto.NewMerkleRootWithV1(v1)
 
 	rootEq := func(r1, r2 proto.MerkleRoot) bool {
@@ -110,7 +114,7 @@ func TestMerkleLocalStorage(t *testing.T) {
 	}
 
 	stor := libclient.NewMerkleAgentLocalStorage(m.G(), hostID)
-	err = stor.Store(m.Ctx(), epno, &hash, &root, true)
+	err := stor.Store(m.Ctx(), epno, &hash, &root, true)
 	require.NoError(t, err)
 
 	r2, err := stor.GetLatestRootFromCache(m.Ctx())
@@ -144,7 +148,7 @@ func TestMerkleLatestRace(t *testing.T) {
 			Epno: epno,
 			Time: proto.Now(),
 		}
-		core.RandomFill(v1.RootNode[:])
+		randomFill(t, v1.RootNode[:])
 		root := proto.NewMerkleRootWithV1(v1)
 		var hash proto.MerkleRootHash
 		err := merkle.HashRoot(&root, &hash)

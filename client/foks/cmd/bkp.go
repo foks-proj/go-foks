@@ -119,8 +119,8 @@ func bkpUseCmd(m libclient.MetaContext, nm string, aliases []string, longExtra s
 	return bkpLoad
 }
 
-func runBackupLoad(m libclient.MetaContext, args bkpLoadArgs) error {
-	err := agent.Startup(m, agent.StartupOpts{})
+func runBackupLoad(m libclient.MetaContext, args bkpLoadArgs) (err error) {
+	err = agent.Startup(m, agent.StartupOpts{})
 	if err != nil {
 		return err
 	}
@@ -138,7 +138,10 @@ func runBackupLoad(m libclient.MetaContext, args bkpLoadArgs) error {
 		return err
 	}
 	defer func() {
-		genCli.FinishSession(m.Ctx(), id)
+		tmp := genCli.FinishSession(m.Ctx(), id)
+		if tmp != nil && err == nil {
+			err = tmp
+		}
 	}()
 
 	var host *proto.TCPAddr

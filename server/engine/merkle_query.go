@@ -49,8 +49,8 @@ type MerkleQueryClientConn struct {
 	xp  rpc.Transporter
 }
 
-func (c *MerkleQueryClientConn) RegisterProtocols(m shared.MetaContext, srv *rpc.Server) {
-	srv.RegisterV2(rem.MerkleQueryProtocol(c))
+func (c *MerkleQueryClientConn) RegisterProtocols(m shared.MetaContext, srv *rpc.Server) error {
+	return srv.RegisterV2(rem.MerkleQueryProtocol(c))
 }
 
 func (c *MerkleQueryClientConn) ErrorWrapper() func(error) proto.Status {

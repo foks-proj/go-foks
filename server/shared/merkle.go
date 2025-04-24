@@ -6,11 +6,11 @@ package shared
 import (
 	"context"
 
-	"github.com/jackc/pgx/v5"
 	"github.com/foks-proj/go-foks/lib/core"
 	"github.com/foks-proj/go-foks/lib/merkle"
 	proto "github.com/foks-proj/go-foks/proto/lib"
 	"github.com/foks-proj/go-foks/proto/rem"
+	"github.com/jackc/pgx/v5"
 )
 
 func QueueMerkleWorkForName(

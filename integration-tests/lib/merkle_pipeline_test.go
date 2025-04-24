@@ -8,7 +8,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/require"
 	"github.com/foks-proj/go-foks/integration-tests/common"
 	"github.com/foks-proj/go-foks/lib/core"
 	"github.com/foks-proj/go-foks/lib/merkle"
@@ -16,6 +15,7 @@ import (
 	"github.com/foks-proj/go-foks/proto/rem"
 	"github.com/foks-proj/go-foks/server/engine"
 	"github.com/foks-proj/go-foks/server/shared"
+	"github.com/stretchr/testify/require"
 )
 
 type workQueueItem struct {
@@ -59,7 +59,10 @@ func randomWorkQueueItem(
 func insertBatch(t *testing.T, m shared.MetaContext, items []*workQueueItem) {
 	tx, dbCleanupFn, err := m.G().DbTx(m.Ctx(), shared.DbTypeUsers)
 	require.NoError(t, err)
-	defer dbCleanupFn()
+	defer func() {
+		err := dbCleanupFn()
+		require.NoError(t, err)
+	}()
 	trig := proto.NewUpdateTriggerDefault(proto.UpdateTriggerType_None)
 	trigEnc, err := core.EncodeToBytes(&trig)
 	require.NoError(t, err)
@@ -90,7 +93,10 @@ func insertBatch(t *testing.T, m shared.MetaContext, items []*workQueueItem) {
 func redoItem(t *testing.T, m shared.MetaContext, item *workQueueItem) {
 	tx, dbCleanupFn, err := m.G().DbTx(m.Ctx(), shared.DbTypeUsers)
 	require.NoError(t, err)
-	defer dbCleanupFn()
+	defer func() {
+		err := dbCleanupFn()
+		require.NoError(t, err)
+	}()
 	tag, err := tx.Exec(m.Ctx(),
 		`UPDATE merkle_work_queue
 		 SET state=$1
@@ -155,7 +161,9 @@ func TestSimpleBatch(t *testing.T) {
 	env := globalTestEnv.Fork(t, common.SetupOpts{
 		MerklePollWait: time.Hour,
 	})
-	defer env.ShutdownFn()
+	defer func() {
+		_ = env.ShutdownFn()
+	}()
 	m := env.MetaContext()
 
 	alice := core.RandomUID().EntityID()
@@ -182,7 +190,10 @@ func TestSimpleBatch(t *testing.T) {
 
 	insertBatch(t, m, items)
 	cli, closeFn := common.TestMerkleBatcherCli(t, m)
-	defer closeFn()
+	defer func() {
+		err := closeFn()
+		require.NoError(t, err)
+	}()
 
 	err := cli.Poke(m.Ctx())
 	require.NoError(t, err)
@@ -212,12 +223,18 @@ func TestSimpleBatch(t *testing.T) {
 	// Now build part of the tree, let's make sure that we're getting some
 	// good progress.
 	builderCli, builderCloseFn := common.TestMerkleBuilderCli(t, m)
-	defer builderCloseFn()
+	defer func() {
+		err := builderCloseFn()
+		require.NoError(t, err)
+	}()
 	err = builderCli.Poke(m.Ctx())
 	require.NoError(t, err)
 
 	queryCli, queryCloseFn := common.TestMerkleQueryCli(t, m)
-	defer queryCloseFn()
+	defer func() {
+		err := queryCloseFn()
+		require.NoError(t, err)
+	}()
 
 	checkHostChainAt := func(path proto.MerklePathCompressed, seqno proto.Seqno) {
 		// Also check that the hostchain was updated.
@@ -290,7 +307,10 @@ func TestSimpleBatch(t *testing.T) {
 	check(items[3].key, true, 2)
 
 	signerCli, signerCleanupFn := common.TestMerkleSignerCli(t, m)
-	defer signerCleanupFn()
+	defer func() {
+		err := signerCleanupFn()
+		require.NoError(t, err)
+	}()
 	err = signerCli.Poke(m.Ctx())
 	require.NoError(t, err)
 

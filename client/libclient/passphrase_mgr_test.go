@@ -7,11 +7,11 @@ import (
 	"context"
 	"testing"
 
-	"github.com/stretchr/testify/require"
 	"github.com/foks-proj/go-foks/lib/core"
 	"github.com/foks-proj/go-foks/proto/lcl"
 	proto "github.com/foks-proj/go-foks/proto/lib"
 	"github.com/foks-proj/go-foks/proto/rem"
+	"github.com/stretchr/testify/require"
 )
 
 type userPassphraseServerRecord struct {
@@ -68,7 +68,10 @@ func newPassphraseServerMock() *passphraseServerMock {
 	ret := &passphraseServerMock{
 		users: make(map[proto.UID](*userPassphraseServerRecord)),
 	}
-	core.RandomFill(ret.key[:])
+	err := core.RandomFill(ret.key[:])
+	if err != nil {
+		panic(err)
+	}
 	return ret
 }
 

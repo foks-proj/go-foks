@@ -6,11 +6,11 @@ package simple_ui
 import (
 	"time"
 
-	"github.com/manifoldco/promptui"
 	"github.com/foks-proj/go-foks/client/libclient"
 	"github.com/foks-proj/go-foks/lib/core"
 	"github.com/foks-proj/go-foks/proto/lcl"
 	proto "github.com/foks-proj/go-foks/proto/lib"
+	"github.com/manifoldco/promptui"
 )
 
 type BackupUI struct {

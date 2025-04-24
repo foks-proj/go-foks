@@ -41,7 +41,7 @@ func (c *GitTermLog) Log(ctx context.Context, t remhelp.TermLogLine) {
 			CarriageReturn: (t.Opts&remhelp.TermLogCr != 0),
 		},
 	}
-	c.cli.GitLog(ctx, msg)
+	_ = c.cli.GitLog(ctx, msg)
 }
 
 var _ remhelp.TermLogger = (*GitTermLog)(nil)

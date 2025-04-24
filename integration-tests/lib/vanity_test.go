@@ -7,7 +7,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/require"
 	"github.com/foks-proj/go-foks/client/libclient"
 	"github.com/foks-proj/go-foks/client/libkv"
 	"github.com/foks-proj/go-foks/integration-tests/common"
@@ -17,6 +16,7 @@ import (
 	proto "github.com/foks-proj/go-foks/proto/lib"
 	"github.com/foks-proj/go-foks/proto/rem"
 	"github.com/foks-proj/go-foks/server/shared"
+	"github.com/stretchr/testify/require"
 )
 
 func TestNewVanityDomain(t *testing.T) {
@@ -68,7 +68,10 @@ func TestNewVanityDomain(t *testing.T) {
 		},
 	)
 	cli, fn := common.TestQuotaSrvCli(t, m)
-	defer fn()
+	defer func() {
+		err := fn()
+		require.NoError(t, err)
+	}()
 	subid, err := shared.FakeStripe("sub")
 	require.NoError(t, err)
 

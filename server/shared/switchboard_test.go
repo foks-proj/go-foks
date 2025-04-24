@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/require"
 	"github.com/foks-proj/go-foks/proto/infra"
+	"github.com/stretchr/testify/require"
 )
 
 func newSwitchboardObj(key byte, val byte) (LaneID, []byte) {

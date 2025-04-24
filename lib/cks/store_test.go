@@ -9,10 +9,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/keybase/clockwork"
-	"github.com/stretchr/testify/require"
 	"github.com/foks-proj/go-foks/lib/core"
 	proto "github.com/foks-proj/go-foks/proto/lib"
+	"github.com/keybase/clockwork"
+	"github.com/stretchr/testify/require"
 )
 
 type mockStorer struct {

@@ -36,7 +36,7 @@ func (t *testKeychainCleaner) Add(account, service string) {
 
 func (t *testKeychainCleaner) clean() {
 	for _, item := range t.items {
-		keychain.DeleteGenericPasswordItem(item.Service, item.Account)
+		_ = keychain.DeleteGenericPasswordItem(item.Service, item.Account)
 	}
 }
 

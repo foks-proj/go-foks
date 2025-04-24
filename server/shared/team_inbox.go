@@ -7,10 +7,10 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/foks-proj/go-foks/lib/core"
 	proto "github.com/foks-proj/go-foks/proto/lib"
 	"github.com/foks-proj/go-foks/proto/rem"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 func paginate(args []any, q string, pg *rem.InboxPagination) ([]any, string) {

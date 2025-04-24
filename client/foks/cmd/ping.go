@@ -4,9 +4,9 @@
 package cmd
 
 import (
-	"github.com/spf13/cobra"
 	"github.com/foks-proj/go-foks/client/libclient"
 	"github.com/foks-proj/go-foks/proto/lcl"
+	"github.com/spf13/cobra"
 )
 
 func ping(m libclient.MetaContext, cmd *cobra.Command, args []string) error {

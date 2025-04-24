@@ -271,14 +271,13 @@ func (a *AutocertServiceConfig) AcmeTimeout() time.Duration {
 
 var _ AutocertServiceConfigger = (*AutocertServiceConfig)(nil)
 
-type JSonnetTemplate struct {
-	Db         map[string]DbConfigJSON `json:"db"`
-	DbKVShards []KVShardConfigJSON     `json:"db_kv_shards"`
-	Log        struct {
-		ZapConfig *zap.Config `json:"config"`
-		RemoteIPs bool        `json:"remote_ips"`
-		Options   string      `json:"options"`
-	} `json:"log"`
+// JSonnetTemplateNoLog is the template for the JSON config file, minus
+// the logging config. We separate it out because we can't encode
+// zap.Config in JSON -- it contains fields that cannot be marshalled.
+// In test we need to encode config files.
+type JSonnetTemplateNoLog struct {
+	Db              map[string]DbConfigJSON     `json:"db"`
+	DbKVShards      []KVShardConfigJSON         `json:"db_kv_shards"`
 	Listen          map[string]ListenConfigJSON `json:"listen"`
 	QueueService    QueueServiceConfig          `json:"queue_service"`
 	AutocertService *AutocertServiceConfig      `json:"autocert_service"`
@@ -301,6 +300,15 @@ type JSonnetTemplate struct {
 	CKS    *CKSConfigJSON    `json:"cks"`
 	PKIX   *PKIXConfigJSON   `json:"pkix"`
 	VHosts *VHostsConfigJSON `json:"vhosts"`
+}
+
+type JSonnetTemplate struct {
+	JSonnetTemplateNoLog
+	Log struct {
+		ZapConfig *zap.Config `json:"config"`
+		RemoteIPs bool        `json:"remote_ips"`
+		Options   string      `json:"options"`
+	} `json:"log"`
 }
 
 type ConfigJSonnet struct {
@@ -456,10 +464,6 @@ func (c *ListenConfigJSON) build(
 	ret := &ListenPackage{
 		BindAddr:      BindAddr(ba),
 		ConnectToAddr: proto.TCPAddr(ea),
-	}
-	refresh := c.RefreshMsec.Duration()
-	if refresh == 0 {
-		refresh = 1 * time.Hour
 	}
 	if !c.NoTLS {
 		ret.Tls = &tls.Config{}

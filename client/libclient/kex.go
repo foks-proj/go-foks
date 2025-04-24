@@ -482,8 +482,14 @@ func (k *KexProvisioner) receiveHello(ctx context.Context) error {
 	case <-ctx.Done():
 		err = ctx.Err()
 	}
-	k.ki.UI().EndSessionExchange(ctx, err)
-	return err
+	if err != nil {
+		return err
+	}
+	err = k.ki.UI().EndSessionExchange(ctx, err)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 type kexLinkGenerator struct {
@@ -945,9 +951,15 @@ func (k *KexProvisionee) receiveLink(ctx context.Context) error {
 	case <-ctx.Done():
 		err = ctx.Err()
 	}
+	if err != nil {
+		return err
+	}
 
-	k.ki.UI().EndSessionExchange(ctx, err)
-	return err
+	err = k.ki.UI().EndSessionExchange(ctx, err)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (k *KexProvisionee) receiveDone(ctx context.Context) error {
@@ -1086,7 +1098,7 @@ func RunKex(ctx context.Context, r KexActor, d time.Duration) error {
 	b := r.Base()
 
 	// For now, ignore any errors coming out of here.
-	b.sendMsg(ctx, emsg, b.getChannel())
+	_ = b.sendMsg(ctx, emsg, b.getChannel())
 
 	return err
 }

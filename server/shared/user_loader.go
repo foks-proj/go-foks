@@ -4,11 +4,11 @@
 package shared
 
 import (
-	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/foks-proj/go-foks/lib/core"
 	proto "github.com/foks-proj/go-foks/proto/lib"
 	"github.com/foks-proj/go-foks/proto/rem"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type EvilUserLoaderHooks struct {
@@ -37,13 +37,18 @@ func (u *UserLoader) checkArgs(m MetaContext) error {
 	return nil
 }
 
-func (u *UserLoader) Run(m MetaContext, arg rem.LoadUserChainArg) error {
+func (u *UserLoader) Run(m MetaContext, arg rem.LoadUserChainArg) (err error) {
 	u.Arg = arg
-	err := u.init(m)
+	err = u.init(m)
 	if err != nil {
 		return err
 	}
-	defer u.cleanup(m)
+	defer func() {
+		tmp := u.cleanup(m)
+		if err == nil && tmp != nil {
+			err = tmp
+		}
+	}()
 
 	err = u.checkArgs(m)
 	if err != nil {

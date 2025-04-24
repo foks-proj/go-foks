@@ -6,9 +6,9 @@ package team
 import (
 	"sync"
 
-	"golang.org/x/exp/slices"
 	"github.com/foks-proj/go-foks/lib/core"
 	proto "github.com/foks-proj/go-foks/proto/lib"
+	"golang.org/x/exp/slices"
 )
 
 type VerifyKeyIndex struct {

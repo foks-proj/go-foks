@@ -146,14 +146,19 @@ func (a *AgentCmd) awaitShutdown(m libclient.MetaContext) error {
 	return nil
 }
 
-func (a *AgentCmd) Run(m libclient.MetaContext) error {
+func (a *AgentCmd) Run(m libclient.MetaContext) (err error) {
 	m = m.WithLogTag("agent")
-	err := m.Configure()
+	err = m.Configure()
 	if err != nil {
 		return err
 	}
 	m.Infow("startup", "pid", os.Getpid())
-	defer a.Cleanup(m)
+	defer func() {
+		tmp := a.Cleanup(m)
+		if err == nil && tmp != nil {
+			err = tmp
+		}
+	}()
 
 	err = agent.InitTesting(m)
 	if err != nil {

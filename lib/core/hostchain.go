@@ -565,7 +565,7 @@ func PlayChain(addr proto.TCPAddr, links []proto.HostchainLinkOuter, hostID *pro
 	tmp := ch.HostID()
 	if tmp.IsZero() {
 		return nil, BadServerDataError(
-			fmt.Sprintf("empty hostID in reply hostchain reply (nlink=%d)",
+			fmt.Sprintf("empty hostID in hostchain reply (nlink=%d)",
 				len(links),
 			),
 		)

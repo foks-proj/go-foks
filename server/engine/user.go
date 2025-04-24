@@ -73,12 +73,21 @@ type UserClientConn struct {
 
 var _ shared.ClientConn = (*UserClientConn)(nil)
 
-func (c *UserClientConn) RegisterProtocols(m shared.MetaContext, srv *rpc.Server) {
-	srv.RegisterV2(rem.UserProtocol(c))
-	srv.RegisterV2(infra.TestServicesProtocol(c))
-	srv.RegisterV2((rem.TeamAdminProtocol(c)))
-	srv.RegisterV2(rem.TeamLoaderProtocol(c))
-	srv.RegisterV2((rem.TeamMemberProtocol(c)))
+func (c *UserClientConn) RegisterProtocols(m shared.MetaContext, srv *rpc.Server) error {
+	prots := []rpc.ProtocolV2{
+		rem.UserProtocol(c),
+		infra.TestServicesProtocol(c),
+		rem.TeamAdminProtocol(c),
+		rem.TeamLoaderProtocol(c),
+		rem.TeamMemberProtocol(c),
+	}
+	for _, p := range prots {
+		err := srv.RegisterV2(p)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (c *UserClientConn) ErrorWrapper() func(error) proto.Status {

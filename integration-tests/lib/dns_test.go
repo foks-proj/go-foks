@@ -11,11 +11,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/miekg/dns"
-	"github.com/stretchr/testify/require"
 	"github.com/foks-proj/go-foks/lib/core"
 	proto "github.com/foks-proj/go-foks/proto/lib"
 	"github.com/foks-proj/go-foks/server/shared"
+	"github.com/miekg/dns"
+	"github.com/stretchr/testify/require"
 )
 
 type fakeDNSServer struct {
@@ -98,7 +98,7 @@ func (f *fakeDNSServer) run(doneCh <-chan struct{}) error {
 	}()
 
 	defer func() {
-		server.Shutdown()
+		_ = server.Shutdown()
 		f.conn.Close()
 	}()
 

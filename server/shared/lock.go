@@ -10,10 +10,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/foks-proj/go-foks/lib/core"
 	proto "github.com/foks-proj/go-foks/proto/lib"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type Lock struct {
@@ -142,13 +142,15 @@ func (l *Lock) insert(m MetaContext, db *pgxpool.Conn) error {
 	return err
 }
 
-func (l *Lock) steal(m MetaContext, db *pgxpool.Conn, existingPid int, existingId []byte) error {
+func (l *Lock) steal(m MetaContext, db *pgxpool.Conn, existingPid int, existingId []byte) (err error) {
 
 	tx, err := db.Begin(m.Ctx())
 	if err != nil {
 		return err
 	}
-	defer tx.Rollback(m.Ctx())
+	defer func() {
+		err = TxRollback(m.Ctx(), tx, err)
+	}()
 
 	tag, err := tx.Exec(m.Ctx(),
 		`UPDATE locks

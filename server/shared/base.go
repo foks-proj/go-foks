@@ -22,7 +22,7 @@ import (
 )
 
 type ClientConn interface {
-	RegisterProtocols(m MetaContext, srv *rpc.Server)
+	RegisterProtocols(m MetaContext, srv *rpc.Server) error
 	UserHost() UserHostContext
 	G() *GlobalContext
 	SetHostID(h *core.HostID)
@@ -230,7 +230,9 @@ func setupSignalsAndServe(m MetaContext, rc *RootCommand, s Server) error {
 
 	if rc.Opts.ReforkChild {
 		go func() {
-			io.ReadAll(os.Stdin)
+			// Wait for EOF (or any error that kills reads) on stdin. That will mean that
+			// the parent process wants us to exit.
+			_, _ = io.ReadAll(os.Stdin)
 			close(eofCh)
 		}()
 	}

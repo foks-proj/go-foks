@@ -6,20 +6,27 @@ package lib
 import (
 	"testing"
 
-	"github.com/stretchr/testify/require"
 	"github.com/foks-proj/go-foks/integration-tests/common"
 	"github.com/foks-proj/go-foks/lib/core"
 	"github.com/foks-proj/go-foks/lib/merkle"
 	proto "github.com/foks-proj/go-foks/proto/lib"
 	"github.com/foks-proj/go-foks/proto/rem"
 	"github.com/foks-proj/go-foks/server/shared"
+	"github.com/stretchr/testify/require"
 )
+
+func randomFill(t *testing.T, b []byte) {
+	err := core.RandomFill(b)
+	require.NoError(t, err)
+}
 
 func TestMerkleSimpleInsert(t *testing.T) {
 	// We can get a flake here if we race the background merkle builder, so
 	// to be sure, let's just fork the envorinment to get a new host ID, etc.
 	env := globalTestEnv.Fork(t, common.SetupOpts{})
-	defer env.ShutdownFn()
+	defer func() {
+		_ = env.ShutdownFn()
+	}()
 	m := env.MetaContext()
 
 	stor := shared.NewSQLStorage(m)
@@ -29,8 +36,8 @@ func TestMerkleSimpleInsert(t *testing.T) {
 	var leaves []proto.MerkleLeaf
 	for i := 0; i < n; i++ {
 		var tmp proto.MerkleLeaf
-		core.RandomFill(tmp.Key[:])
-		core.RandomFill(tmp.Value[:])
+		randomFill(t, tmp.Key[:])
+		randomFill(t, tmp.Value[:])
 		leaves = append(leaves, tmp)
 	}
 

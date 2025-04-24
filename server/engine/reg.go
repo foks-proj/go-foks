@@ -72,12 +72,22 @@ type RegClientConn struct {
 
 var _ shared.ClientConn = (*RegClientConn)(nil)
 
-func (c *RegClientConn) RegisterProtocols(m shared.MetaContext, srv *rpc.Server) {
-	srv.RegisterV2(rem.RegProtocol(c))
-	srv.RegisterV2(rem.KexProtocol(c))
-	srv.RegisterV2(rem.ProbeProtocol(c))
-	srv.RegisterV2(rem.TeamGuestProtocol(c))
-	srv.RegisterV2(rem.TeamLoaderProtocol(c))
+func (c *RegClientConn) RegisterProtocols(m shared.MetaContext, srv *rpc.Server) error {
+
+	prots := []rpc.ProtocolV2{
+		rem.RegProtocol(c),
+		rem.KexProtocol(c),
+		rem.ProbeProtocol(c),
+		rem.TeamGuestProtocol(c),
+		rem.TeamLoaderProtocol(c),
+	}
+	for _, p := range prots {
+		if err := srv.RegisterV2(p); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func (c *RegClientConn) ReserveUsername(ctx context.Context, nm proto.Name) (rem.ReserveNameRes, error) {
@@ -488,7 +498,10 @@ func (c *RegClientConn) getChallenge(ctx context.Context, eid proto.EntityID, wh
 		return ret, err
 	}
 	ret.Payload.HmacKeyID = *id
-	core.RandomFill(ret.Payload.Rand[:])
+	err = core.RandomFill(ret.Payload.Rand[:])
+	if err != nil {
+		return ret, err
+	}
 	ret.Payload.Time = proto.Now()
 	ret.Payload.EntityID = eid
 	ret.Payload.HostID = m.HostID().Id

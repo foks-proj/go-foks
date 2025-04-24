@@ -8,8 +8,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/keybase/clockwork"
 	"github.com/foks-proj/go-foks/lib/core"
+	"github.com/keybase/clockwork"
 )
 
 // An Item is something we manage in a priority queue.
@@ -189,7 +189,10 @@ func (b *BgJobMgr) tick(m MetaContext, tm time.Time) {
 		return
 	}
 
-	b.perform(m, job.item)
+	err := b.perform(m, job.item)
+	if err != nil {
+		m.Warnw("bgJobMgr", "name", job.item.Name(), "stage", "perform", "err", err)
+	}
 
 	if nxt := job.item.Reschedule(); nxt > 0 {
 		b.pending.MyPush(&bgItem{

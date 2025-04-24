@@ -6,8 +6,8 @@ package merkle
 import (
 	"testing"
 
-	"github.com/stretchr/testify/require"
 	proto "github.com/foks-proj/go-foks/proto/lib"
+	"github.com/stretchr/testify/require"
 )
 
 func TestBackpointSequence(t *testing.T) {
@@ -19,17 +19,20 @@ func TestBackpointSequence(t *testing.T) {
 			proto.MerkleEpno(32),
 			[]proto.MerkleEpno{31, 30, 28, 24, 16},
 		}, {
-			proto.MerkleEpno(1),
-			[]proto.MerkleEpno{0},
-		}, {
 			proto.MerkleEpno(2),
-			[]proto.MerkleEpno{1, 0},
+			[]proto.MerkleEpno{1},
+		}, {
+			proto.MerkleEpno(1),
+			nil,
 		}, {
 			proto.MerkleEpno(3),
-			[]proto.MerkleEpno{2},
+			[]proto.MerkleEpno{2, 1},
 		}, {
 			proto.MerkleEpno(4),
-			[]proto.MerkleEpno{3, 2},
+			[]proto.MerkleEpno{3, 2, 1},
+		}, {
+			proto.MerkleEpno(5),
+			[]proto.MerkleEpno{4},
 		}, {
 			proto.MerkleEpno(100001),
 			[]proto.MerkleEpno{100000},

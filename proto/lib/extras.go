@@ -4720,3 +4720,13 @@ func (k YubiManagementKey) Eq(i YubiManagementKey) bool {
 func (i YubiCardID) Eq(i2 YubiCardID) bool {
 	return i.Name == i2.Name && i.Serial == i2.Serial
 }
+
+const MerkleEpnoFirst = MerkleEpno(1)
+
+func (e MerkleEpno) IsFirst() bool {
+	return e == MerkleEpnoFirst
+}
+
+func (e MerkleEpno) IsValid() bool {
+	return e >= MerkleEpnoFirst
+}

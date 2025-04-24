@@ -13,9 +13,9 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/keybase/go-codec/codec"
 	proto "github.com/foks-proj/go-foks/proto/lib"
 	"github.com/foks-proj/go-snowpack-rpc/rpc"
+	"github.com/keybase/go-codec/codec"
 )
 
 type EntityPublicEd25519 struct {

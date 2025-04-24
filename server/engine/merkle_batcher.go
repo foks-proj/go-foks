@@ -9,13 +9,13 @@ import (
 	"flag"
 	"sort"
 
-	"github.com/jackc/pgx/pgtype"
-	"github.com/jackc/pgx/v5"
 	"github.com/foks-proj/go-foks/lib/core"
 	proto "github.com/foks-proj/go-foks/proto/lib"
 	"github.com/foks-proj/go-foks/proto/rem"
 	"github.com/foks-proj/go-foks/server/shared"
 	"github.com/foks-proj/go-snowpack-rpc/rpc"
+	"github.com/jackc/pgx/pgtype"
+	"github.com/jackc/pgx/v5"
 )
 
 type MerkleBatcherVHostState struct {
@@ -89,7 +89,7 @@ func (v *MerkleBatcherVHostState) init(m shared.MetaContext, s *MerkleBatcherSer
 	return nil
 }
 
-func (v *MerkleBatcherVHostState) initBatcherState(m shared.MetaContext, s *MerkleBatcherServer) error {
+func (v *MerkleBatcherVHostState) initBatcherState(m shared.MetaContext, s *MerkleBatcherServer) (err error) {
 	db, err := m.Db(shared.DbTypeMerkleRaft)
 	if err != nil {
 		return err
@@ -99,7 +99,9 @@ func (v *MerkleBatcherVHostState) initBatcherState(m shared.MetaContext, s *Merk
 	if err != nil {
 		return err
 	}
-	defer tx.Rollback(m.Ctx())
+	defer func() {
+		err = shared.TxRollback(m.Ctx(), tx, err)
+	}()
 	state, err := s.readBatchState(m, tx)
 	if err != nil {
 		return err
@@ -139,7 +141,7 @@ func (s *MerkleBatcherServer) initVhostState(m shared.MetaContext) (*MerkleBatch
 	return vh, nil
 }
 
-func (s *MerkleBatcherServer) pollHostchain(m shared.MetaContext, batch *proto.MerkleBatch) error {
+func (s *MerkleBatcherServer) pollHostchain(m shared.MetaContext, batch *proto.MerkleBatch) (err error) {
 	db, err := m.Db(shared.DbTypeServerConfig)
 	if err != nil {
 		return err
@@ -150,7 +152,9 @@ func (s *MerkleBatcherServer) pollHostchain(m shared.MetaContext, batch *proto.M
 	if err != nil {
 		return err
 	}
-	defer tx.Rollback(m.Ctx())
+	defer func() {
+		err = shared.TxRollback(m.Ctx(), tx, err)
+	}()
 
 	rows, err := tx.Query(m.Ctx(),
 		`SELECT seqno, hash, merkle_state,
@@ -235,7 +239,7 @@ func (s *MerkleBatcherServer) pollHostchain(m shared.MetaContext, batch *proto.M
 	return nil
 }
 
-func (s *MerkleBatcherServer) pollLeaves(m shared.MetaContext, b *proto.MerkleBatch) error {
+func (s *MerkleBatcherServer) pollLeaves(m shared.MetaContext, b *proto.MerkleBatch) (err error) {
 	db, err := m.Db(shared.DbTypeUsers)
 	if err != nil {
 		return err
@@ -245,7 +249,9 @@ func (s *MerkleBatcherServer) pollLeaves(m shared.MetaContext, b *proto.MerkleBa
 	if err != nil {
 		return err
 	}
-	defer tx.Rollback(m.Ctx())
+	defer func() {
+		err = shared.TxRollback(m.Ctx(), tx, err)
+	}()
 
 	rows, err := tx.Query(m.Ctx(),
 		`SELECT id, chain_type, seqno, key, val, state, 
@@ -376,7 +382,7 @@ func (s *MerkleBatcherServer) pollLeaves(m shared.MetaContext, b *proto.MerkleBa
 	return nil
 }
 
-func (s *MerkleBatcherServer) commitBatch(m shared.MetaContext, batch *proto.MerkleBatch) error {
+func (s *MerkleBatcherServer) commitBatch(m shared.MetaContext, batch *proto.MerkleBatch) (err error) {
 
 	vh, err := s.initVhostState(m)
 	if err != nil {
@@ -396,7 +402,12 @@ func (s *MerkleBatcherServer) commitBatch(m shared.MetaContext, batch *proto.Mer
 	if err != nil {
 		return err
 	}
-	defer cleanup()
+	defer func() {
+		tmp := cleanup()
+		if err == nil && tmp != nil {
+			err = tmp
+		}
+	}()
 
 	batchRaw, err := core.EncodeToBytes(batch)
 	if err != nil {
@@ -529,7 +540,7 @@ func (s *MerkleBatcherServer) checkTreeForHostchainUpdates(
 	return nil
 }
 
-func (s *MerkleBatcherServer) checkTreeForLeafUpdates(m shared.MetaContext) error {
+func (s *MerkleBatcherServer) checkTreeForLeafUpdates(m shared.MetaContext) (err error) {
 
 	db, err := m.Db(shared.DbTypeUsers)
 	if err != nil {
@@ -542,7 +553,9 @@ func (s *MerkleBatcherServer) checkTreeForLeafUpdates(m shared.MetaContext) erro
 		return err
 	}
 
-	defer tx.Rollback(m.Ctx())
+	defer func() {
+		err = shared.TxRollback(m.Ctx(), tx, err)
+	}()
 
 	cli, err := m.MerkleCli()
 	if err != nil {
@@ -867,8 +880,8 @@ type MerkleBatcherClientConn struct {
 	xp  rpc.Transporter
 }
 
-func (c *MerkleBatcherClientConn) RegisterProtocols(m shared.MetaContext, srv *rpc.Server) {
-	srv.RegisterV2(proto.MerkleBatcherProtocol(c))
+func (c *MerkleBatcherClientConn) RegisterProtocols(m shared.MetaContext, srv *rpc.Server) error {
+	return srv.RegisterV2(proto.MerkleBatcherProtocol(c))
 }
 
 func (c *MerkleBatcherClientConn) Poke(ctx context.Context) error {
