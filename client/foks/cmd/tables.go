@@ -34,6 +34,8 @@ type userRow struct {
 	devname         string
 	mode            userListTableMode
 	showDeviceNames bool
+	yubiInfo        string
+	showYubiInfo    bool
 }
 
 func (u userRow) toTableRow() table.Row {
@@ -44,6 +46,9 @@ func (u userRow) toTableRow() table.Row {
 	ret := table.Row{sActive, u.username, u.hostname, u.dev}
 	if u.showDeviceNames {
 		ret = append(ret, u.devname)
+	}
+	if u.showYubiInfo {
+		ret = append(ret, u.yubiInfo)
 	}
 	if u.mode == userListTableModeMem {
 		ret = append(ret, u.locked, u.connected)
@@ -79,12 +84,14 @@ func (u userRow) headers() table.Row {
 		"Active",
 		"Username",
 		"Hostname",
-		"Key Type",
+		"Type",
 	}
 	if u.showDeviceNames {
 		ret = append(ret, "Key Name")
 	}
-
+	if u.showYubiInfo {
+		ret = append(ret, "YubiKey Name <serial/slot>")
+	}
 	if u.mode == userListTableModeMem {
 		ret = append(ret, "Locked", "Connected")
 
@@ -220,12 +227,16 @@ func outputUserListTable(
 	showDeviceNames := core.Find(list, func(u proto.UserInfoAndStatus) bool {
 		return len(u.Info.Devname) > 0
 	})
+	showYubiInfo := core.Find(list, func(u proto.UserInfoAndStatus) bool {
+		return u.Info.KeyGenus == proto.KeyGenus_Yubi && u.Info.YubiInfo != nil
+	})
 
 	uctxToRow := func(_ int, u proto.UserInfoAndStatus) (tableRow, error) {
 		ret := userRow{
 			active:          u.Info.Active,
 			mode:            mode,
 			showDeviceNames: showDeviceNames,
+			showYubiInfo:    showYubiInfo,
 		}
 		username := string(u.Info.Username.NameUtf8)
 		if len(username) == 0 {
@@ -253,9 +264,10 @@ func outputUserListTable(
 
 		switch u.Info.KeyGenus {
 		case proto.KeyGenus_Yubi:
+			dev = "YubiKey"
 			if u.Info.YubiInfo != nil {
 				x := *u.Info.YubiInfo
-				dev = fmt.Sprintf("%s <0x%x/%d>", x.Card.Name, x.Card.Serial, x.Key.Slot)
+				ret.yubiInfo = fmt.Sprintf("%s <0x%x/%d>", x.Card.Name, x.Card.Serial, x.Key.Slot)
 			} else {
 				dev = "YubiKey"
 			}

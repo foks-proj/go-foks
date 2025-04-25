@@ -212,7 +212,7 @@ func runKeyListTable(
 		mode := userListTableModeDisk
 		var title string
 		if doBoth {
-			title = "Other profiles available on this machine"
+			title = "All profiles available on this machine"
 		}
 		err := outputUserListTable(m, outputTableOpts{headers: true, title: title}, ls.AllUsers, mode)
 		if err != nil {
