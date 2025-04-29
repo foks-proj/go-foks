@@ -1,0 +1,11 @@
+project: foks
+maintaner: Maxwell Krohn <max@ne43.com>
+
+changelog:
+  - version: 0.0.17
+    urgency: low
+    stable: false
+    date: 2025-04-30 08:24:00 -0400
+    changes:
+      - desc: Initial revision and initial releases via package managers
+        closes: []

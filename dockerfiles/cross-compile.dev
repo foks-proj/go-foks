@@ -1,0 +1,21 @@
+FROM golang:1.24.0-bookworm
+
+WORKDIR /foks
+
+ARG STRIP=0
+
+COPY go.mod go-foks/go.mod
+COPY go.sum go-foks/go.sum
+
+RUN (cd go-foks && go mod download)
+
+RUN apt-get update && apt-get install -y libpcsclite-dev && rm -rf /var/lib/apt/lists/*
+
+COPY . go-foks
+RUN (cd go-foks/client/foks && \
+   if [ $STRIP -eq 1 ]; then \
+      go build -trimpath -ldflags '-w -s' -o foks . ; \
+   else \
+      go build -o foks . ; \
+   fi )
+RUN (cd / && ls -lsR .)

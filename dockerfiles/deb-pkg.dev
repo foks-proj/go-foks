@@ -1,0 +1,24 @@
+FROM golang:1.24.0-bookworm
+
+RUN apt-get update 
+RUN apt-get install -y dpkg-dev lintian 
+RUN rm -rf /var/lib/apt/lists/*
+
+RUN mkdir -p /pkg/foks
+WORKDIR /pkg/foks
+
+ARG PLAT=arm64
+ARG VERSION=0.0.0
+
+RUN mkdir -p usr/bin usr/share/doc/foks DEBIAN
+COPY build/foks.linux-${PLAT}.stripped usr/bin/foks
+COPY build/debian.control-${VERSION}-${PLAT} DEBIAN/control
+COPY build/debian.copyright usr/share/doc/foks/copyright
+COPY build/changelog.debian-${VERSION}.gz usr/share/doc/foks/changelog.gz
+RUN (cd usr/bin && ln -s foks git-remote-foks)
+
+WORKDIR /pkg
+
+RUN dpkg-deb --build foks foks_${VERSION}_${PLAT}.deb 
+RUN lintian --check --fail-on error foks_${VERSION}_${PLAT}.deb
+

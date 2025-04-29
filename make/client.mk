@@ -17,6 +17,10 @@ full: client-proto
 client-linux-arm64: build/foks.linux-arm64
 	@echo "Client binary for linux/arm64 is ready: $<"
 
+.PHONY: client-linux-arm64-stripped
+client-linux-arm64-stripped: build/foks.linux-arm64.stripped
+	@echo "Client binary for linux/arm64 is ready: $<"
+
 .PHONY: client-linux-amd64
 client-linux-amd64: build/foks.linux-amd64
 	@echo "Client binary for linux/amd64 is ready: $<"
@@ -41,6 +45,18 @@ macos-sign:
          --sign "Developer ID Application: NE43 INC (L2W77ZPF94)" \
 		 $$(scripts/gowhere.sh)/foks
 
+.PHONY: deb-arm64
+deb-arm64: build/foks.linux-arm64.stripped
+	./scripts/build-deb.sh -p arm64
+
+.PHONY: deb-amd64
+deb-amd64: build/foks.linux-amd64.stripped
+	./scripts/build-deb.sh -p amd64
+
+.PHONY: deb
+deb: deb-arm64 deb-amd64
+	@echo "Debian packages are ready in the build directory"
+
 .PHONY: macos-verify
 macos-verify:
 	codesign --verify --deep --strict --verbose=2 $$(scripts/gowhere.sh)/foks
@@ -61,7 +77,13 @@ proto: .stamps/npm-install
 	go generate ./...
 
 build/foks.linux-arm64: proto
-	./scripts/cross-compile.sh linux-arm64
+	./scripts/cross-compile.sh -p linux-arm64
+
+build/foks.linux-arm64.stripped: proto
+	./scripts/cross-compile.sh -p linux-arm64 -s
 
 build/foks.linux-amd64: proto
-	./scripts/cross-compile.sh linux-amd64
+	./scripts/cross-compile.sh -p linux-amd64
+
+build/foks.linux-amd64.stripped: proto
+	./scripts/cross-compile.sh -p linux-amd64 -s

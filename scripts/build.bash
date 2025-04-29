@@ -196,7 +196,7 @@ Type=simple
 User=${USER}
 Group=${USER}
 WorkingDirectory=$(realpath ${TOPDIR}/tmp)
-ExecStart=$(realpath ${SERVER}) --config-path $(realpath ${CONF}) ${i}
+ExecStart=${SERVER} --config-path $(realpath ${CONF}) --refork ${i}
 SyslogIdentifier=foks-${i}
 EOF
         if [[ "${i}" == "web" || "${i}" == "autocert" ]]; then
@@ -255,11 +255,11 @@ init_big_top_vhost() {
 
 init_plans() {
 
-    tool create-plan \
+     tool create-plan \
         --quota 1GB \
         --name "basic-1" \
         --display-name "Basic" \
-        --prices 1m:995,1y:9950 \
+        --prices 1m:495,1y:4950 \
         --max-seats 10 \
         --details '1GB of storage' \
         --details 'Up to 10 teams can share this quota' \
@@ -269,7 +269,7 @@ init_plans() {
         --quota 10GB \
         --name "pro-1" \
         --display-name "Pro" \
-        --prices 1m:2995,1y:29950 \
+        --prices 1m:1495,1y:14950 \
         --max-seats 100 \
         --details '10GB of storage' \
         --details 'Up to 100 teams can share this quota' \
@@ -277,9 +277,9 @@ init_plans() {
 
     tool create-plan \
         --quota 1TB \
-        --name "xxl-1" \
-        --display-name "XXL" \
-        --prices 1m:5995,1y:59950 \
+        --name "xl-1" \
+        --display-name "XL" \
+        --prices 1m:7995,1y:79950 \
         --max-seats 1000 \
         --details '1TB of storage' \
         --details 'Up to 1000 teams can share this quota' \
@@ -315,10 +315,10 @@ init_plans() {
         --promoted
 
     tool create-plan \
-        --quota 100GB \
+        --quota 1TB \
         --name "vhost-enterprise-1" \
         --display-name 'VHost Enterprise' \
-        --prices 1m:12995,1y:129950 \
+        --prices 1m:18995,1y:189950 \
         --max-vhosts 100 \
         --max-seats 2000 \
         --details '100GB of storage' \
