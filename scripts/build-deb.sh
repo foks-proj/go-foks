@@ -104,7 +104,7 @@ make_changelog() {
         echo "Version in changelog.yml ($cl_vers) does not match version ($version)"
         exit 1
     fi
-    go run tools/changelog-deb/main.go < changelog.yml | gzip -n9c > build/changelog.debian-${version}.gz
+    go tool github.com/foks-proj/go-tools/changelog-deb < changelog.yml | gzip -n9c > build/changelog.debian-${version}.gz
 }
 
 build_deb() {
