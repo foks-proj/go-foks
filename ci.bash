@@ -16,8 +16,6 @@ run() {
   #
   yubi=false
   
-  prot=false
-
   # check if there is exactly one argument and it's --yubi-destructive
   if [ "$#" -eq 1 ] && [ "$1" == "--yubi-destructive" ]; then
       yubi=true

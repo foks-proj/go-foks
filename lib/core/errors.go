@@ -1240,6 +1240,14 @@ func (y YubiPINRequredError) Error() string {
 	return "YubiKey PIN is required for private key operation"
 }
 
+type AgentConnectError struct {
+	Path Path
+}
+
+func (a AgentConnectError) Error() string {
+	return fmt.Sprintf("failed to connect to agent at path %s", a.Path.String())
+}
+
 func ErrorToStatus(e error) proto.Status {
 
 	switch {
@@ -1432,6 +1440,8 @@ func ErrorToStatus(e error) proto.Status {
 		return proto.NewStatusWithSecretKeyStorageTypeError(te.Actual)
 	case SigningKeyNotFullyProvisionedError:
 		return proto.NewStatusWithSigningKeyNotFullyProvisionedError()
+	case AgentConnectError:
+		return proto.NewStatusWithAgentConnectError(te.Path.String())
 	case RPCEOFError:
 		return proto.NewStatusWithRpcEof()
 	case OverQuotaError:
@@ -1739,6 +1749,8 @@ func StatusToError(s proto.Status) error {
 		return RPCEOFError{}
 	case proto.StatusCode_SIGNING_KEY_NOT_FULLY_PROVISIONED_ERROR:
 		return SigningKeyNotFullyProvisionedError{}
+	case proto.StatusCode_AGENT_CONNECT_ERROR:
+		return AgentConnectError{Path: Path(s.AgentConnectError())}
 	case proto.StatusCode_NO_ACTIVE_PLAN_ERROR:
 		return NoActivePlanError{}
 	case proto.StatusCode_EXPIRED_ERROR:

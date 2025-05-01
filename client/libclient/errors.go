@@ -5,6 +5,7 @@ package libclient
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/foks-proj/go-foks/lib/core"
 )
@@ -20,6 +21,13 @@ func ErrToStringCLI(e error) string {
 	case errors.Is(e, core.YubiPINRequredError{}):
 		return "PIN needed to unlock YubiKey; supply PIN via `foks yubi unlock --prompt-pin`"
 	default:
+		switch te := e.(type) {
+		case core.AgentConnectError:
+			return fmt.Sprintf(
+				"could not connect to the FOKS agent; start it via `foks ctl start` (socket file: %s)",
+				te.Path.String(),
+			)
+		}
 		return e.Error()
 	}
 }

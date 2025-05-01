@@ -4,6 +4,7 @@
 package core
 
 import (
+	"errors"
 	"net"
 	"os"
 	"path/filepath"
@@ -106,7 +107,18 @@ func (p Path) Chdir() error {
 }
 
 func (p Path) Dial() (net.Conn, error) {
-	return net.Dial("unix", p.String())
+	conn, err := net.Dial("unix", p.String())
+	if err == nil {
+		return conn, nil
+	}
+	var opErr *net.OpError
+	if !errors.As(err, &opErr) {
+		return nil, err
+	}
+	if !errors.Is(opErr.Err, os.ErrNotExist) {
+		return nil, err
+	}
+	return nil, AgentConnectError{Path: p}
 }
 
 func (p Path) Remove() error {
