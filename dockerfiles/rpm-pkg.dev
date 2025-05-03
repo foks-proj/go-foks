@@ -1,0 +1,34 @@
+FROM almalinux:8
+
+# Using almalinux:8 gets us a pretty early version of glibc (2.17)
+# Much easier to build on fedora:42, which has an up-to-date golang too,
+# but then we get a glibc at version 2.37. There are other solutions using
+# mock, but this is the simplest for now.
+
+# on almalinux, these magical incantations are needed to get
+# pcsc-lite-devel. They are not needed on fedora:36+
+RUN dnf install -y dnf-plugins-core
+RUN dnf config-manager --set-enabled powertools
+
+# Install build tools
+RUN dnf install -y \
+      rpmdevtools \
+      rpm-build \
+      yum-utils \
+      pcsc-lite-devel \
+      gcc \
+    && dnf clean all
+
+ARG PLAT=arm64
+
+WORKDIR /root
+
+RUN (cd /root && \
+    curl -fSsL https://go.dev/dl/go1.24.2.linux-${PLAT}.tar.gz > go.tgz && \
+    tar -xzf go.tgz && \
+    rm -f go.tgz && \
+    mv go /usr/local/go)
+
+RUN rpmdev-setuptree
+
+ENTRYPOINT ["/bin/bash"]

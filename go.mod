@@ -135,7 +135,7 @@ require (
 	github.com/fatih/structtag v1.2.0 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/firefart/nonamedreturns v1.0.5 // indirect
-	github.com/foks-proj/go-tools v0.0.2 // indirect
+	github.com/foks-proj/go-tools v0.0.3 // indirect
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
 	github.com/fzipp/gocyclo v0.6.0 // indirect
 	github.com/ghostiam/protogetter v0.3.9 // indirect
@@ -335,6 +335,6 @@ require (
 tool (
 	github.com/a-h/templ/cmd/templ
 	github.com/air-verse/air
-	github.com/foks-proj/go-tools/changelog-deb
+	github.com/foks-proj/go-tools/changelog-linux-pkg
 	github.com/golangci/golangci-lint/cmd/golangci-lint
 )

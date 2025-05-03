@@ -307,8 +307,8 @@ github.com/foks-proj/go-git-remhelp v0.0.2 h1:DPAJAm26TdK2KOVdu66ZvleOLsQ1LlXCGi
 github.com/foks-proj/go-git-remhelp v0.0.2/go.mod h1:64ubmkraJ8SDpgHcsnSyTapwpZgYF/NXZHN8Jx0f1FM=
 github.com/foks-proj/go-snowpack-rpc v0.0.1 h1:09W2R8yafo67a7JFQCUq6u7KIbouniet3t9O6AvuxI0=
 github.com/foks-proj/go-snowpack-rpc v0.0.1/go.mod h1:onRQ6P75yEUMz3+GLv6jLFGrLA5DukztDz4IRJi1++Y=
-github.com/foks-proj/go-tools v0.0.2 h1:BXN+d7nbXhcvA2k95aywfDBudFJe8X6FV//eecoHuag=
-github.com/foks-proj/go-tools v0.0.2/go.mod h1:tnzyQe9kulfDHpab+L5MglWp2Y4g1tscSUj6XMB7yog=
+github.com/foks-proj/go-tools v0.0.3 h1:lgWJgBOEaBvYZWUITuJ/A6KUuc3QZ3WuKsKr5OQeQ1w=
+github.com/foks-proj/go-tools v0.0.3/go.mod h1:tnzyQe9kulfDHpab+L5MglWp2Y4g1tscSUj6XMB7yog=
 github.com/frankban/quicktest v1.7.2/go.mod h1:jaStnuzAqU1AJdCO0l53JDCJrVDKcS03DbaAcR7Ks/o=
 github.com/frankban/quicktest v1.14.2/go.mod h1:mgiwOwqx65TmIk1wJ6Q7wvnVMocbUorkibMOrVTHZps=
 github.com/frankban/quicktest v1.14.6 h1:7Xjx+VpznH+oBnejlPUj8oUpdxnVs4f8XU8WnHkI4W8=
