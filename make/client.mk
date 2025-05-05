@@ -10,6 +10,7 @@ client:
 	(cd client/foks && CGO_ENABLED=1 go install)
 	@echo "Client binary is ready: $$(scripts/gowhere.sh)/foks"
 
+
 client-proto: proto client
 full: client-proto
 
@@ -37,13 +38,25 @@ ci:
 ci-yubi-destructive:
 	bash ci.bash --yubi-destructive
 
-.PHONY: macos-sign
-macos-sign:
-	codesign --deep \
-         --options runtime \
-         --timestamp \
-         --sign "Developer ID Application: NE43 INC (L2W77ZPF94)" \
-		 $$(scripts/gowhere.sh)/foks
+.PHONY: macos-arm64-zip-release
+darwin-arm64-zip-release: build/darwin-arm64/foks.zip
+	./scripts/macos-notary.bash $<
+	@echo "macOS arm64 release is ready: $<"
+	./scripts/macos-verify.bash $<
+
+.PHONY: macos-arm64-zip-release-verify
+darwin-arm64-zip-release-verify:
+	./scripts/macos-verify.bash build/darwin-arm64/foks.zip
+
+.PHONY: macos-amd64-zip-release
+darwin-amd64-zip-release: build/darwin-amd64/foks.zip
+	./scripts/macos-notary.bash $<
+	@echo "macOS amd64 release is ready: $<"
+	./scripts/macos-verify.bash $<
+
+.PHONY: macos-amd64-zip-release-verify
+darwin-amd64-zip-release-verify:
+	./scripts/macos-verify.bash build/darwin-amd64/foks.zip
 
 .PHONY: deb-arm64
 deb-arm64: build/foks.linux-arm64.stripped
@@ -57,10 +70,13 @@ deb-amd64: build/foks.linux-amd64.stripped
 deb: deb-arm64 deb-amd64
 	@echo "Debian packages are ready in the build directory"
 
-.PHONY: macos-verify
-macos-verify:
-	codesign --verify --deep --strict --verbose=2 $$(scripts/gowhere.sh)/foks
-	codesign -dvv $$(scripts/gowhere.sh)/foks
+.PHONY: rpm-arm64
+rpm-arm64:
+	./scripts/build-rpm.sh -p arm64
+
+.PHONY: rpm-amd64
+rpm-amd64:
+	./scripts/build-rpm.sh -p amd64
 
 ##
 ##-----------------------------------------------------------------------
@@ -87,3 +103,17 @@ build/foks.linux-amd64: proto
 
 build/foks.linux-amd64.stripped: proto
 	./scripts/cross-compile.sh -p linux-amd64 -s
+
+
+build/darwin-amd64/foks: proto
+	./scripts/macos-compile.bash -p amd64 -s
+build/darwin-amd64/foks.zip: build/darwin-amd64/foks
+	./scripts/macos-sign.bash $<
+	./scripts/macos-ditto.bash $$(dirname $<)
+
+build/darwin-arm64/foks: proto
+	./scripts/macos-compile.bash -p arm64 -s
+build/darwin-arm64/foks.zip: build/darwin-arm64/foks
+	./scripts/macos-sign.bash $<
+	./scripts/macos-ditto.bash $$(dirname $<)
+

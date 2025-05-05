@@ -54,6 +54,28 @@ func (c *Commands) init(m libclient.MetaContext, root *cobra.Command) {
 	}
 }
 
+var (
+	LinkedVersion = "unknown"
+)
+
+func versionCmd(m libclient.MetaContext) *cobra.Command {
+	var verbose bool
+	cmd := &cobra.Command{
+		Use:   "version",
+		Short: "Print the version number of foks",
+		Long:  "Print the version number of foks",
+		Run: func(cmd *cobra.Command, args []string) {
+			fmt.Printf("foks version %s\n", core.CurrentClientVersion.String())
+			if verbose {
+				fmt.Printf(" - commit: %s\n", LinkedVersion)
+				fmt.Printf(" - protocol compatibility version: %d\n", core.CurrentCompatibilityVersion)
+			}
+		},
+	}
+	cmd.Flags().BoolVarP(&verbose, "verbose", "v", false, "show more version information")
+	return cmd
+}
+
 func AddCmd(b CommandBuilder) {
 	cmds.push(b)
 }
@@ -137,4 +159,8 @@ func MainInnerWithCmd(cmd string, args []string, testSetupHook func(m libclient.
 	}
 
 	return nil
+}
+
+func init() {
+	AddCmd(versionCmd)
 }
