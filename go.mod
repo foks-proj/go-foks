@@ -16,9 +16,9 @@ require (
 	github.com/charmbracelet/bubbletea v0.23.2
 	github.com/charmbracelet/lipgloss v0.7.1
 	github.com/coreos/go-systemd/v22 v22.5.0
-	github.com/foks-proj/go-ctxlog v0.0.0-20250302122002-41ac32f428cb
+	github.com/foks-proj/go-ctxlog v0.0.0-20250303173751-8f2c09f6847f
 	github.com/foks-proj/go-git-remhelp v0.0.2
-	github.com/foks-proj/go-snowpack-rpc v0.0.1
+	github.com/foks-proj/go-snowpack-rpc v0.0.2
 	github.com/go-chi/chi/v5 v5.1.0
 	github.com/go-git/go-git/v5 v5.14.0
 	github.com/go-piv/piv-go/v2 v2.3.0
@@ -318,7 +318,7 @@ require (
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/exp/typeparams v0.0.0-20250210185358-939b2ce775ac // indirect
 	golang.org/x/mod v0.24.0 // indirect
-	golang.org/x/net v0.37.0 // indirect
+	golang.org/x/net v0.39.0 // indirect
 	golang.org/x/sync v0.13.0 // indirect
 	golang.org/x/tools v0.31.0 // indirect
 	google.golang.org/protobuf v1.36.5 // indirect

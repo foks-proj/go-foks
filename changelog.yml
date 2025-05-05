@@ -16,3 +16,5 @@ changelog:
     changes:
       - desc: Better CLI output if no keys or users.
         closes: [ "#21" ]
+      - desc: Upgrade x/net to v0.0.39 via upgraded go-snowpack-rpc
+        closes: []
