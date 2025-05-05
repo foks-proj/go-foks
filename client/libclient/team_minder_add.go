@@ -6,6 +6,7 @@ package libclient
 import (
 	"github.com/foks-proj/go-foks/lib/core"
 	"github.com/foks-proj/go-foks/proto/lcl"
+	"github.com/foks-proj/go-foks/proto/lib"
 	proto "github.com/foks-proj/go-foks/proto/lib"
 	"github.com/foks-proj/go-foks/proto/rem"
 )
@@ -49,24 +50,68 @@ func (t *TeamMinder) requireOpenViewership(m MetaContext) error {
 	return nil
 }
 
-func (t *teamAdder) loadUser(m MetaContext, u lcl.FQPartyParsedAndRole) error {
-	uw, err := LoadUserByFQPartyParsed(m, u.Fqp)
+func (t *teamAdder) loadMember(m MetaContext, u lcl.FQPartyParsedAndRole) error {
+	user, team, err := u.Fqp.Select()
+	if err != nil {
+		return err
+	}
+	srcRole := proto.OwnerRole
+	if u.Role != nil {
+		srcRole = *u.Role
+	}
+	rk, err := core.ImportRole(srcRole)
+	if err != nil {
+		return err
+	}
+	switch {
+	case user != nil:
+		return t.loadUser(m, *user, *rk)
+	case team != nil:
+		return t.loadTeam(m, *team, *rk)
+	default:
+		return core.InternalError("no user or team")
+	}
+}
+
+func (t *teamAdder) loadTeam(m MetaContext, tm lib.FQTeamParsed, srcRole core.RoleKey) error {
+	return t.tm.withLoadedTeam(
+		m,
+		tm,
+		LoadTeamOpts{LoadMembers: false, Refresh: true},
+		func(m MetaContext, tr *TeamRecord) error {
+			id := tr.FQT().ToFQEntity().AtHost(t.hostID())
+			tmk, hepk, err := tr.tw.TeamMemberKeys(srcRole)
+			if err != nil {
+				return err
+			}
+			err = t.hepks.Add(*hepk)
+			if err != nil {
+				return err
+			}
+			mr := proto.MemberRole{
+				DstRole: t.dstRole,
+				Member: proto.Member{
+					Id:      id,
+					SrcRole: srcRole.Export(),
+					Keys:    proto.NewMemberKeysWithTeam(*tmk),
+				},
+			}
+			t.mrs = append(t.mrs, mr)
+			return nil
+		},
+	)
+}
+
+func (t *teamAdder) loadUser(m MetaContext, u lib.FQUserParsed, srcRole core.RoleKey) error {
+	uw, err := LoadUserByFQUserParsed(m, u)
 	if err != nil {
 		return err
 	}
 	if !uw.fqu.HostID.Eq(t.hostID()) {
 		return core.HostMismatchError{}
 	}
-	srcRole := proto.OwnerRole
-	if u.Role != nil {
-		srcRole = *u.Role
-	}
 	id := uw.fqu.ToFQEntity().AtHost(t.hostID())
-	rk, err := core.ImportRole(srcRole)
-	if err != nil {
-		return err
-	}
-	tmk, hepk, err := uw.TeamMemberKeys(*rk)
+	tmk, hepk, err := uw.TeamMemberKeys(srcRole)
 	if err != nil {
 		return err
 	}
@@ -78,7 +123,7 @@ func (t *teamAdder) loadUser(m MetaContext, u lcl.FQPartyParsedAndRole) error {
 		DstRole: t.dstRole,
 		Member: proto.Member{
 			Id:      id,
-			SrcRole: srcRole,
+			SrcRole: srcRole.Export(),
 			Keys:    proto.NewMemberKeysWithTeam(*tmk),
 		},
 	}
@@ -86,9 +131,9 @@ func (t *teamAdder) loadUser(m MetaContext, u lcl.FQPartyParsedAndRole) error {
 	return nil
 }
 
-func (t *teamAdder) loadUsers(m MetaContext) error {
+func (t *teamAdder) loadMembers(m MetaContext) error {
 	for _, u := range t.arg.Members {
-		err := t.loadUser(m, u)
+		err := t.loadMember(m, u)
 		if err != nil {
 			return err
 		}
@@ -129,7 +174,7 @@ func (t *teamAdder) run(m MetaContext) error {
 	if err != nil {
 		return err
 	}
-	err = t.loadUsers(m)
+	err = t.loadMembers(m)
 	if err != nil {
 		return err
 	}

@@ -4730,3 +4730,10 @@ func (e MerkleEpno) IsFirst() bool {
 func (e MerkleEpno) IsValid() bool {
 	return e >= MerkleEpnoFirst
 }
+
+func (t FQTeam) ToFQEntity() FQEntity {
+	return FQEntity{
+		Entity: t.Team.EntityID(),
+		Host:   t.Host,
+	}
+}

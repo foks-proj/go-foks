@@ -319,57 +319,41 @@ func LoadMe(m MetaContext, au *UserContext) (*UserWrapper, error) {
 	return loader.Run(m)
 }
 
-func LoadUserByFQPartyParsed(m MetaContext, fqp proto.FQPartyParsed) (*UserWrapper, error) {
+func LoadUserByFQUserParsed(m MetaContext, fqu proto.FQUserParsed) (*UserWrapper, error) {
 	au := m.G().ActiveUser()
 	if au == nil {
 		return nil, core.NoActiveUserError{}
 	}
-	pp := fqp.Party
 	arg := LoadUserArg{
 		LoadMode:   LoadModeOpenOthers,
 		ActiveUser: au,
 	}
-	isU, err := pp.IsUser()
-	if err != nil {
-		return nil, err
-	}
-	if !isU {
-		return nil, core.BadArgsError("can only load a user via LoadUser")
-	}
-	isS, err := pp.GetS()
+	isS, err := fqu.User.GetS()
 	if err != nil {
 		return nil, err
 	}
 	if isS {
-		nm := pp.True()
-		if nm.IsTeam {
-			return nil, core.InternalError("cannot load a team via LoadUser")
-		}
-		arg.Username = nm.Name
+		nm := fqu.User.True()
+		arg.Username = nm
 	} else {
-		partyID := pp.False()
-		uid, err := partyID.UID()
-		if err != nil {
-			return nil, err
-		}
+		uid := fqu.User.False()
 		arg.Uid = uid
 	}
-	if fqp.Host != nil {
-		isS, err := fqp.Host.GetS()
+	if fqu.Host != nil {
+		isS, err := fqu.Host.GetS()
 		if err != nil {
 			return nil, err
 		}
 		if isS {
 			arg.Host = &LoadUserHost{
-				Addr: fqp.Host.True(),
+				Addr: fqu.Host.True(),
 			}
 		} else {
 			arg.Host = &LoadUserHost{
-				HostID: fqp.Host.False(),
+				HostID: fqu.Host.False(),
 			}
 		}
 	}
-
 	return LoadUser(m, arg)
 }
 

@@ -434,6 +434,7 @@ func createTeamOpenViewership(t *testing.T, f func(*testAgent)) *testAgent {
 	require.Error(t, err)
 	require.Equal(t, core.KeyNotFoundError{Which: "puk at role"}, err)
 	x.runCmd(t, nil, "team", "add", teamName, yuid+"/o")
+	merklePoke(t)
 
 	return x
 }
@@ -488,4 +489,48 @@ func TestIssue241(t *testing.T) {
 	defer x.stop(t)
 	x.runCmd(t, nil, "util", "trigger-bg-clkr")
 	x.runCmd(t, nil, "util", "trigger-bg-clkr")
+}
+
+func TestTeamAddTeam(t *testing.T) {
+
+	x := createTeamOpenViewership(t, nil)
+	defer x.stop(t)
+
+	var membs lcl.ListMembershipsRes
+	x.runCmdToJSON(t, &membs, "team", "list-memberships")
+
+	require.Equal(t, 1, len(membs.Teams))
+	t1 := membs.Teams[0].Team.Name
+
+	// create a second team
+	var res lcl.TeamCreateRes
+	rs, err := core.RandomBase36String(5)
+	require.NoError(t, err)
+	t2 := "team_" + rs
+	x.runCmdToJSON(t, &res, "team", "create", t2)
+	merklePoke(t)
+
+	x.runCmd(t, nil, "team", "index-range", "raise", t1.String())
+	merklePoke(t)
+	x.runCmd(t, nil, "team", "index-range", "lower", t2)
+	merklePoke(t)
+
+	// add the admins of the second team as readers to the first team
+	x.runCmd(t, nil, "team", "add", "--role", "m/0", t1.String(), "t:"+t2+"/a")
+	merklePoke(t)
+
+	var rost lcl.TeamRoster
+	x.runCmdToJSON(t, &rost, "team", "ls", t1.String())
+	require.Equal(t, 3, len(rost.Members))
+
+	var nFound int
+	for _, m := range rost.Members {
+		if m.Mem.Fqp.Party.IsTeam() {
+			require.Equal(t, t2, m.Mem.Name.String())
+			require.Equal(t, proto.NewRoleWithMember(0), m.DstRole)
+			require.Equal(t, proto.AdminRole, m.SrcRole)
+			nFound++
+		}
+	}
+	require.Equal(t, 1, nFound)
 }

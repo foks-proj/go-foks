@@ -12,7 +12,7 @@ changelog:
   - version: 0.0.18
     urgency: low
     stable: false
-    date: 2025-05-05 08:24:00 -0400
+    date: 2025-05-05 15:24:00 -0400
     changes:
       - desc: Better CLI output if no keys or users.
         closes: [ "#21" ]
@@ -20,3 +20,5 @@ changelog:
         closes: []
       - desc: bump github.com/gohugoio/hugo from 0.134.3 to 0.139.4; closing med security vuln
         closes: []
+      - desc: Fix `team add` so that it can handle teams being added to other teams.
+        closes: [ "#13" ]

@@ -150,11 +150,14 @@ func GrantRemoteViewPermission(
 
 // BulkInsertLocalViewPermissions inserts a list of view permissions for a viewer.
 // It assumes that the host is in open viewership mode. If not, it will return an error.
-// It also only works currently on UIDs. If you pass it teamIDs in the viewees list, it
+// If you pass it teamIDs in the viewees list, it
 // will return an error. Finally, it also assumes the insert is in the context of a
 // team edit. It therefore checks that all the viewees are in the list of entities being
 // added (or more precisely, not being removed) from the team. It's a noop if the list
 // of viewees is empty.
+//
+// Why do we do this? In case we later turn a host to be closed viewership, working teams
+// will not break; they'll be more or less frozen at the time of the change.
 func BulkInsertLocalViewPermissions(
 	m MetaContext,
 	db DbExecer,
@@ -173,7 +176,7 @@ func BulkInsertLocalViewPermissions(
 		return core.PermissionError("no open viewership mode")
 	}
 
-	adds := make(map[proto.UID]struct{})
+	adds := make(map[proto.FixedEntityID]struct{})
 	for _, edit := range edits {
 		role, err := edit.DstRole.GetT()
 		if err != nil {
@@ -186,19 +189,19 @@ func BulkInsertLocalViewPermissions(
 			continue
 		}
 		eid := edit.Member.Id.Entity
-		uid, err := eid.ToUID()
-		if err != nil {
-			continue
-		}
-		adds[uid] = struct{}{}
-	}
-
-	for _, viewee := range viewees {
-		uid, err := viewee.UID()
+		fx, err := eid.Fixed()
 		if err != nil {
 			return err
 		}
-		if _, ok := adds[uid]; !ok {
+		adds[fx] = struct{}{}
+	}
+
+	for _, viewee := range viewees {
+		fx, err := viewee.EntityID().Fixed()
+		if err != nil {
+			return err
+		}
+		if _, ok := adds[fx]; !ok {
 			return core.BadArgsError("viewee not in edit list")
 		}
 		_, err = InsertLocalViewPermission(m, db, viewer, viewee)
