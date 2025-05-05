@@ -9,3 +9,10 @@ changelog:
     changes:
       - desc: Initial revision and initial releases via package managers
         closes: []
+  - version: 0.0.18
+    urgency: low
+    stable: false
+    date: 2025-05-05 08:24:00 -0400
+    changes:
+      - desc: Better CLI output if no keys or users.
+        closes: [ "#21" ]

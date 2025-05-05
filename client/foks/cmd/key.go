@@ -182,7 +182,7 @@ func runKeyListTable(
 	doOtherProfiles := opts.otherProfiles || opts.doDefault()
 	doBoth := doCurrentUserKeys && doOtherProfiles
 
-	if doCurrentUserKeys {
+	if doCurrentUserKeys && len(ls.CurrUserAllKeys) > 0 {
 
 		var title string
 		if ls.CurrUser != nil && doBoth {
@@ -208,7 +208,7 @@ func runKeyListTable(
 		}
 	}
 
-	if doOtherProfiles {
+	if doOtherProfiles && len(ls.AllUsers) > 0 {
 		mode := userListTableModeDisk
 		var title string
 		if doBoth {
