@@ -2,13 +2,6 @@ project: foks
 maintaner: Maxwell Krohn <max@ne43.com>
 
 changelog:
-  - version: 0.0.17
-    urgency: low
-    stable: false
-    date: 2025-04-30 08:24:00 -0400
-    changes:
-      - desc: Initial revision and initial releases via package managers
-        closes: []
   - version: 0.0.18
     urgency: low
     stable: false
@@ -22,3 +15,10 @@ changelog:
         closes: []
       - desc: Fix `team add` so that it can handle teams being added to other teams.
         closes: [ "#13" ]
+  - version: 0.0.17
+    urgency: low
+    stable: false
+    date: 2025-04-30 08:24:00 -0400
+    changes:
+      - desc: Initial revision and initial releases via package managers
+        closes: []

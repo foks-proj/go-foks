@@ -78,6 +78,18 @@ rpm-arm64:
 rpm-amd64:
 	./scripts/build-rpm.sh -p amd64
 
+.PHONY: rpm
+rpm: rpm-arm64 rpm-amd64
+	@echo "RPM packages are ready in the build directory"
+
+.PHONY: darwin-zip
+darwin-zip: darwin-arm64-zip-release darwin-amd64-zip-release
+	@echo "macOS zip packages are ready in the build directory"
+
+.PHONY: release-all
+release-all: deb rpm darwin-zip
+	@echo "All release packages are ready in the build directory"
+
 ##
 ##-----------------------------------------------------------------------
 ##
