@@ -642,37 +642,6 @@ func (r *RegSSOArgsOAuth2) Decode(dec rpc.Decoder) error {
 
 func (r *RegSSOArgsOAuth2) Bytes() []byte { return nil }
 
-type SignupRes struct {
-}
-
-type SignupResInternal__ struct {
-	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
-}
-
-func (s SignupResInternal__) Import() SignupRes {
-	return SignupRes{}
-}
-
-func (s SignupRes) Export() *SignupResInternal__ {
-	return &SignupResInternal__{}
-}
-
-func (s *SignupRes) Encode(enc rpc.Encoder) error {
-	return enc.Encode(s.Export())
-}
-
-func (s *SignupRes) Decode(dec rpc.Decoder) error {
-	var tmp SignupResInternal__
-	err := dec.Decode(&tmp)
-	if err != nil {
-		return err
-	}
-	*s = tmp.Import()
-	return nil
-}
-
-func (s *SignupRes) Bytes() []byte { return nil }
-
 var RegProtocolID rpc.ProtocolUniqueID = rpc.ProtocolUniqueID(0xf7ab85f3)
 
 type ReserveUsernameArg struct {
@@ -1911,6 +1880,48 @@ func (g *GetVHostMgmtHostArg) Decode(dec rpc.Decoder) error {
 
 func (g *GetVHostMgmtHostArg) Bytes() []byte { return nil }
 
+type GetClientVersionInfoArg struct {
+	Me lib.ClientVersionExt
+}
+
+type GetClientVersionInfoArgInternal__ struct {
+	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
+	Me      *lib.ClientVersionExtInternal__
+}
+
+func (g GetClientVersionInfoArgInternal__) Import() GetClientVersionInfoArg {
+	return GetClientVersionInfoArg{
+		Me: (func(x *lib.ClientVersionExtInternal__) (ret lib.ClientVersionExt) {
+			if x == nil {
+				return ret
+			}
+			return x.Import()
+		})(g.Me),
+	}
+}
+
+func (g GetClientVersionInfoArg) Export() *GetClientVersionInfoArgInternal__ {
+	return &GetClientVersionInfoArgInternal__{
+		Me: g.Me.Export(),
+	}
+}
+
+func (g *GetClientVersionInfoArg) Encode(enc rpc.Encoder) error {
+	return enc.Encode(g.Export())
+}
+
+func (g *GetClientVersionInfoArg) Decode(dec rpc.Decoder) error {
+	var tmp GetClientVersionInfoArgInternal__
+	err := dec.Decode(&tmp)
+	if err != nil {
+		return err
+	}
+	*g = tmp.Import()
+	return nil
+}
+
+func (g *GetClientVersionInfoArg) Bytes() []byte { return nil }
+
 type RegInterface interface {
 	ReserveUsername(context.Context, lib.Name) (ReserveNameRes, error)
 	GetClientCertChain(context.Context, GetClientCertChainArg) ([][]byte, error)
@@ -1935,6 +1946,7 @@ type RegInterface interface {
 	SsoLogin(context.Context, SsoLoginArg) error
 	ProbeKeyExists(context.Context, ProbeKeyExistsArg) error
 	GetVHostMgmtHost(context.Context) (lib.TCPAddr, error)
+	GetClientVersionInfo(context.Context, lib.ClientVersionExt) (lib.ServerClientVersionInfo, error)
 	ErrorWrapper() func(error) lib.Status
 	CheckArgHeader(ctx context.Context, h lib.Header) error
 
@@ -2516,6 +2528,31 @@ func (c RegClient) GetVHostMgmtHost(ctx context.Context) (res lib.TCPAddr, err e
 	}
 	var tmp rpc.DataWrap[lib.Header, lib.TCPAddrInternal__]
 	err = c.Cli.Call2(ctx, rpc.NewMethodV2(RegProtocolID, 22, "Reg.getVHostMgmtHost"), warg, &tmp, 0*time.Millisecond, regErrorUnwrapperAdapter{h: c.ErrorUnwrapper})
+	if err != nil {
+		return
+	}
+	if c.CheckResHeader != nil {
+		err = c.CheckResHeader(ctx, tmp.Header)
+		if err != nil {
+			return
+		}
+	}
+	res = tmp.Data.Import()
+	return
+}
+
+func (c RegClient) GetClientVersionInfo(ctx context.Context, me lib.ClientVersionExt) (res lib.ServerClientVersionInfo, err error) {
+	arg := GetClientVersionInfoArg{
+		Me: me,
+	}
+	warg := &rpc.DataWrap[lib.Header, *GetClientVersionInfoArgInternal__]{
+		Data: arg.Export(),
+	}
+	if c.MakeArgHeader != nil {
+		warg.Header = c.MakeArgHeader()
+	}
+	var tmp rpc.DataWrap[lib.Header, lib.ServerClientVersionInfoInternal__]
+	err = c.Cli.Call2(ctx, rpc.NewMethodV2(RegProtocolID, 23, "Reg.getClientVersionInfo"), warg, &tmp, 0*time.Millisecond, regErrorUnwrapperAdapter{h: c.ErrorUnwrapper})
 	if err != nil {
 		return
 	}
@@ -3200,6 +3237,35 @@ func RegProtocol(i RegInterface) rpc.ProtocolV2 {
 					},
 				},
 				Name: "getVHostMgmtHost",
+			},
+			23: {
+				ServeHandlerDescription: rpc.ServeHandlerDescription{
+					MakeArg: func() interface{} {
+						var ret rpc.DataWrap[lib.Header, *GetClientVersionInfoArgInternal__]
+						return &ret
+					},
+					Handler: func(ctx context.Context, args interface{}) (interface{}, error) {
+						typedWrappedArg, ok := args.(*rpc.DataWrap[lib.Header, *GetClientVersionInfoArgInternal__])
+						if !ok {
+							err := rpc.NewTypeError((*rpc.DataWrap[lib.Header, *GetClientVersionInfoArgInternal__])(nil), args)
+							return nil, err
+						}
+						if err := i.CheckArgHeader(ctx, typedWrappedArg.Header); err != nil {
+							return nil, err
+						}
+						typedArg := typedWrappedArg.Data
+						tmp, err := i.GetClientVersionInfo(ctx, (typedArg.Import()).Me)
+						if err != nil {
+							return nil, err
+						}
+						ret := rpc.DataWrap[lib.Header, *lib.ServerClientVersionInfoInternal__]{
+							Data:   tmp.Export(),
+							Header: i.MakeResHeader(),
+						}
+						return &ret, nil
+					},
+				},
+				Name: "getClientVersionInfo",
 			},
 		},
 		WrapError: RegMakeGenericErrorWrapper(i.ErrorWrapper()),

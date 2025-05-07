@@ -55,7 +55,7 @@ func (s stateCheckedInput) next(mctx libclient.MetaContext, mdl model) (state, t
 }
 
 func pushReturnToContinue(b *strings.Builder, s string) {
-	fmt.Fprintf(b, "   ✅ %s; %s", happyStyle.Render(s), "push <return> to continue")
+	fmt.Fprintf(b, "   ✅ %s; %s", HappyStyle.Render(s), "push <return> to continue")
 }
 
 func (s stateCheckedInput) view() string {
@@ -162,7 +162,7 @@ func (s stateCheckedInput) summary() summary {
 	if len(s.acceptedInput) == 0 {
 		return nil
 	}
-	display := fmt.Sprintf("%s: %s", s.summaryLabel, happyStyle.Render(s.acceptedInput))
+	display := fmt.Sprintf("%s: %s", s.summaryLabel, HappyStyle.Render(s.acceptedInput))
 	if s.summarySuffix != "" {
 		display += " " + s.summarySuffix
 	}

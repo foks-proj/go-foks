@@ -61,6 +61,10 @@ func gitCreate(m libclient.MetaContext, top *cobra.Command) {
 				return err
 			}
 			m.G().UIs().Terminal.Printf("Created: %s\n", urlStr)
+			err = PartingConsoleMessage(m)
+			if err != nil {
+				return err
+			}
 			return nil
 		},
 	)
@@ -117,6 +121,10 @@ func gitLs(m libclient.MetaContext, top *cobra.Command) {
 					return err
 				}
 				m.G().UIs().Terminal.Printf("%s\t%s\n", url.Repo, s)
+			}
+			err = PartingConsoleMessage(m)
+			if err != nil {
+				return err
 			}
 			return nil
 		},

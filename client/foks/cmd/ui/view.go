@@ -13,7 +13,7 @@ import (
 func drawTextInput(ti textinput.Model, prompt string, validator func(string) error) string {
 	var err error
 	s := ti.Value()
-	styl := happyStyle
+	styl := HappyStyle
 	var emsg string
 	if len(s) > 0 {
 		err = validator(s)

@@ -2,6 +2,13 @@ project: foks
 maintaner: Maxwell Krohn <max@ne43.com>
 
 changelog:
+  - version: 0.0.19
+    urgency: low
+    stable: false
+    date: 2025-05-12 13:44:00 -0400
+    chnages:
+      - desc: Unified nag experience, including nag for software updates.
+        closes: [ "#26" ]
   - version: 0.0.18
     urgency: low
     stable: false

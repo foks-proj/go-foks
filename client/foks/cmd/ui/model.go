@@ -20,7 +20,7 @@ type summary interface {
 
 type summarySuccess string
 
-func (g summarySuccess) view() string { return happyStyle.Render("✓ ") + string(g) }
+func (g summarySuccess) view() string { return HappyStyle.Render("✓ ") + string(g) }
 
 type failure interface {
 	view() string

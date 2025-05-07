@@ -201,3 +201,265 @@ func (h *HeaderV1) Decode(dec rpc.Decoder) error {
 }
 
 func (h *HeaderV1) Bytes() []byte { return nil }
+
+type SemVer struct {
+	Major uint64
+	Minor uint64
+	Patch uint64
+}
+
+type SemVerInternal__ struct {
+	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
+	Major   *uint64
+	Minor   *uint64
+	Patch   *uint64
+}
+
+func (s SemVerInternal__) Import() SemVer {
+	return SemVer{
+		Major: (func(x *uint64) (ret uint64) {
+			if x == nil {
+				return ret
+			}
+			return *x
+		})(s.Major),
+		Minor: (func(x *uint64) (ret uint64) {
+			if x == nil {
+				return ret
+			}
+			return *x
+		})(s.Minor),
+		Patch: (func(x *uint64) (ret uint64) {
+			if x == nil {
+				return ret
+			}
+			return *x
+		})(s.Patch),
+	}
+}
+
+func (s SemVer) Export() *SemVerInternal__ {
+	return &SemVerInternal__{
+		Major: &s.Major,
+		Minor: &s.Minor,
+		Patch: &s.Patch,
+	}
+}
+
+func (s *SemVer) Encode(enc rpc.Encoder) error {
+	return enc.Encode(s.Export())
+}
+
+func (s *SemVer) Decode(dec rpc.Decoder) error {
+	var tmp SemVerInternal__
+	err := dec.Decode(&tmp)
+	if err != nil {
+		return err
+	}
+	*s = tmp.Import()
+	return nil
+}
+
+func (s *SemVer) Bytes() []byte { return nil }
+
+type ClientVersionExt struct {
+	Vers            SemVer
+	LinkerVersion   string
+	LinkerPackaging string
+}
+
+type ClientVersionExtInternal__ struct {
+	_struct         struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
+	Vers            *SemVerInternal__
+	LinkerVersion   *string
+	LinkerPackaging *string
+}
+
+func (c ClientVersionExtInternal__) Import() ClientVersionExt {
+	return ClientVersionExt{
+		Vers: (func(x *SemVerInternal__) (ret SemVer) {
+			if x == nil {
+				return ret
+			}
+			return x.Import()
+		})(c.Vers),
+		LinkerVersion: (func(x *string) (ret string) {
+			if x == nil {
+				return ret
+			}
+			return *x
+		})(c.LinkerVersion),
+		LinkerPackaging: (func(x *string) (ret string) {
+			if x == nil {
+				return ret
+			}
+			return *x
+		})(c.LinkerPackaging),
+	}
+}
+
+func (c ClientVersionExt) Export() *ClientVersionExtInternal__ {
+	return &ClientVersionExtInternal__{
+		Vers:            c.Vers.Export(),
+		LinkerVersion:   &c.LinkerVersion,
+		LinkerPackaging: &c.LinkerPackaging,
+	}
+}
+
+func (c *ClientVersionExt) Encode(enc rpc.Encoder) error {
+	return enc.Encode(c.Export())
+}
+
+func (c *ClientVersionExt) Decode(dec rpc.Decoder) error {
+	var tmp ClientVersionExtInternal__
+	err := dec.Decode(&tmp)
+	if err != nil {
+		return err
+	}
+	*c = tmp.Import()
+	return nil
+}
+
+func (c *ClientVersionExt) Bytes() []byte { return nil }
+
+type ServerClientVersionInfo struct {
+	Min    *SemVer
+	Newest *SemVer
+	Msg    string
+}
+
+type ServerClientVersionInfoInternal__ struct {
+	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
+	Min     *SemVerInternal__
+	Newest  *SemVerInternal__
+	Msg     *string
+}
+
+func (s ServerClientVersionInfoInternal__) Import() ServerClientVersionInfo {
+	return ServerClientVersionInfo{
+		Min: (func(x *SemVerInternal__) *SemVer {
+			if x == nil {
+				return nil
+			}
+			tmp := (func(x *SemVerInternal__) (ret SemVer) {
+				if x == nil {
+					return ret
+				}
+				return x.Import()
+			})(x)
+			return &tmp
+		})(s.Min),
+		Newest: (func(x *SemVerInternal__) *SemVer {
+			if x == nil {
+				return nil
+			}
+			tmp := (func(x *SemVerInternal__) (ret SemVer) {
+				if x == nil {
+					return ret
+				}
+				return x.Import()
+			})(x)
+			return &tmp
+		})(s.Newest),
+		Msg: (func(x *string) (ret string) {
+			if x == nil {
+				return ret
+			}
+			return *x
+		})(s.Msg),
+	}
+}
+
+func (s ServerClientVersionInfo) Export() *ServerClientVersionInfoInternal__ {
+	return &ServerClientVersionInfoInternal__{
+		Min: (func(x *SemVer) *SemVerInternal__ {
+			if x == nil {
+				return nil
+			}
+			return (*x).Export()
+		})(s.Min),
+		Newest: (func(x *SemVer) *SemVerInternal__ {
+			if x == nil {
+				return nil
+			}
+			return (*x).Export()
+		})(s.Newest),
+		Msg: &s.Msg,
+	}
+}
+
+func (s *ServerClientVersionInfo) Encode(enc rpc.Encoder) error {
+	return enc.Encode(s.Export())
+}
+
+func (s *ServerClientVersionInfo) Decode(dec rpc.Decoder) error {
+	var tmp ServerClientVersionInfoInternal__
+	err := dec.Decode(&tmp)
+	if err != nil {
+		return err
+	}
+	*s = tmp.Import()
+	return nil
+}
+
+func (s *ServerClientVersionInfo) Bytes() []byte { return nil }
+
+type VersionBundle struct {
+	Cli    ClientVersionExt
+	Agent  ClientVersionExt
+	Server ServerClientVersionInfo
+}
+
+type VersionBundleInternal__ struct {
+	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
+	Cli     *ClientVersionExtInternal__
+	Agent   *ClientVersionExtInternal__
+	Server  *ServerClientVersionInfoInternal__
+}
+
+func (v VersionBundleInternal__) Import() VersionBundle {
+	return VersionBundle{
+		Cli: (func(x *ClientVersionExtInternal__) (ret ClientVersionExt) {
+			if x == nil {
+				return ret
+			}
+			return x.Import()
+		})(v.Cli),
+		Agent: (func(x *ClientVersionExtInternal__) (ret ClientVersionExt) {
+			if x == nil {
+				return ret
+			}
+			return x.Import()
+		})(v.Agent),
+		Server: (func(x *ServerClientVersionInfoInternal__) (ret ServerClientVersionInfo) {
+			if x == nil {
+				return ret
+			}
+			return x.Import()
+		})(v.Server),
+	}
+}
+
+func (v VersionBundle) Export() *VersionBundleInternal__ {
+	return &VersionBundleInternal__{
+		Cli:    v.Cli.Export(),
+		Agent:  v.Agent.Export(),
+		Server: v.Server.Export(),
+	}
+}
+
+func (v *VersionBundle) Encode(enc rpc.Encoder) error {
+	return enc.Encode(v.Export())
+}
+
+func (v *VersionBundle) Decode(dec rpc.Decoder) error {
+	var tmp VersionBundleInternal__
+	err := dec.Decode(&tmp)
+	if err != nil {
+		return err
+	}
+	*v = tmp.Import()
+	return nil
+}
+
+func (v *VersionBundle) Bytes() []byte { return nil }

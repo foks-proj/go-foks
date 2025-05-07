@@ -6,6 +6,7 @@ package lcl
 import (
 	"context"
 	"errors"
+	"fmt"
 	"github.com/foks-proj/go-snowpack-rpc/rpc"
 	"time"
 )
@@ -175,6 +176,398 @@ func (d *DeviceNagInfo) Decode(dec rpc.Decoder) error {
 }
 
 func (d *DeviceNagInfo) Bytes() []byte { return nil }
+
+type CliVersionPair struct {
+	Cli   lib.SemVer
+	Agent lib.SemVer
+}
+
+type CliVersionPairInternal__ struct {
+	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
+	Cli     *lib.SemVerInternal__
+	Agent   *lib.SemVerInternal__
+}
+
+func (c CliVersionPairInternal__) Import() CliVersionPair {
+	return CliVersionPair{
+		Cli: (func(x *lib.SemVerInternal__) (ret lib.SemVer) {
+			if x == nil {
+				return ret
+			}
+			return x.Import()
+		})(c.Cli),
+		Agent: (func(x *lib.SemVerInternal__) (ret lib.SemVer) {
+			if x == nil {
+				return ret
+			}
+			return x.Import()
+		})(c.Agent),
+	}
+}
+
+func (c CliVersionPair) Export() *CliVersionPairInternal__ {
+	return &CliVersionPairInternal__{
+		Cli:   c.Cli.Export(),
+		Agent: c.Agent.Export(),
+	}
+}
+
+func (c *CliVersionPair) Encode(enc rpc.Encoder) error {
+	return enc.Encode(c.Export())
+}
+
+func (c *CliVersionPair) Decode(dec rpc.Decoder) error {
+	var tmp CliVersionPairInternal__
+	err := dec.Decode(&tmp)
+	if err != nil {
+		return err
+	}
+	*c = tmp.Import()
+	return nil
+}
+
+func (c *CliVersionPair) Bytes() []byte { return nil }
+
+type UpgradeNagInfo struct {
+	Agent  lib.SemVer
+	Server lib.ServerClientVersionInfo
+}
+
+type UpgradeNagInfoInternal__ struct {
+	_struct     struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
+	Deprecated0 *struct{}
+	Agent       *lib.SemVerInternal__
+	Server      *lib.ServerClientVersionInfoInternal__
+}
+
+func (u UpgradeNagInfoInternal__) Import() UpgradeNagInfo {
+	return UpgradeNagInfo{
+		Agent: (func(x *lib.SemVerInternal__) (ret lib.SemVer) {
+			if x == nil {
+				return ret
+			}
+			return x.Import()
+		})(u.Agent),
+		Server: (func(x *lib.ServerClientVersionInfoInternal__) (ret lib.ServerClientVersionInfo) {
+			if x == nil {
+				return ret
+			}
+			return x.Import()
+		})(u.Server),
+	}
+}
+
+func (u UpgradeNagInfo) Export() *UpgradeNagInfoInternal__ {
+	return &UpgradeNagInfoInternal__{
+		Agent:  u.Agent.Export(),
+		Server: u.Server.Export(),
+	}
+}
+
+func (u *UpgradeNagInfo) Encode(enc rpc.Encoder) error {
+	return enc.Encode(u.Export())
+}
+
+func (u *UpgradeNagInfo) Decode(dec rpc.Decoder) error {
+	var tmp UpgradeNagInfoInternal__
+	err := dec.Decode(&tmp)
+	if err != nil {
+		return err
+	}
+	*u = tmp.Import()
+	return nil
+}
+
+func (u *UpgradeNagInfo) Bytes() []byte { return nil }
+
+type NagType int
+
+const (
+	NagType_None                          NagType = 0
+	NagType_TooFewDevices                 NagType = 1
+	NagType_ClientVersionCritical         NagType = 2
+	NagType_ClientVersionUpgradeAvailable NagType = 3
+	NagType_ClientVersionClash            NagType = 4
+)
+
+var NagTypeMap = map[string]NagType{
+	"None":                          0,
+	"TooFewDevices":                 1,
+	"ClientVersionCritical":         2,
+	"ClientVersionUpgradeAvailable": 3,
+	"ClientVersionClash":            4,
+}
+
+var NagTypeRevMap = map[NagType]string{
+	0: "None",
+	1: "TooFewDevices",
+	2: "ClientVersionCritical",
+	3: "ClientVersionUpgradeAvailable",
+	4: "ClientVersionClash",
+}
+
+type NagTypeInternal__ NagType
+
+func (n NagTypeInternal__) Import() NagType {
+	return NagType(n)
+}
+
+func (n NagType) Export() *NagTypeInternal__ {
+	return ((*NagTypeInternal__)(&n))
+}
+
+type UnifiedNag struct {
+	T     NagType
+	F_1__ *DeviceNagInfo  `json:"f1,omitempty"`
+	F_2__ *UpgradeNagInfo `json:"f2,omitempty"`
+	F_3__ *CliVersionPair `json:"f3,omitempty"`
+}
+
+type UnifiedNagInternal__ struct {
+	_struct  struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
+	T        NagType
+	Switch__ UnifiedNagInternalSwitch__
+}
+
+type UnifiedNagInternalSwitch__ struct {
+	_struct struct{}                  `codec:",omitempty"` //lint:ignore U1000 msgpack internal field
+	F_1__   *DeviceNagInfoInternal__  `codec:"1"`
+	F_2__   *UpgradeNagInfoInternal__ `codec:"2"`
+	F_3__   *CliVersionPairInternal__ `codec:"3"`
+}
+
+func (u UnifiedNag) GetT() (ret NagType, err error) {
+	switch u.T {
+	case NagType_TooFewDevices:
+		if u.F_1__ == nil {
+			return ret, errors.New("unexpected nil case for F_1__")
+		}
+	case NagType_ClientVersionCritical, NagType_ClientVersionUpgradeAvailable:
+		if u.F_2__ == nil {
+			return ret, errors.New("unexpected nil case for F_2__")
+		}
+	case NagType_ClientVersionClash:
+		if u.F_3__ == nil {
+			return ret, errors.New("unexpected nil case for F_3__")
+		}
+	}
+	return u.T, nil
+}
+
+func (u UnifiedNag) Toofewdevices() DeviceNagInfo {
+	if u.F_1__ == nil {
+		panic("unexepected nil case; should have been checked")
+	}
+	if u.T != NagType_TooFewDevices {
+		panic(fmt.Sprintf("unexpected switch value (%v) when Toofewdevices is called", u.T))
+	}
+	return *u.F_1__
+}
+
+func (u UnifiedNag) Clientversioncritical() UpgradeNagInfo {
+	if u.F_2__ == nil {
+		panic("unexepected nil case; should have been checked")
+	}
+	if u.T != NagType_ClientVersionCritical {
+		panic(fmt.Sprintf("unexpected switch value (%v) when Clientversioncritical is called", u.T))
+	}
+	return *u.F_2__
+}
+
+func (u UnifiedNag) Clientversionupgradeavailable() UpgradeNagInfo {
+	if u.F_2__ == nil {
+		panic("unexepected nil case; should have been checked")
+	}
+	if u.T != NagType_ClientVersionUpgradeAvailable {
+		panic(fmt.Sprintf("unexpected switch value (%v) when Clientversionupgradeavailable is called", u.T))
+	}
+	return *u.F_2__
+}
+
+func (u UnifiedNag) Clientversionclash() CliVersionPair {
+	if u.F_3__ == nil {
+		panic("unexepected nil case; should have been checked")
+	}
+	if u.T != NagType_ClientVersionClash {
+		panic(fmt.Sprintf("unexpected switch value (%v) when Clientversionclash is called", u.T))
+	}
+	return *u.F_3__
+}
+
+func NewUnifiedNagWithToofewdevices(v DeviceNagInfo) UnifiedNag {
+	return UnifiedNag{
+		T:     NagType_TooFewDevices,
+		F_1__: &v,
+	}
+}
+
+func NewUnifiedNagWithClientversioncritical(v UpgradeNagInfo) UnifiedNag {
+	return UnifiedNag{
+		T:     NagType_ClientVersionCritical,
+		F_2__: &v,
+	}
+}
+
+func NewUnifiedNagWithClientversionupgradeavailable(v UpgradeNagInfo) UnifiedNag {
+	return UnifiedNag{
+		T:     NagType_ClientVersionUpgradeAvailable,
+		F_2__: &v,
+	}
+}
+
+func NewUnifiedNagWithClientversionclash(v CliVersionPair) UnifiedNag {
+	return UnifiedNag{
+		T:     NagType_ClientVersionClash,
+		F_3__: &v,
+	}
+}
+
+func (u UnifiedNagInternal__) Import() UnifiedNag {
+	return UnifiedNag{
+		T: u.T,
+		F_1__: (func(x *DeviceNagInfoInternal__) *DeviceNagInfo {
+			if x == nil {
+				return nil
+			}
+			tmp := (func(x *DeviceNagInfoInternal__) (ret DeviceNagInfo) {
+				if x == nil {
+					return ret
+				}
+				return x.Import()
+			})(x)
+			return &tmp
+		})(u.Switch__.F_1__),
+		F_2__: (func(x *UpgradeNagInfoInternal__) *UpgradeNagInfo {
+			if x == nil {
+				return nil
+			}
+			tmp := (func(x *UpgradeNagInfoInternal__) (ret UpgradeNagInfo) {
+				if x == nil {
+					return ret
+				}
+				return x.Import()
+			})(x)
+			return &tmp
+		})(u.Switch__.F_2__),
+		F_3__: (func(x *CliVersionPairInternal__) *CliVersionPair {
+			if x == nil {
+				return nil
+			}
+			tmp := (func(x *CliVersionPairInternal__) (ret CliVersionPair) {
+				if x == nil {
+					return ret
+				}
+				return x.Import()
+			})(x)
+			return &tmp
+		})(u.Switch__.F_3__),
+	}
+}
+
+func (u UnifiedNag) Export() *UnifiedNagInternal__ {
+	return &UnifiedNagInternal__{
+		T: u.T,
+		Switch__: UnifiedNagInternalSwitch__{
+			F_1__: (func(x *DeviceNagInfo) *DeviceNagInfoInternal__ {
+				if x == nil {
+					return nil
+				}
+				return (*x).Export()
+			})(u.F_1__),
+			F_2__: (func(x *UpgradeNagInfo) *UpgradeNagInfoInternal__ {
+				if x == nil {
+					return nil
+				}
+				return (*x).Export()
+			})(u.F_2__),
+			F_3__: (func(x *CliVersionPair) *CliVersionPairInternal__ {
+				if x == nil {
+					return nil
+				}
+				return (*x).Export()
+			})(u.F_3__),
+		},
+	}
+}
+
+func (u *UnifiedNag) Encode(enc rpc.Encoder) error {
+	return enc.Encode(u.Export())
+}
+
+func (u *UnifiedNag) Decode(dec rpc.Decoder) error {
+	var tmp UnifiedNagInternal__
+	err := dec.Decode(&tmp)
+	if err != nil {
+		return err
+	}
+	*u = tmp.Import()
+	return nil
+}
+
+func (u *UnifiedNag) Bytes() []byte { return nil }
+
+type UnifiedNagRes struct {
+	Nags []UnifiedNag
+}
+
+type UnifiedNagResInternal__ struct {
+	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
+	Nags    *[](*UnifiedNagInternal__)
+}
+
+func (u UnifiedNagResInternal__) Import() UnifiedNagRes {
+	return UnifiedNagRes{
+		Nags: (func(x *[](*UnifiedNagInternal__)) (ret []UnifiedNag) {
+			if x == nil || len(*x) == 0 {
+				return nil
+			}
+			ret = make([]UnifiedNag, len(*x))
+			for k, v := range *x {
+				if v == nil {
+					continue
+				}
+				ret[k] = (func(x *UnifiedNagInternal__) (ret UnifiedNag) {
+					if x == nil {
+						return ret
+					}
+					return x.Import()
+				})(v)
+			}
+			return ret
+		})(u.Nags),
+	}
+}
+
+func (u UnifiedNagRes) Export() *UnifiedNagResInternal__ {
+	return &UnifiedNagResInternal__{
+		Nags: (func(x []UnifiedNag) *[](*UnifiedNagInternal__) {
+			if len(x) == 0 {
+				return nil
+			}
+			ret := make([](*UnifiedNagInternal__), len(x))
+			for k, v := range x {
+				ret[k] = v.Export()
+			}
+			return &ret
+		})(u.Nags),
+	}
+}
+
+func (u *UnifiedNagRes) Encode(enc rpc.Encoder) error {
+	return enc.Encode(u.Export())
+}
+
+func (u *UnifiedNagRes) Decode(dec rpc.Decoder) error {
+	var tmp UnifiedNagResInternal__
+	err := dec.Decode(&tmp)
+	if err != nil {
+		return err
+	}
+	*u = tmp.Import()
+	return nil
+}
+
+func (u *UnifiedNagRes) Bytes() []byte { return nil }
 
 type RegServerType int
 
@@ -499,48 +892,6 @@ func (g *GetActiveUserArg) Decode(dec rpc.Decoder) error {
 
 func (g *GetActiveUserArg) Bytes() []byte { return nil }
 
-type GetDeviceNagArg struct {
-	WithRateLimit bool
-}
-
-type GetDeviceNagArgInternal__ struct {
-	_struct       struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
-	WithRateLimit *bool
-}
-
-func (g GetDeviceNagArgInternal__) Import() GetDeviceNagArg {
-	return GetDeviceNagArg{
-		WithRateLimit: (func(x *bool) (ret bool) {
-			if x == nil {
-				return ret
-			}
-			return *x
-		})(g.WithRateLimit),
-	}
-}
-
-func (g GetDeviceNagArg) Export() *GetDeviceNagArgInternal__ {
-	return &GetDeviceNagArgInternal__{
-		WithRateLimit: &g.WithRateLimit,
-	}
-}
-
-func (g *GetDeviceNagArg) Encode(enc rpc.Encoder) error {
-	return enc.Encode(g.Export())
-}
-
-func (g *GetDeviceNagArg) Decode(dec rpc.Decoder) error {
-	var tmp GetDeviceNagArgInternal__
-	err := dec.Decode(&tmp)
-	if err != nil {
-		return err
-	}
-	*g = tmp.Import()
-	return nil
-}
-
-func (g *GetDeviceNagArg) Bytes() []byte { return nil }
-
 type ClearDeviceNagArg struct {
 	Val bool
 }
@@ -583,6 +934,108 @@ func (c *ClearDeviceNagArg) Decode(dec rpc.Decoder) error {
 
 func (c *ClearDeviceNagArg) Bytes() []byte { return nil }
 
+type GetUnifiedNagsArg struct {
+	WithRateLimit bool
+	Cv            lib.ClientVersionExt
+}
+
+type GetUnifiedNagsArgInternal__ struct {
+	_struct       struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
+	WithRateLimit *bool
+	Cv            *lib.ClientVersionExtInternal__
+}
+
+func (g GetUnifiedNagsArgInternal__) Import() GetUnifiedNagsArg {
+	return GetUnifiedNagsArg{
+		WithRateLimit: (func(x *bool) (ret bool) {
+			if x == nil {
+				return ret
+			}
+			return *x
+		})(g.WithRateLimit),
+		Cv: (func(x *lib.ClientVersionExtInternal__) (ret lib.ClientVersionExt) {
+			if x == nil {
+				return ret
+			}
+			return x.Import()
+		})(g.Cv),
+	}
+}
+
+func (g GetUnifiedNagsArg) Export() *GetUnifiedNagsArgInternal__ {
+	return &GetUnifiedNagsArgInternal__{
+		WithRateLimit: &g.WithRateLimit,
+		Cv:            g.Cv.Export(),
+	}
+}
+
+func (g *GetUnifiedNagsArg) Encode(enc rpc.Encoder) error {
+	return enc.Encode(g.Export())
+}
+
+func (g *GetUnifiedNagsArg) Decode(dec rpc.Decoder) error {
+	var tmp GetUnifiedNagsArgInternal__
+	err := dec.Decode(&tmp)
+	if err != nil {
+		return err
+	}
+	*g = tmp.Import()
+	return nil
+}
+
+func (g *GetUnifiedNagsArg) Bytes() []byte { return nil }
+
+type SnoozeUpgradeNagArg struct {
+	Val bool
+	Dur lib.DurationSecs
+}
+
+type SnoozeUpgradeNagArgInternal__ struct {
+	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
+	Val     *bool
+	Dur     *lib.DurationSecsInternal__
+}
+
+func (s SnoozeUpgradeNagArgInternal__) Import() SnoozeUpgradeNagArg {
+	return SnoozeUpgradeNagArg{
+		Val: (func(x *bool) (ret bool) {
+			if x == nil {
+				return ret
+			}
+			return *x
+		})(s.Val),
+		Dur: (func(x *lib.DurationSecsInternal__) (ret lib.DurationSecs) {
+			if x == nil {
+				return ret
+			}
+			return x.Import()
+		})(s.Dur),
+	}
+}
+
+func (s SnoozeUpgradeNagArg) Export() *SnoozeUpgradeNagArgInternal__ {
+	return &SnoozeUpgradeNagArgInternal__{
+		Val: &s.Val,
+		Dur: s.Dur.Export(),
+	}
+}
+
+func (s *SnoozeUpgradeNagArg) Encode(enc rpc.Encoder) error {
+	return enc.Encode(s.Export())
+}
+
+func (s *SnoozeUpgradeNagArg) Decode(dec rpc.Decoder) error {
+	var tmp SnoozeUpgradeNagArgInternal__
+	err := dec.Decode(&tmp)
+	if err != nil {
+		return err
+	}
+	*s = tmp.Import()
+	return nil
+}
+
+func (s *SnoozeUpgradeNagArg) Bytes() []byte { return nil }
+
 type GeneralInterface interface {
 	Probe(context.Context, lib.TCPAddr) (lib.PublicZone, error)
 	NewSession(context.Context, lib.UISessionType) (lib.UISessionID, error)
@@ -590,8 +1043,9 @@ type GeneralInterface interface {
 	GetDefaultServer(context.Context, GetDefaultServerArg) (GetDefaultServerRes, error)
 	PutServer(context.Context, PutServerArg) (lib.RegServerConfig, error)
 	GetActiveUser(context.Context) (lib.UserContext, error)
-	GetDeviceNag(context.Context, bool) (DeviceNagInfo, error)
 	ClearDeviceNag(context.Context, bool) error
+	GetUnifiedNags(context.Context, GetUnifiedNagsArg) (UnifiedNagRes, error)
+	SnoozeUpgradeNag(context.Context, SnoozeUpgradeNagArg) error
 	ErrorWrapper() func(error) lib.Status
 	CheckArgHeader(ctx context.Context, h Header) error
 
@@ -779,18 +1233,39 @@ func (c GeneralClient) GetActiveUser(ctx context.Context) (res lib.UserContext, 
 	return
 }
 
-func (c GeneralClient) GetDeviceNag(ctx context.Context, withRateLimit bool) (res DeviceNagInfo, err error) {
-	arg := GetDeviceNagArg{
-		WithRateLimit: withRateLimit,
+func (c GeneralClient) ClearDeviceNag(ctx context.Context, val bool) (err error) {
+	arg := ClearDeviceNagArg{
+		Val: val,
 	}
-	warg := &rpc.DataWrap[Header, *GetDeviceNagArgInternal__]{
+	warg := &rpc.DataWrap[Header, *ClearDeviceNagArgInternal__]{
 		Data: arg.Export(),
 	}
 	if c.MakeArgHeader != nil {
 		warg.Header = c.MakeArgHeader()
 	}
-	var tmp rpc.DataWrap[Header, DeviceNagInfoInternal__]
-	err = c.Cli.Call2(ctx, rpc.NewMethodV2(GeneralProtocolID, 6, "General.getDeviceNag"), warg, &tmp, 0*time.Millisecond, generalErrorUnwrapperAdapter{h: c.ErrorUnwrapper})
+	var tmp rpc.DataWrap[Header, interface{}]
+	err = c.Cli.Call2(ctx, rpc.NewMethodV2(GeneralProtocolID, 7, "General.clearDeviceNag"), warg, &tmp, 0*time.Millisecond, generalErrorUnwrapperAdapter{h: c.ErrorUnwrapper})
+	if err != nil {
+		return
+	}
+	if c.CheckResHeader != nil {
+		err = c.CheckResHeader(ctx, tmp.Header)
+		if err != nil {
+			return
+		}
+	}
+	return
+}
+
+func (c GeneralClient) GetUnifiedNags(ctx context.Context, arg GetUnifiedNagsArg) (res UnifiedNagRes, err error) {
+	warg := &rpc.DataWrap[Header, *GetUnifiedNagsArgInternal__]{
+		Data: arg.Export(),
+	}
+	if c.MakeArgHeader != nil {
+		warg.Header = c.MakeArgHeader()
+	}
+	var tmp rpc.DataWrap[Header, UnifiedNagResInternal__]
+	err = c.Cli.Call2(ctx, rpc.NewMethodV2(GeneralProtocolID, 8, "General.getUnifiedNags"), warg, &tmp, 0*time.Millisecond, generalErrorUnwrapperAdapter{h: c.ErrorUnwrapper})
 	if err != nil {
 		return
 	}
@@ -804,18 +1279,15 @@ func (c GeneralClient) GetDeviceNag(ctx context.Context, withRateLimit bool) (re
 	return
 }
 
-func (c GeneralClient) ClearDeviceNag(ctx context.Context, val bool) (err error) {
-	arg := ClearDeviceNagArg{
-		Val: val,
-	}
-	warg := &rpc.DataWrap[Header, *ClearDeviceNagArgInternal__]{
+func (c GeneralClient) SnoozeUpgradeNag(ctx context.Context, arg SnoozeUpgradeNagArg) (err error) {
+	warg := &rpc.DataWrap[Header, *SnoozeUpgradeNagArgInternal__]{
 		Data: arg.Export(),
 	}
 	if c.MakeArgHeader != nil {
 		warg.Header = c.MakeArgHeader()
 	}
 	var tmp rpc.DataWrap[Header, interface{}]
-	err = c.Cli.Call2(ctx, rpc.NewMethodV2(GeneralProtocolID, 7, "General.clearDeviceNag"), warg, &tmp, 0*time.Millisecond, generalErrorUnwrapperAdapter{h: c.ErrorUnwrapper})
+	err = c.Cli.Call2(ctx, rpc.NewMethodV2(GeneralProtocolID, 9, "General.snoozeUpgradeNag"), warg, &tmp, 0*time.Millisecond, generalErrorUnwrapperAdapter{h: c.ErrorUnwrapper})
 	if err != nil {
 		return
 	}
@@ -1005,35 +1477,6 @@ func GeneralProtocol(i GeneralInterface) rpc.ProtocolV2 {
 				},
 				Name: "getActiveUser",
 			},
-			6: {
-				ServeHandlerDescription: rpc.ServeHandlerDescription{
-					MakeArg: func() interface{} {
-						var ret rpc.DataWrap[Header, *GetDeviceNagArgInternal__]
-						return &ret
-					},
-					Handler: func(ctx context.Context, args interface{}) (interface{}, error) {
-						typedWrappedArg, ok := args.(*rpc.DataWrap[Header, *GetDeviceNagArgInternal__])
-						if !ok {
-							err := rpc.NewTypeError((*rpc.DataWrap[Header, *GetDeviceNagArgInternal__])(nil), args)
-							return nil, err
-						}
-						if err := i.CheckArgHeader(ctx, typedWrappedArg.Header); err != nil {
-							return nil, err
-						}
-						typedArg := typedWrappedArg.Data
-						tmp, err := i.GetDeviceNag(ctx, (typedArg.Import()).WithRateLimit)
-						if err != nil {
-							return nil, err
-						}
-						ret := rpc.DataWrap[Header, *DeviceNagInfoInternal__]{
-							Data:   tmp.Export(),
-							Header: i.MakeResHeader(),
-						}
-						return &ret, nil
-					},
-				},
-				Name: "getDeviceNag",
-			},
 			7: {
 				ServeHandlerDescription: rpc.ServeHandlerDescription{
 					MakeArg: func() interface{} {
@@ -1061,6 +1504,63 @@ func GeneralProtocol(i GeneralInterface) rpc.ProtocolV2 {
 					},
 				},
 				Name: "clearDeviceNag",
+			},
+			8: {
+				ServeHandlerDescription: rpc.ServeHandlerDescription{
+					MakeArg: func() interface{} {
+						var ret rpc.DataWrap[Header, *GetUnifiedNagsArgInternal__]
+						return &ret
+					},
+					Handler: func(ctx context.Context, args interface{}) (interface{}, error) {
+						typedWrappedArg, ok := args.(*rpc.DataWrap[Header, *GetUnifiedNagsArgInternal__])
+						if !ok {
+							err := rpc.NewTypeError((*rpc.DataWrap[Header, *GetUnifiedNagsArgInternal__])(nil), args)
+							return nil, err
+						}
+						if err := i.CheckArgHeader(ctx, typedWrappedArg.Header); err != nil {
+							return nil, err
+						}
+						typedArg := typedWrappedArg.Data
+						tmp, err := i.GetUnifiedNags(ctx, (typedArg.Import()))
+						if err != nil {
+							return nil, err
+						}
+						ret := rpc.DataWrap[Header, *UnifiedNagResInternal__]{
+							Data:   tmp.Export(),
+							Header: i.MakeResHeader(),
+						}
+						return &ret, nil
+					},
+				},
+				Name: "getUnifiedNags",
+			},
+			9: {
+				ServeHandlerDescription: rpc.ServeHandlerDescription{
+					MakeArg: func() interface{} {
+						var ret rpc.DataWrap[Header, *SnoozeUpgradeNagArgInternal__]
+						return &ret
+					},
+					Handler: func(ctx context.Context, args interface{}) (interface{}, error) {
+						typedWrappedArg, ok := args.(*rpc.DataWrap[Header, *SnoozeUpgradeNagArgInternal__])
+						if !ok {
+							err := rpc.NewTypeError((*rpc.DataWrap[Header, *SnoozeUpgradeNagArgInternal__])(nil), args)
+							return nil, err
+						}
+						if err := i.CheckArgHeader(ctx, typedWrappedArg.Header); err != nil {
+							return nil, err
+						}
+						typedArg := typedWrappedArg.Data
+						err := i.SnoozeUpgradeNag(ctx, (typedArg.Import()))
+						if err != nil {
+							return nil, err
+						}
+						ret := rpc.DataWrap[Header, interface{}]{
+							Header: i.MakeResHeader(),
+						}
+						return &ret, nil
+					},
+				},
+				Name: "snoozeUpgradeNag",
 			},
 		},
 		WrapError: GeneralMakeGenericErrorWrapper(i.ErrorWrapper()),

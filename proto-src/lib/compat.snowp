@@ -16,3 +16,29 @@ typedef CompatibilityVersion = Uint;
 struct HeaderV1 {
     vers @0 : CompatibilityVersion;
 }
+
+struct SemVer {
+    major @0 : Uint;
+    minor @1 : Uint;
+    patch @2 : Uint;
+}
+
+struct ClientVersionExt {
+    vers @0 : SemVer;
+    linkerVersion @1 : Text;
+    linkerPackaging @2 : Text;
+}
+
+// ServerClientVersionInfo is used when the server replies what what version
+// the user client should upgrade to, or if it's no longer supported.
+struct ServerClientVersionInfo {
+    min @0 : Option(lib.SemVer);
+    newest @1 : Option(lib.SemVer);
+    msg @2 : Text;
+}
+
+struct VersionBundle {
+    cli @0 : ClientVersionExt;
+    agent @1 : ClientVersionExt;
+    server @2 : ServerClientVersionInfo;
+}

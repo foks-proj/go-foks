@@ -167,7 +167,7 @@ func getNag(m libclient.MetaContext, top *cobra.Command) {
 			if err != nil {
 				return err
 			}
-			ret, err := checkShouldNag(m, useRateLimit)
+			ret, err := checkUnifiedNags(m, useRateLimit)
 			if err != nil {
 				return err
 			}

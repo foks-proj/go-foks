@@ -26,7 +26,7 @@ func RunCtlStart(m libclient.MetaContext, cmd *cobra.Command, arg []string) erro
 	if err != nil {
 		return err
 	}
-	prnt("foks agent running as in the background, and will start automatically on login\n")
+	prnt("foks agent is running in the background, and will start automatically on login\n")
 	prnt("Use `foks ctl stop` to stop and uninstall it\n")
 	return nil
 }

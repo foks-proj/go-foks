@@ -200,7 +200,7 @@ func (s stateHome) view() string {
 	fmt.Fprintf(&b, "%s\n\n", h1Style.Render("🔑 Welcome to the Federated Open Key Service -- FOKS! 🔑"))
 	fmt.Fprintf(&b, "%s\n\n", s.letsDo)
 	fmt.Fprintf(&b, "  🆗 Press %s to get started\n",
-		happyStyle.Render("<Enter>"),
+		HappyStyle.Render("<Enter>"),
 	)
 	fmt.Fprintf(&b, "  ☮️  Or %s or %s at any time to quit\n",
 		ErrorStyle.Render("<Ctrl+C>"),
@@ -996,7 +996,7 @@ func (s stateTryHost) init(mctx libclient.MetaContext, mdl model) (state, tea.Cm
 func (s stateTryHost) summary() summary {
 	if len(s.host) > 0 && s.res != nil && s.res.err == nil {
 		hn := s.host.ProbeHostString()
-		return summarySuccess("Using FOKS host: " + happyStyle.Render(hn))
+		return summarySuccess("Using FOKS host: " + HappyStyle.Render(hn))
 	}
 	return nil
 }
@@ -1090,7 +1090,7 @@ func newStateConfirmYubiProvision(un proto.Name) state {
 	return stateGetConfirmation{
 		msg: fmt.Sprintf("Provision YubiKey on this device for %s?",
 			italicStyle.Render(string(un))),
-		summaryText: "User: " + happyStyle.Render(string(un)),
+		summaryText: "User: " + HappyStyle.Render(string(un)),
 		checkingMsg: "Finalizing YubiKey provision",
 		nextState: func(s stateGetConfirmation, mdl model) state {
 			return newStateFinishYubiProvision()
@@ -1713,7 +1713,7 @@ func NextStepsTable(t NextStepsTableOpts) string {
 				item.emoji,
 				item.desc,
 				strings.Repeat(" ", longDescLen-len(item.desc)+2),
-				happyStyle.Render("foks "+item.cmd))
+				HappyStyle.Render("foks "+item.cmd))
 		}
 	}
 	return b.String()
@@ -1743,7 +1743,7 @@ func (f stateFinishSignup) view(s stateFinishBase) string {
 		fmt.Fprintf(&b, "  You have signed up for a %s account.\n",
 			italicStyle.Render("Virtual Host Management"))
 		fmt.Fprintf(&b, "  The next step is to access the web management portal:\n\n")
-		fmt.Fprintf(&b, "      %s\n\n", happyStyle.Render("foks admin web"))
+		fmt.Fprintf(&b, "      %s\n\n", HappyStyle.Render("foks admin web"))
 		fmt.Fprintf(&b, "  Also, consider securing your account with backup keys:\n")
 		s := NextStepsTable(NextStepsTableOpts{Header: false, BackupOnly: true, NoBilling: noBilling})
 		fmt.Fprintf(&b, "\n%s\n\n", s)

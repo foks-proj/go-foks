@@ -76,7 +76,7 @@ func (s stateShowKey) next(mctx libclient.MetaContext, mdl model) (state, tea.Cm
 
 func anyKey(b *strings.Builder) {
 	fmt.Fprintf(b, "  🆗 Press %s to continue\n",
-		happyStyle.Render("<Return>"),
+		HappyStyle.Render("<Return>"),
 	)
 }
 

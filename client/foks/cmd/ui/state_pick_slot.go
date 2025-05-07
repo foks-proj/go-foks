@@ -68,7 +68,7 @@ func (s statePickYubiSlot) summary() summary {
 	if err != nil {
 		return nil
 	}
-	sty := happyStyle.Render
+	sty := HappyStyle.Render
 	var pq string
 	if s.pqKey {
 		pq = " for ML-KEM key seed"

@@ -411,7 +411,8 @@ func (a *testAgent) runCmdToJSON(
 		return nil
 	}
 	a.runCmd(t, hook, args...)
-	err := json.Unmarshal(term.Bytes(), out)
+	byts := term.Bytes()
+	err := json.Unmarshal(byts, out)
 	require.NoError(t, err)
 }
 

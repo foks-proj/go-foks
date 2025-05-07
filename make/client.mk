@@ -10,6 +10,11 @@ client:
 	(cd client/foks && CGO_ENABLED=1 go install)
 	@echo "Client binary is ready: $$(scripts/gowhere.sh)/foks"
 
+.PHONY: client-signed
+client-signed:
+	(cd client/foks && CGO_ENABLED=1 go install)
+	./scripts/macos-sign.bash $$(scripts/gowhere.sh)/foks
+	@echo "Signed client binary is ready: $$(scripts/gowhere.sh)/foks"
 
 client-proto: proto client
 full: client-proto

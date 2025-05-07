@@ -20,6 +20,35 @@ struct DeviceNagInfo {
     numDevices @1 : Uint;
 }
 
+struct CliVersionPair {
+    cli @0 : lib.SemVer;
+    agent @1 : lib.SemVer;
+}
+
+struct UpgradeNagInfo {
+    agent @1 : lib.SemVer;
+    server @2 : lib.ServerClientVersionInfo;
+}
+
+enum NagType {
+    None @0;
+    TooFewDevices @1;
+    ClientVersionCritical @2;
+    ClientVersionUpgradeAvailable @3;
+    ClientVersionClash @4;
+}
+
+variant UnifiedNag switch (t : NagType) {
+    case TooFewDevices @1: DeviceNagInfo;
+    case ClientVersionCritical,
+        ClientVersionUpgradeAvailable @2: UpgradeNagInfo;
+    case ClientVersionClash @3: CliVersionPair;
+}
+
+struct UnifiedNagRes {
+    nags @0 : List(UnifiedNag);
+}
+
 enum RegServerType {
     None @0;
     Default @1;
@@ -58,11 +87,17 @@ protocol General
 
     getActiveUser @5 () -> lib.UserContext;
 
-    getDeviceNag @6 (
-        withRateLimit @0 : Bool
-    ) -> DeviceNagInfo;
-    
     clearDeviceNag @7 ( val @0 : Bool );
 
-    
+    getUnifiedNags @8 (
+        withRateLimit @0 : Bool,
+        cv @1 : lib.ClientVersionExt
+    ) -> UnifiedNagRes;
+
+    // If true, snooze the upgrade nag at the current version for 2 weeks;
+    // If false, remove the snooze and show the nag again.
+    snoozeUpgradeNag @9 (
+        val @0 : Bool,
+        dur @1 : lib.DurationSecs
+    );
 }

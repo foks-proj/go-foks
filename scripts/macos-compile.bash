@@ -50,7 +50,8 @@ targ="build/darwin-${plat}/foks"
 mkdir -p $(dirname ${targ})
 
 src="./client/foks"
-linkerVersion="-X github.com/foks-proj/go-foks/client/foks/cmd.LinkedVersion=${version}"
+linkerVersion="-X github.com/foks-proj/go-foks/client/libclient.LinkerVersion=${version}"
+linkerPackaging="-X github.com/foks-proj/go-foks/client/libclient.LinkerPackaging=darwin-zip"
 strip_w_flag=""
 trimppath_flag=""
 
@@ -67,7 +68,7 @@ export GOARCH=${plat}
 
 go build -o ${targ} \
     ${trimppath_flag} \
-    -ldflags "${strip_w_flag} ${linkerVersion}" \
+    -ldflags "${strip_w_flag} ${linkerVersion} ${linkerPackaging}" \
     ${src}
 
 echo "Build complete -> ${targ}"

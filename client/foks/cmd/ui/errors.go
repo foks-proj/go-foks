@@ -22,7 +22,7 @@ func ClientifyErrorMessage(e error) string {
 	case core.YubiDefaultPINError:
 		var b strings.Builder
 		fmt.Fprintf(&b, "Default YubiKey PINs are not allowed; use %s to set one",
-			happyStyle.Render(
+			HappyStyle.Render(
 				italicStyle.Render("foks yubi set-pin"),
 			),
 		)

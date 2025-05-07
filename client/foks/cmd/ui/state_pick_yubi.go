@@ -65,7 +65,7 @@ func (s statePickYubi) summary() summary {
 	case s.pickedYubi != nil:
 		msg := fmt.Sprintf("%s: %s",
 			"Using YubiKey device",
-			happyStyle.Render(string(s.pickedYubi.Name)))
+			HappyStyle.Render(string(s.pickedYubi.Name)))
 		return summarySuccessUseYubi{
 			summarySuccess: summarySuccess(msg),
 		}

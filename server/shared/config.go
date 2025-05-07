@@ -250,6 +250,7 @@ type Config interface {
 
 	CKSConfig(ctx context.Context) (CKSConfigger, error)
 	PKIXConfig(ctx context.Context) (PKIXConfigger, error)
+	ClientConfig(ctx context.Context) (ClientConfigger, error)
 
 	HostID() (core.HostID, error)
 	GetDNSAliases(ctx context.Context) (core.CNameResolver, error)
@@ -498,6 +499,16 @@ func (b BindAddr) Export() proto.BindAddr {
 	return proto.BindAddr(b)
 }
 
+type ClientVersioner interface {
+	MinVersion() *proto.SemVer
+	NewestVersion() *proto.SemVer
+	Message() string
+}
+
+type ClientConfigger interface {
+	ClientVersion() ClientVersioner
+}
+
 type EmptyConfig struct{}
 
 var _ Config = (*EmptyConfig)(nil)
@@ -581,5 +592,8 @@ func (c *EmptyConfig) CKSConfig(ctx context.Context) (CKSConfigger, error) {
 	return nil, NewEmptyConfigError()
 }
 func (c *EmptyConfig) PKIXConfig(ctx context.Context) (PKIXConfigger, error) {
+	return nil, NewEmptyConfigError()
+}
+func (c *EmptyConfig) ClientConfig(ctx context.Context) (ClientConfigger, error) {
 	return nil, NewEmptyConfigError()
 }

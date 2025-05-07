@@ -56,7 +56,7 @@ func (s stateGetConfirmation) next(mctx libclient.MetaContext, mdl model) (state
 
 func okOrCancel(b *strings.Builder) {
 	fmt.Fprintf(b, "  🆗 Press %s to accept\n",
-		happyStyle.Render("<Return>"),
+		HappyStyle.Render("<Return>"),
 	)
 	fmt.Fprintf(b, "  ☮️  Or %s or %s to cancel\n",
 		ErrorStyle.Render("<Ctrl+C>"),

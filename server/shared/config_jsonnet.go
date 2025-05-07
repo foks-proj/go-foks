@@ -300,6 +300,7 @@ type JSonnetTemplateNoLog struct {
 	CKS    *CKSConfigJSON    `json:"cks"`
 	PKIX   *PKIXConfigJSON   `json:"pkix"`
 	VHosts *VHostsConfigJSON `json:"vhosts"`
+	Client *ClientConfigJSON `json:"client"`
 }
 
 type JSonnetTemplate struct {
@@ -912,6 +913,52 @@ func (c *CKSConfigJSON) EncKeys() ([]cks.EncKey, error) {
 		ret = append(ret, cks.EncKey{CKSEncKey: *key})
 	}
 	return ret, nil
+}
+
+type ClientVersionConfigJSON struct {
+	MinVersion_    *core.ParsedSemVer `json:"min"`
+	NewestVersion_ *core.ParsedSemVer `json:"newest"`
+	Message_       string             `json:"message"`
+}
+
+type ClientConfigJSON struct {
+	ClientVersion_ *ClientVersionConfigJSON `json:"version"`
+}
+
+func (j *ClientVersionConfigJSON) MinVersion() *proto.SemVer {
+	if j == nil || j.MinVersion_ == nil {
+		return nil
+	}
+	return &j.MinVersion_.SemVer
+}
+func (j *ClientVersionConfigJSON) NewestVersion() *proto.SemVer {
+	if j == nil || j.NewestVersion_ == nil {
+		return nil
+	}
+	return &j.NewestVersion_.SemVer
+}
+
+func (j *ClientVersionConfigJSON) Message() string {
+	if j == nil || j.Message_ == "" {
+		return ""
+	}
+	return j.Message_
+}
+
+func (c *ClientConfigJSON) ClientVersion() ClientVersioner {
+	if c == nil || c.ClientVersion_ == nil {
+		return nil
+	}
+	return c.ClientVersion_
+}
+
+func (j *ConfigJSonnet) ClientConfig(ctx context.Context) (ClientConfigger, error) {
+	j.RLock()
+	defer j.RUnlock()
+	if j.Data.Client == nil {
+		return nil, nil
+	}
+	return j.Data.Client, nil
 }
 
 var _ WebConfigger = (*WebConfigJSON)(nil)

@@ -165,53 +165,6 @@ func (c *AgentConn) PutServer(ctx context.Context, arg lcl.PutServerArg) (proto.
 
 }
 
-func (c *AgentConn) GetDeviceNag(
-	ctx context.Context,
-	withRateLimit bool,
-) (
-	lcl.DeviceNagInfo,
-	error,
-) {
-	var ret lcl.DeviceNagInfo
-	m := c.MetaContext(ctx)
-	au, err := m.ActiveConnectedUser(&libclient.ACUOpts{})
-	if err != nil {
-		return ret, err
-	}
-	ns := au.NagState()
-	ret.NumDevices = uint64(ns.NumDevices)
-	if ns.Cleared {
-		return ret, nil
-	}
-	now := m.G().Now()
-	last := now.Sub(ns.Refreshed)
-	if last < 30*time.Second && withRateLimit {
-		return ret, nil
-	}
-	ucli, err := au.UserClient(m)
-	if err != nil {
-		return ret, err
-	}
-	info, err := ucli.GetDeviceNag(m.Ctx())
-	if err != nil {
-		return ret, err
-	}
-	now = m.G().Now()
-	ns.NumDevices = info.NumDevices
-	ret.NumDevices = uint64(ns.NumDevices)
-	ns.Refreshed = now
-	au.SetNagState(ns)
-
-	if info.Cleared || info.NumDevices > 1 {
-		return ret, nil
-	}
-
-	ns.Shown = now
-	au.SetNagState(ns)
-	ret.DoNag = true
-	return ret, nil
-}
-
 func (c *AgentConn) ClearDeviceNag(ctx context.Context, val bool) error {
 	m := c.MetaContext(ctx)
 	au, err := m.ActiveConnectedUser(&libclient.ACUOpts{})
@@ -227,6 +180,38 @@ func (c *AgentConn) ClearDeviceNag(ctx context.Context, val bool) error {
 		return err
 	}
 	return nil
+}
+
+func (c *AgentConn) GetUnifiedNags(
+	ctx context.Context,
+	arg lcl.GetUnifiedNagsArg,
+) (
+	lcl.UnifiedNagRes,
+	error,
+) {
+	var ret lcl.UnifiedNagRes
+	m := c.MetaContext(ctx)
+	nm := libclient.NagMinder{
+		WithRateLimit: arg.WithRateLimit,
+		CliVersion:    arg.Cv,
+	}
+	err := nm.Run(m)
+	if err != nil {
+		return ret, err
+	}
+	ret.Nags = nm.GetResult()
+	return ret, nil
+}
+
+func (c *AgentConn) SnoozeUpgradeNag(
+	ctx context.Context,
+	arg lcl.SnoozeUpgradeNagArg,
+) error {
+	m := c.MetaContext(ctx)
+	return libclient.SnoozeVersionUpgrade(m,
+		arg.Dur.Duration(),
+		arg.Val,
+	)
 }
 
 var _ lcl.GeneralInterface = (*AgentConn)(nil)

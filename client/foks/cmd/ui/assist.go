@@ -57,7 +57,7 @@ func (s stateAssistHome) view() string {
 		Title:    h1Style.Render("📱 FOKS Key Assist 📱"),
 		Another:  italicStyle.Render("another"),
 		Tick:     "`",
-		Enter:    happyStyle.Render("<Return>"),
+		Enter:    HappyStyle.Render("<Return>"),
 		Esc:      ErrorStyle.Render("<Esc>"),
 		ControlC: ErrorStyle.Render("<Ctrl+C>"),
 	}
@@ -179,8 +179,8 @@ func (s stateAssistConfirmUser) view() string {
 	}
 	var b strings.Builder
 	fmt.Fprintf(&b, "\n")
-	fmt.Fprintf(&b, "  Provision new user as %s ?\n\n", happyStyle.Render(pi))
-	fmt.Fprintf(&b, "  🆗 Press %s to confirm\n", happyStyle.Render("<Return>"))
+	fmt.Fprintf(&b, "  Provision new user as %s ?\n\n", HappyStyle.Render(pi))
+	fmt.Fprintf(&b, "  🆗 Press %s to confirm\n", HappyStyle.Render("<Return>"))
 	fmt.Fprintf(&b, "  ☮️  Or %s or %s at any time to quit\n",
 		ErrorStyle.Render("<Ctrl+C>"),
 		ErrorStyle.Render("<Esc>"),

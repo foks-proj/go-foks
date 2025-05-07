@@ -75,7 +75,7 @@ func (m switchModel) View() string {
 		case len(m.users) == 0:
 			fmt.Fprintf(&b, "\n\n  %s\n\n", ErrorStyle.Render("No inactive users found"))
 		default:
-			fmt.Fprintf(&b, "\n\n ✅ %s Switched to %s\n\n", happyStyle.Render("Success!"), m.choiceStr)
+			fmt.Fprintf(&b, "\n\n ✅ %s Switched to %s\n\n", HappyStyle.Render("Success!"), m.choiceStr)
 		}
 		fmt.Fprint(&b, " ✌  Press any key to exit\n")
 	case switchStateUIGo:

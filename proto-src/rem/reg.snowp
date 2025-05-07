@@ -63,11 +63,6 @@ struct RegSSOArgsOAuth2 {
     sig @1 : lib.OAuth2IDTokenBinding;
 }
 
-struct SignupRes {
-
-    
-}
-
 protocol Reg 
     errors lib.Status 
     argHeader lib.Header 
@@ -188,6 +183,10 @@ protocol Reg
     // This host might have an associated vhost management host.
     // If so, we'll return non-error here, with an address.
     // Otherwise, NotFoundError
-    getVHostMgmtHost @22() -> lib.TCPAddr;
+    getVHostMgmtHost @22 () -> lib.TCPAddr;
 
+    getClientVersionInfo @23 (
+        me @0 : lib.ClientVersionExt
+    ) -> lib.ServerClientVersionInfo;
+    
 }

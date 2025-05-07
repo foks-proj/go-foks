@@ -40,7 +40,7 @@ func newStateSsoDoLogin() stateDoSsoLogin {
 
 func (s stateDoSsoLogin) summary() summary {
 	if s.res != nil && s.res.err == nil {
-		return summarySuccess("SSO Issuer: " + happyStyle.Render(s.res.res.Issuer.String()))
+		return summarySuccess("SSO Issuer: " + HappyStyle.Render(s.res.res.Issuer.String()))
 	}
 	return nil
 }
@@ -70,7 +70,7 @@ func (s stateDoSsoLogin) view() string {
 		return "\n" + s.spinner.View() + " Generating SSO Login session...."
 	}
 	if !s.url.IsZero() {
-		return "\n" + s.spinner.View() + " Please login via SSO: " + happyStyle.Render(s.url.String())
+		return "\n" + s.spinner.View() + " Please login via SSO: " + HappyStyle.Render(s.url.String())
 	}
 	return ""
 }
