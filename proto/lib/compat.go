@@ -201,3 +201,63 @@ func (h *HeaderV1) Decode(dec rpc.Decoder) error {
 }
 
 func (h *HeaderV1) Bytes() []byte { return nil }
+
+type SemVer struct {
+	Major uint64
+	Minor uint64
+	Patch uint64
+}
+
+type SemVerInternal__ struct {
+	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
+	Major   *uint64
+	Minor   *uint64
+	Patch   *uint64
+}
+
+func (s SemVerInternal__) Import() SemVer {
+	return SemVer{
+		Major: (func(x *uint64) (ret uint64) {
+			if x == nil {
+				return ret
+			}
+			return *x
+		})(s.Major),
+		Minor: (func(x *uint64) (ret uint64) {
+			if x == nil {
+				return ret
+			}
+			return *x
+		})(s.Minor),
+		Patch: (func(x *uint64) (ret uint64) {
+			if x == nil {
+				return ret
+			}
+			return *x
+		})(s.Patch),
+	}
+}
+
+func (s SemVer) Export() *SemVerInternal__ {
+	return &SemVerInternal__{
+		Major: &s.Major,
+		Minor: &s.Minor,
+		Patch: &s.Patch,
+	}
+}
+
+func (s *SemVer) Encode(enc rpc.Encoder) error {
+	return enc.Encode(s.Export())
+}
+
+func (s *SemVer) Decode(dec rpc.Decoder) error {
+	var tmp SemVerInternal__
+	err := dec.Decode(&tmp)
+	if err != nil {
+		return err
+	}
+	*s = tmp.Import()
+	return nil
+}
+
+func (s *SemVer) Bytes() []byte { return nil }

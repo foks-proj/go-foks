@@ -4737,3 +4737,29 @@ func (t FQTeam) ToFQEntity() FQEntity {
 		Host:   t.Host,
 	}
 }
+
+func (s SemVer) Cmp(s2 SemVer) int {
+	if s.Major < s2.Major {
+		return -1
+	}
+	if s.Major > s2.Major {
+		return 1
+	}
+	if s.Minor < s2.Minor {
+		return -1
+	}
+	if s.Minor > s2.Minor {
+		return 1
+	}
+	if s.Patch < s2.Patch {
+		return -1
+	}
+	if s.Patch > s2.Patch {
+		return 1
+	}
+	return 0
+}
+
+func (s SemVer) String() string {
+	return fmt.Sprintf("%d.%d.%d", s.Major, s.Minor, s.Patch)
+}

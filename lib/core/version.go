@@ -4,7 +4,6 @@
 package core
 
 import (
-	lcl "github.com/foks-proj/go-foks/proto/lcl"
 	proto "github.com/foks-proj/go-foks/proto/lib"
 )
 
@@ -12,7 +11,7 @@ import (
 // in terms of FOKS clients talking to FOKS servers.
 const CurrentCompatibilityVersion proto.CompatibilityVersion = 1
 
-var CurrentClientVersion = lcl.SemVer{
+var CurrentClientVersion = proto.SemVer{
 	Major: 0,
 	Minor: 0,
 	Patch: 18,

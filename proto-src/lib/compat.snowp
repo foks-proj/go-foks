@@ -16,3 +16,9 @@ typedef CompatibilityVersion = Uint;
 struct HeaderV1 {
     vers @0 : CompatibilityVersion;
 }
+
+struct SemVer {
+    major @0 : Uint;
+    minor @1 : Uint;
+    patch @2 : Uint;
+}
