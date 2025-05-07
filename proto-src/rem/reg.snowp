@@ -63,12 +63,6 @@ struct RegSSOArgsOAuth2 {
     sig @1 : lib.OAuth2IDTokenBinding;
 }
 
-struct ClientVersionInfo {
-    min @0 : Option(lib.SemVer);
-    newest @1 : Option(lib.SemVer);
-    msg @2 : Text;
-}
-
 protocol Reg 
     errors lib.Status 
     argHeader lib.Header 
@@ -193,6 +187,6 @@ protocol Reg
 
     getClientVersionInfo @23 (
         me @0 : lib.ClientVersionExt
-    ) -> ClientVersionInfo;
+    ) -> lib.ServerClientVersionInfo;
     
 }

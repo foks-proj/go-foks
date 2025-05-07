@@ -321,3 +321,85 @@ func (c *ClientVersionExt) Decode(dec rpc.Decoder) error {
 }
 
 func (c *ClientVersionExt) Bytes() []byte { return nil }
+
+type ServerClientVersionInfo struct {
+	Min    *SemVer
+	Newest *SemVer
+	Msg    string
+}
+
+type ServerClientVersionInfoInternal__ struct {
+	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
+	Min     *SemVerInternal__
+	Newest  *SemVerInternal__
+	Msg     *string
+}
+
+func (s ServerClientVersionInfoInternal__) Import() ServerClientVersionInfo {
+	return ServerClientVersionInfo{
+		Min: (func(x *SemVerInternal__) *SemVer {
+			if x == nil {
+				return nil
+			}
+			tmp := (func(x *SemVerInternal__) (ret SemVer) {
+				if x == nil {
+					return ret
+				}
+				return x.Import()
+			})(x)
+			return &tmp
+		})(s.Min),
+		Newest: (func(x *SemVerInternal__) *SemVer {
+			if x == nil {
+				return nil
+			}
+			tmp := (func(x *SemVerInternal__) (ret SemVer) {
+				if x == nil {
+					return ret
+				}
+				return x.Import()
+			})(x)
+			return &tmp
+		})(s.Newest),
+		Msg: (func(x *string) (ret string) {
+			if x == nil {
+				return ret
+			}
+			return *x
+		})(s.Msg),
+	}
+}
+
+func (s ServerClientVersionInfo) Export() *ServerClientVersionInfoInternal__ {
+	return &ServerClientVersionInfoInternal__{
+		Min: (func(x *SemVer) *SemVerInternal__ {
+			if x == nil {
+				return nil
+			}
+			return (*x).Export()
+		})(s.Min),
+		Newest: (func(x *SemVer) *SemVerInternal__ {
+			if x == nil {
+				return nil
+			}
+			return (*x).Export()
+		})(s.Newest),
+		Msg: &s.Msg,
+	}
+}
+
+func (s *ServerClientVersionInfo) Encode(enc rpc.Encoder) error {
+	return enc.Encode(s.Export())
+}
+
+func (s *ServerClientVersionInfo) Decode(dec rpc.Decoder) error {
+	var tmp ServerClientVersionInfoInternal__
+	err := dec.Decode(&tmp)
+	if err != nil {
+		return err
+	}
+	*s = tmp.Import()
+	return nil
+}
+
+func (s *ServerClientVersionInfo) Bytes() []byte { return nil }

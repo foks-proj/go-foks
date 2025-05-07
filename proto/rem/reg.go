@@ -642,88 +642,6 @@ func (r *RegSSOArgsOAuth2) Decode(dec rpc.Decoder) error {
 
 func (r *RegSSOArgsOAuth2) Bytes() []byte { return nil }
 
-type ClientVersionInfo struct {
-	Min    *lib.SemVer
-	Newest *lib.SemVer
-	Msg    string
-}
-
-type ClientVersionInfoInternal__ struct {
-	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
-	Min     *lib.SemVerInternal__
-	Newest  *lib.SemVerInternal__
-	Msg     *string
-}
-
-func (c ClientVersionInfoInternal__) Import() ClientVersionInfo {
-	return ClientVersionInfo{
-		Min: (func(x *lib.SemVerInternal__) *lib.SemVer {
-			if x == nil {
-				return nil
-			}
-			tmp := (func(x *lib.SemVerInternal__) (ret lib.SemVer) {
-				if x == nil {
-					return ret
-				}
-				return x.Import()
-			})(x)
-			return &tmp
-		})(c.Min),
-		Newest: (func(x *lib.SemVerInternal__) *lib.SemVer {
-			if x == nil {
-				return nil
-			}
-			tmp := (func(x *lib.SemVerInternal__) (ret lib.SemVer) {
-				if x == nil {
-					return ret
-				}
-				return x.Import()
-			})(x)
-			return &tmp
-		})(c.Newest),
-		Msg: (func(x *string) (ret string) {
-			if x == nil {
-				return ret
-			}
-			return *x
-		})(c.Msg),
-	}
-}
-
-func (c ClientVersionInfo) Export() *ClientVersionInfoInternal__ {
-	return &ClientVersionInfoInternal__{
-		Min: (func(x *lib.SemVer) *lib.SemVerInternal__ {
-			if x == nil {
-				return nil
-			}
-			return (*x).Export()
-		})(c.Min),
-		Newest: (func(x *lib.SemVer) *lib.SemVerInternal__ {
-			if x == nil {
-				return nil
-			}
-			return (*x).Export()
-		})(c.Newest),
-		Msg: &c.Msg,
-	}
-}
-
-func (c *ClientVersionInfo) Encode(enc rpc.Encoder) error {
-	return enc.Encode(c.Export())
-}
-
-func (c *ClientVersionInfo) Decode(dec rpc.Decoder) error {
-	var tmp ClientVersionInfoInternal__
-	err := dec.Decode(&tmp)
-	if err != nil {
-		return err
-	}
-	*c = tmp.Import()
-	return nil
-}
-
-func (c *ClientVersionInfo) Bytes() []byte { return nil }
-
 var RegProtocolID rpc.ProtocolUniqueID = rpc.ProtocolUniqueID(0xf7ab85f3)
 
 type ReserveUsernameArg struct {
@@ -2028,7 +1946,7 @@ type RegInterface interface {
 	SsoLogin(context.Context, SsoLoginArg) error
 	ProbeKeyExists(context.Context, ProbeKeyExistsArg) error
 	GetVHostMgmtHost(context.Context) (lib.TCPAddr, error)
-	GetClientVersionInfo(context.Context, lib.ClientVersionExt) (ClientVersionInfo, error)
+	GetClientVersionInfo(context.Context, lib.ClientVersionExt) (lib.ServerClientVersionInfo, error)
 	ErrorWrapper() func(error) lib.Status
 	CheckArgHeader(ctx context.Context, h lib.Header) error
 
@@ -2623,7 +2541,7 @@ func (c RegClient) GetVHostMgmtHost(ctx context.Context) (res lib.TCPAddr, err e
 	return
 }
 
-func (c RegClient) GetClientVersionInfo(ctx context.Context, me lib.ClientVersionExt) (res ClientVersionInfo, err error) {
+func (c RegClient) GetClientVersionInfo(ctx context.Context, me lib.ClientVersionExt) (res lib.ServerClientVersionInfo, err error) {
 	arg := GetClientVersionInfoArg{
 		Me: me,
 	}
@@ -2633,7 +2551,7 @@ func (c RegClient) GetClientVersionInfo(ctx context.Context, me lib.ClientVersio
 	if c.MakeArgHeader != nil {
 		warg.Header = c.MakeArgHeader()
 	}
-	var tmp rpc.DataWrap[lib.Header, ClientVersionInfoInternal__]
+	var tmp rpc.DataWrap[lib.Header, lib.ServerClientVersionInfoInternal__]
 	err = c.Cli.Call2(ctx, rpc.NewMethodV2(RegProtocolID, 23, "Reg.getClientVersionInfo"), warg, &tmp, 0*time.Millisecond, regErrorUnwrapperAdapter{h: c.ErrorUnwrapper})
 	if err != nil {
 		return
@@ -3340,7 +3258,7 @@ func RegProtocol(i RegInterface) rpc.ProtocolV2 {
 						if err != nil {
 							return nil, err
 						}
-						ret := rpc.DataWrap[lib.Header, *ClientVersionInfoInternal__]{
+						ret := rpc.DataWrap[lib.Header, *lib.ServerClientVersionInfoInternal__]{
 							Data:   tmp.Export(),
 							Header: i.MakeResHeader(),
 						}

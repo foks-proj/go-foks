@@ -27,5 +27,12 @@ struct ClientVersionExt {
     vers @0 : SemVer;
     linkerVersion @1 : Text;
     linkerPackaging @2 : Text;
+}
 
+// ServerClientVersionInfo is used when the server replies what what version
+// the user client should upgrade to, or if it's no longer supported.
+struct ServerClientVersionInfo {
+    min @0 : Option(lib.SemVer);
+    newest @1 : Option(lib.SemVer);
+    msg @2 : Text;
 }

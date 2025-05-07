@@ -2,14 +2,13 @@ package shared
 
 import (
 	proto "github.com/foks-proj/go-foks/proto/lib"
-	"github.com/foks-proj/go-foks/proto/rem"
 )
 
 func ClientVersionInfo(
 	m MetaContext,
 	_ proto.ClientVersionExt,
 ) (
-	*rem.ClientVersionInfo,
+	*proto.ServerClientVersionInfo,
 	error,
 ) {
 	cfg := m.G().Config()
@@ -24,7 +23,7 @@ func ClientVersionInfo(
 	if vcfg == nil {
 		return nil, nil
 	}
-	ret := rem.ClientVersionInfo{
+	ret := proto.ServerClientVersionInfo{
 		Min:    vcfg.MinVersion(),
 		Newest: vcfg.NewestVersion(),
 		Msg:    vcfg.Message(),

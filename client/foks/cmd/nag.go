@@ -15,7 +15,7 @@ import (
 func PartingConsoleMessage(
 	m libclient.MetaContext,
 ) error {
-	err := DeviceNag(m)
+	_, err := DeviceNag(m)
 	if err != nil {
 		return err
 	}
@@ -37,13 +37,13 @@ func checkShouldNag(m libclient.MetaContext, withRateLimit bool) (bool, error) {
 	return info.DoNag, nil
 }
 
-func DeviceNag(m libclient.MetaContext) error {
+func DeviceNag(m libclient.MetaContext) (bool, error) {
 	doit, err := checkShouldNag(m, true)
 	if err != nil {
-		return err
+		return false, err
 	}
 	if !doit {
-		return nil
+		return false, nil
 	}
 	msg := "\n ☠️ ☠️  " + ui.BoldErrorStyle.Render("DATA LOSS WARNING") + " ☠️️ ☠️\n\n" +
 		ui.ErrorStyle.Render(
@@ -60,5 +60,5 @@ func DeviceNag(m libclient.MetaContext) error {
 		"    foks notify clear-device-nag\n\n"
 	fmt.Fprintf(es, "%s\n", msg)
 
-	return nil
+	return true, nil
 }

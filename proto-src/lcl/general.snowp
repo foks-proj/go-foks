@@ -20,6 +20,21 @@ struct DeviceNagInfo {
     numDevices @1 : Uint;
 }
 
+enum NagTyoe {
+    None @0;
+    TooFewDevices @1;
+    ClientVersion @2;
+}
+
+variant UnifiedNag switch (t : NagTyoe) {
+    case TooFewDevices @1: DeviceNagInfo;
+    case ClientVersion @2: lib.ServerClientVersionInfo;
+}
+
+struct UnifiedNagRes {
+    nags @0 : List(UnifiedNag);
+}
+
 enum RegServerType {
     None @0;
     Default @1;
@@ -61,8 +76,10 @@ protocol General
     getDeviceNag @6 (
         withRateLimit @0 : Bool
     ) -> DeviceNagInfo;
-    
+
     clearDeviceNag @7 ( val @0 : Bool );
 
-    
+    getUnifiedNags @8 (
+        withRateLimit @0 : Bool
+    ) -> UnifiedNagRes;
 }

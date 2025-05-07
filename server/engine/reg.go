@@ -1241,11 +1241,11 @@ func (c *RegClientConn) GetClientVersionInfo(
 	ctx context.Context,
 	arg proto.ClientVersionExt,
 ) (
-	rem.ClientVersionInfo,
+	proto.ServerClientVersionInfo,
 	error,
 ) {
 	m := shared.NewMetaContextConn(ctx, c)
-	var ret rem.ClientVersionInfo
+	var ret proto.ServerClientVersionInfo
 	tmp, err := shared.ClientVersionInfo(m, arg)
 	if err != nil {
 		return ret, err

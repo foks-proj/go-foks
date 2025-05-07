@@ -229,4 +229,15 @@ func (c *AgentConn) ClearDeviceNag(ctx context.Context, val bool) error {
 	return nil
 }
 
+func (c *AgentConn) GetUnifiedNags(
+	ctx context.Context,
+	withRateLimit bool,
+) (
+	lcl.UnifiedNagRes,
+	error,
+) {
+	var res lcl.UnifiedNagRes
+	return res, core.NotImplementedError{}
+}
+
 var _ lcl.GeneralInterface = (*AgentConn)(nil)
