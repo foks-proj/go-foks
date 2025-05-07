@@ -6,10 +6,13 @@ package libclient
 import "time"
 
 type NagState struct {
+	Device DeviceNagState
+}
+
+type DeviceNagState struct {
 	Shown      time.Time
 	Refreshed  time.Time
 	NumDevices uint64
-	Cleared    bool
 }
 
 func (u *UserContext) NagState() NagState {
@@ -24,8 +27,8 @@ func (u *UserContext) SetNagState(n NagState) {
 	u.nagState = n
 }
 
-func (u *UserContext) ShowNag(m MetaContext) {
+func (u *UserContext) ShowDeviceNag(m MetaContext) {
 	u.Lock()
 	defer u.Unlock()
-	u.nagState.Shown = m.G().Now()
+	u.nagState.Device.Shown = m.G().Now()
 }

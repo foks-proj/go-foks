@@ -179,12 +179,10 @@ func (c *AgentConn) GetDeviceNag(
 		return ret, err
 	}
 	ns := au.NagState()
-	ret.NumDevices = uint64(ns.NumDevices)
-	if ns.Cleared {
-		return ret, nil
-	}
+	dns := &ns.Device
+	ret.NumDevices = uint64(dns.NumDevices)
 	now := m.G().Now()
-	last := now.Sub(ns.Refreshed)
+	last := now.Sub(dns.Refreshed)
 	if last < 30*time.Second && withRateLimit {
 		return ret, nil
 	}
@@ -197,17 +195,18 @@ func (c *AgentConn) GetDeviceNag(
 		return ret, err
 	}
 	now = m.G().Now()
-	ns.NumDevices = info.NumDevices
-	ret.NumDevices = uint64(ns.NumDevices)
-	ns.Refreshed = now
+	dns.NumDevices = info.NumDevices
+	ret.NumDevices = uint64(dns.NumDevices)
+	dns.Refreshed = now
 	au.SetNagState(ns)
 
 	if info.Cleared || info.NumDevices > 1 {
 		return ret, nil
 	}
 
-	ns.Shown = now
+	dns.Shown = now
 	au.SetNagState(ns)
+
 	ret.DoNag = true
 	return ret, nil
 }
