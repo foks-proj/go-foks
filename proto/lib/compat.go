@@ -261,3 +261,63 @@ func (s *SemVer) Decode(dec rpc.Decoder) error {
 }
 
 func (s *SemVer) Bytes() []byte { return nil }
+
+type ClientVersionExt struct {
+	Vers            SemVer
+	LinkerVersion   string
+	LinkerPackaging string
+}
+
+type ClientVersionExtInternal__ struct {
+	_struct         struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
+	Vers            *SemVerInternal__
+	LinkerVersion   *string
+	LinkerPackaging *string
+}
+
+func (c ClientVersionExtInternal__) Import() ClientVersionExt {
+	return ClientVersionExt{
+		Vers: (func(x *SemVerInternal__) (ret SemVer) {
+			if x == nil {
+				return ret
+			}
+			return x.Import()
+		})(c.Vers),
+		LinkerVersion: (func(x *string) (ret string) {
+			if x == nil {
+				return ret
+			}
+			return *x
+		})(c.LinkerVersion),
+		LinkerPackaging: (func(x *string) (ret string) {
+			if x == nil {
+				return ret
+			}
+			return *x
+		})(c.LinkerPackaging),
+	}
+}
+
+func (c ClientVersionExt) Export() *ClientVersionExtInternal__ {
+	return &ClientVersionExtInternal__{
+		Vers:            c.Vers.Export(),
+		LinkerVersion:   &c.LinkerVersion,
+		LinkerPackaging: &c.LinkerPackaging,
+	}
+}
+
+func (c *ClientVersionExt) Encode(enc rpc.Encoder) error {
+	return enc.Encode(c.Export())
+}
+
+func (c *ClientVersionExt) Decode(dec rpc.Decoder) error {
+	var tmp ClientVersionExtInternal__
+	err := dec.Decode(&tmp)
+	if err != nil {
+		return err
+	}
+	*c = tmp.Import()
+	return nil
+}
+
+func (c *ClientVersionExt) Bytes() []byte { return nil }

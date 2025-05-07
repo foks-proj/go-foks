@@ -54,10 +54,6 @@ func (c *Commands) init(m libclient.MetaContext, root *cobra.Command) {
 	}
 }
 
-var (
-	LinkedVersion = "unknown"
-)
-
 func versionCmd(m libclient.MetaContext) *cobra.Command {
 	var verbose bool
 	cmd := &cobra.Command{
@@ -67,7 +63,7 @@ func versionCmd(m libclient.MetaContext) *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			fmt.Printf("foks version %s\n", core.CurrentClientVersion.String())
 			if verbose {
-				fmt.Printf(" - commit: %s\n", LinkedVersion)
+				fmt.Printf(" - commit: %s\n", libclient.LinkerVersion)
 				fmt.Printf(" - protocol compatibility version: %d\n", core.CurrentCompatibilityVersion)
 			}
 		},

@@ -63,9 +63,10 @@ struct RegSSOArgsOAuth2 {
     sig @1 : lib.OAuth2IDTokenBinding;
 }
 
-struct SignupRes {
-
-    
+struct ClientVersionInfo {
+    min @0 : Option(lib.SemVer);
+    newest @1 : Option(lib.SemVer);
+    msg @2 : Text;
 }
 
 protocol Reg 
@@ -188,6 +189,10 @@ protocol Reg
     // This host might have an associated vhost management host.
     // If so, we'll return non-error here, with an address.
     // Otherwise, NotFoundError
-    getVHostMgmtHost @22() -> lib.TCPAddr;
+    getVHostMgmtHost @22 () -> lib.TCPAddr;
 
+    getClientVersionInfo @23 (
+        me @0 : lib.ClientVersionExt
+    ) -> ClientVersionInfo;
+    
 }

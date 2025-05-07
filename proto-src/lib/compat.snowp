@@ -22,3 +22,10 @@ struct SemVer {
     minor @1 : Uint;
     patch @2 : Uint;
 }
+
+struct ClientVersionExt {
+    vers @0 : SemVer;
+    linkerVersion @1 : Text;
+    linkerPackaging @2 : Text;
+
+}

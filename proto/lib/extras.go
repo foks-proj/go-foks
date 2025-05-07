@@ -4763,3 +4763,32 @@ func (s SemVer) Cmp(s2 SemVer) int {
 func (s SemVer) String() string {
 	return fmt.Sprintf("%d.%d.%d", s.Major, s.Minor, s.Patch)
 }
+
+func (s *SemVer) UnmarshalJSON(data []byte) error {
+	var str string
+	if err := json.Unmarshal(data, &str); err != nil {
+		return err
+	}
+	parts := strings.Split(str, ".")
+	if len(parts) != 3 {
+		return DataError("invalid semver format")
+	}
+	conv := func(part string, res *uint64) error {
+		val, err := strconv.ParseUint(part, 0, 64)
+		if err != nil {
+			return err
+		}
+		*res = val
+		return nil
+	}
+	if err := conv(parts[0], &s.Major); err != nil {
+		return err
+	}
+	if err := conv(parts[1], &s.Minor); err != nil {
+		return err
+	}
+	if err := conv(parts[2], &s.Patch); err != nil {
+		return err
+	}
+	return nil
+}

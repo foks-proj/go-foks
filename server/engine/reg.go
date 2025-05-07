@@ -1237,6 +1237,25 @@ func (c *RegClientConn) GetVHostMgmtHost(ctx context.Context) (proto.TCPAddr, er
 	return cfg.VHostMgmtAddr(), nil
 }
 
+func (c *RegClientConn) GetClientVersionInfo(
+	ctx context.Context,
+	arg proto.ClientVersionExt,
+) (
+	rem.ClientVersionInfo,
+	error,
+) {
+	m := shared.NewMetaContextConn(ctx, c)
+	var ret rem.ClientVersionInfo
+	tmp, err := shared.ClientVersionInfo(m, arg)
+	if err != nil {
+		return ret, err
+	}
+	if tmp != nil {
+		ret = *tmp
+	}
+	return ret, nil
+}
+
 var _ rem.RegInterface = (*RegClientConn)(nil)
 var _ rem.KexInterface = (*RegClientConn)(nil)
 var _ rem.ProbeInterface = (*RegClientConn)(nil)
