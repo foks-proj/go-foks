@@ -165,6 +165,8 @@ func (c *AgentConn) PutServer(ctx context.Context, arg lcl.PutServerArg) (proto.
 
 }
 
+const nagRefreshInterval = 30 * time.Second
+
 func (c *AgentConn) GetDeviceNag(
 	ctx context.Context,
 	withRateLimit bool,
@@ -182,8 +184,8 @@ func (c *AgentConn) GetDeviceNag(
 	dns := &ns.Device
 	ret.NumDevices = uint64(dns.NumDevices)
 	now := m.G().Now()
-	last := now.Sub(dns.Refreshed)
-	if last < 30*time.Second && withRateLimit {
+	last := now.Sub(dns.Times.Refreshed)
+	if last < nagRefreshInterval && withRateLimit {
 		return ret, nil
 	}
 	ucli, err := au.UserClient(m)
@@ -196,15 +198,15 @@ func (c *AgentConn) GetDeviceNag(
 	}
 	now = m.G().Now()
 	dns.NumDevices = info.NumDevices
-	ret.NumDevices = uint64(dns.NumDevices)
-	dns.Refreshed = now
+	ret.NumDevices = dns.NumDevices
+	dns.Times.Refreshed = now
 	au.SetNagState(ns)
 
 	if info.Cleared || info.NumDevices > 1 {
 		return ret, nil
 	}
 
-	dns.Shown = now
+	dns.Times.Shown = now
 	au.SetNagState(ns)
 
 	ret.DoNag = true

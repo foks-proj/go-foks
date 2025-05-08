@@ -9,10 +9,29 @@ type NagState struct {
 	Device DeviceNagState
 }
 
+type NagTimes struct {
+	Shown     time.Time
+	Refreshed time.Time
+}
+
 type DeviceNagState struct {
-	Shown      time.Time
-	Refreshed  time.Time
+	Times      NagTimes
 	NumDevices uint64
+}
+
+func (g *GlobalContext) NagState() GlobalNagState {
+	g.Lock()
+	defer g.Unlock()
+	if g.nagState == nil {
+		return GlobalNagState{}
+	}
+	return *g.nagState
+}
+
+func (g *GlobalContext) SetNagState(n GlobalNagState) {
+	g.Lock()
+	defer g.Unlock()
+	g.nagState = &n
 }
 
 func (u *UserContext) NagState() NagState {
@@ -30,5 +49,13 @@ func (u *UserContext) SetNagState(n NagState) {
 func (u *UserContext) ShowDeviceNag(m MetaContext) {
 	u.Lock()
 	defer u.Unlock()
-	u.nagState.Device.Shown = m.G().Now()
+	u.nagState.Device.Times.Shown = m.G().Now()
+}
+
+type ClientVersionNagState struct {
+	Times NagTimes
+}
+
+type GlobalNagState struct {
+	ClientVersion ClientVersionNagState
 }

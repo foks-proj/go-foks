@@ -10,7 +10,6 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"github.com/foks-proj/go-foks/lib/core"
 	"github.com/foks-proj/go-foks/proto/lcl"
-	"github.com/foks-proj/go-snowpack-rpc/rpc"
 )
 
 func MakeProtoHeader() lcl.Header {
@@ -48,14 +47,5 @@ func MakeCheckProtoResHeader(errio IOStreamer) func(context.Context, lcl.Header)
 		}
 		fmt.Fprintf(errio, "%s\n", msg)
 		return nil
-	}
-}
-
-func NewUserClient(gcli rpc.GenericClient, errio IOStreamer) lcl.UserClient {
-	return lcl.UserClient{
-		Cli:            gcli,
-		ErrorUnwrapper: core.StatusToError,
-		MakeArgHeader:  MakeProtoHeader,
-		CheckResHeader: MakeCheckProtoResHeader(errio),
 	}
 }

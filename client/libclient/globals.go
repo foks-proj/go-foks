@@ -130,6 +130,8 @@ type GlobalContext struct {
 
 	// Other fields that are only set in test
 	Testing *TestingGlobalContext
+
+	nagState *GlobalNagState
 }
 
 func (d *GlobalContext) DeviceNameCache() *DeviceNameCache {
