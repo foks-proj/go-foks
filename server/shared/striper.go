@@ -37,6 +37,7 @@ type Subscription struct {
 	CurrentPeriodEnd time.Time
 	ProdID           infra.StripeProdID
 	PriceID          infra.StripePriceID
+	PI               infra.PaymentInterval
 }
 
 type ProrationAdjustment struct {
@@ -45,10 +46,12 @@ type ProrationAdjustment struct {
 }
 
 type Billing struct {
-	Time     lib.Time
-	Subtotal infra.SignedCents
-	Tax      infra.SignedCents
-	Total    infra.SignedCents
+	Time           lib.Time
+	Subtotal       infra.SignedCents
+	Tax            infra.SignedCents
+	AppliedBalance infra.SignedCents
+	Total          infra.SignedCents
+	AmountDue      infra.SignedCents
 }
 
 type PreviewProrationArg struct {

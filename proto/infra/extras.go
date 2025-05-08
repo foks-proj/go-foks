@@ -122,6 +122,10 @@ func (i *Interval) ImportFromDB(s string) error {
 	return nil
 }
 
+func (p PaymentInterval) Eq(p2 PaymentInterval) bool {
+	return p.Interval == p2.Interval && p.Count == p2.Count
+}
+
 func (c Cents) String() string {
 	pennies := c % 100
 	dollars := c / 100

@@ -4,6 +4,10 @@
 package shared
 
 import (
+	"bytes"
+	"compress/gzip"
+	"encoding/base64"
+	"encoding/json"
 	"strings"
 	"sync"
 	"time"
@@ -11,13 +15,13 @@ import (
 	"github.com/foks-proj/go-foks/lib/core"
 	"github.com/foks-proj/go-foks/proto/infra"
 	proto "github.com/foks-proj/go-foks/proto/lib"
-	"github.com/stripe/stripe-go/v81"
-	"github.com/stripe/stripe-go/v81/checkout/session"
-	"github.com/stripe/stripe-go/v81/customer"
-	"github.com/stripe/stripe-go/v81/invoice"
-	"github.com/stripe/stripe-go/v81/price"
-	"github.com/stripe/stripe-go/v81/product"
-	"github.com/stripe/stripe-go/v81/subscription"
+	"github.com/stripe/stripe-go/v82"
+	"github.com/stripe/stripe-go/v82/checkout/session"
+	"github.com/stripe/stripe-go/v82/customer"
+	"github.com/stripe/stripe-go/v82/invoice"
+	"github.com/stripe/stripe-go/v82/price"
+	"github.com/stripe/stripe-go/v82/product"
+	"github.com/stripe/stripe-go/v82/subscription"
 )
 
 type RealStripe struct {
@@ -125,15 +129,17 @@ func (r *RealStripe) LoadPaymentSuccess(
 		ProdID:             infra.StripeProdID(prod),
 		SessionID:          sessionId,
 		InvID:              infra.StripeInvoiceID(invId),
-		CurrentPeriodStart: time.Unix(int64(x.CurrentPeriodStart), 0),
-		CurrentPeriodEnd:   time.Unix(int64(x.CurrentPeriodEnd), 0),
+		CurrentPeriodStart: time.Unix(int64(item.CurrentPeriodStart), 0),
+		CurrentPeriodEnd:   time.Unix(int64(item.CurrentPeriodEnd), 0),
 		Amount:             infra.Cents(item.Price.UnitAmount),
 	}
 
 	// The charge might not have happened if the user paid $0 for the plan
 	// (via a promotion code).
-	if inv.Charge != nil {
-		ret.ChargeID = infra.StripeChargeID(inv.Charge.ID)
+	if inv.Payments != nil && len(inv.Payments.Data) > 0 {
+		// This used to be chargeID, but it changed to PaymentIntentID.
+		// We are just recording it for information purposes, so not worth changing.
+		ret.ChargeID = infra.StripeChargeID(inv.Payments.Data[0].ID)
 	}
 
 	return ret, nil
@@ -247,6 +253,25 @@ func (r *RealStripe) CancelSubscription(
 	return nil
 }
 
+// gzipBase64 compresses the input buffer with gzip and returns
+// a Base64-encoded string of the compressed data.
+func gzipBase64(input []byte) (string, error) {
+	// 1) gzip-compress into a buffer
+	var b bytes.Buffer
+	gz := gzip.NewWriter(&b)
+	if _, err := gz.Write(input); err != nil {
+		return "", err
+	}
+	// must close to flush all data
+	if err := gz.Close(); err != nil {
+		return "", err
+	}
+
+	// 2) base64-encode the compressed bytes
+	encoded := base64.StdEncoding.EncodeToString(b.Bytes())
+	return encoded, nil
+}
+
 func (r *RealStripe) PreviewProration(
 	m MetaContext,
 	arg PreviewProrationArg,
@@ -268,31 +293,46 @@ func (r *RealStripe) PreviewProration(
 
 	// See what the next invoice would look like with a price switch
 	// and proration set:
-	items := []*stripe.InvoiceUpcomingSubscriptionDetailsItemParams{
+	items := []*stripe.InvoiceCreatePreviewSubscriptionDetailsItemParams{
 		{
 			ID:    stripe.String(subscription.Items.Data[0].ID),
 			Price: stripe.String(arg.NewPlan.PriceID.String()),
 		},
 	}
 
-	params := &stripe.InvoiceUpcomingParams{
+	params := &stripe.InvoiceCreatePreviewParams{
 		Customer:     arg.CustomerID.StringP(),
 		Subscription: stripe.String(arg.SubID.String()),
-		SubscriptionDetails: &stripe.InvoiceUpcomingSubscriptionDetailsParams{
+		SubscriptionDetails: &stripe.InvoiceCreatePreviewSubscriptionDetailsParams{
 			Items:             items,
 			ProrationDate:     stripe.Int64(prorateNow.UTC().Unix()),
 			ProrationBehavior: stripe.String(ProrationBehaviorCreateProrations),
 		},
 	}
-	inv, err := invoice.Upcoming(params)
+
+	inv, err := invoice.CreatePreview(params)
 	if err != nil {
 		return nil, err
+	}
+
+	dump, err := json.Marshal(inv)
+	if err != nil {
+		m.Warnw("PreviewProration", "stage", "jsondump", "err", err)
+	} else {
+		b64, err := gzipBase64(dump)
+		if err != nil {
+			m.Warnw("PreviewProration", "stage", "gz", "err", err)
+		} else {
+			m.Infow("PreviewProration", "stage", "jsondump", "json-base64-encoded", b64)
+		}
 	}
 
 	ret := ProrationData{
 		Time:  prorateNow.UTC(), // ignore arg.Time
 		SubID: arg.SubID,
 	}
+
+	appbal := infra.SignedCents(inv.EndingBalance - inv.StartingBalance)
 
 	for _, line := range inv.Lines.Data {
 		adj := ProrationAdjustment{
@@ -302,11 +342,18 @@ func (r *RealStripe) PreviewProration(
 		ret.Adj = append(ret.Adj, adj)
 	}
 
+	var tax int64
+	for _, tx := range inv.TotalTaxes {
+		tax += tx.Amount
+	}
+
 	ret.NextBill = Billing{
-		Subtotal: infra.SignedCents(inv.Subtotal),
-		Tax:      infra.SignedCents(inv.Tax),
-		Total:    infra.SignedCents(inv.Total),
-		Time:     proto.NewTimeFromSecs(inv.NextPaymentAttempt),
+		Subtotal:       infra.SignedCents(inv.Subtotal),
+		Tax:            infra.SignedCents(tax),
+		Total:          infra.SignedCents(inv.Total),
+		AppliedBalance: infra.SignedCents(appbal),
+		Time:           proto.NewTimeFromSecs(inv.NextPaymentAttempt),
+		AmountDue:      infra.SignedCents(inv.AmountDue),
 	}
 
 	return &ret, nil
@@ -378,7 +425,7 @@ func (r *RealStripe) ApplyProration(
 		}
 	}
 	if itemId == nil {
-		return core.NotFoundError("subscription item")
+		return core.NotFoundError("existing subscription item in ApplyProration")
 	}
 
 	secs := arg.Time.UnixSeconds()
@@ -480,8 +527,13 @@ func (r *RealStripe) LoadSubscription(
 	if err != nil {
 		return nil, err
 	}
+	if sub.Items == nil || len(sub.Items.Data) == 0 {
+		return nil, core.BadServerDataError("stripe subscription items didn't exist when trying to find period end")
+	}
+
+	end := time.Unix(int64(sub.Items.Data[0].CurrentPeriodEnd), 0)
 	ret := Subscription{
-		CurrentPeriodEnd: time.Unix(int64(sub.CurrentPeriodEnd), 0),
+		CurrentPeriodEnd: end,
 		ProdID:           infra.StripeProdID(sub.Items.Data[0].Plan.Product.ID),
 		PriceID:          infra.StripePriceID(sub.Items.Data[0].Plan.ID),
 	}

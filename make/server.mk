@@ -45,7 +45,10 @@ srv-js-build: .stamps/srv-npm-install
 .PHONY: srv-htmx-build
 srv-htmx-build:
 	(mkdir -p $(STATIC_JS_DIR) &&  \
-	 cp -f $(HTMX_DIST)/htmx.js $(HTMX_DIST)/htmx.min.js $(STATIC_JS_DIR)/ )
+	 (diff -q $(HTMX_DIST)/htmx.js $(STATIC_JS_DIR)/htmx.js || \
+	  cp -f $(HTMX_DIST)/htmx.js $(STATIC_JS_DIR)/htmx.js) && \
+	 (diff -q $(HTMX_DIST)/htmx.min.js $(STATIC_JS_DIR)/htmx.min.js || \
+	  cp -f $(HTMX_DIST)/htmx.min.js $(STATIC_JS_DIR)/ ) )
 
 .PHONY: srv-assets
 srv-assets: srv-tailwind-build srv-templ-build srv-js-build srv-htmx-build

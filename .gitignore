@@ -5,3 +5,4 @@ src
 tmp
 ci.err
 ci.out
+.DS_Store

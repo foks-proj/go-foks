@@ -13,7 +13,7 @@ import (
 	"github.com/foks-proj/go-foks/proto/infra"
 	proto "github.com/foks-proj/go-foks/proto/lib"
 	"github.com/jackc/pgx/v5"
-	"github.com/stripe/stripe-go/v81"
+	"github.com/stripe/stripe-go/v82"
 )
 
 func LookupUserByStripeCustomerID(
@@ -89,12 +89,27 @@ type StripeIDs struct {
 	Price infra.StripePriceID
 }
 
-func LookupStripeIDs(
+type PlanPriceInfo struct {
+	StripeIDs StripeIDs
+	PlanID    proto.PlanID
+	PriceID   proto.PriceID
+	PI        infra.PaymentInterval
+}
+
+func (p *PlanPriceInfo) ToSubscription() Subscription {
+	return Subscription{
+		ProdID:  p.StripeIDs.Prod,
+		PriceID: p.StripeIDs.Price,
+		PI:      p.PI,
+	}
+}
+
+func LookupPlanPriceInfo(
 	m MetaContext,
 	planID proto.PlanID,
 	priceID proto.PriceID,
 ) (
-	*StripeIDs,
+	*PlanPriceInfo,
 	error,
 ) {
 	db, err := m.Db(DbTypeUsers)
@@ -104,25 +119,40 @@ func LookupStripeIDs(
 	defer db.Release()
 
 	var prod, price string
+	var intervalCount int
+	var interval string
 	err = db.QueryRow(
 		m.Ctx(),
-		`SELECT stripe_prod_id, stripe_price_id
+		`SELECT stripe_prod_id, stripe_price_id, interval, interval_count
 		 FROM quota_plan_prices
 		 JOIN quota_plans USING(plan_id)
 		 WHERE plan_id = $1 AND price_id = $2`,
 		planID.ExportToDB(),
 		priceID.ExportToDB(),
-	).Scan(&prod, &price)
+	).Scan(&prod, &price, &interval, &intervalCount)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, core.NotFoundError("stripe ids")
 	}
 	if err != nil {
 		return nil, err
 	}
-	return &StripeIDs{
-		Prod:  infra.StripeProdID(prod),
-		Price: infra.StripePriceID(price),
-	}, nil
+	ret := PlanPriceInfo{
+		StripeIDs: StripeIDs{
+			Prod:  infra.StripeProdID(prod),
+			Price: infra.StripePriceID(price),
+		},
+		PlanID:  planID,
+		PriceID: priceID,
+		PI: infra.PaymentInterval{
+			Count: uint64(intervalCount),
+		},
+	}
+	err = ret.PI.Interval.ImportFromDB(interval)
+	if err != nil {
+		return nil, err
+	}
+
+	return &ret, nil
 }
 
 func FakeStripe(prfx string) (string, error) {
@@ -361,10 +391,10 @@ type stripeSubscribeSuccessRecorder struct {
 	hostID          *core.HostID
 }
 
-func (s *stripeSubscribeSuccessRecorder) recordPayment(m MetaContext) (err error) {
+func (s *stripeSubscribeSuccessRecorder) recordInvoice(m MetaContext) (err error) {
 
 	defer func() {
-		err = eatStripeErr(m, "stripeSubscriptionSuccessRecorder.recordPayment", err)
+		err = eatStripeErr(m, "stripeSubscriptionSuccessRecorder.recordInvoice", err)
 	}()
 
 	if s.ps.InvID.IsZero() {
@@ -380,22 +410,21 @@ func (s *stripeSubscribeSuccessRecorder) recordPayment(m MetaContext) (err error
 		return stripeErr(core.NotFoundError("stripe sub id"))
 	}
 
-	// We'll wind up recording this payment twice on initial subscription --
+	// We'll wind up recording this invoice twice on initial subscription --
 	// once in the Web flow, and once via the Webhook. Just ignore the
 	// duplicate.
 	_, err = s.tx.Exec(
 		m.Ctx(),
-		`INSERT INTO stripe_payments
-		 (short_host_id, uid, charge_id, invoice_id, price_id, prod_id, subscription_id, ctime)
-		 VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
+		`INSERT INTO stripe_invoices
+		 (short_host_id, uid, invoice_id, price_id, prod_id, subscription_id, ctime)
+		 VALUES ($1, $2, $3, $4, $5, $6, NOW())
 		 ON CONFLICT DO NOTHING`,
 		m.ShortHostID().ExportToDB(),
 		s.uid.ExportToDB(),
-		s.ps.ChargeID.String(), // might be "" if coupon applied and no charge
 		s.ps.InvID.String(),
 		s.ps.PriceID.String(),
 		s.ps.ProdID.String(),
-		s.ps.ProdID.String(),
+		s.ps.SubID.String(),
 	)
 	if err != nil {
 		return err
@@ -480,7 +509,7 @@ func (s *stripeSubscribeSuccessRecorder) runTx(m MetaContext) error {
 	if err != nil {
 		return err
 	}
-	err = s.recordPayment(m)
+	err = s.recordInvoice(m)
 	if err != nil {
 		return err
 	}
@@ -682,30 +711,39 @@ func (r *stripeSubscribeSuccessRecorder) extractFromInvoice(
 	if inv.Lines == nil || len(inv.Lines.Data) == 0 || inv.Lines.Data[0] == nil {
 		return stripeErr(core.NotFoundError("stripe invoice lines"))
 	}
-	item := inv.Lines.Data[0]
-	if item.Price == nil || len(item.Price.ID) == 0 {
-		return stripeErr(core.NotFoundError("stripe invoice lines price"))
+
+	var item *stripe.InvoiceLineItem
+
+	// if we're getting an invoice with a proration, focus on the item that has the latest
+	// expiration time, since that one will be the new subscription going forward.
+	for _, it := range inv.Lines.Data {
+		if it.Period == nil {
+			continue
+		}
+
+		// Look for an item that isn't a proration, and is an actual charge. Last one wins.
+		if it.Parent != nil &&
+			it.Parent.Type == stripe.InvoiceLineItemParentTypeSubscriptionItemDetails &&
+			it.Parent.SubscriptionItemDetails != nil &&
+			!it.Parent.SubscriptionItemDetails.Proration {
+			item = it
+		}
 	}
-	if item.Plan == nil || item.Plan.Product == nil || len(item.Plan.Product.ID) == 0 {
-		return stripeErr(core.NotFoundError("stripe invoice lines plan"))
+	if item == nil {
+		return stripeErr(core.NotFoundError("stripe invoice lines with periods set"))
 	}
 
-	// not an error if this isn't there, since it can be a free plan via coupon
-	if inv.Charge != nil && len(inv.Charge.ID) > 0 {
-		ret.ChargeID = infra.StripeChargeID(inv.Charge.ID)
+	if item.Pricing == nil || item.Pricing.PriceDetails == nil {
+		return stripeErr(core.NotFoundError("stripe invoice lines price details"))
 	}
-	if item.Type != stripe.InvoiceLineItemTypeSubscription {
-		return stripeErr(core.NotFoundError("stripe invoice subscription"))
-	}
+
+	ret.ProdID = infra.StripeProdID(item.Pricing.PriceDetails.Product)
+	ret.PriceID = infra.StripePriceID(item.Pricing.PriceDetails.Price)
+
 	if item.Period == nil {
 		return stripeErr(core.NotFoundError("stripe invoice period"))
 	}
-	ret.ProdID = infra.StripeProdID(item.Plan.Product.ID)
-	ret.PriceID = infra.StripePriceID(item.Price.ID)
-	if item.Subscription == nil || len(item.Subscription.ID) == 0 {
-		return stripeErr(core.NotFoundError("stripe invoice subscription"))
-	}
-	ret.SubID = infra.StripeSubscriptionID(item.Subscription.ID)
+	ret.SubID = infra.StripeSubscriptionID(item.Parent.SubscriptionItemDetails.Subscription)
 	if len(eventID) == 0 {
 		return stripeErr(core.NotFoundError("stripe event id"))
 	}
@@ -768,7 +806,7 @@ func (r *stripeSubscribeSuccessRecorder) runInvoiceTx(
 	// After we've done the user lookup, we know the right virtual host to work on.
 	m = m.WithHostID(r.hostID)
 
-	err = r.recordPayment(m)
+	err = r.recordInvoice(m)
 	if err != nil {
 		return err
 	}
@@ -830,12 +868,14 @@ func LoadAndUpdatePlanForUser(
 
 	curr, err := LoadPlanForUser(m, tx, m.ShortHostID(), uid)
 	var canc bool
+	var currPlanId proto.PlanID
 
 	switch err.(type) {
 	case core.NoActivePlanError:
 	case nil:
 		if !curr.SubscriptionId.Eq(sub) {
 			canc = true
+			currPlanId = curr.Plan.Id
 			curr = nil
 		}
 	default:
@@ -852,7 +892,7 @@ func LoadAndUpdatePlanForUser(
 	}
 
 	if canc {
-		id, err := CancelPlanForUser(m, tx, m.ShortHostID(), uid, curr.Plan.Id)
+		id, err := CancelPlanForUser(m, tx, m.ShortHostID(), uid, currPlanId)
 		if err != nil {
 			return err
 		}

@@ -7,32 +7,33 @@ const paymentSuccessWebhookJson = `
 {
   "id": "{{ .EventID }}",
   "object": "event",
-  "api_version": "2025-02-24.acacia",
-  "created": {{ .TimeCreated }}, 
+  "api_version": "2025-03-31.basil",
+  "created": {{ .TimeCreated }},
   "data": {
     "object": {
       "id": "{{ .InvoiceID }}",
       "object": "invoice",
       "account_country": "US",
-      "account_name": "Sandbox",
+      "account_name": "NE43 INC",
       "account_tax_ids": null,
-      "amount_due": 95,
-      "amount_paid": 95,
+      "amount_due": 190,
+      "amount_overpaid": 0,
+      "amount_paid": 190,
       "amount_remaining": 0,
       "amount_shipping": 0,
       "application": null,
-      "application_fee_amount": null,
       "attempt_count": 1,
       "attempted": true,
       "auto_advance": false,
       "automatic_tax": {
+        "disabled_reason": null,
         "enabled": false,
         "liability": null,
+        "provider": null,
         "status": null
       },
       "automatically_finalizes_at": null,
-      "billing_reason": "subscription_cycle",
-      "charge": "{{ .ChargeID }}",
+      "billing_reason": "subscription_create",
       "collection_method": "charge_automatically",
       "created": {{ .TimeCreated }},
       "currency": "usd",
@@ -49,10 +50,9 @@ const paymentSuccessWebhookJson = `
       "default_source": null,
       "default_tax_rates": [],
       "description": null,
-      "discount": null,
       "discounts": [],
       "due_date": null,
-      "effective_at": 1727228884,
+      "effective_at": {{ .TimeCreated }},
       "ending_balance": 0,
       "footer": null,
       "from_invoice": null,
@@ -67,97 +67,64 @@ const paymentSuccessWebhookJson = `
         "object": "list",
         "data": [
           {
-            "id": "{{ .IlID}}",
+            "id": "{{ .IlID }}",
             "object": "line_item",
             "amount": {{ .Amount }},
-            "amount_excluding_tax": {{ .Amount }},
             "currency": "usd",
             "description": "1 × Dingo 2 Eta (at $0.95 / day)",
             "discount_amounts": [],
             "discountable": true,
             "discounts": [],
             "invoice": "{{ .InvoiceID }}",
-            "livemode": false,
+            "livemode": true,
             "metadata": {},
+            "parent": {
+              "invoice_item_details": null,
+              "subscription_item_details": {
+                "invoice_item": null,
+                "proration": false,
+                "proration_details": {
+                  "credited_items": null
+                },
+                "subscription": "{{ .SubscriptionID }}",
+                "subscription_item": "{{ .SubscriptionItemID }}"
+              },
+              "type": "subscription_item_details"
+            },
             "period": {
               "end": {{ .PeriodEnd }},
               "start": {{ .PeriodStart }}
             },
-            "plan": {
-              "id": "{{ .PriceID }}",
-              "object": "plan",
-              "active": true,
-              "aggregate_usage": null,
-              "amount": 95,
-              "amount_decimal": "95",
-              "billing_scheme": "per_unit",
-              "created": {{ .TimeCreated }},
-              "currency": "usd",
-              "interval": "day",
-              "interval_count": 1,
-              "livemode": false,
-              "metadata": {},
-              "meter": null,
-              "nickname": null,
-              "product": "{{ .PlanID }}",
-              "tiers_mode": null,
-              "transform_usage": null,
-              "trial_period_days": null,
-              "usage_type": "licensed"
-            },
-            "price": {
-              "id": "{{ .PriceID }}",
-              "object": "price",
-              "active": true,
-              "billing_scheme": "per_unit",
-              "created": {{ .TimeCreated }},
-              "currency": "usd",
-              "custom_unit_amount": null,
-              "livemode": false,
-              "lookup_key": null,
-              "metadata": {},
-              "nickname": null,
-              "product": "{{ .PlanID }}", 
-              "recurring": {
-                "aggregate_usage": null,
-                "interval": "day",
-                "interval_count": 1,
-                "meter": null,
-                "trial_period_days": null,
-                "usage_type": "licensed"
+            "pretax_credit_amounts": [],
+            "pricing": {
+              "price_details": {
+                "price": "{{ .PriceID }}",
+                "product": "{{ .PlanID }}"
               },
-              "tax_behavior": "unspecified",
-              "tiers_mode": null,
-              "transform_quantity": null,
-              "type": "recurring",
-              "unit_amount": {{ .Amount }},
+              "type": "price_details",
               "unit_amount_decimal": "{{ .AmountDecimal }}"
             },
-            "proration": false,
-            "proration_details": {
-              "credited_items": null
-            },
             "quantity": 1,
-            "subscription": "{{ .SubscriptionID }}",
-            "subscription_item": "{{ .SubscriptionItemID }}",
-            "tax_amounts": [],
-            "tax_rates": [],
-            "type": "subscription",
-            "unit_amount_excluding_tax": "95"
+            "taxes": []
           }
         ],
         "has_more": false,
         "total_count": 1,
         "url": "/v1/invoices/{{ .InvoiceID }}/lines"
       },
-      "livemode": false,
+      "livemode": true,
       "metadata": {},
       "next_payment_attempt": null,
-      "number": "C0381EFB-0002",
+      "number": "E4SH3PJZ-0001",
       "on_behalf_of": null,
-      "paid": true,
-      "paid_out_of_band": false,
-      "payment_intent": "{{ .PaymentIntentID }}",
+      "parent": {
+        "quote_details": null,
+        "subscription_details": {
+          "metadata": {},
+          "subscription": "{{ .SubscriptionID }}"
+        },
+        "type": "subscription_details"
+      },
       "payment_settings": {
         "default_mandate": null,
         "payment_method_options": {
@@ -173,11 +140,10 @@ const paymentSuccessWebhookJson = `
         },
         "payment_method_types": null
       },
-      "period_end": {{ .TimeCreated }}, 
+      "period_end": {{ .TimeCreated }},
       "period_start": {{ .TimeCreated }},
       "post_payment_credit_notes_amount": 0,
       "pre_payment_credit_notes_amount": 0,
-      "quote": null,
       "receipt_number": null,
       "rendering": null,
       "shipping_cost": null,
@@ -191,28 +157,22 @@ const paymentSuccessWebhookJson = `
         "paid_at": {{ .TimeCreated }},
         "voided_at": null
       },
-      "subscription": "{{ .SubscriptionID }}",
-      "subscription_details": {
-        "metadata": {}
-      },
       "subtotal": {{ .Amount }},
       "subtotal_excluding_tax": {{ .Amount }},
-      "tax": null,
       "test_clock": null,
-      "total": 95,
+      "total": {{ .Amount }},
       "total_discount_amounts": [],
-      "total_excluding_tax": 95,
-      "total_tax_amounts": [],
-      "transfer_data": null,
-      "webhooks_delivered_at": null
-    },
-    "previous_attributes": null
+      "total_excluding_tax": {{ .Amount }},
+      "total_pretax_credit_amounts": [],
+      "total_taxes": [],
+      "webhooks_delivered_at": {{ .TimeCreated }}
+    }
   },
   "livemode": false,
-  "pending_webhooks": 0,
+  "pending_webhooks": 1,
   "request": {
-    "id": "{{ .RequestID }}",
-    "idempotency_key": "{{ .IdempotencyKey }}"
+    "id": null,
+    "idempotency_key": "6f5f0837-c8fd-4c2e-93ae-94d85f42f668"
   },
   "type": "invoice.payment_succeeded"
 }`

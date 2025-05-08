@@ -113,7 +113,7 @@ func PlanChangeHandler(g *shared.GlobalContext) func(w http.ResponseWriter, r *h
 				if err != nil {
 					return err
 				}
-				newIDs, err := shared.LookupStripeIDs(m, *planId, *priceId)
+				newPlanPrice, err := shared.LookupPlanPriceInfo(m, *planId, *priceId)
 				if err != nil {
 					return err
 				}
@@ -121,21 +121,15 @@ func PlanChangeHandler(g *shared.GlobalContext) func(w http.ResponseWriter, r *h
 				if up == nil {
 					return core.NewHttp422Error(nil, "user plan not found")
 				}
-				currIDs, err := shared.LookupStripeIDs(m, up.Plan.Id, up.Price)
+				currPlanPrice, err := shared.LookupPlanPriceInfo(m, up.Plan.Id, up.Price)
 				if err != nil {
 					return err
 				}
 				arg := shared.PreviewProrationArg{
-					Time:  *time,
-					SubID: subId,
-					NewPlan: shared.Subscription{
-						ProdID:  newIDs.Prod,
-						PriceID: newIDs.Price,
-					},
-					CurrPlan: shared.Subscription{
-						ProdID:  currIDs.Prod,
-						PriceID: currIDs.Price,
-					},
+					Time:     *time,
+					SubID:    subId,
+					NewPlan:  newPlanPrice.ToSubscription(),
+					CurrPlan: currPlanPrice.ToSubscription(),
 				}
 				cbpa := shared.ChangeBillingPlanArg{
 					PreviewProrationArg: arg,
@@ -238,7 +232,7 @@ func PlanSubscribeHandler(g *shared.GlobalContext) func(w http.ResponseWriter, r
 				if err != nil {
 					return err
 				}
-				stripeIds, err := shared.LookupStripeIDs(m, *planId, *priceId)
+				ppi, err := shared.LookupPlanPriceInfo(m, *planId, *priceId)
 				if err != nil {
 					return core.NewHttp422Error(err, "stripe object ids")
 				}
@@ -257,7 +251,7 @@ func PlanSubscribeHandler(g *shared.GlobalContext) func(w http.ResponseWriter, r
 
 				sessId, url, err := m.Stripe().CheckoutSession(m, shared.CheckoutArg{
 					CustomerID: cid,
-					PriceID:    stripeIds.Price,
+					PriceID:    ppi.StripeIDs.Price,
 					Expire:     expire,
 					SuccessURL: succ,
 					CancelURL:  canc,
@@ -307,11 +301,11 @@ func PlanPreviewProrateHandler(g *shared.GlobalContext) func(w http.ResponseWrit
 				if up == nil {
 					return core.NewHttp422Error(nil, "user plan not found")
 				}
-				currIDs, err := shared.LookupStripeIDs(m, up.Plan.Id, up.Price)
+				currPPI, err := shared.LookupPlanPriceInfo(m, up.Plan.Id, up.Price)
 				if err != nil {
 					return err
 				}
-				newIDs, err := shared.LookupStripeIDs(m, *planId, *priceId)
+				newPPI, err := shared.LookupPlanPriceInfo(m, *planId, *priceId)
 				if err != nil {
 					return err
 				}
@@ -319,14 +313,8 @@ func PlanPreviewProrateHandler(g *shared.GlobalContext) func(w http.ResponseWrit
 					PreviewProrationArg: shared.PreviewProrationArg{
 						CustomerID: cid,
 						SubID:      up.SubscriptionId,
-						CurrPlan: shared.Subscription{
-							ProdID:  currIDs.Prod,
-							PriceID: currIDs.Price,
-						},
-						NewPlan: shared.Subscription{
-							ProdID:  newIDs.Prod,
-							PriceID: newIDs.Price,
-						},
+						CurrPlan:   currPPI.ToSubscription(),
+						NewPlan:    newPPI.ToSubscription(),
 					},
 					NewPlanID:  *planId,
 					NewPriceID: *priceId,

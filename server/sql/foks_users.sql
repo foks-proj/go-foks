@@ -755,16 +755,15 @@ CREATE TABLE stripe_users (
 );
 CREATE INDEX stripe_users_customer_id_idx ON stripe_users(customer_id);
 
-CREATE TABLE stripe_payments (
+CREATE TABLE stripe_invoices (
     short_host_id SMALLINT NOT NULL,
     uid BYTEA NOT NULL,
-    charge_id VARCHAR(100) NOT NULL,
     invoice_id VARCHAR(100) NOT NULL,
     price_id VARCHAR(100) NOT NULL,
     prod_id VARCHAR(100) NOT NULL,
     subscription_id VARCHAR(100) NOT NULL,
     ctime TIMESTAMP NOT NULL,
-    PRIMARY KEY(short_host_id, uid, charge_id)
+    PRIMARY KEY(short_host_id, uid, invoice_id)
 );
 
 CREATE TABLE kv_shards (

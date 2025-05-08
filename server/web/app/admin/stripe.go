@@ -9,7 +9,7 @@ import (
 
 	"github.com/foks-proj/go-foks/server/shared"
 	"github.com/foks-proj/go-foks/server/web/lib"
-	"github.com/stripe/stripe-go/v81/webhook"
+	"github.com/stripe/stripe-go/v82/webhook"
 )
 
 func StripeSuccessHandler(

@@ -90,7 +90,19 @@ templ PreviewProration(d *lib.AdminPageData, pd *shared.ProrationPreviewData) {
 		</div>
 		<div>
 			<div class="text-xs">
-				<div class="font-semibold mb-2">Next Bill ({ pd.Data.NextBill.Time.DateString() }) </div>
+				<div class="font-semibold mb-2">
+					if !pd.Data.NextBill.Time.IsZero() {
+						Next Bill ({ pd.Data.NextBill.Time.DateString() })
+					} else if pd.Data.NextBill.AmountDue == 0 {
+						if pd.Data.NextBill.Total < 0 {
+							Immediate Credit (will generate a $0 invoice)
+						} else {
+							Immediate Balance Adjustment (will generate a $0 invoice)
+						}
+					} else {
+						Immediate Charge
+					}
+				</div>
 				<div class="grid grid-cols-2 border-b border-slate-100 py-2">
 					<div>Subtotal</div>
 					<div class="text-right">{ pd.Data.NextBill.Subtotal.String() }</div>
@@ -103,6 +115,16 @@ templ PreviewProration(d *lib.AdminPageData, pd *shared.ProrationPreviewData) {
 					<div>Total</div>
 					<div class="text-right">{ pd.Data.NextBill.Total.String() }</div>
 				</div>
+				if pd.Data.NextBill.AppliedBalance != 0 {
+					<div class="grid grid-cols-2 border-b border-slate-100 py-2 font-slate-800">
+						<div>Applied Balance</div>
+						<div class="text-right">{ pd.Data.NextBill.AppliedBalance.String() }</div>
+					</div>
+					<div class="grid grid-cols-2 py-2 font-semibold">
+						<div>Total Due</div>
+						<div class="text-right">{ pd.Data.NextBill.AmountDue.String() }</div>
+					</div>
+				}
 			</div>
 		</div>
 	</div>

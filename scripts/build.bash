@@ -255,6 +255,20 @@ init_big_top_vhost() {
 
 init_plans() {
 
+    # For testing webhooks and renewals, have a stupid option to refresh
+    # once a day
+    if (is_env_bool_set "TEST") || (is_env_bool_set "DEV"); then
+        tool create-plan \
+            --quota 100MB \
+            --name "micro-1" \
+            --display-name "Micro" \
+            --prices 1d:129,1m:495 \
+            --max-seats 10 \
+            --details '1GB of storage' \
+            --details 'Up to 10 teams can share this quota' \
+            --promoted
+    fi
+
      tool create-plan \
         --quota 1GB \
         --name "basic-1" \

@@ -37,7 +37,7 @@ require (
 	github.com/spf13/cobra v1.9.1
 	github.com/spf13/pflag v1.0.6
 	github.com/stretchr/testify v1.10.0
-	github.com/stripe/stripe-go/v81 v81.4.0
+	github.com/stripe/stripe-go/v82 v82.1.0
 	github.com/testcontainers/testcontainers-go v0.37.0
 	github.com/zalando/go-keyring v0.2.6
 	gitlab.com/c0b/go-ordered-json v0.0.0-20201030195603-febf46534d5a
