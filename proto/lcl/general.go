@@ -177,24 +177,81 @@ func (d *DeviceNagInfo) Decode(dec rpc.Decoder) error {
 
 func (d *DeviceNagInfo) Bytes() []byte { return nil }
 
+type CliVersionPair struct {
+	Cli   lib.SemVer
+	Agent lib.SemVer
+}
+
+type CliVersionPairInternal__ struct {
+	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
+	Cli     *lib.SemVerInternal__
+	Agent   *lib.SemVerInternal__
+}
+
+func (c CliVersionPairInternal__) Import() CliVersionPair {
+	return CliVersionPair{
+		Cli: (func(x *lib.SemVerInternal__) (ret lib.SemVer) {
+			if x == nil {
+				return ret
+			}
+			return x.Import()
+		})(c.Cli),
+		Agent: (func(x *lib.SemVerInternal__) (ret lib.SemVer) {
+			if x == nil {
+				return ret
+			}
+			return x.Import()
+		})(c.Agent),
+	}
+}
+
+func (c CliVersionPair) Export() *CliVersionPairInternal__ {
+	return &CliVersionPairInternal__{
+		Cli:   c.Cli.Export(),
+		Agent: c.Agent.Export(),
+	}
+}
+
+func (c *CliVersionPair) Encode(enc rpc.Encoder) error {
+	return enc.Encode(c.Export())
+}
+
+func (c *CliVersionPair) Decode(dec rpc.Decoder) error {
+	var tmp CliVersionPairInternal__
+	err := dec.Decode(&tmp)
+	if err != nil {
+		return err
+	}
+	*c = tmp.Import()
+	return nil
+}
+
+func (c *CliVersionPair) Bytes() []byte { return nil }
+
 type NagTyoe int
 
 const (
-	NagTyoe_None          NagTyoe = 0
-	NagTyoe_TooFewDevices NagTyoe = 1
-	NagTyoe_ClientVersion NagTyoe = 2
+	NagTyoe_None                          NagTyoe = 0
+	NagTyoe_TooFewDevices                 NagTyoe = 1
+	NagTyoe_ClientVersionCritical         NagTyoe = 2
+	NagTyoe_ClientVersionUpgradeAvailable NagTyoe = 3
+	NagTyoe_ClientVersionClash            NagTyoe = 4
 )
 
 var NagTyoeMap = map[string]NagTyoe{
-	"None":          0,
-	"TooFewDevices": 1,
-	"ClientVersion": 2,
+	"None":                          0,
+	"TooFewDevices":                 1,
+	"ClientVersionCritical":         2,
+	"ClientVersionUpgradeAvailable": 3,
+	"ClientVersionClash":            4,
 }
 
 var NagTyoeRevMap = map[NagTyoe]string{
 	0: "None",
 	1: "TooFewDevices",
-	2: "ClientVersion",
+	2: "ClientVersionCritical",
+	3: "ClientVersionUpgradeAvailable",
+	4: "ClientVersionClash",
 }
 
 type NagTyoeInternal__ NagTyoe
@@ -211,6 +268,7 @@ type UnifiedNag struct {
 	T     NagTyoe
 	F_1__ *DeviceNagInfo               `json:"f1,omitempty"`
 	F_2__ *lib.ServerClientVersionInfo `json:"f2,omitempty"`
+	F_3__ *CliVersionPair              `json:"f3,omitempty"`
 }
 
 type UnifiedNagInternal__ struct {
@@ -223,6 +281,7 @@ type UnifiedNagInternalSwitch__ struct {
 	_struct struct{}                               `codec:",omitempty"` //lint:ignore U1000 msgpack internal field
 	F_1__   *DeviceNagInfoInternal__               `codec:"1"`
 	F_2__   *lib.ServerClientVersionInfoInternal__ `codec:"2"`
+	F_3__   *CliVersionPairInternal__              `codec:"3"`
 }
 
 func (u UnifiedNag) GetT() (ret NagTyoe, err error) {
@@ -231,9 +290,13 @@ func (u UnifiedNag) GetT() (ret NagTyoe, err error) {
 		if u.F_1__ == nil {
 			return ret, errors.New("unexpected nil case for F_1__")
 		}
-	case NagTyoe_ClientVersion:
+	case NagTyoe_ClientVersionCritical, NagTyoe_ClientVersionUpgradeAvailable:
 		if u.F_2__ == nil {
 			return ret, errors.New("unexpected nil case for F_2__")
+		}
+	case NagTyoe_ClientVersionClash:
+		if u.F_3__ == nil {
+			return ret, errors.New("unexpected nil case for F_3__")
 		}
 	}
 	return u.T, nil
@@ -249,14 +312,34 @@ func (u UnifiedNag) Toofewdevices() DeviceNagInfo {
 	return *u.F_1__
 }
 
-func (u UnifiedNag) Clientversion() lib.ServerClientVersionInfo {
+func (u UnifiedNag) Clientversioncritical() lib.ServerClientVersionInfo {
 	if u.F_2__ == nil {
 		panic("unexepected nil case; should have been checked")
 	}
-	if u.T != NagTyoe_ClientVersion {
-		panic(fmt.Sprintf("unexpected switch value (%v) when Clientversion is called", u.T))
+	if u.T != NagTyoe_ClientVersionCritical {
+		panic(fmt.Sprintf("unexpected switch value (%v) when Clientversioncritical is called", u.T))
 	}
 	return *u.F_2__
+}
+
+func (u UnifiedNag) Clientversionupgradeavailable() lib.ServerClientVersionInfo {
+	if u.F_2__ == nil {
+		panic("unexepected nil case; should have been checked")
+	}
+	if u.T != NagTyoe_ClientVersionUpgradeAvailable {
+		panic(fmt.Sprintf("unexpected switch value (%v) when Clientversionupgradeavailable is called", u.T))
+	}
+	return *u.F_2__
+}
+
+func (u UnifiedNag) Clientversionclash() CliVersionPair {
+	if u.F_3__ == nil {
+		panic("unexepected nil case; should have been checked")
+	}
+	if u.T != NagTyoe_ClientVersionClash {
+		panic(fmt.Sprintf("unexpected switch value (%v) when Clientversionclash is called", u.T))
+	}
+	return *u.F_3__
 }
 
 func NewUnifiedNagWithToofewdevices(v DeviceNagInfo) UnifiedNag {
@@ -266,10 +349,24 @@ func NewUnifiedNagWithToofewdevices(v DeviceNagInfo) UnifiedNag {
 	}
 }
 
-func NewUnifiedNagWithClientversion(v lib.ServerClientVersionInfo) UnifiedNag {
+func NewUnifiedNagWithClientversioncritical(v lib.ServerClientVersionInfo) UnifiedNag {
 	return UnifiedNag{
-		T:     NagTyoe_ClientVersion,
+		T:     NagTyoe_ClientVersionCritical,
 		F_2__: &v,
+	}
+}
+
+func NewUnifiedNagWithClientversionupgradeavailable(v lib.ServerClientVersionInfo) UnifiedNag {
+	return UnifiedNag{
+		T:     NagTyoe_ClientVersionUpgradeAvailable,
+		F_2__: &v,
+	}
+}
+
+func NewUnifiedNagWithClientversionclash(v CliVersionPair) UnifiedNag {
+	return UnifiedNag{
+		T:     NagTyoe_ClientVersionClash,
+		F_3__: &v,
 	}
 }
 
@@ -300,6 +397,18 @@ func (u UnifiedNagInternal__) Import() UnifiedNag {
 			})(x)
 			return &tmp
 		})(u.Switch__.F_2__),
+		F_3__: (func(x *CliVersionPairInternal__) *CliVersionPair {
+			if x == nil {
+				return nil
+			}
+			tmp := (func(x *CliVersionPairInternal__) (ret CliVersionPair) {
+				if x == nil {
+					return ret
+				}
+				return x.Import()
+			})(x)
+			return &tmp
+		})(u.Switch__.F_3__),
 	}
 }
 
@@ -319,6 +428,12 @@ func (u UnifiedNag) Export() *UnifiedNagInternal__ {
 				}
 				return (*x).Export()
 			})(u.F_2__),
+			F_3__: (func(x *CliVersionPair) *CliVersionPairInternal__ {
+				if x == nil {
+					return nil
+				}
+				return (*x).Export()
+			})(u.F_3__),
 		},
 	}
 }
@@ -811,11 +926,13 @@ func (c *ClearDeviceNagArg) Bytes() []byte { return nil }
 
 type GetUnifiedNagsArg struct {
 	WithRateLimit bool
+	Cv            lib.ClientVersionExt
 }
 
 type GetUnifiedNagsArgInternal__ struct {
 	_struct       struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	WithRateLimit *bool
+	Cv            *lib.ClientVersionExtInternal__
 }
 
 func (g GetUnifiedNagsArgInternal__) Import() GetUnifiedNagsArg {
@@ -826,12 +943,19 @@ func (g GetUnifiedNagsArgInternal__) Import() GetUnifiedNagsArg {
 			}
 			return *x
 		})(g.WithRateLimit),
+		Cv: (func(x *lib.ClientVersionExtInternal__) (ret lib.ClientVersionExt) {
+			if x == nil {
+				return ret
+			}
+			return x.Import()
+		})(g.Cv),
 	}
 }
 
 func (g GetUnifiedNagsArg) Export() *GetUnifiedNagsArgInternal__ {
 	return &GetUnifiedNagsArgInternal__{
 		WithRateLimit: &g.WithRateLimit,
+		Cv:            g.Cv.Export(),
 	}
 }
 
@@ -860,7 +984,7 @@ type GeneralInterface interface {
 	GetActiveUser(context.Context) (lib.UserContext, error)
 	GetDeviceNag(context.Context, bool) (DeviceNagInfo, error)
 	ClearDeviceNag(context.Context, bool) error
-	GetUnifiedNags(context.Context, bool) (UnifiedNagRes, error)
+	GetUnifiedNags(context.Context, GetUnifiedNagsArg) (UnifiedNagRes, error)
 	ErrorWrapper() func(error) lib.Status
 	CheckArgHeader(ctx context.Context, h Header) error
 
@@ -1097,10 +1221,7 @@ func (c GeneralClient) ClearDeviceNag(ctx context.Context, val bool) (err error)
 	return
 }
 
-func (c GeneralClient) GetUnifiedNags(ctx context.Context, withRateLimit bool) (res UnifiedNagRes, err error) {
-	arg := GetUnifiedNagsArg{
-		WithRateLimit: withRateLimit,
-	}
+func (c GeneralClient) GetUnifiedNags(ctx context.Context, arg GetUnifiedNagsArg) (res UnifiedNagRes, err error) {
 	warg := &rpc.DataWrap[Header, *GetUnifiedNagsArgInternal__]{
 		Data: arg.Export(),
 	}
@@ -1372,7 +1493,7 @@ func GeneralProtocol(i GeneralInterface) rpc.ProtocolV2 {
 							return nil, err
 						}
 						typedArg := typedWrappedArg.Data
-						tmp, err := i.GetUnifiedNags(ctx, (typedArg.Import()).WithRateLimit)
+						tmp, err := i.GetUnifiedNags(ctx, (typedArg.Import()))
 						if err != nil {
 							return nil, err
 						}

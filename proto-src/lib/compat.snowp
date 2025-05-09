@@ -36,3 +36,9 @@ struct ServerClientVersionInfo {
     newest @1 : Option(lib.SemVer);
     msg @2 : Text;
 }
+
+struct VersionBundle {
+    cli @0 : ClientVersionExt;
+    agent @1 : ClientVersionExt;
+    server @2 : ServerClientVersionInfo;
+}

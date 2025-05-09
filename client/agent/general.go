@@ -232,13 +232,23 @@ func (c *AgentConn) ClearDeviceNag(ctx context.Context, val bool) error {
 
 func (c *AgentConn) GetUnifiedNags(
 	ctx context.Context,
-	withRateLimit bool,
+	arg lcl.GetUnifiedNagsArg,
 ) (
 	lcl.UnifiedNagRes,
 	error,
 ) {
-	var res lcl.UnifiedNagRes
-	return res, core.NotImplementedError{}
+	var ret lcl.UnifiedNagRes
+	m := c.MetaContext(ctx)
+	nm := libclient.NagMinder{
+		WithRateLimit: arg.WithRateLimit,
+		CliVersion:    arg.Cv,
+	}
+	err := nm.Run(m)
+	if err != nil {
+		return ret, err
+	}
+	ret.Nags = nm.GetResult()
+	return ret, nil
 }
 
 var _ lcl.GeneralInterface = (*AgentConn)(nil)

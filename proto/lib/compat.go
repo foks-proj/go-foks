@@ -403,3 +403,63 @@ func (s *ServerClientVersionInfo) Decode(dec rpc.Decoder) error {
 }
 
 func (s *ServerClientVersionInfo) Bytes() []byte { return nil }
+
+type VersionBundle struct {
+	Cli    ClientVersionExt
+	Agent  ClientVersionExt
+	Server ServerClientVersionInfo
+}
+
+type VersionBundleInternal__ struct {
+	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
+	Cli     *ClientVersionExtInternal__
+	Agent   *ClientVersionExtInternal__
+	Server  *ServerClientVersionInfoInternal__
+}
+
+func (v VersionBundleInternal__) Import() VersionBundle {
+	return VersionBundle{
+		Cli: (func(x *ClientVersionExtInternal__) (ret ClientVersionExt) {
+			if x == nil {
+				return ret
+			}
+			return x.Import()
+		})(v.Cli),
+		Agent: (func(x *ClientVersionExtInternal__) (ret ClientVersionExt) {
+			if x == nil {
+				return ret
+			}
+			return x.Import()
+		})(v.Agent),
+		Server: (func(x *ServerClientVersionInfoInternal__) (ret ServerClientVersionInfo) {
+			if x == nil {
+				return ret
+			}
+			return x.Import()
+		})(v.Server),
+	}
+}
+
+func (v VersionBundle) Export() *VersionBundleInternal__ {
+	return &VersionBundleInternal__{
+		Cli:    v.Cli.Export(),
+		Agent:  v.Agent.Export(),
+		Server: v.Server.Export(),
+	}
+}
+
+func (v *VersionBundle) Encode(enc rpc.Encoder) error {
+	return enc.Encode(v.Export())
+}
+
+func (v *VersionBundle) Decode(dec rpc.Decoder) error {
+	var tmp VersionBundleInternal__
+	err := dec.Decode(&tmp)
+	if err != nil {
+		return err
+	}
+	*v = tmp.Import()
+	return nil
+}
+
+func (v *VersionBundle) Bytes() []byte { return nil }
