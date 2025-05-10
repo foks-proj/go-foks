@@ -165,54 +165,6 @@ func (c *AgentConn) PutServer(ctx context.Context, arg lcl.PutServerArg) (proto.
 
 }
 
-const nagRefreshInterval = 30 * time.Second
-
-func (c *AgentConn) GetDeviceNag(
-	ctx context.Context,
-	withRateLimit bool,
-) (
-	lcl.DeviceNagInfo,
-	error,
-) {
-	var ret lcl.DeviceNagInfo
-	m := c.MetaContext(ctx)
-	au, err := m.ActiveConnectedUser(&libclient.ACUOpts{})
-	if err != nil {
-		return ret, err
-	}
-	ns := au.NagState()
-	dns := &ns.Device
-	ret.NumDevices = uint64(dns.NumDevices)
-	now := m.G().Now()
-	last := now.Sub(dns.Times.Refreshed)
-	if last < nagRefreshInterval && withRateLimit {
-		return ret, nil
-	}
-	ucli, err := au.UserClient(m)
-	if err != nil {
-		return ret, err
-	}
-	info, err := ucli.GetDeviceNag(m.Ctx())
-	if err != nil {
-		return ret, err
-	}
-	now = m.G().Now()
-	dns.NumDevices = info.NumDevices
-	ret.NumDevices = dns.NumDevices
-	dns.Times.Refreshed = now
-	au.SetNagState(ns)
-
-	if info.Cleared || info.NumDevices > 1 {
-		return ret, nil
-	}
-
-	dns.Times.Shown = now
-	au.SetNagState(ns)
-
-	ret.DoNag = true
-	return ret, nil
-}
-
 func (c *AgentConn) ClearDeviceNag(ctx context.Context, val bool) error {
 	m := c.MetaContext(ctx)
 	au, err := m.ActiveConnectedUser(&libclient.ACUOpts{})

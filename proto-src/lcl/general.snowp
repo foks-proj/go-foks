@@ -25,7 +25,7 @@ struct CliVersionPair {
     agent @1 : lib.SemVer;
 }
 
-enum NagTyoe {
+enum NagType {
     None @0;
     TooFewDevices @1;
     ClientVersionCritical @2;
@@ -33,7 +33,7 @@ enum NagTyoe {
     ClientVersionClash @4;
 }
 
-variant UnifiedNag switch (t : NagTyoe) {
+variant UnifiedNag switch (t : NagType) {
     case TooFewDevices @1: DeviceNagInfo;
     case ClientVersionCritical,
         ClientVersionUpgradeAvailable @2: lib.ServerClientVersionInfo;
@@ -81,10 +81,6 @@ protocol General
     ) -> lib.RegServerConfig;
 
     getActiveUser @5 () -> lib.UserContext;
-
-    getDeviceNag @6 (
-        withRateLimit @0 : Bool
-    ) -> DeviceNagInfo;
 
     clearDeviceNag @7 ( val @0 : Bool );
 

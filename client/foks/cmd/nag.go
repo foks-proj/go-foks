@@ -10,41 +10,99 @@ import (
 	"github.com/foks-proj/go-foks/client/libclient"
 	"github.com/foks-proj/go-foks/lib/core"
 	"github.com/foks-proj/go-foks/proto/lcl"
+	"github.com/foks-proj/go-foks/proto/lib"
+	proto "github.com/foks-proj/go-foks/proto/lib"
 )
 
 func PartingConsoleMessage(
 	m libclient.MetaContext,
 ) error {
-	_, err := DeviceNag(m)
+	err := DoUnifiedNags(m)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func checkShouldNag(m libclient.MetaContext, withRateLimit bool) (bool, error) {
+func checkUnifiedNags(m libclient.MetaContext, withRateLimit bool) (*lcl.UnifiedNagRes, error) {
 	gcli, cleanFn, err := m.G().ConnectToAgentCli(m.Ctx())
 	if err != nil {
-		return false, err
+		return nil, err
 	}
 	defer cleanFn()
 	cli := lcl.GeneralClient{Cli: gcli, ErrorUnwrapper: core.StatusToError}
 
-	info, err := cli.GetDeviceNag(m.Ctx(), withRateLimit)
+	info, err := cli.GetUnifiedNags(m.Ctx(), lcl.GetUnifiedNagsArg{
+		WithRateLimit: withRateLimit,
+		Cv: proto.ClientVersionExt{
+			Vers:            core.CurrentClientVersion,
+			LinkerVersion:   libclient.LinkerVersion,
+			LinkerPackaging: libclient.LinkerPackaging,
+		},
+	})
 	if err != nil {
-		return false, err
+		return nil, err
 	}
-	return info.DoNag, nil
+	return &info, nil
 }
 
-func DeviceNag(m libclient.MetaContext) (bool, error) {
-	doit, err := checkShouldNag(m, true)
+func DoUnifiedNags(m libclient.MetaContext) error {
+	nags, err := checkUnifiedNags(m, true)
 	if err != nil {
-		return false, err
+		return err
 	}
-	if !doit {
-		return false, nil
+	for _, nag := range nags.Nags {
+		err := doNag(m, nag)
+		if err != nil {
+			return err
+		}
 	}
+	return nil
+}
+
+func doNag(m libclient.MetaContext, nag lcl.UnifiedNag) error {
+
+	typ, err := nag.GetT()
+	if err != nil {
+		return err
+	}
+	switch typ {
+	case lcl.NagType_ClientVersionClash:
+		return doClientVersionClashNag(m, nag.Clientversionclash())
+	case lcl.NagType_ClientVersionCritical:
+		return doClientVersionCriticalNag(m, nag.Clientversioncritical())
+	case lcl.NagType_ClientVersionUpgradeAvailable:
+		return doClientVersionUpgradeAvailable(m, nag.Clientversionupgradeavailable())
+	case lcl.NagType_TooFewDevices:
+		return doTooFewDevicesNag(m, nag.Toofewdevices())
+	}
+	return nil
+}
+
+func doClientVersionUpgradeAvailable(
+	m libclient.MetaContext,
+	n lib.ServerClientVersionInfo,
+) error {
+	return core.NotImplementedError{}
+}
+
+func doClientVersionCriticalNag(
+	m libclient.MetaContext,
+	n lib.ServerClientVersionInfo,
+) error {
+	return core.NotImplementedError{}
+}
+
+func doClientVersionClashNag(
+	m libclient.MetaContext,
+	nag lcl.CliVersionPair,
+) error {
+	return core.NotImplementedError{}
+}
+
+func doTooFewDevicesNag(
+	m libclient.MetaContext, dni lcl.DeviceNagInfo) error {
+
 	msg := "\n ☠️ ☠️  " + ui.BoldErrorStyle.Render("DATA LOSS WARNING") + " ☠️️ ☠️\n\n" +
 		ui.ErrorStyle.Render(
 			" You only have one active device; if you lose access to it, you will lose access to all\n"+
@@ -60,5 +118,5 @@ func DeviceNag(m libclient.MetaContext) (bool, error) {
 		"    foks notify clear-device-nag\n\n"
 	fmt.Fprintf(es, "%s\n", msg)
 
-	return true, nil
+	return nil
 }

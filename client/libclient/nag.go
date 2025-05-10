@@ -149,6 +149,9 @@ func (n *NagMinder) checkClientCriticallyOutdated(m MetaContext) (bool, error) {
 	if n.scv == nil {
 		return false, core.InternalError("no server client version info")
 	}
+	if n.scv.Min == nil {
+		return false, nil
+	}
 	diff := n.scv.Min.Cmp(core.CurrentClientVersion)
 	if diff > 0 {
 		n.res = append(n.res, lcl.NewUnifiedNagWithClientversioncritical(*n.scv))
