@@ -65,6 +65,9 @@ func versionCmd(m libclient.MetaContext) *cobra.Command {
 			if verbose {
 				fmt.Printf(" - commit: %s\n", libclient.LinkerVersion)
 				fmt.Printf(" - protocol compatibility version: %d\n", core.CurrentCompatibilityVersion)
+				if libclient.LinkerPackaging != "" {
+					fmt.Printf(" - packaging: %s\n", libclient.LinkerPackaging)
+				}
 			}
 		},
 	}

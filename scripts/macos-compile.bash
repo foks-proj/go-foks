@@ -10,17 +10,29 @@ usage() {
 }
 
 strip=0
+brew=0
+lcl=0
+plat="arm64"
+packaging="darwin-zip"
 
-# take two arguments: -p which can be linux-arm64 or linux-amd64, and also
+# take two arguments: -p which can be arm64 or amd64, and also
 # -s, which is a boolean flag that means to strip the binary
 # use getopt to parse the arguments::
-while getopts ":p:s" opt; do
+while getopts ":p:sabl" opt; do
     case $opt in
         p)
             plat=$OPTARG
             ;;
         s)
             strip=1
+            ;;
+        b) 
+            brew=1
+            packaging="brew"
+            ;;
+        l)
+            lcl=1
+            packaging="local"
             ;;
         \?)
             echo "Invalid option: -$OPTARG" >&2
@@ -45,13 +57,15 @@ fi
 echo "Building darwin version $version"
 echo "  - platform: $plat"
 echo "  - stripping: $strip"
+echo "  - brew: $brew"
+echo "  - local: $lcl"
 
 targ="build/darwin-${plat}/foks"
 mkdir -p $(dirname ${targ})
 
 src="./client/foks"
 linkerVersion="-X github.com/foks-proj/go-foks/client/libclient.LinkerVersion=${version}"
-linkerPackaging="-X github.com/foks-proj/go-foks/client/libclient.LinkerPackaging=darwin-zip"
+linkerPackaging="-X github.com/foks-proj/go-foks/client/libclient.LinkerPackaging=${packaging}"
 strip_w_flag=""
 trimppath_flag=""
 
@@ -66,9 +80,18 @@ export CGO_ENABLED=1
 export GOOS=darwin
 export GOARCH=${plat} 
 
-go build -o ${targ} \
+build_mode="build -o ${targ}"
+if [ "$lcl" -eq 1 ]; then
+    build_mode="install"
+fi
+
+go ${build_mode} \
     ${trimppath_flag} \
     -ldflags "${strip_w_flag} ${linkerVersion} ${linkerPackaging}" \
     ${src}
 
+if [ "$lcl" -eq 1 ]; then
+    echo "Build complete -> $(./scripts/gowhere.sh)/foks"
+    exit 0
+fi
 echo "Build complete -> ${targ}"
