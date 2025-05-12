@@ -135,17 +135,14 @@ func (s *SecretKeyBundle) Bytes() []byte { return nil }
 type SecretStoreVersion int
 
 const (
-	SecretStoreVersion_V1 SecretStoreVersion = 1
 	SecretStoreVersion_V2 SecretStoreVersion = 2
 )
 
 var SecretStoreVersionMap = map[string]SecretStoreVersion{
-	"V1": 1,
 	"V2": 2,
 }
 
 var SecretStoreVersionRevMap = map[SecretStoreVersion]string{
-	1: "V1",
 	2: "V2",
 }
 
