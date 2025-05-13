@@ -4,6 +4,8 @@
 package team
 
 import (
+	"fmt"
+	"maps"
 	"sync"
 
 	"github.com/foks-proj/go-foks/lib/core"
@@ -43,9 +45,7 @@ type MemberSet map[MemberID]bool
 
 func (m MemberSet) Copy() MemberSet {
 	ret := make(MemberSet)
-	for k, v := range m {
-		ret[k] = v
-	}
+	maps.Copy(ret, m)
 	return ret
 }
 
@@ -522,6 +522,15 @@ func (d ChangeSet) Gameplan(
 	rPost = rPre.Clone().Apply(d)
 
 	sched, keysPost = rPre.planChangesLocked(d, keysPre, rPost, forcedNewKeyGens)
+
+	if len(keysPost) > core.MaxRolesPerTeam {
+		return nil, nil, nil, core.TeamRosterError(
+			fmt.Sprintf("too many roles in team (current max=%d)",
+				core.MaxRolesPerTeam,
+			),
+		)
+	}
+
 	return rPost, sched, keysPost, nil
 }
 
