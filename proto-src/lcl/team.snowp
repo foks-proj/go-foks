@@ -77,10 +77,16 @@ struct TokRole {
 }
 
 typedef FQPartyAndRoleString = Text;
+typedef RoleChangeString = Text;
 
 struct FQPartyParsedAndRole {
     fqp @0 : lib.FQPartyParsed;
     role @1 : Option(lib.Role);
+}
+
+struct RoleChange {
+    member @0 : FQPartyParsedAndRole;
+    newRole @1 : lib.Role;
 }
 
 struct TeamMembership {
@@ -174,5 +180,10 @@ protocol Team
         team @0 : lib.FQTeamParsed,
         members @1 : List(FQPartyParsedAndRole),
         dstRole @2 : Option(lib.Role)
+    );
+
+    teamChangeRoles @14 (
+        team @0 : lib.FQTeamParsed,
+        changes @1 : List(RoleChange)
     );
 }

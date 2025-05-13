@@ -380,11 +380,17 @@ func TestAutoRejectTeamCycleFromMaliciousClient(t *testing.T) {
 
 // On an "open viewership host", we can test team additions.
 func TestTeamAddOpenViewership(t *testing.T) {
-	x := createTeamOpenViewership(t, nil)
+	x, _ := createTeamOpenViewership(t, nil)
 	defer x.stop(t)
 }
 
-func createTeamOpenViewership(t *testing.T, f func(*testAgent)) *testAgent {
+func createTeamOpenViewership(
+	t *testing.T,
+	f func(*testAgent),
+) (
+	*testAgent,
+	*proto.FQUser,
+) {
 	x := newTestAgent(t)
 	x.runAgent(t)
 
@@ -436,7 +442,7 @@ func createTeamOpenViewership(t *testing.T, f func(*testAgent)) *testAgent {
 	x.runCmd(t, nil, "team", "add", teamName, yuid+"/o")
 	merklePoke(t)
 
-	return x
+	return x, &yUser.Fqu
 }
 
 // If we're acting on behalf of a team, our access token might time
@@ -482,7 +488,7 @@ func TestTeamRefresh(t *testing.T) {
 // in file libclient/team_loader.go is commented out.
 func TestIssue241(t *testing.T) {
 
-	x := createTeamOpenViewership(t, func(x *testAgent) {
+	x, _ := createTeamOpenViewership(t, func(x *testAgent) {
 		x.runCmd(t, nil, "util", "trigger-bg-clkr")
 	})
 	merklePoke(t)
@@ -493,7 +499,7 @@ func TestIssue241(t *testing.T) {
 
 func TestTeamAddTeam(t *testing.T) {
 
-	x := createTeamOpenViewership(t, nil)
+	x, yUser := createTeamOpenViewership(t, nil)
 	defer x.stop(t)
 
 	var membs lcl.ListMembershipsRes
@@ -533,4 +539,38 @@ func TestTeamAddTeam(t *testing.T) {
 		}
 	}
 	require.Equal(t, 1, nFound)
+
+	// change the role of team from m/0 to m/1; first it should fail since we got the
+	// source role wrong.
+	err = x.runCmdErr(nil, "team", "change-roles", t1.String(), "t:"+t2+"/m/3->m/1")
+	require.Error(t, err)
+	require.Equal(t,
+		core.TeamRosterError("party at position 0 with given source role not found in team"),
+		err,
+	)
+
+	x.runCmd(t, nil, "team", "change-roles", t1.String(), "t:"+t2+"->m/1")
+	merklePoke(t)
+
+	// now change again to be an admin
+	x.runCmd(t, nil, "team", "change-roles", t1.String(), "t:"+t2+"/a->a")
+	merklePoke(t)
+
+	yUserString, err := yUser.StringErr()
+	require.NoError(t, err)
+
+	// Demote user y to a reader @ -4 visibility level
+	x.runCmd(t, nil, "team", "change-roles", t1.String(), yUserString+"->m/-4")
+	merklePoke(t)
+
+	// now test that we can change 2 roles at once
+	x.runCmd(t, nil, "team", "change-roles",
+		t1.String(),
+		"t:"+t2+"/a->m/0",
+		yUserString+"->m/0",
+	)
+	merklePoke(t)
+
+	// finally test removal
+	x.runCmd(t, nil, "team", "change-roles", t1.String(), yUserString+"->n")
 }

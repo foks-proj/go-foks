@@ -137,6 +137,7 @@ type TeamWrapper struct {
 	ptks          *TeamKeyRing
 	rk            *rem.TeamRemovalKey
 	memberMap     map[team.MemberID]proto.MemberRoleSeqno
+	srcRoleMap    map[proto.FQEntityFixed][]proto.Role
 	hostname      proto.Hostname
 	rosterDetails map[proto.FQEntityFixed]*rosterPackage
 	voTok         *rem.TeamVOBearerToken
@@ -260,6 +261,7 @@ func (l *TeamWrapper) index() error {
 		return nil
 	}
 	mm := make(map[team.MemberID]proto.MemberRoleSeqno)
+	sri := make(map[proto.FQEntityFixed][]proto.Role)
 	for _, m := range l.prot.Members {
 		var id team.MemberID
 		err := id.ImportFromMember(m.Mr.Member, l.prot.Fqt.Host)
@@ -267,9 +269,32 @@ func (l *TeamWrapper) index() error {
 			return err
 		}
 		mm[id] = m
+
+		// also keep track of, for each FQE, which src roles it appears as
+		lst := sri[id.Fqe]
+		lst = append(lst, id.SrcRole.Export())
+		sri[id.Fqe] = lst
+
 	}
 	l.memberMap = mm
+	l.srcRoleMap = sri
 	return nil
+}
+
+func (l *TeamWrapper) GetSourceRolesForParty(p proto.FQParty) ([]proto.Role, error) {
+	err := l.index()
+	if err != nil {
+		return nil, err
+	}
+	fqe, err := p.FQEntity().Fixed()
+	if err != nil {
+		return nil, err
+	}
+	lst, ok := l.srcRoleMap[*fqe]
+	if !ok {
+		return nil, nil
+	}
+	return lst, nil
 }
 
 func (l *TeamWrapper) GetMember(p proto.FQParty, srcRole proto.Role) (*proto.MemberRoleSeqno, error) {

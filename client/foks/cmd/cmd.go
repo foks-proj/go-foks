@@ -160,6 +160,8 @@ func MainInnerWithCmd(cmd string, args []string, testSetupHook func(m libclient.
 	return nil
 }
 
+func terminalCols() int { return 65 }
+
 func init() {
 	AddCmd(versionCmd)
 }

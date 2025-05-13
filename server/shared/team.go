@@ -1320,7 +1320,7 @@ func LoadRemovalKeyBoxForTeamAdmin(
 		 WHERE short_host_id=$1 AND team_id=$2 
 		 AND member_id=$3 AND member_host_id=$4
 		 AND src_role_type=$5 AND src_viz_level=$6
-		 ORDER BY seqno DESC
+		 ORDER BY create_seqno DESC
 		 LIMIT 1`,
 		m.ShortHostID().ExportToDB(),
 		tid.ExportToDB(),

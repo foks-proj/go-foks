@@ -252,4 +252,15 @@ func (c *AgentConn) TeamAdd(
 	return tm.Add(m, arg)
 }
 
+func (c *AgentConn) TeamChangeRoles(
+	ctx context.Context,
+	arg lcl.TeamChangeRolesArg,
+) error {
+	m, tm, err := c.teamInit(ctx)
+	if err != nil {
+		return err
+	}
+	return tm.TeamChangeRoles(m, arg)
+}
+
 var _ lcl.TeamInterface = (*AgentConn)(nil)

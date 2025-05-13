@@ -267,7 +267,7 @@ func teamInbox(m libclient.MetaContext, top *cobra.Command) {
 func teamAdd(m libclient.MetaContext, top *cobra.Command) {
 	var roleStr string
 	cmd := &cobra.Command{
-		Use:          "add",
+		Use:          "add <team> <user1> <user2> ...",
 		Aliases:      nil,
 		Short:        "add a user to a team (on an open-view host)",
 		Long:         "add a user to a team (on an open-view host)",
@@ -313,7 +313,76 @@ func teamAdd(m libclient.MetaContext, top *cobra.Command) {
 
 		},
 	}
-	cmd.Flags().StringVarP(&roleStr, "role", "r", "", "destination role in the team")
+	cmd.Flags().StringVarP(&roleStr, "role", "r", "", "destination role in the team (default=member/0)")
+	top.AddCommand(cmd)
+}
+
+func teamChangeRoles(m libclient.MetaContext, top *cobra.Command) {
+	cmd := &cobra.Command{
+		Use:     "change-roles <team> <change1> <change2> ...",
+		Aliases: nil,
+		Short:   "change the roles of a set of users in a team",
+		Long: core.MustRewrap(`Change the roles of a set of users in a team; or remove them if applicable.
+
+Role changes are of the form: <party>[/<src-role>]→<new-role>. Party is specified as usual, in
+<part>[@<host>] form. If no host is specified, then the current host is used. The 
+role modifying the party is the *source role* of the party and is only needed to disambugiate
+if the party is a member of the team multiple teams. The new role is the new destination role
+in the team, after the change. Use "n" or "none" to remove a party from the team.`, terminalCols(), 0) +
+
+			`
+Some examples:
+
+   # for team acme:
+   foks team change-roles acme alice/m→o   # change alice's role to owner
+   foks team change-roles acme alice→o     # change alice's role to owner
+   foks team change-roles acme t:hr→n      # remove team hr from acme
+
+   # Change alice and bob at the same time. Change alice from member at 
+   # visibility level -4 to member at visibility level 0. Remove remote
+   # user bob from the team.
+   foks team change-roles acme alice/m/-4→m/0 bob@foks.mydomain.com→n
+
+` + core.MustRewrap(`
+Note that for this command, it's possible to use a two-character arrow ("->") instead of the 
+unicode arrow ("→"), but on most shells, it must be written "-\>" to avoid being interpreted as 
+an output redirection.
+`, terminalCols(), 0),
+		SilenceUsage: true,
+		RunE: func(cmd *cobra.Command, arg []string) error {
+			if len(arg) < 2 {
+				return ArgsError("expect two or more arguments -- team and change(s)")
+			}
+			fqt, err := core.ParseFQTeam(proto.FQTeamString(arg[0]))
+			if err != nil {
+				return err
+			}
+
+			var changes []lcl.RoleChange
+			for _, s := range arg[1:] {
+				rc, err := core.ParseRoleChangeString(lcl.RoleChangeString(s))
+				if err != nil {
+					return err
+				}
+				changes = append(changes, *rc)
+			}
+
+			return quickStartLambda(m, &teamOpts, func(cli lcl.TeamClient) error {
+				err := cli.TeamChangeRoles(m.Ctx(), lcl.TeamChangeRolesArg{
+					Team:    *fqt,
+					Changes: changes,
+				})
+				if err != nil {
+					return err
+				}
+				err = PartingConsoleMessage(m)
+				if err != nil {
+					return err
+				}
+				return nil
+			})
+		},
+	}
 	top.AddCommand(cmd)
 }
 
@@ -515,6 +584,7 @@ func teamCmd(m libclient.MetaContext) *cobra.Command {
 	teamAdmit(m, top)
 	teamAdd(m, top)
 	teamAll(m, top)
+	teamChangeRoles(m, top)
 	top.AddCommand(teamIndexRangeCmd(m))
 	return top
 }

@@ -834,6 +834,42 @@ func (f FQPartyAndRoleString) Bytes() []byte {
 	return nil
 }
 
+type RoleChangeString string
+type RoleChangeStringInternal__ string
+
+func (r RoleChangeString) Export() *RoleChangeStringInternal__ {
+	tmp := ((string)(r))
+	return ((*RoleChangeStringInternal__)(&tmp))
+}
+
+func (r RoleChangeStringInternal__) Import() RoleChangeString {
+	tmp := (string)(r)
+	return RoleChangeString((func(x *string) (ret string) {
+		if x == nil {
+			return ret
+		}
+		return *x
+	})(&tmp))
+}
+
+func (r *RoleChangeString) Encode(enc rpc.Encoder) error {
+	return enc.Encode(r.Export())
+}
+
+func (r *RoleChangeString) Decode(dec rpc.Decoder) error {
+	var tmp RoleChangeStringInternal__
+	err := dec.Decode(&tmp)
+	if err != nil {
+		return err
+	}
+	*r = tmp.Import()
+	return nil
+}
+
+func (r RoleChangeString) Bytes() []byte {
+	return nil
+}
+
 type FQPartyParsedAndRole struct {
 	Fqp  lib.FQPartyParsed
 	Role *lib.Role
@@ -895,6 +931,57 @@ func (f *FQPartyParsedAndRole) Decode(dec rpc.Decoder) error {
 }
 
 func (f *FQPartyParsedAndRole) Bytes() []byte { return nil }
+
+type RoleChange struct {
+	Member  FQPartyParsedAndRole
+	NewRole lib.Role
+}
+
+type RoleChangeInternal__ struct {
+	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
+	Member  *FQPartyParsedAndRoleInternal__
+	NewRole *lib.RoleInternal__
+}
+
+func (r RoleChangeInternal__) Import() RoleChange {
+	return RoleChange{
+		Member: (func(x *FQPartyParsedAndRoleInternal__) (ret FQPartyParsedAndRole) {
+			if x == nil {
+				return ret
+			}
+			return x.Import()
+		})(r.Member),
+		NewRole: (func(x *lib.RoleInternal__) (ret lib.Role) {
+			if x == nil {
+				return ret
+			}
+			return x.Import()
+		})(r.NewRole),
+	}
+}
+
+func (r RoleChange) Export() *RoleChangeInternal__ {
+	return &RoleChangeInternal__{
+		Member:  r.Member.Export(),
+		NewRole: r.NewRole.Export(),
+	}
+}
+
+func (r *RoleChange) Encode(enc rpc.Encoder) error {
+	return enc.Encode(r.Export())
+}
+
+func (r *RoleChange) Decode(dec rpc.Decoder) error {
+	var tmp RoleChangeInternal__
+	err := dec.Decode(&tmp)
+	if err != nil {
+		return err
+	}
+	*r = tmp.Import()
+	return nil
+}
+
+func (r *RoleChange) Bytes() []byte { return nil }
 
 type TeamMembership struct {
 	Team    NamedFQParty
@@ -1799,6 +1886,78 @@ func (t *TeamAddArg) Decode(dec rpc.Decoder) error {
 
 func (t *TeamAddArg) Bytes() []byte { return nil }
 
+type TeamChangeRolesArg struct {
+	Team    lib.FQTeamParsed
+	Changes []RoleChange
+}
+
+type TeamChangeRolesArgInternal__ struct {
+	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
+	Team    *lib.FQTeamParsedInternal__
+	Changes *[](*RoleChangeInternal__)
+}
+
+func (t TeamChangeRolesArgInternal__) Import() TeamChangeRolesArg {
+	return TeamChangeRolesArg{
+		Team: (func(x *lib.FQTeamParsedInternal__) (ret lib.FQTeamParsed) {
+			if x == nil {
+				return ret
+			}
+			return x.Import()
+		})(t.Team),
+		Changes: (func(x *[](*RoleChangeInternal__)) (ret []RoleChange) {
+			if x == nil || len(*x) == 0 {
+				return nil
+			}
+			ret = make([]RoleChange, len(*x))
+			for k, v := range *x {
+				if v == nil {
+					continue
+				}
+				ret[k] = (func(x *RoleChangeInternal__) (ret RoleChange) {
+					if x == nil {
+						return ret
+					}
+					return x.Import()
+				})(v)
+			}
+			return ret
+		})(t.Changes),
+	}
+}
+
+func (t TeamChangeRolesArg) Export() *TeamChangeRolesArgInternal__ {
+	return &TeamChangeRolesArgInternal__{
+		Team: t.Team.Export(),
+		Changes: (func(x []RoleChange) *[](*RoleChangeInternal__) {
+			if len(x) == 0 {
+				return nil
+			}
+			ret := make([](*RoleChangeInternal__), len(x))
+			for k, v := range x {
+				ret[k] = v.Export()
+			}
+			return &ret
+		})(t.Changes),
+	}
+}
+
+func (t *TeamChangeRolesArg) Encode(enc rpc.Encoder) error {
+	return enc.Encode(t.Export())
+}
+
+func (t *TeamChangeRolesArg) Decode(dec rpc.Decoder) error {
+	var tmp TeamChangeRolesArgInternal__
+	err := dec.Decode(&tmp)
+	if err != nil {
+		return err
+	}
+	*t = tmp.Import()
+	return nil
+}
+
+func (t *TeamChangeRolesArg) Bytes() []byte { return nil }
+
 type TeamInterface interface {
 	TeamCreate(context.Context, lib.NameUtf8) (TeamCreateRes, error)
 	TeamList(context.Context, lib.FQTeamParsed) (TeamRoster, error)
@@ -1814,6 +1973,7 @@ type TeamInterface interface {
 	TeamIndexRangeSetHigh(context.Context, TeamIndexRangeSetHighArg) (lib.RationalRange, error)
 	TeamListMemberships(context.Context) (ListMembershipsRes, error)
 	TeamAdd(context.Context, TeamAddArg) error
+	TeamChangeRoles(context.Context, TeamChangeRolesArg) error
 	ErrorWrapper() func(error) lib.Status
 	CheckArgHeader(ctx context.Context, h Header) error
 
@@ -2176,6 +2336,27 @@ func (c TeamClient) TeamAdd(ctx context.Context, arg TeamAddArg) (err error) {
 	}
 	var tmp rpc.DataWrap[Header, interface{}]
 	err = c.Cli.Call2(ctx, rpc.NewMethodV2(TeamProtocolID, 13, "Team.teamAdd"), warg, &tmp, 0*time.Millisecond, teamErrorUnwrapperAdapter{h: c.ErrorUnwrapper})
+	if err != nil {
+		return
+	}
+	if c.CheckResHeader != nil {
+		err = c.CheckResHeader(ctx, tmp.Header)
+		if err != nil {
+			return
+		}
+	}
+	return
+}
+
+func (c TeamClient) TeamChangeRoles(ctx context.Context, arg TeamChangeRolesArg) (err error) {
+	warg := &rpc.DataWrap[Header, *TeamChangeRolesArgInternal__]{
+		Data: arg.Export(),
+	}
+	if c.MakeArgHeader != nil {
+		warg.Header = c.MakeArgHeader()
+	}
+	var tmp rpc.DataWrap[Header, interface{}]
+	err = c.Cli.Call2(ctx, rpc.NewMethodV2(TeamProtocolID, 14, "Team.teamChangeRoles"), warg, &tmp, 0*time.Millisecond, teamErrorUnwrapperAdapter{h: c.ErrorUnwrapper})
 	if err != nil {
 		return
 	}
@@ -2595,6 +2776,34 @@ func TeamProtocol(i TeamInterface) rpc.ProtocolV2 {
 					},
 				},
 				Name: "teamAdd",
+			},
+			14: {
+				ServeHandlerDescription: rpc.ServeHandlerDescription{
+					MakeArg: func() interface{} {
+						var ret rpc.DataWrap[Header, *TeamChangeRolesArgInternal__]
+						return &ret
+					},
+					Handler: func(ctx context.Context, args interface{}) (interface{}, error) {
+						typedWrappedArg, ok := args.(*rpc.DataWrap[Header, *TeamChangeRolesArgInternal__])
+						if !ok {
+							err := rpc.NewTypeError((*rpc.DataWrap[Header, *TeamChangeRolesArgInternal__])(nil), args)
+							return nil, err
+						}
+						if err := i.CheckArgHeader(ctx, typedWrappedArg.Header); err != nil {
+							return nil, err
+						}
+						typedArg := typedWrappedArg.Data
+						err := i.TeamChangeRoles(ctx, (typedArg.Import()))
+						if err != nil {
+							return nil, err
+						}
+						ret := rpc.DataWrap[Header, interface{}]{
+							Header: i.MakeResHeader(),
+						}
+						return &ret, nil
+					},
+				},
+				Name: "teamChangeRoles",
 			},
 		},
 		WrapError: TeamMakeGenericErrorWrapper(i.ErrorWrapper()),

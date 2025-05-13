@@ -1251,3 +1251,41 @@ func (t *TeamMinder) TeamAdmit(
 
 	return editor.Run(m)
 }
+
+func (t *TeamMinder) TeamChangeRoles(
+	m MetaContext,
+	arg lcl.TeamChangeRolesArg,
+) error {
+	fqt, err := t.ResolveAndReindex(m, arg.Team)
+	if err != nil {
+		return err
+	}
+	if fqt == nil {
+		return core.TeamNotFoundError{}
+	}
+	tok, _, tr, err := t.adminTokenAndClient(m, *fqt, LoadTeamOpts{Refresh: true})
+	if err != nil {
+		return err
+	}
+
+	rows, hepks, err := t.teamChangeRolesLoadChanges(m, tr, arg.Changes)
+	if err != nil {
+		return err
+	}
+
+	tr.Lock()
+	defer tr.Unlock()
+
+	editor := TeamEditor{
+		tl:      tr.ldr,
+		tw:      tr.tw,
+		id:      tr.ldr.TeamID(),
+		tok:     tok,
+		pre:     tr.ldr.rosterPost,
+		cp:      tr.member,
+		hepks:   hepks,
+		changes: rows,
+	}
+
+	return editor.Run(m)
+}

@@ -9,6 +9,9 @@ changelog:
     chnages:
       - desc: Unified nag experience, including nag for software updates.
         closes: [ "#26" ]
+      - desc: Add `team change-roles` CLI command
+        closes: [ "#33" ]
+      - desc: Fix online documentation for `team add` command
   - version: 0.0.18
     urgency: low
     stable: false
