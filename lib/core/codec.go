@@ -48,6 +48,26 @@ func EncodeToBytes(t Encodeable) ([]byte, error) {
 	return b, nil
 }
 
+func Clone[
+	T any,
+	PT interface {
+		Codecable
+		*T
+	},
+](o PT) (PT, error) {
+	b, err := EncodeToBytes(o)
+	if err != nil {
+		return nil, err
+	}
+	tmp := new(T)
+	dest := PT(tmp)
+	err = DecodeFromBytes(dest, b)
+	if err != nil {
+		return nil, err
+	}
+	return dest, nil
+}
+
 func Eq(o1 Codecable, o2 Codecable) (bool, error) {
 	b1, err := EncodeToBytes(o1)
 	if err != nil {
@@ -63,7 +83,7 @@ func Eq(o1 Codecable, o2 Codecable) (bool, error) {
 
 type DecoderFactory struct{}
 
-func (f DecoderFactory) NewDecoderBytes(o interface{}, i []byte) rpc.Decoder {
+func (f DecoderFactory) NewDecoderBytes(o any, i []byte) rpc.Decoder {
 	mh := Codec()
 	return codec.NewDecoderBytes(i, mh)
 }

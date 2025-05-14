@@ -146,10 +146,16 @@ func (t *teamAdder) post(m MetaContext) error {
 	tr.Lock()
 	defer tr.Unlock()
 
+	cfg, err := t.tm.loadConfig(m, nil)
+	if err != nil {
+		return err
+	}
+
 	ed := teamEditorFromTeamRecord(tr)
 	ed.tok = t.tok
 	ed.changes = t.mrs
 	ed.hepks = t.hepks
+	ed.cfg = cfg
 
 	for _, mr := range t.mrs {
 		pid, err := mr.Member.Id.Entity.ToPartyID()

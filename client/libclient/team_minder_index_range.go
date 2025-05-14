@@ -112,7 +112,11 @@ func (t *TeamMinder) setIndexRangeCommon(
 	if fqt == nil {
 		return nil, core.TeamNotFoundError{}
 	}
-	tok, _, tr, err := t.adminTokenAndClient(m, *fqt, LoadTeamOpts{Refresh: true})
+	tok, cli, tr, err := t.adminTokenAndClient(m, *fqt, LoadTeamOpts{Refresh: true})
+	if err != nil {
+		return nil, err
+	}
+	cfg, err := t.loadConfig(m, cli)
 	if err != nil {
 		return nil, err
 	}
@@ -128,6 +132,7 @@ func (t *TeamMinder) setIndexRangeCommon(
 	}
 
 	editor := TeamEditor{
+		cfg: cfg,
 		tl:  tr.ldr,
 		tw:  tr.tw,
 		id:  tr.ldr.TeamID(),

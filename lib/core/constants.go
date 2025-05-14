@@ -7,4 +7,3 @@ var RpcMaxSz = int32(0x1000000)
 
 var InviteCodeBytes = 10
 var MultiUseInviteCodeBytes = 6
-var MaxRolesPerTeam = 16

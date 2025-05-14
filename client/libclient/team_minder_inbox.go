@@ -1229,7 +1229,11 @@ func (t *TeamMinder) TeamAdmit(
 		rows = append(rows, mr)
 	}
 
-	tok, _, tr, err := t.adminTokenAndClient(m, *fqt, LoadTeamOpts{Refresh: true})
+	tok, cli, tr, err := t.adminTokenAndClient(m, *fqt, LoadTeamOpts{Refresh: true})
+	if err != nil {
+		return err
+	}
+	cfg, err := t.loadConfig(m, cli)
 	if err != nil {
 		return err
 	}
@@ -1247,6 +1251,7 @@ func (t *TeamMinder) TeamAdmit(
 		rtps:    rtps,
 		cp:      tr.member,
 		hepks:   &hepks,
+		cfg:     cfg,
 	}
 
 	return editor.Run(m)
@@ -1263,7 +1268,11 @@ func (t *TeamMinder) TeamChangeRoles(
 	if fqt == nil {
 		return core.TeamNotFoundError{}
 	}
-	tok, _, tr, err := t.adminTokenAndClient(m, *fqt, LoadTeamOpts{Refresh: true})
+	tok, cli, tr, err := t.adminTokenAndClient(m, *fqt, LoadTeamOpts{Refresh: true})
+	if err != nil {
+		return err
+	}
+	cfg, err := t.loadConfig(m, cli)
 	if err != nil {
 		return err
 	}
@@ -1285,6 +1294,7 @@ func (t *TeamMinder) TeamChangeRoles(
 		cp:      tr.member,
 		hepks:   hepks,
 		changes: rows,
+		cfg:     cfg,
 	}
 
 	return editor.Run(m)

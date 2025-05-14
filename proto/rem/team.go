@@ -4132,6 +4132,48 @@ func (t *TeamVOBearerTokenReqAndRole) Decode(dec rpc.Decoder) error {
 
 func (t *TeamVOBearerTokenReqAndRole) Bytes() []byte { return nil }
 
+type TeamConfig struct {
+	MaxRoles uint64
+}
+
+type TeamConfigInternal__ struct {
+	_struct  struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
+	MaxRoles *uint64
+}
+
+func (t TeamConfigInternal__) Import() TeamConfig {
+	return TeamConfig{
+		MaxRoles: (func(x *uint64) (ret uint64) {
+			if x == nil {
+				return ret
+			}
+			return *x
+		})(t.MaxRoles),
+	}
+}
+
+func (t TeamConfig) Export() *TeamConfigInternal__ {
+	return &TeamConfigInternal__{
+		MaxRoles: &t.MaxRoles,
+	}
+}
+
+func (t *TeamConfig) Encode(enc rpc.Encoder) error {
+	return enc.Encode(t.Export())
+}
+
+func (t *TeamConfig) Decode(dec rpc.Decoder) error {
+	var tmp TeamConfigInternal__
+	err := dec.Decode(&tmp)
+	if err != nil {
+		return err
+	}
+	*t = tmp.Import()
+	return nil
+}
+
+func (t *TeamConfig) Bytes() []byte { return nil }
+
 var TeamAdminProtocolID rpc.ProtocolUniqueID = rpc.ProtocolUniqueID(0xdbe1ddbe)
 
 type ReserveTeamnameArg struct {
@@ -4945,6 +4987,37 @@ func (r *RejectJoinReqArg) Decode(dec rpc.Decoder) error {
 
 func (r *RejectJoinReqArg) Bytes() []byte { return nil }
 
+type GetTeamConfigArg struct {
+}
+
+type GetTeamConfigArgInternal__ struct {
+	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
+}
+
+func (g GetTeamConfigArgInternal__) Import() GetTeamConfigArg {
+	return GetTeamConfigArg{}
+}
+
+func (g GetTeamConfigArg) Export() *GetTeamConfigArgInternal__ {
+	return &GetTeamConfigArgInternal__{}
+}
+
+func (g *GetTeamConfigArg) Encode(enc rpc.Encoder) error {
+	return enc.Encode(g.Export())
+}
+
+func (g *GetTeamConfigArg) Decode(dec rpc.Decoder) error {
+	var tmp GetTeamConfigArgInternal__
+	err := dec.Decode(&tmp)
+	if err != nil {
+		return err
+	}
+	*g = tmp.Import()
+	return nil
+}
+
+func (g *GetTeamConfigArg) Bytes() []byte { return nil }
+
 type TeamAdminInterface interface {
 	ReserveTeamname(context.Context, lib.Name) (ReserveNameRes, error)
 	CreateTeam(context.Context, CreateTeamArg) error
@@ -4960,6 +5033,7 @@ type TeamAdminInterface interface {
 	PostTeamRemoval(context.Context, PostTeamRemovalArg) error
 	LoadTeamRawInbox(context.Context, LoadTeamRawInboxArg) (TeamRawInbox, error)
 	RejectJoinReq(context.Context, RejectJoinReqArg) error
+	GetTeamConfig(context.Context) (TeamConfig, error)
 	ErrorWrapper() func(error) lib.Status
 }
 
@@ -5166,6 +5240,18 @@ func (c TeamAdminClient) RejectJoinReq(ctx context.Context, arg RejectJoinReqArg
 	if err != nil {
 		return
 	}
+	return
+}
+
+func (c TeamAdminClient) GetTeamConfig(ctx context.Context) (res TeamConfig, err error) {
+	var arg GetTeamConfigArg
+	warg := arg.Export()
+	var tmp TeamConfigInternal__
+	err = c.Cli.Call2(ctx, rpc.NewMethodV2(TeamAdminProtocolID, 14, "TeamAdmin.getTeamConfig"), warg, &tmp, 0*time.Millisecond, teamAdminErrorUnwrapperAdapter{h: c.ErrorUnwrapper})
+	if err != nil {
+		return
+	}
+	res = tmp.Import()
 	return
 }
 
@@ -5477,6 +5563,27 @@ func TeamAdminProtocol(i TeamAdminInterface) rpc.ProtocolV2 {
 					},
 				},
 				Name: "rejectJoinReq",
+			},
+			14: {
+				ServeHandlerDescription: rpc.ServeHandlerDescription{
+					MakeArg: func() interface{} {
+						var ret GetTeamConfigArgInternal__
+						return &ret
+					},
+					Handler: func(ctx context.Context, args interface{}) (interface{}, error) {
+						_, ok := args.(*GetTeamConfigArgInternal__)
+						if !ok {
+							err := rpc.NewTypeError((*GetTeamConfigArgInternal__)(nil), args)
+							return nil, err
+						}
+						tmp, err := i.GetTeamConfig(ctx)
+						if err != nil {
+							return nil, err
+						}
+						return tmp.Export(), nil
+					},
+				},
+				Name: "getTeamConfig",
 			},
 		},
 		WrapError: TeamAdminMakeGenericErrorWrapper(i.ErrorWrapper()),

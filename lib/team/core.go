@@ -4,7 +4,6 @@
 package team
 
 import (
-	"fmt"
 	"maps"
 	"sync"
 
@@ -84,15 +83,17 @@ func (r *RosterCore) Add(m MemberID, k core.RoleKey, g proto.Generation, q proto
 }
 
 // For each role, which generation the shared key is at.
-// No entry means no key yet. Generations start at seqno=0
+// No entry means no key yet. Generations start at Generation=1.
 type KeyGens map[core.RoleKey]proto.Generation
 
 func (k KeyGens) Clone() KeyGens {
 	ret := make(KeyGens)
-	for r, g := range k {
-		ret[r] = g
-	}
+	maps.Copy(ret, k)
 	return ret
+}
+
+func (k KeyGens) Num() int {
+	return len(k)
 }
 
 func NewKeyGens() KeyGens {
@@ -522,15 +523,6 @@ func (d ChangeSet) Gameplan(
 	rPost = rPre.Clone().Apply(d)
 
 	sched, keysPost = rPre.planChangesLocked(d, keysPre, rPost, forcedNewKeyGens)
-
-	if len(keysPost) > core.MaxRolesPerTeam {
-		return nil, nil, nil, core.TeamRosterError(
-			fmt.Sprintf("too many roles in team (current max=%d)",
-				core.MaxRolesPerTeam,
-			),
-		)
-	}
-
 	return rPost, sched, keysPost, nil
 }
 

@@ -5,6 +5,7 @@ package engine
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/foks-proj/go-foks/lib/core"
 	"github.com/foks-proj/go-foks/lib/team"
@@ -506,6 +507,25 @@ func (c *teamEditor) loadBearerToken(m shared.MetaContext) error {
 	return nil
 }
 
+func (c *teamEditor) checkTeamLimits(m shared.MetaContext) error {
+	if c.openres.RosterPost == nil {
+		return nil
+	}
+	nKeys := c.openres.RosterPost.KeyGens.Num()
+	cfg, err := m.G().Config().TeamConfig(m.Ctx())
+	if err != nil {
+		return err
+	}
+	max := cfg.MaxRoles()
+	if nKeys > int(max) {
+		return core.TeamRosterError(
+			fmt.Sprintf("too many roles (%d); max is %d", nKeys, max),
+		)
+	}
+
+	return nil
+}
+
 func (c *teamEditor) runEditCommon(m shared.MetaContext) error {
 
 	// Locking the chain means we can go ahead and make SELECTs against team
@@ -525,6 +545,11 @@ func (c *teamEditor) runEditCommon(m shared.MetaContext) error {
 
 	c.openres = openres
 	c.signer = c.openres.Gc.Signer.Key
+
+	err = c.checkTeamLimits(m)
+	if err != nil {
+		return err
+	}
 
 	err = c.loadBearerToken(m)
 	if err != nil {
@@ -916,6 +941,17 @@ func (u *UserClientConn) RejectJoinReq(
 			)
 		},
 	)
+}
+
+func (u *UserClientConn) GetTeamConfig(ctx context.Context) (rem.TeamConfig, error) {
+	m := shared.NewMetaContextConn(ctx, u)
+	var ret rem.TeamConfig
+	tcfg, err := m.G().Config().TeamConfig(ctx)
+	if err != nil {
+		return ret, err
+	}
+	ret.MaxRoles = uint64(tcfg.MaxRoles())
+	return ret, nil
 }
 
 var _ rem.TeamAdminInterface = (*UserClientConn)(nil)

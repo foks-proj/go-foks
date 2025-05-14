@@ -192,6 +192,10 @@ type CKSConfigJSON struct {
 	RefreshInterval_ core.Duration           `json:"refresh_interval"`
 }
 
+type TeamConfigJSON struct {
+	MaxRoles_ uint `json:"max_roles"`
+}
+
 type PKIXConfigJSON struct {
 	Country_          []string `json:"country"`
 	Organization_     []string `json:"organization"`
@@ -301,6 +305,7 @@ type JSonnetTemplateNoLog struct {
 	PKIX   *PKIXConfigJSON   `json:"pkix"`
 	VHosts *VHostsConfigJSON `json:"vhosts"`
 	Client *ClientConfigJSON `json:"client"`
+	Team   *TeamConfigJSON   `json:"team"`
 }
 
 type JSonnetTemplate struct {
@@ -884,6 +889,22 @@ func (c *ConfigJSonnet) CKSConfig(ctx context.Context) (CKSConfigger, error) {
 	c.RLock()
 	defer c.RUnlock()
 	return c.Data.CKS, nil
+}
+
+func (t *TeamConfigJSON) MaxRoles() uint {
+	if t == nil || t.MaxRoles_ == 0 {
+		return DefaultTeamConfig{}.MaxRoles()
+	}
+	return t.MaxRoles_
+}
+
+func (c *ConfigJSonnet) TeamConfig(ctx context.Context) (TeamConfigger, error) {
+	c.RLock()
+	defer c.RUnlock()
+	if c.Data.Team == nil {
+		return DefaultTeamConfig{}, nil
+	}
+	return c.Data.Team, nil
 }
 
 func (c *ConfigJSonnet) PKIXConfig(ctx context.Context) (PKIXConfigger, error) {

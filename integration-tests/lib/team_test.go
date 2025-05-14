@@ -281,6 +281,46 @@ func TestCreateTeamAddLocalMembers(t *testing.T) {
 	verifyDeleted(t, m, w, team)
 }
 
+func TestTeamMaxRoles(t *testing.T) {
+	defer common.DebugEntryAndExit()()
+	tew := testEnvBeta(t)
+
+	cfgJson, ok := tew.G.Config().(*shared.ConfigJSonnet)
+	require.True(t, ok)
+	tmOrig := cfgJson.Data.Team
+	defer func() {
+		cfgJson.Data.Team = tmOrig
+	}()
+	cfgJson.Data.Team = &shared.TeamConfigJSON{
+		MaxRoles_: 5,
+	}
+
+	u := tew.NewTestUser(t)
+	x := tew.NewTestUser(t)
+	y := tew.NewTestUser(t)
+	z := tew.NewTestUser(t)
+	m := tew.MetaContext()
+
+	doublePoke(t, m)
+	team := tew.makeTeamForOwner(t, u)
+	_, err := team.makeChangesFull(t,
+		m,
+		u,
+		[]proto.MemberRole{
+			x.toMemberRole(t, proto.NewRoleWithMember(-1), team.hepks),
+			y.toMemberRole(t, proto.NewRoleWithMember(-2), team.hepks),
+			z.toMemberRole(t, proto.NewRoleWithMember(-3), team.hepks),
+		},
+		nil,
+		makeChangesKnobs{},
+	)
+	require.Error(t, err)
+	require.Equal(t,
+		core.TeamRosterError("too many roles (7); max is 5"),
+		err,
+	)
+}
+
 func TestCreateTeamAddRemoteMember(t *testing.T) {
 	defer common.DebugEntryAndExit()()
 

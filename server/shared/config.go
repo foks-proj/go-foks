@@ -171,6 +171,10 @@ type PKIXConfigger interface {
 	Name() pkix.Name
 }
 
+type TeamConfigger interface {
+	MaxRoles() uint
+}
+
 type DefaultAutocertServiceConfig struct{}
 
 var _ AutocertServiceConfigger = DefaultAutocertServiceConfig{}
@@ -251,6 +255,7 @@ type Config interface {
 	CKSConfig(ctx context.Context) (CKSConfigger, error)
 	PKIXConfig(ctx context.Context) (PKIXConfigger, error)
 	ClientConfig(ctx context.Context) (ClientConfigger, error)
+	TeamConfig(ctx context.Context) (TeamConfigger, error)
 
 	HostID() (core.HostID, error)
 	GetDNSAliases(ctx context.Context) (core.CNameResolver, error)
@@ -328,6 +333,12 @@ func (d DefaultQuotaServerConfig) GetDelay() time.Duration { return time.Minute 
 func (d DefaultQuotaServerConfig) GetNoPlanMaxTeams() int  { return 2 }
 
 var _ QuotaServerConfigger = DefaultQuotaServerConfig{}
+
+type DefaultTeamConfig struct{}
+
+func (d DefaultTeamConfig) MaxRoles() uint { return 0x10 }
+
+var _ TeamConfigger = DefaultTeamConfig{}
 
 type MerkleBuilderServerConfigger interface {
 	ServerLooperConfigger
@@ -595,5 +606,8 @@ func (c *EmptyConfig) PKIXConfig(ctx context.Context) (PKIXConfigger, error) {
 	return nil, NewEmptyConfigError()
 }
 func (c *EmptyConfig) ClientConfig(ctx context.Context) (ClientConfigger, error) {
+	return nil, NewEmptyConfigError()
+}
+func (c *EmptyConfig) TeamConfig(ctx context.Context) (TeamConfigger, error) {
 	return nil, NewEmptyConfigError()
 }

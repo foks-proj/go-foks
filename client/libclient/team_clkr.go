@@ -220,7 +220,12 @@ func (c *CLKROneTeam) runEdit(m MetaContext) error {
 
 	fqt := c.tw.FQTeam()
 
-	tok, _, tr, err := c.parent.tm.adminTokenAndClient(m, fqt, LoadTeamOpts{Refresh: true})
+	tok, cli, tr, err := c.parent.tm.adminTokenAndClient(m, fqt, LoadTeamOpts{Refresh: true})
+	if err != nil {
+		return err
+	}
+
+	cfg, err := c.parent.tm.loadConfig(m, cli)
 	if err != nil {
 		return err
 	}
@@ -236,6 +241,7 @@ func (c *CLKROneTeam) runEdit(m MetaContext) error {
 	}
 
 	editor := TeamEditor{
+		cfg:     cfg,
 		tl:      c.ldr,
 		tw:      c.tw,
 		id:      fqt.Team,

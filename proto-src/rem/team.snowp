@@ -321,6 +321,10 @@ struct TeamVOBearerTokenReqAndRole {
     role @1 : lib.Role;
 }
 
+struct TeamConfig {
+    maxRoles @0 : Uint; // max number of roles a team can have
+}
+
 // TeamAdmin protocol happens on the same machine that a user is logged into.
 // So we use the same auth mechanism as we do for the User protocol.
 protocol TeamAdmin errors lib.Status @0xdbe1ddbe {
@@ -412,6 +416,10 @@ protocol TeamAdmin errors lib.Status @0xdbe1ddbe {
         tok @0 : TeamBearerToken,
         req @1 : lib.TeamRSVP
     );
+
+    // TeamConfig applies to all teams on this server/vhost
+    getTeamConfig @14 (
+    ) -> TeamConfig;
 }
 
 protocol TeamGuest errors lib.Status @0xf6d7585c {

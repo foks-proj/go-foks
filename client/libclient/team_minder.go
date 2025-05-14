@@ -66,6 +66,11 @@ type TeamMinder struct {
 	// Only one CLKR should be running at once, so
 	// single flight them with this lock
 	clkrMu sync.Mutex
+
+	// team config right now contains the Max# of supported roles per team;
+	// Varies per host; this one is on the current active user's host
+	configMu sync.Mutex
+	config   *rem.TeamConfig
 }
 
 func (t *TeamMinder) ActiveUser() *UserContext {
@@ -1468,4 +1473,34 @@ func (t *TeamMinder) ListMemberships(
 	slices.SortFunc(ret.Teams, cmp)
 
 	return &ret, nil
+}
+
+func (t *TeamMinder) loadConfig(
+	m MetaContext,
+	cli *rem.TeamAdminClient,
+) (
+	*rem.TeamConfig,
+	error,
+) {
+	t.configMu.Lock()
+	defer t.configMu.Unlock()
+
+	if t.config != nil {
+		tmp := *t.config
+		return &tmp, nil
+	}
+	if cli == nil {
+		var err error
+		cli, err = t.au.TeamAdminClient(m)
+		if err != nil {
+			return nil, err
+		}
+	}
+	cfg, err := cli.GetTeamConfig(m.Ctx())
+	if err != nil {
+		return nil, err
+	}
+	t.config = &cfg
+	tmp := cfg
+	return &tmp, nil
 }

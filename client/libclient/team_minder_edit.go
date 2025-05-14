@@ -43,6 +43,7 @@ type TeamEditor struct {
 	cp    CryptoPartier        // the actor making the edit (maybe a team or a user)
 	hepks *core.HEPKSet        // public keys in changes
 	lvpf  []proto.PartyID      // local view perms for
+	cfg   *rem.TeamConfig      // needs to be preloaded and fetched from the server
 
 	id proto.TeamID // ID of the target team
 
@@ -751,6 +752,17 @@ func (t *TeamEditor) RunMetadataOnly(m MetaContext) error {
 	return nil
 }
 
+func (t *TeamEditor) checkKeyLimits(m MetaContext) error {
+	if t.cfg == nil {
+		return core.InternalError("team config not loaded")
+	}
+	nKeys := t.rosterPost.KeyGens.Num()
+	if nKeys >= 0 && uint64(nKeys) > t.cfg.MaxRoles {
+		return core.TeamRosterError("too many roles in team")
+	}
+	return nil
+}
+
 func (t *TeamEditor) Run(m MetaContext) error {
 
 	m = m.WithLogTag("team-edit")
@@ -770,6 +782,12 @@ func (t *TeamEditor) Run(m MetaContext) error {
 	if err != nil {
 		return err
 	}
+
+	err = t.checkKeyLimits(m)
+	if err != nil {
+		return err
+	}
+
 	err = t.makeChangeMap(m)
 	if err != nil {
 		return err
