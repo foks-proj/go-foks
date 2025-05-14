@@ -7,6 +7,8 @@ changelog:
     stable: false
     date: 2025-05-12 13:44:00 -0400
     changes:
+      - desc: Better docs for `team add` and `team change-roles`, and a standalone page on roles
+        closes: [ "#14" ]
       - desc: Limit number of team roles to 16 by default, but can configure on server
         closes: [ "#34" ]
       - desc: Unified nag experience, including nag for software updates.

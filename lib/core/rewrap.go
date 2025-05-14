@@ -86,3 +86,26 @@ func MustRewrap(s string, cols int, pad int) string {
 	}
 	return s
 }
+
+func Blockquote(s string, cols int) string {
+	lines := strings.Split(s, "\n")
+	spcs := func(n int) string {
+		if n < 0 {
+			return ""
+		}
+		var b strings.Builder
+		for range n {
+			b.WriteByte(' ')
+		}
+		return b.String()
+	}
+
+	pad := spcs(cols)
+
+	for i, line := range lines {
+		if len(line) > 0 {
+			lines[i] = pad + line
+		}
+	}
+	return strings.Join(lines, "\n")
+}

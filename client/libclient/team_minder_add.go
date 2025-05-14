@@ -55,7 +55,7 @@ func (t *teamAdder) loadMember(m MetaContext, u lcl.FQPartyParsedAndRole) error 
 	if err != nil {
 		return err
 	}
-	srcRole := proto.OwnerRole
+	srcRole := core.Sel(user != nil, proto.OwnerRole, proto.DefaultRole)
 	if u.Role != nil {
 		srcRole = *u.Role
 	}

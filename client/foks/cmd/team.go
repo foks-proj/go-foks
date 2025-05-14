@@ -267,10 +267,41 @@ func teamInbox(m libclient.MetaContext, top *cobra.Command) {
 func teamAdd(m libclient.MetaContext, top *cobra.Command) {
 	var roleStr string
 	cmd := &cobra.Command{
-		Use:          "add <team> <user1> <user2> ...",
-		Aliases:      nil,
-		Short:        "add a user to a team (on an open-view host)",
-		Long:         "add a user to a team (on an open-view host)",
+		Use:     "add <team> <user1> <user2> ...",
+		Aliases: nil,
+		Short:   "add a user to a team (on an open-view host)",
+		Long: core.MustRewrap(`Add a user to a team on an open-view host.
+
+Recall that typically, adding a team (or user) to a team is a 3-way handshake, since
+the intended party needs to allow the team admin first to view its sigchain. On an open-view
+host, this permissioning is not needed, since anyone can see anyone. Therefore, it's also 
+possible for an admin to add other members directly to a team. This command (`+"`foks team add`"+`)
+does this addition.
+
+Each user added can be specified with or without a source role. If source roles are not provided:
+for users the default role is owner; for teams, the default role is member/0 
+(meaning member at visibility level 0).
+
+The destination role in the team is specified with the --role flag. If not provided, the default
+role is member/0.
+
+Note that this command does not work with teams and users that are homed on different 
+hosts, since the admin running the command does not have open permission to view parties 
+on other hosts.
+
+See `+"`foks help roles`"+` for more information on roles -- how they work and how 
+to specify them for CLI commands.
+`, terminalCols(), 0),
+		Example: `
+# Add to team acme at the admin level: (1) bob (source role is owner);
+# and (2) the member/0 members of human-resources team; and (2) the 
+# admins of the legal team.
+foks team add acme --role=admin \
+   bob t:human-resources/member t:legal/admin
+
+# Add the members of the human-resources team at visibility level -8
+# and above to the acme team at the member/-4 level.
+foks team add acme --role=member/-4 t:human-resources/member/-8`,
 		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, arg []string) error {
 			if len(arg) < 2 {
@@ -325,29 +356,26 @@ func teamChangeRoles(m libclient.MetaContext, top *cobra.Command) {
 		Long: core.MustRewrap(`Change the roles of a set of users in a team; or remove them if applicable.
 
 Role changes are of the form: <party>[/<src-role>]→<new-role>. Party is specified as usual, in
-<part>[@<host>] form. If no host is specified, then the current host is used. The 
+<party>[@<host>] form. If no host is specified, then the current host is used. The 
 role modifying the party is the *source role* of the party and is only needed to disambugiate
-if the party is a member of the team multiple teams. The new role is the new destination role
-in the team, after the change. Use "n" or "none" to remove a party from the team.`, terminalCols(), 0) +
+if the party is a member of the team multiple times. The new role is the new destination role
+in the team, after the change. Use "n" or "none" to remove a party from the team.
 
-			`
-Some examples:
+See `+"`foks help roles`"+` for more information on roles -- how they work and how
+to specify them for CLI commands.
 
-   # for team acme:
-   foks team change-roles acme alice/m→o   # change alice's role to owner
-   foks team change-roles acme alice→o     # change alice's role to owner
-   foks team change-roles acme t:hr→n      # remove team hr from acme
-
-   # Change alice and bob at the same time. Change alice from member at 
-   # visibility level -4 to member at visibility level 0. Remove remote
-   # user bob from the team.
-   foks team change-roles acme alice/m/-4→m/0 bob@foks.mydomain.com→n
-
-` + core.MustRewrap(`
 Note that for this command, it's possible to use a two-character arrow ("->") instead of the 
 unicode arrow ("→"), but on most shells, it must be written "-\>" to avoid being interpreted as 
-an output redirection.
-`, terminalCols(), 0),
+an output redirection.`, terminalCols(), 0),
+		Example: `
+# for team acme:
+foks team change-roles acme alice/m→o   # change alice's role to owner
+foks team change-roles acme alice→o     # change alice's role to owner
+foks team change-roles acme t:hr→n      # remove team hr from acme
+
+# Change alice and bob at the same time. Change alice to 
+# member at visibility level 0. Remove remote user bob.
+foks team change-roles acme alice/m/-4→m/0 bob@foks.mydomain.com→n`,
 		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, arg []string) error {
 			if len(arg) < 2 {
