@@ -89,7 +89,7 @@ func EncodeVerifiableToBytes(obj Verifiable) ([]byte, error) {
 	prfx := b0.Bytes()
 	sffx := b1.Bytes()
 
-	// If the encoder is prodocuing non-canonical msgpack, it's good to know
+	// If the encoder is producing non-canonical msgpack, it's good to know
 	// when it's generated, rather than when it fails to decode and verify properly.
 	// But this check should not fail.
 	err = AssertCanonicalMsgpack(sffx)
