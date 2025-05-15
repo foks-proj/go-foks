@@ -301,20 +301,25 @@ func PrefixedHash(o CryptoPayloader) (*proto.StdHash, error) {
 	return &ret, nil
 }
 
-func checkStreamingEncoding(w io.Writer) (io.Writer, func() error) {
+// encodeAndCheck encodes the object o into the writer w. In so doing,
+// it also checks that the encoding is canonical msgpack. It will raise
+// and error if not.
+func encodeAndCheck(o Codecable, w io.Writer) error {
 	var buf bytes.Buffer
 	tee := io.MultiWriter(w, &buf)
-	return tee, func() error {
-		err := AssertCanonicalMsgpack(buf.Bytes())
-		if err != nil {
-			return err
-		}
-		return nil
+	enc := codec.NewEncoder(tee, Codec())
+	err := o.Encode(enc)
+	if err != nil {
+		return err
 	}
+	err = AssertCanonicalMsgpack(buf.Bytes())
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func PrefixedHashInto(o CryptoPayloader, out []byte) error {
-	mh := Codec()
 	h := sha512.New512_256()
 	var buf [8]byte
 	o.GetTypeUniqueID().EncodeToBytes(buf[:])
@@ -325,14 +330,8 @@ func PrefixedHashInto(o CryptoPayloader, out []byte) error {
 	if n != 8 {
 		return errors.New("short write")
 	}
-
-	tee, chk := checkStreamingEncoding(h)
-	enc := codec.NewEncoder(tee, mh)
-	err = o.Encode(enc)
+	err = encodeAndCheck(o, h)
 	if err != nil {
-		return nil
-	}
-	if err = chk(); err != nil {
 		return err
 	}
 	tmp := h.Sum(nil)
@@ -346,7 +345,6 @@ func PrefixedHashInto(o CryptoPayloader, out []byte) error {
 // We mainly use SHA512/256, but for hybrid encryption key swizzling,
 // we use SHA3 since it's what the IETF draft / paper prescribe.
 func PrefixedSHA3HashInto(o CryptoPayloader, out []byte) error {
-	mh := Codec()
 	h := sha3.New256()
 	var buf [8]byte
 	o.GetTypeUniqueID().EncodeToBytes(buf[:])
@@ -358,15 +356,11 @@ func PrefixedSHA3HashInto(o CryptoPayloader, out []byte) error {
 		return errors.New("short write")
 	}
 
-	tee, chk := checkStreamingEncoding(h)
-	enc := codec.NewEncoder(tee, mh)
-	err = o.Encode(enc)
+	err = encodeAndCheck(o, h)
 	if err != nil {
-		return nil
-	}
-	if err = chk(); err != nil {
 		return err
 	}
+
 	tmp := h.Sum(nil)
 	if len(tmp) != len(out) {
 		return InternalError("hash len mismatch")
@@ -376,16 +370,9 @@ func PrefixedSHA3HashInto(o CryptoPayloader, out []byte) error {
 }
 
 func HashInto(o Codecable, out []byte) error {
-	mh := Codec()
 	h := sha512.New512_256()
-
-	tee, chk := checkStreamingEncoding(h)
-	enc := codec.NewEncoder(tee, mh)
-	err := o.Encode(enc)
+	err := encodeAndCheck(o, h)
 	if err != nil {
-		return nil
-	}
-	if err = chk(); err != nil {
 		return err
 	}
 	tmp := h.Sum(nil)
@@ -397,7 +384,6 @@ func HashInto(o Codecable, out []byte) error {
 }
 
 func Hmac(obj CryptoPayloader, key *proto.HMACKey) (*proto.HMAC, error) {
-	mh := Codec()
 	hm := hmac.New(sha512.New512_256, (*key)[:])
 	var buf [8]byte
 	obj.GetTypeUniqueID().EncodeToBytes(buf[:])
@@ -408,13 +394,8 @@ func Hmac(obj CryptoPayloader, key *proto.HMACKey) (*proto.HMAC, error) {
 	if n != 8 {
 		return nil, errors.New("short write")
 	}
-	tee, chk := checkStreamingEncoding(hm)
-	enc := codec.NewEncoder(tee, mh)
-	err = obj.Encode(enc)
+	err = encodeAndCheck(obj, hm)
 	if err != nil {
-		return nil, err
-	}
-	if err = chk(); err != nil {
 		return nil, err
 	}
 	tmp := hm.Sum(nil)
