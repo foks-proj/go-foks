@@ -11,6 +11,7 @@ import (
 type VerifiableBlob[T any] interface {
 	Verifiable
 	AllocAndDecode(f rpc.DecoderFactory) (T, error)
+	Bytes() []byte
 }
 
 type VerifiableObj[T Verifiable] interface {
@@ -19,8 +20,12 @@ type VerifiableObj[T Verifiable] interface {
 }
 
 func Verify2[P any, C VerifiableBlob[P]](v Verifier, sig proto.Signature, efv C) (P, error) {
-	err := v.Verify(sig, efv)
 	var zed P
+	err := AssertCanonicalMsgpack(efv.Bytes())
+	if err != nil {
+		return zed, err
+	}
+	err = v.Verify(sig, efv)
 	if err != nil {
 		return zed, err
 	}

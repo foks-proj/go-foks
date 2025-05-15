@@ -4,11 +4,13 @@
 package core
 
 import (
+	"bytes"
 	"crypto/hmac"
 	"crypto/rand"
 	"crypto/sha512"
 	"errors"
 	"fmt"
+	"io"
 
 	proto "github.com/foks-proj/go-foks/proto/lib"
 	"github.com/keybase/go-codec/codec"
@@ -299,6 +301,18 @@ func PrefixedHash(o CryptoPayloader) (*proto.StdHash, error) {
 	return &ret, nil
 }
 
+func checkStreamingEncoding(w io.Writer) (io.Writer, func() error) {
+	var buf bytes.Buffer
+	tee := io.MultiWriter(w, &buf)
+	return tee, func() error {
+		err := AssertCanonicalMsgpack(buf.Bytes())
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+}
+
 func PrefixedHashInto(o CryptoPayloader, out []byte) error {
 	mh := Codec()
 	h := sha512.New512_256()
@@ -311,10 +325,15 @@ func PrefixedHashInto(o CryptoPayloader, out []byte) error {
 	if n != 8 {
 		return errors.New("short write")
 	}
-	enc := codec.NewEncoder(h, mh)
+
+	tee, chk := checkStreamingEncoding(h)
+	enc := codec.NewEncoder(tee, mh)
 	err = o.Encode(enc)
 	if err != nil {
 		return nil
+	}
+	if err = chk(); err != nil {
+		return err
 	}
 	tmp := h.Sum(nil)
 	if len(tmp) != len(out) {
@@ -338,10 +357,15 @@ func PrefixedSHA3HashInto(o CryptoPayloader, out []byte) error {
 	if n != len(buf) {
 		return errors.New("short write")
 	}
-	enc := codec.NewEncoder(h, mh)
+
+	tee, chk := checkStreamingEncoding(h)
+	enc := codec.NewEncoder(tee, mh)
 	err = o.Encode(enc)
 	if err != nil {
 		return nil
+	}
+	if err = chk(); err != nil {
+		return err
 	}
 	tmp := h.Sum(nil)
 	if len(tmp) != len(out) {
@@ -354,10 +378,15 @@ func PrefixedSHA3HashInto(o CryptoPayloader, out []byte) error {
 func HashInto(o Codecable, out []byte) error {
 	mh := Codec()
 	h := sha512.New512_256()
-	enc := codec.NewEncoder(h, mh)
+
+	tee, chk := checkStreamingEncoding(h)
+	enc := codec.NewEncoder(tee, mh)
 	err := o.Encode(enc)
 	if err != nil {
 		return nil
+	}
+	if err = chk(); err != nil {
+		return err
 	}
 	tmp := h.Sum(nil)
 	if len(tmp) != len(out) {
@@ -379,9 +408,13 @@ func Hmac(obj CryptoPayloader, key *proto.HMACKey) (*proto.HMAC, error) {
 	if n != 8 {
 		return nil, errors.New("short write")
 	}
-	enc := codec.NewEncoder(hm, mh)
+	tee, chk := checkStreamingEncoding(hm)
+	enc := codec.NewEncoder(tee, mh)
 	err = obj.Encode(enc)
 	if err != nil {
+		return nil, err
+	}
+	if err = chk(); err != nil {
 		return nil, err
 	}
 	tmp := hm.Sum(nil)

@@ -93,6 +93,15 @@ func (v VerifyError) Error() string {
 	return "signature verify error: " + string(v)
 }
 
+type CanonicalEncodingError struct {
+	Path StructPath
+	Err  error
+}
+
+func (c CanonicalEncodingError) Error() string {
+	return fmt.Sprintf("canonical encoding error @%s: %s", c.Path, c.Err.Error())
+}
+
 type SigningKeyNotFullyProvisionedError struct{}
 
 func (s SigningKeyNotFullyProvisionedError) Error() string {

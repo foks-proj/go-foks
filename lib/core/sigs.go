@@ -74,18 +74,34 @@ type Verifier interface {
 }
 
 func EncodeVerifiableToBytes(obj Verifiable) ([]byte, error) {
-	var b bytes.Buffer
+	var b0, b1 bytes.Buffer
 	mh := Codec()
-	err := obj.GetTypeUniqueID().Encode(&b)
+	err := obj.GetTypeUniqueID().Encode(&b0)
 	if err != nil {
 		return nil, err
 	}
-	enc := codec.NewEncoder(&b, mh)
+	enc := codec.NewEncoder(&b1, mh)
 	err = obj.Encode(enc)
 	if err != nil {
 		return nil, err
 	}
-	return b.Bytes(), nil
+
+	prfx := b0.Bytes()
+	sffx := b1.Bytes()
+
+	// If the encoder is prodocuing non-canonical msgpack, it's good to know
+	// when it's generated, rather than when it fails to decode and verify properly.
+	// But this check should not fail.
+	err = AssertCanonicalMsgpack(sffx)
+	if err != nil {
+		return nil, err
+	}
+
+	ret := make([]byte, len(prfx)+len(sffx))
+	copy(ret, prfx)
+	copy(ret[len(prfx):], sffx)
+
+	return ret, nil
 }
 
 func (e EntityPublicEd25519) Verify(s proto.Signature, obj Verifiable) error {
