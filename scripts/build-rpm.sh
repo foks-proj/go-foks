@@ -6,14 +6,19 @@
 
 
 usage() {
-    echo "Usage: $0 -p {arm64|amd64}"
+    echo "Usage: $0 -p {arm64|amd64} [-g]"
     exit 1
 }
 
-while getopts ":p:" opt; do
+sign=0
+
+while getopts ":p:g" opt; do
     case $opt in
         p)
             plat=$OPTARG
+            ;;
+        g)
+            sign=1
             ;;
         \?)
             echo "Invalid option: -$OPTARG" >&2
@@ -203,6 +208,16 @@ clean_house() {
     rm -rf build/rpm
 }
 
+do_sign() {
+    cd build
+    if [ $sign -eq 1 ]; then
+        echo "Signing RPMs..."
+        rpm --addsign foks-${version}-1.el8.${arch_sffx}.rpm
+        rpm --addsign foks-debuginfo-${version}-1.el8.${arch_sffx}.rpm
+        rpm --addsign foks-${version}-1.el8.src.rpm
+    fi
+}
+
 mkdir -p ${workdir}
 build_docker
 make_tarball
@@ -210,3 +225,4 @@ make_spec 1
 make_spec 0
 run_docker
 clean_house
+(do_sign)
