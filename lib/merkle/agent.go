@@ -110,10 +110,7 @@ func (a *Agent) HostID() proto.HostID {
 	return a.hostID
 }
 
-func (a *Agent) Shutdown() {
-	a.gcli.Shutdown()
-	a.gcli = nil
-}
+func (a *Agent) Shutdown() {}
 
 func (a *Agent) Reset() {
 	a.gcli.Reset()

@@ -64,9 +64,10 @@ func (c *connectionMgr) serve(m RpcClientMetaContexter) {
 	go c.refcountLoop(m)
 }
 
-func (c *connectionMgr) setRefcount(rc refcount) {
+func (c *connectionMgr) setRefcount(m RpcClientMetaContexter, rc refcount) {
 	c.rcMu.Lock()
 	defer c.rcMu.Unlock()
+
 	if c.rc == nil || !rc.time.Before(c.rc.time) {
 		c.rc = &rc
 		if c.opts.testRefcountUpdateCh != nil {
@@ -85,7 +86,7 @@ func (c *connectionMgr) refcountLoop(m RpcClientMetaContexter) {
 			}
 			return
 		case rc := <-c.refcountCh:
-			c.setRefcount(rc)
+			c.setRefcount(m, rc)
 		}
 	}
 }
@@ -98,7 +99,7 @@ func (c *connectionMgr) checkIdle(m RpcClientMetaContexter) {
 	}
 	now := c.opts.Clock.Now()
 	if c.rc.i == 0 && now.Sub(c.rc.time) > c.opts.IdleTimeout {
-		m.Infow("closing idle connection")
+		m.Infow("closing idle connection", "remote", c.remote)
 		c.xp.Close()
 		c.xp = nil
 		c.rc = nil

@@ -28,13 +28,15 @@ type Probe struct {
 	msess           *merkle.Session
 	hostID          *proto.HostID
 	prev            *core.Hostchain
-	maInternal      *merkle.Agent
 	defport         proto.Port
 	doCheckHostname bool
 
 	refreshMu  sync.Mutex
 	lastFailMu sync.Mutex
 	lastFail   error
+
+	merkleAgentMu sync.Mutex
+	ma            *merkle.Agent
 
 	// only for testing
 	TestWaitCh            <-chan struct{}
@@ -279,14 +281,23 @@ func (b *Probe) MerkleAgent(m MetaContext) (*merkle.Agent, error) {
 }
 
 func (b *Probe) merkleAgentInner(m MetaContext) (*merkle.Agent, error) {
+	b.merkleAgentMu.Lock()
+	defer b.merkleAgentMu.Unlock()
+	if b.ma != nil {
+		m.Infow("merkleAgentInner", "msg", "reusing merkle agent")
+		return b.ma, nil
+	}
 	rootCAs, err := b.chain.RootCACertPool()
 	if err != nil {
 		return nil, err
 	}
-	ret, err := b.di.MakeMerkleAgent(m, b.chain.HostID(), b.pz.Services.MerkleQuery, rootCAs)
+	addr := b.pz.Services.MerkleQuery
+	m.Infow("merkleAgentInner", "msg", "connect", "addr", addr)
+	ret, err := b.di.MakeMerkleAgent(m, b.chain.HostID(), addr, rootCAs)
 	if err != nil {
 		return nil, err
 	}
+	b.ma = ret
 	return ret, err
 }
 
@@ -306,7 +317,6 @@ func (p *Probe) saveMerkleRoot(m MetaContext) error {
 	// so we reuse the session, and this time a race is fatal.
 	if p.msess == nil {
 		ma, err := p.merkleAgentInner(m)
-		p.maInternal = ma // we need to close it after the Run() operation is completed
 		if err != nil {
 			return err
 		}
@@ -336,9 +346,7 @@ func (p *Probe) saveHostchain(m MetaContext) error {
 }
 
 func (p *Probe) clean() {
-	if p.maInternal != nil {
-		p.maInternal.Shutdown()
-		p.maInternal = nil
+	if p.msess != nil {
 		p.msess = nil
 	}
 }

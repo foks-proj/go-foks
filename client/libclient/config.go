@@ -860,7 +860,7 @@ func (c *Config) AgentProcessLabel() (string, error) {
 		c.fl.agent.processLabel,
 		prefixed("AGENT_PROCESS_LABEL"),
 		c.file.Data.Agent.ProcessLabel,
-		"pub.ne43.foks.agent",
+		"com.ne43.foks.agent",
 	), nil
 }
 

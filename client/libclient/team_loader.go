@@ -1844,9 +1844,7 @@ func (l *TeamLoader) resetState() {
 	l.linkHashes = nil
 }
 
-func (l *TeamLoader) Shutdown() {
-
-}
+func (l *TeamLoader) Shutdown() {}
 
 func (l *TeamLoader) Existing() *lcl.TeamChainState {
 	return l.existing
