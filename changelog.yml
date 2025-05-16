@@ -7,6 +7,10 @@ changelog:
     stable: false
     date: 2025-05-12 13:44:00 -0400
     changes:
+      - desc: On macOS, change plist name from "pub.ne43.foks.agent" to "com.ne43.foks.agent"
+        closes: []
+      - desc: Don't spam-create connection loops for merkleQuery
+        closes: [ "#41" ]
       - desc: Assert snowpack structures are canonical when performing sigs, verify, hmac and hash upon them
         closes: [ "#38"]
       - desc: Better docs for `team add` and `team change-roles`, and a standalone page on roles
