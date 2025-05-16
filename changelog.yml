@@ -2,6 +2,12 @@ project: foks
 maintaner: Maxwell Krohn <max@ne43.com>
 
 changelog:
+  - version: 0.0.20
+    urgency: low
+    stable: false
+    changes:
+      - desc: Remove old version clash warning
+        closes: ["#48"]
   - version: 0.0.19
     urgency: low
     stable: false
