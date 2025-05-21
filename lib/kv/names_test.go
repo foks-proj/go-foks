@@ -46,7 +46,7 @@ func TestParseAbsPath(t *testing.T) {
 		},
 		{
 			in:  "a/b",
-			err: core.KVAbsPathError{proto.KVPath("a/b")},
+			err: core.KVAbsPathError{Path: proto.KVPath("a/b")},
 		},
 	} {
 		p, err := ParseAbsPath(proto.KVPath(tst.in))

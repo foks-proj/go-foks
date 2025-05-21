@@ -21,7 +21,7 @@ full: client-proto
 
 .PHONY: client-win-amd64
 client-win-amd64:
-	./scripts/win-compile.bash -p amd64 -l
+	./scripts/win-native-compile.bash -p amd64 -l
 	@echo "Client binary is ready: $$(scripts/gowhere.sh)/foks.exe"
 
 .PHONY: client-linux-arm64
@@ -135,6 +135,6 @@ build/darwin-arm64/foks.zip: build/darwin-arm64/foks
 	./scripts/macos-ditto.bash $$(dirname $<)
 
 build/win-amd64/foks.exe: proto
-	./scripts/win-compile.bash -p amd64 -s
+	./scripts/win-cross-compile.bash -p amd64 -s
 build/win-arm64/foks.exe: proto
-	./scripts/win-compile.bash -p arm64 -s
+	./scripts/win-cross-compile.bash -p arm64 -s

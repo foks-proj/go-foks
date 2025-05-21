@@ -252,7 +252,7 @@ func (k *KeyBundle) BoxKey() (*proto.SecretBoxKey, error) {
 
 }
 
-func PaddedLen(n int) (int, error) {
+func PaddedLen(n int64) (int64, error) {
 
 	if n > 0xffffffff {
 		return 0, core.TooBigError{}
@@ -261,9 +261,9 @@ func PaddedLen(n int) (int, error) {
 		return 0, core.InternalError("negative length")
 	}
 
-	base2 := MinPaddedInputSize
+	base2 := int64(MinPaddedInputSize)
 	i := 0
-	pad := PadSpecs[i].Overhead
+	pad := int64(PadSpecs[i].Overhead)
 	ret := base2 + pad // padded len w/ overhead
 
 	for {
@@ -271,15 +271,15 @@ func PaddedLen(n int) (int, error) {
 			return ret, nil
 		}
 		base2 = base2 << 1
-		if i < len(PadSpecs)-1 && base2 >= PadSpecs[i+1].AtOrAbove {
+		if i < len(PadSpecs)-1 && base2 >= int64(PadSpecs[i+1].AtOrAbove) {
 			i++
-			pad = PadSpecs[i].Overhead
+			pad = int64(PadSpecs[i].Overhead)
 		}
 		ret = base2 + pad
 	}
 }
 
-func PaddedLenInv(n int) (int, error) {
+func PaddedLenInv(n int64) (int64, error) {
 	if n > 0xffffffff {
 		return 0, core.TooBigError{}
 	}
@@ -287,15 +287,15 @@ func PaddedLenInv(n int) (int, error) {
 		return 0, core.InternalError("negative length")
 	}
 	for i := len(PadSpecs) - 1; i >= 0; i-- {
-		if n >= PadSpecs[i].AtOrAbove {
-			return n - PadSpecs[i].Overhead, nil
+		if n >= int64(PadSpecs[i].AtOrAbove) {
+			return n - int64(PadSpecs[i].Overhead), nil
 		}
 	}
 	return 0, core.InternalError("unreachable")
 }
 
 func PadChunk(b []byte) ([]byte, error) {
-	n, err := PaddedLen(len(b))
+	n, err := PaddedLen(int64(len(b)))
 	if err != nil {
 		return nil, err
 	}

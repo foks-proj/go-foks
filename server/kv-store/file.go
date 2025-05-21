@@ -396,11 +396,11 @@ func (f *fileUploader) checkChunks(m shared.MetaContext) error {
 		return err
 	}
 	defer rows.Close()
-	var pos int
-	var tot int
+	var pos int64
+	var tot int64
 	for rows.Next() {
-		var offset int
-		var sz int
+		var offset int64
+		var sz int64
 		err = rows.Scan(&offset, &sz)
 		if err != nil {
 			return err
@@ -414,13 +414,13 @@ func (f *fileUploader) checkChunks(m shared.MetaContext) error {
 		// 16 is for the NaCl tag. Should line up with the offsets that the client is
 		// sending.
 		sz -= secretbox.Overhead
-		pli, err := kv.PaddedLenInv(sz)
+		pli, err := kv.PaddedLenInv(int64(sz))
 		if err != nil {
 			return err
 		}
 		pos += pli
 	}
-	if tot != int(f.chnk.Final.Sz) {
+	if tot != int64(f.chnk.Final.Sz) {
 		return core.UploadError("wrong file size on reconstruction")
 	}
 	return nil

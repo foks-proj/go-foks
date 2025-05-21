@@ -1,0 +1,26 @@
+FROM golang:1.24-bookworm
+
+# Install Go and the i686 MinGW cross-compiler
+RUN apt-get update && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y \
+      gcc-mingw-w64-i686 \
+      g++-mingw-w64-i686 \
+      gcc-mingw-w64-x86-64 \
+      g++-mingw-w64-x86-64 \
+      ca-certificates && \
+    rm -rf /var/lib/apt/lists/*
+
+WORKDIR /foks
+
+COPY go.mod go-foks/go.mod
+COPY go.sum go-foks/go.sum
+
+RUN (cd go-foks && go mod download)
+
+COPY . go-foks
+
+# Enable cgo, target windows/386, and use the i686 cross-gcc
+ENV GOOS=windows \
+    CGO_ENABLED=1
+
+ENTRYPOINT ["bash", "-c"]

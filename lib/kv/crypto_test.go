@@ -11,8 +11,8 @@ import (
 
 func TestPaddedLen(t *testing.T) {
 	for i, tst := range []struct {
-		in  int
-		res int
+		in  int64
+		res int64
 	}{
 		{0, 34},
 		{1, 34},
@@ -48,8 +48,8 @@ func TestPaddedLen(t *testing.T) {
 func TestPaddedLenInv(t *testing.T) {
 
 	for i, tst := range []struct {
-		in  int
-		res int
+		in  int64
+		res int64
 	}{
 		{34, 32},
 		{66, 64},
