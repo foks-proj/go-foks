@@ -19,6 +19,11 @@ client-signed:
 client-proto: proto client
 full: client-proto
 
+.PHONY: client-win-amd64
+client-win-amd64:
+	./scripts/win-compile.bash -p amd64 -l
+	@echo "Client binary is ready: $$(scripts/gowhere.sh)/foks.exe"
+
 .PHONY: client-linux-arm64
 client-linux-arm64: build/foks.linux-arm64
 	@echo "Client binary for linux/arm64 is ready: $<"
@@ -101,8 +106,8 @@ release-all: deb rpm darwin-zip
 
 .PHONY: proto
 proto: 
-	(cd proto-src && go run ../tools/snowp-checker)
 	go generate ./...
+	(cd proto-src && go run ../tools/snowp-checker)
 
 build/foks.linux-arm64: proto
 	./scripts/cross-compile.sh -p linux-arm64
@@ -129,3 +134,7 @@ build/darwin-arm64/foks.zip: build/darwin-arm64/foks
 	./scripts/macos-sign.bash $<
 	./scripts/macos-ditto.bash $$(dirname $<)
 
+build/win-amd64/foks.exe: proto
+	./scripts/win-compile.bash -p amd64 -s
+build/win-arm64/foks.exe: proto
+	./scripts/win-compile.bash -p arm64 -s

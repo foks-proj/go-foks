@@ -116,8 +116,14 @@ func (s StoredSecretKeyBundle) StripSecrets() (StoredSecretKeyBundle, error) {
 		pp := s.EncPassphrase()
 		pp.SecretBox = lib.SecretBox{}
 		return NewStoredSecretKeyBundleWithEncPassphrase(pp), nil
+	case lib.SecretKeyStorageType_ENC_KEYCHAIN:
+		kc := s.EncKeychain()
+		kc.SecretBox = lib.SecretBox{}
+		return NewStoredSecretKeyBundleWithEncKeychain(kc), nil
 	default:
-		return s, lib.DataError("bad type of secret key bundle")
+		return s, lib.DataError(
+			fmt.Sprintf("bad type of secret key bundle (%d)", t),
+		)
 	}
 }
 

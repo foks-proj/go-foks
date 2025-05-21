@@ -381,15 +381,43 @@ func (w Win32) Normalize(s string) string {
 	return w.Unsplit(w.Split(s))
 }
 
-func (w Win32) CacheDir() (string, error)        { return w.Home(false) }
-func (w Win32) SharedCacheDir() (string, error)  { return w.CacheDir() }
-func (w Win32) ConfigDir() (string, error)       { return w.Home(false) }
-func (w Win32) DataDir() (string, error)         { return w.Home(false) }
-func (w Win32) SharedDataDir() (string, error)   { return w.DataDir() }
-func (w Win32) RuntimeDir() (string, error)      { return w.Home(false) }
-func (w Win32) InfoDir() (string, error)         { return w.RuntimeDir() }
-func (w Win32) ServiceSpawnDir() (string, error) { return w.RuntimeDir() }
-func (w Win32) LogDir() (string, error)          { return w.Home(false) }
+// foksDir returns the directory we're going to use for almost all FOKS data, from cache to
+// more durable goods, like secret key files. Why not use os.UserCacheDir() and os.UserConfigDir()?
+// Well they both aren't named very well. It turns out the os.UserCacheDir() is referring to
+// ~/AppData/Local, which means data that isn't synced across the LAN via various windows workgroup
+// configurations. ~/AppData/Roaming, which is returned by os.UserConfigDir(), is synced, but we
+// don't want that for secret keys. So we're not going to use it. From what I can tell, there is
+// no risk that the data in ~/AppData/Local will be treated like a cache and swept away. Only
+// data in ~/AppData/Local/Temp seems to be subject to this treatment. However, I'm concerned that
+// Go will eventually change the meaning of os.UserCacheDir(), so we're just doing what it
+// does internaly (read the %LocalAppData% environment variable).
+func (w Win32) foksDir() (string, error) {
+
+	dir := os.Getenv("LocalAppData")
+	if dir == "" {
+		return "", core.HomeError("%LocalAppData% is not defined; cannot find home directory")
+	}
+
+	packageName := "foks"
+	dirs := []string{dir, packageName}
+
+	if w.getRunMode() != RunModeProd {
+		runModeName := w.getRunMode().ToString()
+		dirs = append(dirs, runModeName)
+	}
+
+	return w.Unsplit(dirs), nil
+}
+
+func (w Win32) CacheDir() (string, error)        { return w.foksDir() }
+func (w Win32) SharedCacheDir() (string, error)  { return w.foksDir() }
+func (w Win32) ConfigDir() (string, error)       { return w.foksDir() }
+func (w Win32) DataDir() (string, error)         { return w.foksDir() }
+func (w Win32) SharedDataDir() (string, error)   { return w.foksDir() }
+func (w Win32) RuntimeDir() (string, error)      { return w.foksDir() }
+func (w Win32) InfoDir() (string, error)         { return w.foksDir() }
+func (w Win32) ServiceSpawnDir() (string, error) { return w.foksDir() }
+func (w Win32) LogDir() (string, error)          { return w.foksDir() }
 
 func (w Win32) DownloadsDir() (string, error) {
 	// Prefer to use USERPROFILE instead of w.Home() because the latter goes

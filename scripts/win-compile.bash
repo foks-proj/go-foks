@@ -5,12 +5,12 @@ set -euo pipefail
 version=$(git describe --tags --always)
 
 usage() {
-    echo "Usage: $0 -p {arm64|amd64} [-sbl]"
+    echo "Usage: $0 -p {arm64|amd64} [-scl]"
     exit 1
 }
 
 strip=0
-brew=0
+choco=0
 lcl=0
 plat="arm64"
 packaging="darwin-zip"
@@ -18,7 +18,7 @@ packaging="darwin-zip"
 # take two arguments: -p which can be arm64 or amd64, and also
 # -s, which is a boolean flag that means to strip the binary
 # use getopt to parse the arguments::
-while getopts ":p:sbl" opt; do
+while getopts ":p:scl" opt; do
     case $opt in
         p)
             plat=$OPTARG
@@ -26,9 +26,9 @@ while getopts ":p:sbl" opt; do
         s)
             strip=1
             ;;
-        b) 
-            brew=1
-            packaging="brew"
+        c) 
+            choco=1
+            packaging="choco"
             ;;
         l)
             lcl=1
@@ -57,10 +57,10 @@ fi
 echo "Building darwin version $version"
 echo "  - platform: $plat"
 echo "  - stripping: $strip"
-echo "  - brew: $brew"
+echo "  - choco: $choco"
 echo "  - local: $lcl"
 
-targ="build/darwin-${plat}/foks"
+targ="build/win-${plat}/foks"
 mkdir -p $(dirname ${targ})
 
 src="./client/foks"
@@ -77,7 +77,7 @@ fi
 set -x
 
 export CGO_ENABLED=1
-export GOOS=darwin
+export GOOS=windows
 export GOARCH=${plat} 
 
 build_mode="build -o ${targ}"
