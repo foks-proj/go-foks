@@ -781,3 +781,19 @@ func TestUsernameLookup(t *testing.T) {
 	require.Nil(t, uid)
 	require.Equal(t, core.RowNotFoundError{}, err)
 }
+
+func TestReloadByUsername(t *testing.T) {
+	tew := testEnvBeta(t)
+	a := tew.NewTestUser(t)
+	b := tew.NewTestUser(t)
+	tew.DirectMerklePoke(t)
+
+	bcli := tew.userCli(t, b)
+	grantViewPermission(t, *bcli, b.uid, a.uid)
+	ma := tew.NewClientMetaContext(t, a)
+
+	for i := 0; i < 2; i++ {
+		_, err := libclient.LoadUser(ma, libclient.LoadUserArg{Username: b.name, LoadMode: libclient.LoadModeOthers})
+		require.NoError(t, err)
+	}
+}

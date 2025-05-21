@@ -27,18 +27,26 @@ func ResolveUsername(
 		return zed, err
 	}
 
-	// For now, resolve only works on hosts with open user viewership.
-	// Can change this later.
-	if hc.Viewership.User != proto.ViewershipMode_OpenToAll {
-		return zed, pde
-	}
 	typ, err := arg.Auth.GetT()
 	if err != nil {
 		return zed, err
 	}
-	if typ != rem.LoadUserChainAuthType_OpenVHost {
-		return zed, err
+
+	var authed bool
+
+	switch typ {
+	case rem.LoadUserChainAuthType_OpenVHost:
+		if hc.Viewership.User != proto.ViewershipMode_OpenToAll {
+			return zed, pde
+		}
+		authed = true
+	case rem.LoadUserChainAuthType_AsLocalUser:
+		// noop, need to check
+	default:
+		return zed, pde
+
 	}
+
 	db, err := m.Db(DbTypeUsers)
 	if err != nil {
 		return zed, err
@@ -66,5 +74,28 @@ func ResolveUsername(
 	if err != nil {
 		return zed, err
 	}
+
+	if !authed {
+
+		q := `SELECT 1 FROM local_view_permissions 
+			 WHERE short_host_id=$1
+			 AND viewer_eid=$2
+			 AND target_eid=$3
+			 AND state='valid'`
+		args := []any{
+			m.ShortHostID().ExportToDB(),
+			loggedInUID.ExportToDB(),
+			uid.ExportToDB(),
+		}
+		var dummy int
+		err = db.QueryRow(m.Ctx(), q, args...).Scan(&dummy)
+		if err == pgx.ErrNoRows || dummy != 1 {
+			return zed, pde
+		}
+		if err != nil {
+			return zed, err
+		}
+	}
+
 	return uid, nil
 }

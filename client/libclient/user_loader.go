@@ -1173,17 +1173,28 @@ func (u *UserLoader) checkUsername(m MetaContext) error {
 	if err != nil {
 		return err
 	}
+
 	if !u.arg.Username.IsZero() {
 		un := u.arg.Username
 		nun, err := core.NormalizeName(un)
 		if err != nil {
 			return err
 		}
-		lst := core.Last(u.raw.Usernames)
-		if !nun.Eq(lst.Unc.Name) {
+
+		var nameFromLoad proto.Name
+		if len(u.raw.Usernames) > 0 {
+			nameFromLoad = core.Last(u.raw.Usernames).Unc.Name
+		} else if existingName != nil {
+			nameFromLoad = existingName.B.Name
+		} else {
+			return core.InternalError("no existing name and no username links")
+		}
+
+		if !nun.Eq(nameFromLoad) {
 			return core.NameError("username mismatch")
 		}
 	}
+
 	u.unseq = nseq
 	return nil
 }
@@ -1328,11 +1339,18 @@ func (u *UserLoader) resolveUID(m MetaContext) error {
 	if err != nil {
 		return err
 	}
+	var auth rem.LoadUserChainAuth
+	switch u.arg.LoadMode {
+	case LoadModeOpenOthers:
+		auth = rem.NewLoadUserChainAuthWithOpenvhost()
+	default:
+		auth = rem.NewLoadUserChainAuthWithAslocaluser()
+	}
 	uid, err := u.rpcLoader.ResolveUsername(
 		m.Ctx(),
 		rem.ResolveUsernameArg{
 			N:    nun,
-			Auth: rem.NewLoadUserChainAuthWithOpenvhost(),
+			Auth: auth,
 		},
 	)
 	if err != nil {
