@@ -1,5 +1,5 @@
-// Auto-generated to Go types and interfaces using @foks-proj/snowpack-compiler 1.0.8 (git+https://github.com/foks-proj/node-snowpack-compiler.git)
-//  Input file: ../../proto-src/lcl/signup.snowp
+// Auto-generated to Go types and interfaces using snowpc 0.0.4 (https://github.com/foks-proj/go-snowpack-compiler)
+//  Input file:../../proto-src/lcl/signup.snowp
 
 package lcl
 
@@ -19,7 +19,6 @@ func (i InviteCodeString) Export() *InviteCodeStringInternal__ {
 	tmp := ((string)(i))
 	return ((*InviteCodeStringInternal__)(&tmp))
 }
-
 func (i InviteCodeStringInternal__) Import() InviteCodeString {
 	tmp := (string)(i)
 	return InviteCodeString((func(x *string) (ret string) {
@@ -52,7 +51,6 @@ type ViewToken struct {
 	IsSelf bool
 	Token  lib.PermissionToken
 }
-
 type ViewTokenInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	IsSelf  *bool
@@ -75,14 +73,12 @@ func (v ViewTokenInternal__) Import() ViewToken {
 		})(v.Token),
 	}
 }
-
 func (v ViewToken) Export() *ViewTokenInternal__ {
 	return &ViewTokenInternal__{
 		IsSelf: &v.IsSelf,
 		Token:  v.Token.Export(),
 	}
 }
-
 func (v *ViewToken) Encode(enc rpc.Encoder) error {
 	return enc.Encode(v.Export())
 }
@@ -105,7 +101,6 @@ type PutYubiSlotRes struct {
 	ChosenSlot lib.YubiSlot
 	IdxType    lib.YubiIndexType
 }
-
 type PutYubiSlotResInternal__ struct {
 	_struct    struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Username   *lib.NameInternal__
@@ -148,7 +143,6 @@ func (p PutYubiSlotResInternal__) Import() PutYubiSlotRes {
 		})(p.IdxType),
 	}
 }
-
 func (p PutYubiSlotRes) Export() *PutYubiSlotResInternal__ {
 	return &PutYubiSlotResInternal__{
 		Username: (func(x *lib.Name) *lib.NameInternal__ {
@@ -162,7 +156,6 @@ func (p PutYubiSlotRes) Export() *PutYubiSlotResInternal__ {
 		IdxType:    p.IdxType.Export(),
 	}
 }
-
 func (p *PutYubiSlotRes) Encode(enc rpc.Encoder) error {
 	return enc.Encode(p.Export())
 }
@@ -182,7 +175,6 @@ func (p *PutYubiSlotRes) Bytes() []byte { return nil }
 type SsoLoginFlow struct {
 	Url lib.URLString
 }
-
 type SsoLoginFlowInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Url     *lib.URLStringInternal__
@@ -198,13 +190,11 @@ func (s SsoLoginFlowInternal__) Import() SsoLoginFlow {
 		})(s.Url),
 	}
 }
-
 func (s SsoLoginFlow) Export() *SsoLoginFlowInternal__ {
 	return &SsoLoginFlowInternal__{
 		Url: s.Url.Export(),
 	}
 }
-
 func (s *SsoLoginFlow) Encode(enc rpc.Encoder) error {
 	return enc.Encode(s.Export())
 }
@@ -224,7 +214,6 @@ func (s *SsoLoginFlow) Bytes() []byte { return nil }
 type ListYubiSlotsRes struct {
 	Device *lib.YubiCardInfo
 }
-
 type ListYubiSlotsResInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Device  *lib.YubiCardInfoInternal__
@@ -246,7 +235,6 @@ func (l ListYubiSlotsResInternal__) Import() ListYubiSlotsRes {
 		})(l.Device),
 	}
 }
-
 func (l ListYubiSlotsRes) Export() *ListYubiSlotsResInternal__ {
 	return &ListYubiSlotsResInternal__{
 		Device: (func(x *lib.YubiCardInfo) *lib.YubiCardInfoInternal__ {
@@ -257,7 +245,6 @@ func (l ListYubiSlotsRes) Export() *ListYubiSlotsResInternal__ {
 		})(l.Device),
 	}
 }
-
 func (l *ListYubiSlotsRes) Encode(enc rpc.Encoder) error {
 	return enc.Encode(l.Export())
 }
@@ -278,7 +265,6 @@ type FinishRes struct {
 	RegServerType RegServerType
 	HostType      lib.HostType
 }
-
 type FinishResInternal__ struct {
 	_struct       struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	RegServerType *RegServerTypeInternal__
@@ -301,14 +287,12 @@ func (f FinishResInternal__) Import() FinishRes {
 		})(f.HostType),
 	}
 }
-
 func (f FinishRes) Export() *FinishResInternal__ {
 	return &FinishResInternal__{
 		RegServerType: f.RegServerType.Export(),
 		HostType:      f.HostType.Export(),
 	}
 }
-
 func (f *FinishRes) Encode(enc rpc.Encoder) error {
 	return enc.Encode(f.Export())
 }
@@ -331,7 +315,6 @@ type LoginAsArg struct {
 	SessionId lib.UISessionID
 	User      lib.UserInfo
 }
-
 type LoginAsArgInternal__ struct {
 	_struct   struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	SessionId *lib.UISessionIDInternal__
@@ -354,14 +337,12 @@ func (l LoginAsArgInternal__) Import() LoginAsArg {
 		})(l.User),
 	}
 }
-
 func (l LoginAsArg) Export() *LoginAsArgInternal__ {
 	return &LoginAsArgInternal__{
 		SessionId: l.SessionId.Export(),
 		User:      l.User.Export(),
 	}
 }
-
 func (l *LoginAsArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(l.Export())
 }
@@ -382,7 +363,6 @@ type PutInviteCodeArg struct {
 	SessionId  lib.UISessionID
 	InviteCode InviteCodeString
 }
-
 type PutInviteCodeArgInternal__ struct {
 	_struct    struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	SessionId  *lib.UISessionIDInternal__
@@ -405,14 +385,12 @@ func (p PutInviteCodeArgInternal__) Import() PutInviteCodeArg {
 		})(p.InviteCode),
 	}
 }
-
 func (p PutInviteCodeArg) Export() *PutInviteCodeArgInternal__ {
 	return &PutInviteCodeArgInternal__{
 		SessionId:  p.SessionId.Export(),
 		InviteCode: p.InviteCode.Export(),
 	}
 }
-
 func (p *PutInviteCodeArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(p.Export())
 }
@@ -433,7 +411,6 @@ type PutUsernameArg struct {
 	SessionId lib.UISessionID
 	Username  lib.NameUtf8
 }
-
 type PutUsernameArgInternal__ struct {
 	_struct   struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	SessionId *lib.UISessionIDInternal__
@@ -456,14 +433,12 @@ func (p PutUsernameArgInternal__) Import() PutUsernameArg {
 		})(p.Username),
 	}
 }
-
 func (p PutUsernameArg) Export() *PutUsernameArgInternal__ {
 	return &PutUsernameArgInternal__{
 		SessionId: p.SessionId.Export(),
 		Username:  p.Username.Export(),
 	}
 }
-
 func (p *PutUsernameArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(p.Export())
 }
@@ -483,7 +458,6 @@ func (p *PutUsernameArg) Bytes() []byte { return nil }
 type ListYubiSlotsArg struct {
 	SessionId lib.UISessionID
 }
-
 type ListYubiSlotsArgInternal__ struct {
 	_struct   struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	SessionId *lib.UISessionIDInternal__
@@ -499,13 +473,11 @@ func (l ListYubiSlotsArgInternal__) Import() ListYubiSlotsArg {
 		})(l.SessionId),
 	}
 }
-
 func (l ListYubiSlotsArg) Export() *ListYubiSlotsArgInternal__ {
 	return &ListYubiSlotsArgInternal__{
 		SessionId: l.SessionId.Export(),
 	}
 }
-
 func (l *ListYubiSlotsArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(l.Export())
 }
@@ -525,7 +497,6 @@ func (l *ListYubiSlotsArg) Bytes() []byte { return nil }
 type CliJoinWaitListArg struct {
 	SessionId lib.UISessionID
 }
-
 type CliJoinWaitListArgInternal__ struct {
 	_struct   struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	SessionId *lib.UISessionIDInternal__
@@ -541,13 +512,11 @@ func (c CliJoinWaitListArgInternal__) Import() CliJoinWaitListArg {
 		})(c.SessionId),
 	}
 }
-
 func (c CliJoinWaitListArg) Export() *CliJoinWaitListArgInternal__ {
 	return &CliJoinWaitListArgInternal__{
 		SessionId: c.SessionId.Export(),
 	}
 }
-
 func (c *CliJoinWaitListArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(c.Export())
 }
@@ -568,7 +537,6 @@ type PutDeviceNameArg struct {
 	SessionId  lib.UISessionID
 	DeviceName lib.DeviceName
 }
-
 type PutDeviceNameArgInternal__ struct {
 	_struct    struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	SessionId  *lib.UISessionIDInternal__
@@ -591,14 +559,12 @@ func (p PutDeviceNameArgInternal__) Import() PutDeviceNameArg {
 		})(p.DeviceName),
 	}
 }
-
 func (p PutDeviceNameArg) Export() *PutDeviceNameArgInternal__ {
 	return &PutDeviceNameArgInternal__{
 		SessionId:  p.SessionId.Export(),
 		DeviceName: p.DeviceName.Export(),
 	}
 }
-
 func (p *PutDeviceNameArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(p.Export())
 }
@@ -619,7 +585,6 @@ type PutEmailArg struct {
 	SessionId lib.UISessionID
 	Email     lib.Email
 }
-
 type PutEmailArgInternal__ struct {
 	_struct   struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	SessionId *lib.UISessionIDInternal__
@@ -642,14 +607,12 @@ func (p PutEmailArgInternal__) Import() PutEmailArg {
 		})(p.Email),
 	}
 }
-
 func (p PutEmailArg) Export() *PutEmailArgInternal__ {
 	return &PutEmailArgInternal__{
 		SessionId: p.SessionId.Export(),
 		Email:     p.Email.Export(),
 	}
 }
-
 func (p *PutEmailArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(p.Export())
 }
@@ -669,7 +632,6 @@ func (p *PutEmailArg) Bytes() []byte { return nil }
 type FinishArg struct {
 	SessionId lib.UISessionID
 }
-
 type FinishArgInternal__ struct {
 	_struct   struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	SessionId *lib.UISessionIDInternal__
@@ -685,13 +647,11 @@ func (f FinishArgInternal__) Import() FinishArg {
 		})(f.SessionId),
 	}
 }
-
 func (f FinishArg) Export() *FinishArgInternal__ {
 	return &FinishArgInternal__{
 		SessionId: f.SessionId.Export(),
 	}
 }
-
 func (f *FinishArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(f.Export())
 }
@@ -713,7 +673,6 @@ type PutYubiSlotArg struct {
 	Index     lib.YubiIndex
 	Typ       lib.CryptosystemType
 }
-
 type PutYubiSlotArgInternal__ struct {
 	_struct   struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	SessionId *lib.UISessionIDInternal__
@@ -743,7 +702,6 @@ func (p PutYubiSlotArgInternal__) Import() PutYubiSlotArg {
 		})(p.Typ),
 	}
 }
-
 func (p PutYubiSlotArg) Export() *PutYubiSlotArgInternal__ {
 	return &PutYubiSlotArgInternal__{
 		SessionId: p.SessionId.Export(),
@@ -751,7 +709,6 @@ func (p PutYubiSlotArg) Export() *PutYubiSlotArgInternal__ {
 		Typ:       p.Typ.Export(),
 	}
 }
-
 func (p *PutYubiSlotArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(p.Export())
 }
@@ -771,7 +728,6 @@ func (p *PutYubiSlotArg) Bytes() []byte { return nil }
 type IsUsernameServerAssignedArg struct {
 	SessionId lib.UISessionID
 }
-
 type IsUsernameServerAssignedArgInternal__ struct {
 	_struct   struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	SessionId *lib.UISessionIDInternal__
@@ -787,13 +743,11 @@ func (i IsUsernameServerAssignedArgInternal__) Import() IsUsernameServerAssigned
 		})(i.SessionId),
 	}
 }
-
 func (i IsUsernameServerAssignedArg) Export() *IsUsernameServerAssignedArgInternal__ {
 	return &IsUsernameServerAssignedArgInternal__{
 		SessionId: i.SessionId.Export(),
 	}
 }
-
 func (i *IsUsernameServerAssignedArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(i.Export())
 }
@@ -813,7 +767,6 @@ func (i *IsUsernameServerAssignedArg) Bytes() []byte { return nil }
 type StartKexArg struct {
 	SessionId lib.UISessionID
 }
-
 type StartKexArgInternal__ struct {
 	_struct   struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	SessionId *lib.UISessionIDInternal__
@@ -829,13 +782,11 @@ func (s StartKexArgInternal__) Import() StartKexArg {
 		})(s.SessionId),
 	}
 }
-
 func (s StartKexArg) Export() *StartKexArgInternal__ {
 	return &StartKexArgInternal__{
 		SessionId: s.SessionId.Export(),
 	}
 }
-
 func (s *StartKexArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(s.Export())
 }
@@ -855,7 +806,6 @@ func (s *StartKexArg) Bytes() []byte { return nil }
 type GotKexInputArg struct {
 	K KexSessionAndHESP
 }
-
 type GotKexInputArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	K       *KexSessionAndHESPInternal__
@@ -871,13 +821,11 @@ func (g GotKexInputArgInternal__) Import() GotKexInputArg {
 		})(g.K),
 	}
 }
-
 func (g GotKexInputArg) Export() *GotKexInputArgInternal__ {
 	return &GotKexInputArgInternal__{
 		K: g.K.Export(),
 	}
 }
-
 func (g *GotKexInputArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(g.Export())
 }
@@ -897,7 +845,6 @@ func (g *GotKexInputArg) Bytes() []byte { return nil }
 type KexCancelInputArg struct {
 	SessionId lib.UISessionID
 }
-
 type KexCancelInputArgInternal__ struct {
 	_struct   struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	SessionId *lib.UISessionIDInternal__
@@ -913,13 +860,11 @@ func (k KexCancelInputArgInternal__) Import() KexCancelInputArg {
 		})(k.SessionId),
 	}
 }
-
 func (k KexCancelInputArg) Export() *KexCancelInputArgInternal__ {
 	return &KexCancelInputArgInternal__{
 		SessionId: k.SessionId.Export(),
 	}
 }
-
 func (k *KexCancelInputArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(k.Export())
 }
@@ -939,7 +884,6 @@ func (k *KexCancelInputArg) Bytes() []byte { return nil }
 type WaitForKexCompleteArg struct {
 	SessionId lib.UISessionID
 }
-
 type WaitForKexCompleteArgInternal__ struct {
 	_struct   struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	SessionId *lib.UISessionIDInternal__
@@ -955,13 +899,11 @@ func (w WaitForKexCompleteArgInternal__) Import() WaitForKexCompleteArg {
 		})(w.SessionId),
 	}
 }
-
 func (w WaitForKexCompleteArg) Export() *WaitForKexCompleteArgInternal__ {
 	return &WaitForKexCompleteArgInternal__{
 		SessionId: w.SessionId.Export(),
 	}
 }
-
 func (w *WaitForKexCompleteArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(w.Export())
 }
@@ -981,7 +923,6 @@ func (w *WaitForKexCompleteArg) Bytes() []byte { return nil }
 type FinishYubiProvisionArg struct {
 	SessionId lib.UISessionID
 }
-
 type FinishYubiProvisionArgInternal__ struct {
 	_struct   struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	SessionId *lib.UISessionIDInternal__
@@ -997,13 +938,11 @@ func (f FinishYubiProvisionArgInternal__) Import() FinishYubiProvisionArg {
 		})(f.SessionId),
 	}
 }
-
 func (f FinishYubiProvisionArg) Export() *FinishYubiProvisionArgInternal__ {
 	return &FinishYubiProvisionArgInternal__{
 		SessionId: f.SessionId.Export(),
 	}
 }
-
 func (f *FinishYubiProvisionArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(f.Export())
 }
@@ -1023,7 +962,6 @@ func (f *FinishYubiProvisionArg) Bytes() []byte { return nil }
 type GetDeviceTypeArg struct {
 	SessionId lib.UISessionID
 }
-
 type GetDeviceTypeArgInternal__ struct {
 	_struct   struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	SessionId *lib.UISessionIDInternal__
@@ -1039,13 +977,11 @@ func (g GetDeviceTypeArgInternal__) Import() GetDeviceTypeArg {
 		})(g.SessionId),
 	}
 }
-
 func (g GetDeviceTypeArg) Export() *GetDeviceTypeArgInternal__ {
 	return &GetDeviceTypeArgInternal__{
 		SessionId: g.SessionId.Export(),
 	}
 }
-
 func (g *GetDeviceTypeArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(g.Export())
 }
@@ -1065,7 +1001,6 @@ func (g *GetDeviceTypeArg) Bytes() []byte { return nil }
 type GetActiveUserForProvisionArg struct {
 	SessionId lib.UISessionID
 }
-
 type GetActiveUserForProvisionArgInternal__ struct {
 	_struct   struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	SessionId *lib.UISessionIDInternal__
@@ -1081,13 +1016,11 @@ func (g GetActiveUserForProvisionArgInternal__) Import() GetActiveUserForProvisi
 		})(g.SessionId),
 	}
 }
-
 func (g GetActiveUserForProvisionArg) Export() *GetActiveUserForProvisionArgInternal__ {
 	return &GetActiveUserForProvisionArgInternal__{
 		SessionId: g.SessionId.Export(),
 	}
 }
-
 func (g *GetActiveUserForProvisionArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(g.Export())
 }
@@ -1107,7 +1040,6 @@ func (g *GetActiveUserForProvisionArg) Bytes() []byte { return nil }
 type PromptForPassphraseArg struct {
 	SessionId lib.UISessionID
 }
-
 type PromptForPassphraseArgInternal__ struct {
 	_struct   struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	SessionId *lib.UISessionIDInternal__
@@ -1123,13 +1055,11 @@ func (p PromptForPassphraseArgInternal__) Import() PromptForPassphraseArg {
 		})(p.SessionId),
 	}
 }
-
 func (p PromptForPassphraseArg) Export() *PromptForPassphraseArgInternal__ {
 	return &PromptForPassphraseArgInternal__{
 		SessionId: p.SessionId.Export(),
 	}
 }
-
 func (p *PromptForPassphraseArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(p.Export())
 }
@@ -1150,7 +1080,6 @@ type PutPassphraseArg struct {
 	SessionID  lib.UISessionID
 	Passphrase lib.Passphrase
 }
-
 type PutPassphraseArgInternal__ struct {
 	_struct    struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	SessionID  *lib.UISessionIDInternal__
@@ -1173,14 +1102,12 @@ func (p PutPassphraseArgInternal__) Import() PutPassphraseArg {
 		})(p.Passphrase),
 	}
 }
-
 func (p PutPassphraseArg) Export() *PutPassphraseArgInternal__ {
 	return &PutPassphraseArgInternal__{
 		SessionID:  p.SessionID.Export(),
 		Passphrase: p.Passphrase.Export(),
 	}
 }
-
 func (p *PutPassphraseArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(p.Export())
 }
@@ -1200,7 +1127,6 @@ func (p *PutPassphraseArg) Bytes() []byte { return nil }
 type LoadStateFromActiveUserArg struct {
 	SessionId lib.UISessionID
 }
-
 type LoadStateFromActiveUserArgInternal__ struct {
 	_struct   struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	SessionId *lib.UISessionIDInternal__
@@ -1216,13 +1142,11 @@ func (l LoadStateFromActiveUserArgInternal__) Import() LoadStateFromActiveUserAr
 		})(l.SessionId),
 	}
 }
-
 func (l LoadStateFromActiveUserArg) Export() *LoadStateFromActiveUserArgInternal__ {
 	return &LoadStateFromActiveUserArgInternal__{
 		SessionId: l.SessionId.Export(),
 	}
 }
-
 func (l *LoadStateFromActiveUserArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(l.Export())
 }
@@ -1242,7 +1166,6 @@ func (l *LoadStateFromActiveUserArg) Bytes() []byte { return nil }
 type FinishYubiNewArg struct {
 	SessionId lib.UISessionID
 }
-
 type FinishYubiNewArgInternal__ struct {
 	_struct   struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	SessionId *lib.UISessionIDInternal__
@@ -1258,13 +1181,11 @@ func (f FinishYubiNewArgInternal__) Import() FinishYubiNewArg {
 		})(f.SessionId),
 	}
 }
-
 func (f FinishYubiNewArg) Export() *FinishYubiNewArgInternal__ {
 	return &FinishYubiNewArgInternal__{
 		SessionId: f.SessionId.Export(),
 	}
 }
-
 func (f *FinishYubiNewArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(f.Export())
 }
@@ -1284,7 +1205,6 @@ func (f *FinishYubiNewArg) Bytes() []byte { return nil }
 type SignupStartSsoLoginFlowArg struct {
 	SessionId lib.UISessionID
 }
-
 type SignupStartSsoLoginFlowArgInternal__ struct {
 	_struct   struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	SessionId *lib.UISessionIDInternal__
@@ -1300,13 +1220,11 @@ func (s SignupStartSsoLoginFlowArgInternal__) Import() SignupStartSsoLoginFlowAr
 		})(s.SessionId),
 	}
 }
-
 func (s SignupStartSsoLoginFlowArg) Export() *SignupStartSsoLoginFlowArgInternal__ {
 	return &SignupStartSsoLoginFlowArgInternal__{
 		SessionId: s.SessionId.Export(),
 	}
 }
-
 func (s *SignupStartSsoLoginFlowArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(s.Export())
 }
@@ -1326,7 +1244,6 @@ func (s *SignupStartSsoLoginFlowArg) Bytes() []byte { return nil }
 type SignupWaitForSsoLoginArg struct {
 	SessionId lib.UISessionID
 }
-
 type SignupWaitForSsoLoginArgInternal__ struct {
 	_struct   struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	SessionId *lib.UISessionIDInternal__
@@ -1342,13 +1259,11 @@ func (s SignupWaitForSsoLoginArgInternal__) Import() SignupWaitForSsoLoginArg {
 		})(s.SessionId),
 	}
 }
-
 func (s SignupWaitForSsoLoginArg) Export() *SignupWaitForSsoLoginArgInternal__ {
 	return &SignupWaitForSsoLoginArgInternal__{
 		SessionId: s.SessionId.Export(),
 	}
 }
-
 func (s *SignupWaitForSsoLoginArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(s.Export())
 }
@@ -1368,7 +1283,6 @@ func (s *SignupWaitForSsoLoginArg) Bytes() []byte { return nil }
 type GetUsernameSSOArg struct {
 	SessionId lib.UISessionID
 }
-
 type GetUsernameSSOArgInternal__ struct {
 	_struct   struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	SessionId *lib.UISessionIDInternal__
@@ -1384,13 +1298,11 @@ func (g GetUsernameSSOArgInternal__) Import() GetUsernameSSOArg {
 		})(g.SessionId),
 	}
 }
-
 func (g GetUsernameSSOArg) Export() *GetUsernameSSOArgInternal__ {
 	return &GetUsernameSSOArgInternal__{
 		SessionId: g.SessionId.Export(),
 	}
 }
-
 func (g *GetUsernameSSOArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(g.Export())
 }
@@ -1410,7 +1322,6 @@ func (g *GetUsernameSSOArg) Bytes() []byte { return nil }
 type GetEmailSSOArg struct {
 	SessionId lib.UISessionID
 }
-
 type GetEmailSSOArgInternal__ struct {
 	_struct   struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	SessionId *lib.UISessionIDInternal__
@@ -1426,13 +1337,11 @@ func (g GetEmailSSOArgInternal__) Import() GetEmailSSOArg {
 		})(g.SessionId),
 	}
 }
-
 func (g GetEmailSSOArg) Export() *GetEmailSSOArgInternal__ {
 	return &GetEmailSSOArgInternal__{
 		SessionId: g.SessionId.Export(),
 	}
 }
-
 func (g *GetEmailSSOArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(g.Export())
 }
@@ -1452,7 +1361,6 @@ func (g *GetEmailSSOArg) Bytes() []byte { return nil }
 type GetSkipInviteCodeSSOArg struct {
 	SessionId lib.UISessionID
 }
-
 type GetSkipInviteCodeSSOArgInternal__ struct {
 	_struct   struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	SessionId *lib.UISessionIDInternal__
@@ -1468,13 +1376,11 @@ func (g GetSkipInviteCodeSSOArgInternal__) Import() GetSkipInviteCodeSSOArg {
 		})(g.SessionId),
 	}
 }
-
 func (g GetSkipInviteCodeSSOArg) Export() *GetSkipInviteCodeSSOArgInternal__ {
 	return &GetSkipInviteCodeSSOArgInternal__{
 		SessionId: g.SessionId.Export(),
 	}
 }
-
 func (g *GetSkipInviteCodeSSOArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(g.Export())
 }
@@ -1494,7 +1400,6 @@ func (g *GetSkipInviteCodeSSOArg) Bytes() []byte { return nil }
 type FinishNKWNewDeviceKeyArg struct {
 	SessionId lib.UISessionID
 }
-
 type FinishNKWNewDeviceKeyArgInternal__ struct {
 	_struct   struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	SessionId *lib.UISessionIDInternal__
@@ -1510,13 +1415,11 @@ func (f FinishNKWNewDeviceKeyArgInternal__) Import() FinishNKWNewDeviceKeyArg {
 		})(f.SessionId),
 	}
 }
-
 func (f FinishNKWNewDeviceKeyArg) Export() *FinishNKWNewDeviceKeyArgInternal__ {
 	return &FinishNKWNewDeviceKeyArgInternal__{
 		SessionId: f.SessionId.Export(),
 	}
 }
-
 func (f *FinishNKWNewDeviceKeyArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(f.Export())
 }
@@ -1536,7 +1439,6 @@ func (f *FinishNKWNewDeviceKeyArg) Bytes() []byte { return nil }
 type FinishNKWNewBackupKeyArg struct {
 	SessionId lib.UISessionID
 }
-
 type FinishNKWNewBackupKeyArgInternal__ struct {
 	_struct   struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	SessionId *lib.UISessionIDInternal__
@@ -1552,13 +1454,11 @@ func (f FinishNKWNewBackupKeyArgInternal__) Import() FinishNKWNewBackupKeyArg {
 		})(f.SessionId),
 	}
 }
-
 func (f FinishNKWNewBackupKeyArg) Export() *FinishNKWNewBackupKeyArgInternal__ {
 	return &FinishNKWNewBackupKeyArgInternal__{
 		SessionId: f.SessionId.Export(),
 	}
 }
-
 func (f *FinishNKWNewBackupKeyArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(f.Export())
 }
@@ -1606,7 +1506,6 @@ type SignupInterface interface {
 	FinishNKWNewBackupKey(context.Context, lib.UISessionID) (BackupHESP, error)
 	ErrorWrapper() func(error) lib.Status
 	CheckArgHeader(ctx context.Context, h Header) error
-
 	MakeResHeader() Header
 }
 
@@ -1633,7 +1532,7 @@ func (s signupErrorUnwrapperAdapter) MakeArg() interface{} {
 func (s signupErrorUnwrapperAdapter) UnwrapError(raw interface{}) (appError error, dispatchError error) {
 	sTmp, ok := raw.(*lib.StatusInternal__)
 	if !ok {
-		return nil, errors.New("Error converting to internal type in UnwrapError")
+		return nil, errors.New("error converting to internal type in UnwrapError")
 	}
 	if sTmp == nil {
 		return nil, nil
@@ -1670,7 +1569,6 @@ func (c SignupClient) LoginAs(ctx context.Context, arg LoginAsArg) (err error) {
 	}
 	return
 }
-
 func (c SignupClient) PutInviteCode(ctx context.Context, arg PutInviteCodeArg) (err error) {
 	warg := &rpc.DataWrap[Header, *PutInviteCodeArgInternal__]{
 		Data: arg.Export(),
@@ -1691,7 +1589,6 @@ func (c SignupClient) PutInviteCode(ctx context.Context, arg PutInviteCodeArg) (
 	}
 	return
 }
-
 func (c SignupClient) PutUsername(ctx context.Context, arg PutUsernameArg) (err error) {
 	warg := &rpc.DataWrap[Header, *PutUsernameArgInternal__]{
 		Data: arg.Export(),
@@ -1712,7 +1609,6 @@ func (c SignupClient) PutUsername(ctx context.Context, arg PutUsernameArg) (err 
 	}
 	return
 }
-
 func (c SignupClient) ListYubiSlots(ctx context.Context, sessionId lib.UISessionID) (res ListYubiSlotsRes, err error) {
 	arg := ListYubiSlotsArg{
 		SessionId: sessionId,
@@ -1737,7 +1633,6 @@ func (c SignupClient) ListYubiSlots(ctx context.Context, sessionId lib.UISession
 	res = tmp.Data.Import()
 	return
 }
-
 func (c SignupClient) JoinWaitList(ctx context.Context, sessionId lib.UISessionID) (res lib.WaitListID, err error) {
 	arg := CliJoinWaitListArg{
 		SessionId: sessionId,
@@ -1762,7 +1657,6 @@ func (c SignupClient) JoinWaitList(ctx context.Context, sessionId lib.UISessionI
 	res = tmp.Data.Import()
 	return
 }
-
 func (c SignupClient) PutDeviceName(ctx context.Context, arg PutDeviceNameArg) (err error) {
 	warg := &rpc.DataWrap[Header, *PutDeviceNameArgInternal__]{
 		Data: arg.Export(),
@@ -1783,7 +1677,6 @@ func (c SignupClient) PutDeviceName(ctx context.Context, arg PutDeviceNameArg) (
 	}
 	return
 }
-
 func (c SignupClient) PutEmail(ctx context.Context, arg PutEmailArg) (err error) {
 	warg := &rpc.DataWrap[Header, *PutEmailArgInternal__]{
 		Data: arg.Export(),
@@ -1804,7 +1697,6 @@ func (c SignupClient) PutEmail(ctx context.Context, arg PutEmailArg) (err error)
 	}
 	return
 }
-
 func (c SignupClient) Finish(ctx context.Context, sessionId lib.UISessionID) (res FinishRes, err error) {
 	arg := FinishArg{
 		SessionId: sessionId,
@@ -1829,7 +1721,6 @@ func (c SignupClient) Finish(ctx context.Context, sessionId lib.UISessionID) (re
 	res = tmp.Data.Import()
 	return
 }
-
 func (c SignupClient) PutYubiSlot(ctx context.Context, arg PutYubiSlotArg) (res PutYubiSlotRes, err error) {
 	warg := &rpc.DataWrap[Header, *PutYubiSlotArgInternal__]{
 		Data: arg.Export(),
@@ -1851,7 +1742,6 @@ func (c SignupClient) PutYubiSlot(ctx context.Context, arg PutYubiSlotArg) (res 
 	res = tmp.Data.Import()
 	return
 }
-
 func (c SignupClient) IsUsernameServerAssigned(ctx context.Context, sessionId lib.UISessionID) (res bool, err error) {
 	arg := IsUsernameServerAssignedArg{
 		SessionId: sessionId,
@@ -1876,7 +1766,6 @@ func (c SignupClient) IsUsernameServerAssigned(ctx context.Context, sessionId li
 	res = tmp.Data
 	return
 }
-
 func (c SignupClient) StartKex(ctx context.Context, sessionId lib.UISessionID) (res lib.KexHESP, err error) {
 	arg := StartKexArg{
 		SessionId: sessionId,
@@ -1901,7 +1790,6 @@ func (c SignupClient) StartKex(ctx context.Context, sessionId lib.UISessionID) (
 	res = tmp.Data.Import()
 	return
 }
-
 func (c SignupClient) GotKexInput(ctx context.Context, k KexSessionAndHESP) (err error) {
 	arg := GotKexInputArg{
 		K: k,
@@ -1925,7 +1813,6 @@ func (c SignupClient) GotKexInput(ctx context.Context, k KexSessionAndHESP) (err
 	}
 	return
 }
-
 func (c SignupClient) KexCancelInput(ctx context.Context, sessionId lib.UISessionID) (err error) {
 	arg := KexCancelInputArg{
 		SessionId: sessionId,
@@ -1949,7 +1836,6 @@ func (c SignupClient) KexCancelInput(ctx context.Context, sessionId lib.UISessio
 	}
 	return
 }
-
 func (c SignupClient) WaitForKexComplete(ctx context.Context, sessionId lib.UISessionID) (err error) {
 	arg := WaitForKexCompleteArg{
 		SessionId: sessionId,
@@ -1973,7 +1859,6 @@ func (c SignupClient) WaitForKexComplete(ctx context.Context, sessionId lib.UISe
 	}
 	return
 }
-
 func (c SignupClient) FinishYubiProvision(ctx context.Context, sessionId lib.UISessionID) (err error) {
 	arg := FinishYubiProvisionArg{
 		SessionId: sessionId,
@@ -1997,7 +1882,6 @@ func (c SignupClient) FinishYubiProvision(ctx context.Context, sessionId lib.UIS
 	}
 	return
 }
-
 func (c SignupClient) GetDeviceType(ctx context.Context, sessionId lib.UISessionID) (res lib.DeviceType, err error) {
 	arg := GetDeviceTypeArg{
 		SessionId: sessionId,
@@ -2022,7 +1906,6 @@ func (c SignupClient) GetDeviceType(ctx context.Context, sessionId lib.UISession
 	res = tmp.Data.Import()
 	return
 }
-
 func (c SignupClient) GetActiveUserForProvision(ctx context.Context, sessionId lib.UISessionID) (res lib.UserContext, err error) {
 	arg := GetActiveUserForProvisionArg{
 		SessionId: sessionId,
@@ -2047,7 +1930,6 @@ func (c SignupClient) GetActiveUserForProvision(ctx context.Context, sessionId l
 	res = tmp.Data.Import()
 	return
 }
-
 func (c SignupClient) PromptForPassphrase(ctx context.Context, sessionId lib.UISessionID) (res bool, err error) {
 	arg := PromptForPassphraseArg{
 		SessionId: sessionId,
@@ -2072,7 +1954,6 @@ func (c SignupClient) PromptForPassphrase(ctx context.Context, sessionId lib.UIS
 	res = tmp.Data
 	return
 }
-
 func (c SignupClient) PutPassphrase(ctx context.Context, arg PutPassphraseArg) (err error) {
 	warg := &rpc.DataWrap[Header, *PutPassphraseArgInternal__]{
 		Data: arg.Export(),
@@ -2093,7 +1974,6 @@ func (c SignupClient) PutPassphrase(ctx context.Context, arg PutPassphraseArg) (
 	}
 	return
 }
-
 func (c SignupClient) LoadStateFromActiveUser(ctx context.Context, sessionId lib.UISessionID) (res lib.UserInfo, err error) {
 	arg := LoadStateFromActiveUserArg{
 		SessionId: sessionId,
@@ -2118,7 +1998,6 @@ func (c SignupClient) LoadStateFromActiveUser(ctx context.Context, sessionId lib
 	res = tmp.Data.Import()
 	return
 }
-
 func (c SignupClient) FinishYubiNew(ctx context.Context, sessionId lib.UISessionID) (err error) {
 	arg := FinishYubiNewArg{
 		SessionId: sessionId,
@@ -2142,7 +2021,6 @@ func (c SignupClient) FinishYubiNew(ctx context.Context, sessionId lib.UISession
 	}
 	return
 }
-
 func (c SignupClient) SignupStartSsoLoginFlow(ctx context.Context, sessionId lib.UISessionID) (res SsoLoginFlow, err error) {
 	arg := SignupStartSsoLoginFlowArg{
 		SessionId: sessionId,
@@ -2167,7 +2045,6 @@ func (c SignupClient) SignupStartSsoLoginFlow(ctx context.Context, sessionId lib
 	res = tmp.Data.Import()
 	return
 }
-
 func (c SignupClient) SignupWaitForSsoLogin(ctx context.Context, sessionId lib.UISessionID) (res lib.SSOLoginRes, err error) {
 	arg := SignupWaitForSsoLoginArg{
 		SessionId: sessionId,
@@ -2192,7 +2069,6 @@ func (c SignupClient) SignupWaitForSsoLogin(ctx context.Context, sessionId lib.U
 	res = tmp.Data.Import()
 	return
 }
-
 func (c SignupClient) GetUsernameSSO(ctx context.Context, sessionId lib.UISessionID) (res lib.NameUtf8, err error) {
 	arg := GetUsernameSSOArg{
 		SessionId: sessionId,
@@ -2217,7 +2093,6 @@ func (c SignupClient) GetUsernameSSO(ctx context.Context, sessionId lib.UISessio
 	res = tmp.Data.Import()
 	return
 }
-
 func (c SignupClient) GetEmailSSO(ctx context.Context, sessionId lib.UISessionID) (res lib.Email, err error) {
 	arg := GetEmailSSOArg{
 		SessionId: sessionId,
@@ -2242,7 +2117,6 @@ func (c SignupClient) GetEmailSSO(ctx context.Context, sessionId lib.UISessionID
 	res = tmp.Data.Import()
 	return
 }
-
 func (c SignupClient) GetSkipInviteCodeSSO(ctx context.Context, sessionId lib.UISessionID) (res bool, err error) {
 	arg := GetSkipInviteCodeSSOArg{
 		SessionId: sessionId,
@@ -2267,7 +2141,6 @@ func (c SignupClient) GetSkipInviteCodeSSO(ctx context.Context, sessionId lib.UI
 	res = tmp.Data
 	return
 }
-
 func (c SignupClient) FinishNKWNewDeviceKey(ctx context.Context, sessionId lib.UISessionID) (err error) {
 	arg := FinishNKWNewDeviceKeyArg{
 		SessionId: sessionId,
@@ -2291,7 +2164,6 @@ func (c SignupClient) FinishNKWNewDeviceKey(ctx context.Context, sessionId lib.U
 	}
 	return
 }
-
 func (c SignupClient) FinishNKWNewBackupKey(ctx context.Context, sessionId lib.UISessionID) (res BackupHESP, err error) {
 	arg := FinishNKWNewBackupKeyArg{
 		SessionId: sessionId,
@@ -2316,7 +2188,6 @@ func (c SignupClient) FinishNKWNewBackupKey(ctx context.Context, sessionId lib.U
 	res = tmp.Data.Import()
 	return
 }
-
 func SignupProtocol(i SignupInterface) rpc.ProtocolV2 {
 	return rpc.ProtocolV2{
 		Name: "Signup",

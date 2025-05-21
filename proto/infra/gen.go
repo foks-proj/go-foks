@@ -5,5 +5,5 @@
 
 package infra
 
-//go:generate ../../node_modules/.bin/snowpc -l go -p infra -d ../../proto-src/infra -D .
+//go:generate go tool github.com/foks-proj/go-snowpack-compiler/snowpc -l go -p infra -I ../../proto-src/infra -O . -v
 //go:generate go fmt .

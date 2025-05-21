@@ -1,5 +1,5 @@
-// Auto-generated to Go types and interfaces using @foks-proj/snowpack-compiler 1.0.8 (git+https://github.com/foks-proj/node-snowpack-compiler.git)
-//  Input file: ../../proto-src/lcl/db.snowp
+// Auto-generated to Go types and interfaces using snowpc 0.0.4 (https://github.com/foks-proj/go-snowpack-compiler)
+//  Input file:../../proto-src/lcl/db.snowp
 
 package lcl
 
@@ -18,7 +18,6 @@ func (d DbVal) Export() *DbValInternal__ {
 	tmp := (([]byte)(d))
 	return ((*DbValInternal__)(&tmp))
 }
-
 func (d DbValInternal__) Import() DbVal {
 	tmp := ([]byte)(d)
 	return DbVal((func(x *[]byte) (ret []byte) {
@@ -102,7 +101,6 @@ var DataTypeMap = map[string]DataType{
 	"KVSymlink":            72,
 	"KVGitRefSet":          73,
 }
-
 var DataTypeRevMap = map[DataType]string{
 	0:  "None",
 	1:  "YubiKey",
@@ -135,7 +133,6 @@ type DataTypeInternal__ DataType
 func (d DataTypeInternal__) Import() DataType {
 	return DataType(d)
 }
-
 func (d DataType) Export() *DataTypeInternal__ {
 	return ((*DataTypeInternal__)(&d))
 }
@@ -147,7 +144,6 @@ func (s ScopeLabel) Export() *ScopeLabelInternal__ {
 	tmp := (([]byte)(s))
 	return ((*ScopeLabelInternal__)(&tmp))
 }
-
 func (s ScopeLabelInternal__) Import() ScopeLabel {
 	tmp := ([]byte)(s)
 	return ScopeLabel((func(x *[]byte) (ret []byte) {
@@ -183,7 +179,6 @@ func (s ScopeID) Export() *ScopeIDInternal__ {
 	tmp := ((uint64)(s))
 	return ((*ScopeIDInternal__)(&tmp))
 }
-
 func (s ScopeIDInternal__) Import() ScopeID {
 	tmp := (uint64)(s)
 	return ScopeID((func(x *uint64) (ret uint64) {
@@ -224,7 +219,6 @@ type UserSigchainState struct {
 	Hepks        lib.HEPKSet
 	StalePUKs    []lib.Role
 }
-
 type UserSigchainStateInternal__ struct {
 	_struct      struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Tail         *lib.HidingChainerInternal__
@@ -364,7 +358,6 @@ func (u UserSigchainStateInternal__) Import() UserSigchainState {
 		})(u.StalePUKs),
 	}
 }
-
 func (u UserSigchainState) Export() *UserSigchainStateInternal__ {
 	return &UserSigchainStateInternal__{
 		Tail:     u.Tail.Export(),
@@ -424,7 +417,6 @@ func (u UserSigchainState) Export() *UserSigchainStateInternal__ {
 		})(u.StalePUKs),
 	}
 }
-
 func (u *UserSigchainState) Encode(enc rpc.Encoder) error {
 	return enc.Encode(u.Export())
 }
@@ -446,7 +438,6 @@ type UserMetadataAndSigchainState struct {
 	State    UserSigchainState
 	Hostname lib.Hostname
 }
-
 type UserMetadataAndSigchainStateInternal__ struct {
 	_struct  struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Fqu      *lib.FQUserInternal__
@@ -476,7 +467,6 @@ func (u UserMetadataAndSigchainStateInternal__) Import() UserMetadataAndSigchain
 		})(u.Hostname),
 	}
 }
-
 func (u UserMetadataAndSigchainState) Export() *UserMetadataAndSigchainStateInternal__ {
 	return &UserMetadataAndSigchainStateInternal__{
 		Fqu:      u.Fqu.Export(),
@@ -484,7 +474,6 @@ func (u UserMetadataAndSigchainState) Export() *UserMetadataAndSigchainStateInte
 		Hostname: u.Hostname.Export(),
 	}
 }
-
 func (u *UserMetadataAndSigchainState) Encode(enc rpc.Encoder) error {
 	return enc.Encode(u.Export())
 }
@@ -505,7 +494,6 @@ type RoleAndGenus struct {
 	Role  lib.Role
 	Genus lib.KeyGenus
 }
-
 type RoleAndGenusInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Role    *lib.RoleInternal__
@@ -528,14 +516,12 @@ func (r RoleAndGenusInternal__) Import() RoleAndGenus {
 		})(r.Genus),
 	}
 }
-
 func (r RoleAndGenus) Export() *RoleAndGenusInternal__ {
 	return &RoleAndGenusInternal__{
 		Role:  r.Role.Export(),
 		Genus: r.Genus.Export(),
 	}
 }
-
 func (r *RoleAndGenus) Encode(enc rpc.Encoder) error {
 	return enc.Encode(r.Export())
 }
@@ -555,14 +541,12 @@ var RoleAndGenusTypeUniqueID = rpc.TypeUniqueID(0xfaeb1f09bcded289)
 func (r *RoleAndGenus) GetTypeUniqueID() rpc.TypeUniqueID {
 	return RoleAndGenusTypeUniqueID
 }
-
 func (r *RoleAndGenus) Bytes() []byte { return nil }
 
 type PUKBoxDBKey struct {
 	Rg  RoleAndGenus
 	Eid lib.EntityID
 }
-
 type PUKBoxDBKeyInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Rg      *RoleAndGenusInternal__
@@ -585,14 +569,12 @@ func (p PUKBoxDBKeyInternal__) Import() PUKBoxDBKey {
 		})(p.Eid),
 	}
 }
-
 func (p PUKBoxDBKey) Export() *PUKBoxDBKeyInternal__ {
 	return &PUKBoxDBKeyInternal__{
 		Rg:  p.Rg.Export(),
 		Eid: p.Eid.Export(),
 	}
 }
-
 func (p *PUKBoxDBKey) Encode(enc rpc.Encoder) error {
 	return enc.Encode(p.Export())
 }
@@ -612,7 +594,6 @@ var PUKBoxDBKeyTypeUniqueID = rpc.TypeUniqueID(0xf3b0c875bbfcdc03)
 func (p *PUKBoxDBKey) GetTypeUniqueID() rpc.TypeUniqueID {
 	return PUKBoxDBKeyTypeUniqueID
 }
-
 func (p *PUKBoxDBKey) Bytes() []byte { return nil }
 
 type GenericChainState struct {
@@ -620,7 +601,6 @@ type GenericChainState struct {
 	LastHash lib.LinkHash
 	Payload  GenericChainStatePayload
 }
-
 type GenericChainStateInternal__ struct {
 	_struct  struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Tail     *lib.HidingChainerInternal__
@@ -650,7 +630,6 @@ func (g GenericChainStateInternal__) Import() GenericChainState {
 		})(g.Payload),
 	}
 }
-
 func (g GenericChainState) Export() *GenericChainStateInternal__ {
 	return &GenericChainStateInternal__{
 		Tail:     g.Tail.Export(),
@@ -658,7 +637,6 @@ func (g GenericChainState) Export() *GenericChainStateInternal__ {
 		Payload:  g.Payload.Export(),
 	}
 }
-
 func (g *GenericChainState) Encode(enc rpc.Encoder) error {
 	return enc.Encode(g.Export())
 }
@@ -678,7 +656,6 @@ func (g *GenericChainState) Bytes() []byte { return nil }
 type UserSettingsChainPayload struct {
 	Passphrase *lib.PassphraseInfo
 }
-
 type UserSettingsChainPayloadInternal__ struct {
 	_struct    struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Passphrase *lib.PassphraseInfoInternal__
@@ -700,7 +677,6 @@ func (u UserSettingsChainPayloadInternal__) Import() UserSettingsChainPayload {
 		})(u.Passphrase),
 	}
 }
-
 func (u UserSettingsChainPayload) Export() *UserSettingsChainPayloadInternal__ {
 	return &UserSettingsChainPayloadInternal__{
 		Passphrase: (func(x *lib.PassphraseInfo) *lib.PassphraseInfoInternal__ {
@@ -711,7 +687,6 @@ func (u UserSettingsChainPayload) Export() *UserSettingsChainPayloadInternal__ {
 		})(u.Passphrase),
 	}
 }
-
 func (u *UserSettingsChainPayload) Encode(enc rpc.Encoder) error {
 	return enc.Encode(u.Export())
 }
@@ -731,7 +706,6 @@ func (u *UserSettingsChainPayload) Bytes() []byte { return nil }
 type TeamMembershipChainPayload struct {
 	Teams []lib.TeamMembershipLink
 }
-
 type TeamMembershipChainPayloadInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Teams   *[](*lib.TeamMembershipLinkInternal__)
@@ -759,7 +733,6 @@ func (t TeamMembershipChainPayloadInternal__) Import() TeamMembershipChainPayloa
 		})(t.Teams),
 	}
 }
-
 func (t TeamMembershipChainPayload) Export() *TeamMembershipChainPayloadInternal__ {
 	return &TeamMembershipChainPayloadInternal__{
 		Teams: (func(x []lib.TeamMembershipLink) *[](*lib.TeamMembershipLinkInternal__) {
@@ -774,7 +747,6 @@ func (t TeamMembershipChainPayload) Export() *TeamMembershipChainPayloadInternal
 		})(t.Teams),
 	}
 }
-
 func (t *TeamMembershipChainPayload) Encode(enc rpc.Encoder) error {
 	return enc.Encode(t.Export())
 }
@@ -796,13 +768,11 @@ type GenericChainStatePayload struct {
 	F_2__ *UserSettingsChainPayload   `json:"f2,omitempty"`
 	F_4__ *TeamMembershipChainPayload `json:"f4,omitempty"`
 }
-
 type GenericChainStatePayloadInternal__ struct {
 	_struct  struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	T        lib.ChainType
 	Switch__ GenericChainStatePayloadInternalSwitch__
 }
-
 type GenericChainStatePayloadInternalSwitch__ struct {
 	_struct struct{}                              `codec:",omitempty"` //lint:ignore U1000 msgpack internal field
 	F_2__   *UserSettingsChainPayloadInternal__   `codec:"2"`
@@ -822,41 +792,36 @@ func (g GenericChainStatePayload) GetT() (ret lib.ChainType, err error) {
 	}
 	return g.T, nil
 }
-
 func (g GenericChainStatePayload) Usersettings() UserSettingsChainPayload {
 	if g.F_2__ == nil {
-		panic("unexepected nil case; should have been checked")
+		panic("unexpected nil case; should have been checked")
 	}
 	if g.T != lib.ChainType_UserSettings {
 		panic(fmt.Sprintf("unexpected switch value (%v) when Usersettings is called", g.T))
 	}
 	return *g.F_2__
 }
-
 func (g GenericChainStatePayload) Teammembership() TeamMembershipChainPayload {
 	if g.F_4__ == nil {
-		panic("unexepected nil case; should have been checked")
+		panic("unexpected nil case; should have been checked")
 	}
 	if g.T != lib.ChainType_TeamMembership {
 		panic(fmt.Sprintf("unexpected switch value (%v) when Teammembership is called", g.T))
 	}
 	return *g.F_4__
 }
-
 func NewGenericChainStatePayloadWithUsersettings(v UserSettingsChainPayload) GenericChainStatePayload {
 	return GenericChainStatePayload{
 		T:     lib.ChainType_UserSettings,
 		F_2__: &v,
 	}
 }
-
 func NewGenericChainStatePayloadWithTeammembership(v TeamMembershipChainPayload) GenericChainStatePayload {
 	return GenericChainStatePayload{
 		T:     lib.ChainType_TeamMembership,
 		F_4__: &v,
 	}
 }
-
 func (g GenericChainStatePayloadInternal__) Import() GenericChainStatePayload {
 	return GenericChainStatePayload{
 		T: g.T,
@@ -886,7 +851,6 @@ func (g GenericChainStatePayloadInternal__) Import() GenericChainStatePayload {
 		})(g.Switch__.F_4__),
 	}
 }
-
 func (g GenericChainStatePayload) Export() *GenericChainStatePayloadInternal__ {
 	return &GenericChainStatePayloadInternal__{
 		T: g.T,
@@ -906,7 +870,6 @@ func (g GenericChainStatePayload) Export() *GenericChainStatePayloadInternal__ {
 		},
 	}
 }
-
 func (g *GenericChainStatePayload) Encode(enc rpc.Encoder) error {
 	return enc.Encode(g.Export())
 }
@@ -929,7 +892,6 @@ type TeamChainIndex struct {
 	SrcRole  lib.Role
 	Priv     bool
 }
-
 type TeamChainIndexInternal__ struct {
 	_struct  struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Team     *lib.FQTeamInternal__
@@ -966,7 +928,6 @@ func (t TeamChainIndexInternal__) Import() TeamChainIndex {
 		})(t.Priv),
 	}
 }
-
 func (t TeamChainIndex) Export() *TeamChainIndexInternal__ {
 	return &TeamChainIndexInternal__{
 		Team:     t.Team.Export(),
@@ -975,7 +936,6 @@ func (t TeamChainIndex) Export() *TeamChainIndexInternal__ {
 		Priv:     &t.Priv,
 	}
 }
-
 func (t *TeamChainIndex) Encode(enc rpc.Encoder) error {
 	return enc.Encode(t.Export())
 }
@@ -995,7 +955,6 @@ var TeamChainIndexTypeUniqueID = rpc.TypeUniqueID(0xf84d4b49bf61d869)
 func (t *TeamChainIndex) GetTypeUniqueID() rpc.TypeUniqueID {
 	return TeamChainIndexTypeUniqueID
 }
-
 func (t *TeamChainIndex) Bytes() []byte { return nil }
 
 type SharedKeyWithInfo struct {
@@ -1003,7 +962,6 @@ type SharedKeyWithInfo struct {
 	Pi lib.ProvisionInfo
 	Ri *lib.RevokeInfo
 }
-
 type SharedKeyWithInfoInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Sk      *lib.SharedKeyInternal__
@@ -1039,7 +997,6 @@ func (s SharedKeyWithInfoInternal__) Import() SharedKeyWithInfo {
 		})(s.Ri),
 	}
 }
-
 func (s SharedKeyWithInfo) Export() *SharedKeyWithInfoInternal__ {
 	return &SharedKeyWithInfoInternal__{
 		Sk: s.Sk.Export(),
@@ -1052,7 +1009,6 @@ func (s SharedKeyWithInfo) Export() *SharedKeyWithInfoInternal__ {
 		})(s.Ri),
 	}
 }
-
 func (s *SharedKeyWithInfo) Encode(enc rpc.Encoder) error {
 	return enc.Encode(s.Export())
 }
@@ -1085,7 +1041,6 @@ type TeamChainState struct {
 	Tir               lib.RationalRange
 	HistoricalSenders []lib.SenderPair
 }
-
 type TeamChainStateInternal__ struct {
 	_struct           struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Fqt               *lib.FQTeamInternal__
@@ -1270,7 +1225,6 @@ func (t TeamChainStateInternal__) Import() TeamChainState {
 		})(t.HistoricalSenders),
 	}
 }
-
 func (t TeamChainState) Export() *TeamChainStateInternal__ {
 	return &TeamChainStateInternal__{
 		Fqt:      t.Fqt.Export(),
@@ -1348,7 +1302,6 @@ func (t TeamChainState) Export() *TeamChainStateInternal__ {
 		})(t.HistoricalSenders),
 	}
 }
-
 func (t *TeamChainState) Encode(enc rpc.Encoder) error {
 	return enc.Encode(t.Export())
 }

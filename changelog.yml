@@ -8,6 +8,8 @@ changelog:
     changes:
       - desc: Remove old version clash warning
         closes: ["#48"]
+      - desc: Retire TypeScript-based snowpack compiler; move over to Go-based compiler
+        closes : []
   - version: 0.0.19
     urgency: low
     stable: false

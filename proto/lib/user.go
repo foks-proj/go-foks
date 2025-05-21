@@ -1,5 +1,5 @@
-// Auto-generated to Go types and interfaces using @foks-proj/snowpack-compiler 1.0.8 (git+https://github.com/foks-proj/node-snowpack-compiler.git)
-//  Input file: ../../proto-src/lib/user.snowp
+// Auto-generated to Go types and interfaces using snowpc 0.0.4 (https://github.com/foks-proj/go-snowpack-compiler)
+//  Input file:../../proto-src/lib/user.snowp
 
 package lib
 
@@ -19,7 +19,6 @@ type UserInfo struct {
 	Key       EntityID
 	Devname   DeviceName
 }
-
 type UserInfoInternal__ struct {
 	_struct   struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Fqu       *FQUserInternal__
@@ -110,7 +109,6 @@ func (u UserInfoInternal__) Import() UserInfo {
 		})(u.Devname),
 	}
 }
-
 func (u UserInfo) Export() *UserInfoInternal__ {
 	return &UserInfoInternal__{
 		Fqu:      u.Fqu.Export(),
@@ -135,7 +133,6 @@ func (u UserInfo) Export() *UserInfoInternal__ {
 		Devname: u.Devname.Export(),
 	}
 }
-
 func (u *UserInfo) Encode(enc rpc.Encoder) error {
 	return enc.Encode(u.Export())
 }
@@ -155,7 +152,6 @@ var UserInfoTypeUniqueID = rpc.TypeUniqueID(0xb9d0f7ccec149b5b)
 func (u *UserInfo) GetTypeUniqueID() rpc.TypeUniqueID {
 	return UserInfoTypeUniqueID
 }
-
 func (u *UserInfo) Bytes() []byte { return nil }
 
 type UserContext struct {
@@ -167,7 +163,6 @@ type UserContext struct {
 	LockStatus    Status
 	NetworkStatus Status
 }
-
 type UserContextInternal__ struct {
 	_struct       struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Info          *UserInfoInternal__
@@ -237,7 +232,6 @@ func (u UserContextInternal__) Import() UserContext {
 		})(u.NetworkStatus),
 	}
 }
-
 func (u UserContext) Export() *UserContextInternal__ {
 	return &UserContextInternal__{
 		Info: u.Info.Export(),
@@ -258,7 +252,6 @@ func (u UserContext) Export() *UserContextInternal__ {
 		NetworkStatus: u.NetworkStatus.Export(),
 	}
 }
-
 func (u *UserContext) Encode(enc rpc.Encoder) error {
 	return enc.Encode(u.Export())
 }
@@ -279,7 +272,6 @@ type RegServerConfig struct {
 	Sso *SSOConfig
 	Typ HostType
 }
-
 type RegServerConfigInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Sso     *SSOConfigInternal__
@@ -308,7 +300,6 @@ func (r RegServerConfigInternal__) Import() RegServerConfig {
 		})(r.Typ),
 	}
 }
-
 func (r RegServerConfig) Export() *RegServerConfigInternal__ {
 	return &RegServerConfigInternal__{
 		Sso: (func(x *SSOConfig) *SSOConfigInternal__ {
@@ -320,7 +311,6 @@ func (r RegServerConfig) Export() *RegServerConfigInternal__ {
 		Typ: r.Typ.Export(),
 	}
 }
-
 func (r *RegServerConfig) Encode(enc rpc.Encoder) error {
 	return enc.Encode(r.Export())
 }
@@ -344,7 +334,6 @@ func (e Email) Export() *EmailInternal__ {
 	tmp := ((string)(e))
 	return ((*EmailInternal__)(&tmp))
 }
-
 func (e EmailInternal__) Import() Email {
 	tmp := (string)(e)
 	return Email((func(x *string) (ret string) {
@@ -380,7 +369,6 @@ type LookupUserRes struct {
 	Role         Role
 	YubiPQHint   *YubiSlotAndPQKeyID
 }
-
 type LookupUserResInternal__ struct {
 	_struct      struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Fqu          *FQUserInternal__
@@ -430,7 +418,6 @@ func (l LookupUserResInternal__) Import() LookupUserRes {
 		})(l.YubiPQHint),
 	}
 }
-
 func (l LookupUserRes) Export() *LookupUserResInternal__ {
 	return &LookupUserResInternal__{
 		Fqu:          l.Fqu.Export(),
@@ -445,7 +432,6 @@ func (l LookupUserRes) Export() *LookupUserResInternal__ {
 		})(l.YubiPQHint),
 	}
 }
-
 func (l *LookupUserRes) Encode(enc rpc.Encoder) error {
 	return enc.Encode(l.Export())
 }
@@ -483,7 +469,6 @@ var UserLockStateMap = map[string]UserLockState{
 	"Keychain":   5,
 	"SSO":        6,
 }
-
 var UserLockStateRevMap = map[UserLockState]string{
 	0: "Unset",
 	1: "Error",
@@ -499,7 +484,6 @@ type UserLockStateInternal__ UserLockState
 func (u UserLockStateInternal__) Import() UserLockState {
 	return UserLockState(u)
 }
-
 func (u UserLockState) Export() *UserLockStateInternal__ {
 	return ((*UserLockStateInternal__)(&u))
 }
@@ -509,7 +493,6 @@ type UserInfoAndStatus struct {
 	LockStatus    Status
 	NetworkStatus Status
 }
-
 type UserInfoAndStatusInternal__ struct {
 	_struct       struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Info          *UserInfoInternal__
@@ -539,7 +522,6 @@ func (u UserInfoAndStatusInternal__) Import() UserInfoAndStatus {
 		})(u.NetworkStatus),
 	}
 }
-
 func (u UserInfoAndStatus) Export() *UserInfoAndStatusInternal__ {
 	return &UserInfoAndStatusInternal__{
 		Info:          u.Info.Export(),
@@ -547,7 +529,6 @@ func (u UserInfoAndStatus) Export() *UserInfoAndStatusInternal__ {
 		NetworkStatus: u.NetworkStatus.Export(),
 	}
 }
-
 func (u *UserInfoAndStatus) Encode(enc rpc.Encoder) error {
 	return enc.Encode(u.Export())
 }
@@ -568,7 +549,6 @@ type LocalUserIndexAtHost struct {
 	Uid   UID
 	Keyid EntityID
 }
-
 type LocalUserIndexAtHostInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Uid     *UIDInternal__
@@ -591,14 +571,12 @@ func (l LocalUserIndexAtHostInternal__) Import() LocalUserIndexAtHost {
 		})(l.Keyid),
 	}
 }
-
 func (l LocalUserIndexAtHost) Export() *LocalUserIndexAtHostInternal__ {
 	return &LocalUserIndexAtHostInternal__{
 		Uid:   l.Uid.Export(),
 		Keyid: l.Keyid.Export(),
 	}
 }
-
 func (l *LocalUserIndexAtHost) Encode(enc rpc.Encoder) error {
 	return enc.Encode(l.Export())
 }
@@ -618,14 +596,12 @@ var LocalUserIndexAtHostTypeUniqueID = rpc.TypeUniqueID(0xef52df3bdf52d9d1)
 func (l *LocalUserIndexAtHost) GetTypeUniqueID() rpc.TypeUniqueID {
 	return LocalUserIndexAtHostTypeUniqueID
 }
-
 func (l *LocalUserIndexAtHost) Bytes() []byte { return nil }
 
 type LocalUserIndex struct {
 	Host HostID
 	Rest LocalUserIndexAtHost
 }
-
 type LocalUserIndexInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Host    *HostIDInternal__
@@ -648,14 +624,12 @@ func (l LocalUserIndexInternal__) Import() LocalUserIndex {
 		})(l.Rest),
 	}
 }
-
 func (l LocalUserIndex) Export() *LocalUserIndexInternal__ {
 	return &LocalUserIndexInternal__{
 		Host: l.Host.Export(),
 		Rest: l.Rest.Export(),
 	}
 }
-
 func (l *LocalUserIndex) Encode(enc rpc.Encoder) error {
 	return enc.Encode(l.Export())
 }
@@ -675,7 +649,6 @@ var LocalUserIndexTypeUniqueID = rpc.TypeUniqueID(0xc2b545ad04c73d1b)
 func (l *LocalUserIndex) GetTypeUniqueID() rpc.TypeUniqueID {
 	return LocalUserIndexTypeUniqueID
 }
-
 func (l *LocalUserIndex) Bytes() []byte { return nil }
 
 func init() {

@@ -1,5 +1,5 @@
-// Auto-generated to Go types and interfaces using @foks-proj/snowpack-compiler 1.0.8 (git+https://github.com/foks-proj/node-snowpack-compiler.git)
-//  Input file: ../../proto-src/lcl/util.snowp
+// Auto-generated to Go types and interfaces using snowpc 0.0.4 (https://github.com/foks-proj/go-snowpack-compiler)
+//  Input file:../../proto-src/lcl/util.snowp
 
 package lcl
 
@@ -16,7 +16,6 @@ var UtilProtocolID rpc.ProtocolUniqueID = rpc.ProtocolUniqueID(0x8ce48129)
 
 type TriggerBgClkrArg struct {
 }
-
 type TriggerBgClkrArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 }
@@ -24,11 +23,9 @@ type TriggerBgClkrArgInternal__ struct {
 func (t TriggerBgClkrArgInternal__) Import() TriggerBgClkrArg {
 	return TriggerBgClkrArg{}
 }
-
 func (t TriggerBgClkrArg) Export() *TriggerBgClkrArgInternal__ {
 	return &TriggerBgClkrArgInternal__{}
 }
-
 func (t *TriggerBgClkrArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(t.Export())
 }
@@ -47,7 +44,6 @@ func (t *TriggerBgClkrArg) Bytes() []byte { return nil }
 
 type TriggerBgUserRefreshArg struct {
 }
-
 type TriggerBgUserRefreshArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 }
@@ -55,11 +51,9 @@ type TriggerBgUserRefreshArgInternal__ struct {
 func (t TriggerBgUserRefreshArgInternal__) Import() TriggerBgUserRefreshArg {
 	return TriggerBgUserRefreshArg{}
 }
-
 func (t TriggerBgUserRefreshArg) Export() *TriggerBgUserRefreshArgInternal__ {
 	return &TriggerBgUserRefreshArgInternal__{}
 }
-
 func (t *TriggerBgUserRefreshArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(t.Export())
 }
@@ -81,7 +75,6 @@ type UtilInterface interface {
 	TriggerBgUserRefresh(context.Context) error
 	ErrorWrapper() func(error) lib.Status
 	CheckArgHeader(ctx context.Context, h Header) error
-
 	MakeResHeader() Header
 }
 
@@ -108,7 +101,7 @@ func (u utilErrorUnwrapperAdapter) MakeArg() interface{} {
 func (u utilErrorUnwrapperAdapter) UnwrapError(raw interface{}) (appError error, dispatchError error) {
 	sTmp, ok := raw.(*lib.StatusInternal__)
 	if !ok {
-		return nil, errors.New("Error converting to internal type in UnwrapError")
+		return nil, errors.New("error converting to internal type in UnwrapError")
 	}
 	if sTmp == nil {
 		return nil, nil
@@ -146,7 +139,6 @@ func (c UtilClient) TriggerBgClkr(ctx context.Context) (err error) {
 	}
 	return
 }
-
 func (c UtilClient) TriggerBgUserRefresh(ctx context.Context) (err error) {
 	var arg TriggerBgUserRefreshArg
 	warg := &rpc.DataWrap[Header, *TriggerBgUserRefreshArgInternal__]{
@@ -168,7 +160,6 @@ func (c UtilClient) TriggerBgUserRefresh(ctx context.Context) (err error) {
 	}
 	return
 }
-
 func UtilProtocol(i UtilInterface) rpc.ProtocolV2 {
 	return rpc.ProtocolV2{
 		Name: "Util",

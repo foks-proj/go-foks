@@ -1,5 +1,5 @@
-// Auto-generated to Go types and interfaces using @foks-proj/snowpack-compiler 1.0.8 (git+https://github.com/foks-proj/node-snowpack-compiler.git)
-//  Input file: ../../proto-src/lcl/key.snowp
+// Auto-generated to Go types and interfaces using snowpc 0.0.4 (https://github.com/foks-proj/go-snowpack-compiler)
+//  Input file:../../proto-src/lcl/key.snowp
 
 package lcl
 
@@ -17,7 +17,6 @@ type KeyListRes struct {
 	CurrUserAllKeys []ActiveDeviceInfo
 	AllUsers        []lib.UserInfoAndStatus
 }
-
 type KeyListResInternal__ struct {
 	_struct         struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	CurrUser        *lib.UserContextInternal__
@@ -77,7 +76,6 @@ func (k KeyListResInternal__) Import() KeyListRes {
 		})(k.AllUsers),
 	}
 }
-
 func (k KeyListRes) Export() *KeyListResInternal__ {
 	return &KeyListResInternal__{
 		CurrUser: (func(x *lib.UserContext) *lib.UserContextInternal__ {
@@ -108,7 +106,6 @@ func (k KeyListRes) Export() *KeyListResInternal__ {
 		})(k.AllUsers),
 	}
 }
-
 func (k *KeyListRes) Encode(enc rpc.Encoder) error {
 	return enc.Encode(k.Export())
 }
@@ -129,7 +126,6 @@ var KeyProtocolID rpc.ProtocolUniqueID = rpc.ProtocolUniqueID(0xbaa02ef2)
 
 type KeyListArg struct {
 }
-
 type KeyListArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 }
@@ -137,11 +133,9 @@ type KeyListArgInternal__ struct {
 func (k KeyListArgInternal__) Import() KeyListArg {
 	return KeyListArg{}
 }
-
 func (k KeyListArg) Export() *KeyListArgInternal__ {
 	return &KeyListArgInternal__{}
 }
-
 func (k *KeyListArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(k.Export())
 }
@@ -161,7 +155,6 @@ func (k *KeyListArg) Bytes() []byte { return nil }
 type KeyRevokeArg struct {
 	Eid lib.EntityID
 }
-
 type KeyRevokeArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Eid     *lib.EntityIDInternal__
@@ -177,13 +170,11 @@ func (k KeyRevokeArgInternal__) Import() KeyRevokeArg {
 		})(k.Eid),
 	}
 }
-
 func (k KeyRevokeArg) Export() *KeyRevokeArgInternal__ {
 	return &KeyRevokeArgInternal__{
 		Eid: k.Eid.Export(),
 	}
 }
-
 func (k *KeyRevokeArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(k.Export())
 }
@@ -205,7 +196,6 @@ type KeyInterface interface {
 	KeyRevoke(context.Context, lib.EntityID) error
 	ErrorWrapper() func(error) lib.Status
 	CheckArgHeader(ctx context.Context, h Header) error
-
 	MakeResHeader() Header
 }
 
@@ -232,7 +222,7 @@ func (k keyErrorUnwrapperAdapter) MakeArg() interface{} {
 func (k keyErrorUnwrapperAdapter) UnwrapError(raw interface{}) (appError error, dispatchError error) {
 	sTmp, ok := raw.(*lib.StatusInternal__)
 	if !ok {
-		return nil, errors.New("Error converting to internal type in UnwrapError")
+		return nil, errors.New("error converting to internal type in UnwrapError")
 	}
 	if sTmp == nil {
 		return nil, nil
@@ -271,7 +261,6 @@ func (c KeyClient) KeyList(ctx context.Context) (res KeyListRes, err error) {
 	res = tmp.Data.Import()
 	return
 }
-
 func (c KeyClient) KeyRevoke(ctx context.Context, eid lib.EntityID) (err error) {
 	arg := KeyRevokeArg{
 		Eid: eid,
@@ -295,7 +284,6 @@ func (c KeyClient) KeyRevoke(ctx context.Context, eid lib.EntityID) (err error) 
 	}
 	return
 }
-
 func KeyProtocol(i KeyInterface) rpc.ProtocolV2 {
 	return rpc.ProtocolV2{
 		Name: "Key",

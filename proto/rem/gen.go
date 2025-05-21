@@ -5,5 +5,5 @@
 
 package rem
 
-//go:generate ../../node_modules/.bin/snowpc -l go -p rem -d ../../proto-src/rem -D .
+//go:generate go tool github.com/foks-proj/go-snowpack-compiler/snowpc -l go -p rem -I ../../proto-src/rem -O . -v
 //go:generate go fmt .

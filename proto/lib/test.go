@@ -1,5 +1,5 @@
-// Auto-generated to Go types and interfaces using @foks-proj/snowpack-compiler 1.0.8 (git+https://github.com/foks-proj/node-snowpack-compiler.git)
-//  Input file: ../../proto-src/lib/test.snowp
+// Auto-generated to Go types and interfaces using snowpc 0.0.4 (https://github.com/foks-proj/go-snowpack-compiler)
+//  Input file:../../proto-src/lib/test.snowp
 
 package lib
 
@@ -11,7 +11,6 @@ type TestLinkOuterV1 struct {
 	Inner      []byte
 	Signatures []Signature
 }
-
 type TestLinkOuterV1Internal__ struct {
 	_struct    struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Inner      *[]byte
@@ -46,7 +45,6 @@ func (t TestLinkOuterV1Internal__) Import() TestLinkOuterV1 {
 		})(t.Signatures),
 	}
 }
-
 func (t TestLinkOuterV1) Export() *TestLinkOuterV1Internal__ {
 	return &TestLinkOuterV1Internal__{
 		Inner: &t.Inner,
@@ -62,7 +60,6 @@ func (t TestLinkOuterV1) Export() *TestLinkOuterV1Internal__ {
 		})(t.Signatures),
 	}
 }
-
 func (t *TestLinkOuterV1) Encode(enc rpc.Encoder) error {
 	return enc.Encode(t.Export())
 }
@@ -82,7 +79,6 @@ var TestLinkOuterV1TypeUniqueID = rpc.TypeUniqueID(0xb901b988ddc2552d)
 func (t *TestLinkOuterV1) GetTypeUniqueID() rpc.TypeUniqueID {
 	return TestLinkOuterV1TypeUniqueID
 }
-
 func (t *TestLinkOuterV1) Bytes() []byte { return nil }
 
 func init() {

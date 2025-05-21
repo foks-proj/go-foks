@@ -1,5 +1,5 @@
-// Auto-generated to Go types and interfaces using @foks-proj/snowpack-compiler 1.0.8 (git+https://github.com/foks-proj/node-snowpack-compiler.git)
-//  Input file: ../../proto-src/lib/token.snowp
+// Auto-generated to Go types and interfaces using snowpc 0.0.4 (https://github.com/foks-proj/go-snowpack-compiler)
+//  Input file:../../proto-src/lib/token.snowp
 
 package lib
 
@@ -11,7 +11,6 @@ type ViewToken struct {
 	IsSelf bool
 	Token  PermissionToken
 }
-
 type ViewTokenInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	IsSelf  *bool
@@ -34,14 +33,12 @@ func (v ViewTokenInternal__) Import() ViewToken {
 		})(v.Token),
 	}
 }
-
 func (v ViewToken) Export() *ViewTokenInternal__ {
 	return &ViewTokenInternal__{
 		IsSelf: &v.IsSelf,
 		Token:  v.Token.Export(),
 	}
 }
-
 func (v *ViewToken) Encode(enc rpc.Encoder) error {
 	return enc.Encode(v.Export())
 }

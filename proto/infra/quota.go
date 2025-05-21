@@ -1,5 +1,5 @@
-// Auto-generated to Go types and interfaces using @foks-proj/snowpack-compiler 1.0.8 (git+https://github.com/foks-proj/node-snowpack-compiler.git)
-//  Input file: ../../proto-src/infra/quota.snowp
+// Auto-generated to Go types and interfaces using snowpc 0.0.4 (https://github.com/foks-proj/go-snowpack-compiler)
+//  Input file:../../proto-src/infra/quota.snowp
 
 package infra
 
@@ -18,7 +18,6 @@ type QuotaConfig struct {
 	NoPlanMaxTeams int64
 	NoResurrection bool
 }
-
 type QuotaConfigInternal__ struct {
 	_struct        struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Slacks         *SlacksInternal__
@@ -55,7 +54,6 @@ func (q QuotaConfigInternal__) Import() QuotaConfig {
 		})(q.NoResurrection),
 	}
 }
-
 func (q QuotaConfig) Export() *QuotaConfigInternal__ {
 	return &QuotaConfigInternal__{
 		Slacks:         q.Slacks.Export(),
@@ -64,7 +62,6 @@ func (q QuotaConfig) Export() *QuotaConfigInternal__ {
 		NoResurrection: &q.NoResurrection,
 	}
 }
-
 func (q *QuotaConfig) Encode(enc rpc.Encoder) error {
 	return enc.Encode(q.Export())
 }
@@ -88,7 +85,6 @@ func (c Cents) Export() *CentsInternal__ {
 	tmp := ((uint64)(c))
 	return ((*CentsInternal__)(&tmp))
 }
-
 func (c CentsInternal__) Import() Cents {
 	tmp := (uint64)(c)
 	return Cents((func(x *uint64) (ret uint64) {
@@ -124,7 +120,6 @@ func (s SignedCents) Export() *SignedCentsInternal__ {
 	tmp := ((int64)(s))
 	return ((*SignedCentsInternal__)(&tmp))
 }
-
 func (s SignedCentsInternal__) Import() SignedCents {
 	tmp := (int64)(s)
 	return SignedCents((func(x *int64) (ret int64) {
@@ -160,7 +155,6 @@ func (s StripeProdID) Export() *StripeProdIDInternal__ {
 	tmp := ((string)(s))
 	return ((*StripeProdIDInternal__)(&tmp))
 }
-
 func (s StripeProdIDInternal__) Import() StripeProdID {
 	tmp := (string)(s)
 	return StripeProdID((func(x *string) (ret string) {
@@ -196,7 +190,6 @@ func (s StripePriceID) Export() *StripePriceIDInternal__ {
 	tmp := ((string)(s))
 	return ((*StripePriceIDInternal__)(&tmp))
 }
-
 func (s StripePriceIDInternal__) Import() StripePriceID {
 	tmp := (string)(s)
 	return StripePriceID((func(x *string) (ret string) {
@@ -232,7 +225,6 @@ func (s StripeSessionID) Export() *StripeSessionIDInternal__ {
 	tmp := ((string)(s))
 	return ((*StripeSessionIDInternal__)(&tmp))
 }
-
 func (s StripeSessionIDInternal__) Import() StripeSessionID {
 	tmp := (string)(s)
 	return StripeSessionID((func(x *string) (ret string) {
@@ -268,7 +260,6 @@ func (s StripeCustomerID) Export() *StripeCustomerIDInternal__ {
 	tmp := ((string)(s))
 	return ((*StripeCustomerIDInternal__)(&tmp))
 }
-
 func (s StripeCustomerIDInternal__) Import() StripeCustomerID {
 	tmp := (string)(s)
 	return StripeCustomerID((func(x *string) (ret string) {
@@ -304,7 +295,6 @@ func (s StripeSubscriptionID) Export() *StripeSubscriptionIDInternal__ {
 	tmp := ((string)(s))
 	return ((*StripeSubscriptionIDInternal__)(&tmp))
 }
-
 func (s StripeSubscriptionIDInternal__) Import() StripeSubscriptionID {
 	tmp := (string)(s)
 	return StripeSubscriptionID((func(x *string) (ret string) {
@@ -340,7 +330,6 @@ func (s StripeInvoiceID) Export() *StripeInvoiceIDInternal__ {
 	tmp := ((string)(s))
 	return ((*StripeInvoiceIDInternal__)(&tmp))
 }
-
 func (s StripeInvoiceIDInternal__) Import() StripeInvoiceID {
 	tmp := (string)(s)
 	return StripeInvoiceID((func(x *string) (ret string) {
@@ -376,7 +365,6 @@ func (s StripeChargeID) Export() *StripeChargeIDInternal__ {
 	tmp := ((string)(s))
 	return ((*StripeChargeIDInternal__)(&tmp))
 }
-
 func (s StripeChargeIDInternal__) Import() StripeChargeID {
 	tmp := (string)(s)
 	return StripeChargeID((func(x *string) (ret string) {
@@ -412,7 +400,6 @@ func (s StripeEventID) Export() *StripeEventIDInternal__ {
 	tmp := ((string)(s))
 	return ((*StripeEventIDInternal__)(&tmp))
 }
-
 func (s StripeEventIDInternal__) Import() StripeEventID {
 	tmp := (string)(s)
 	return StripeEventID((func(x *string) (ret string) {
@@ -454,7 +441,6 @@ var QuotaScopeMap = map[string]QuotaScope{
 	"Teams": 1,
 	"VHost": 2,
 }
-
 var QuotaScopeRevMap = map[QuotaScope]string{
 	0: "None",
 	1: "Teams",
@@ -466,7 +452,6 @@ type QuotaScopeInternal__ QuotaScope
 func (q QuotaScopeInternal__) Import() QuotaScope {
 	return QuotaScope(q)
 }
-
 func (q QuotaScope) Export() *QuotaScopeInternal__ {
 	return ((*QuotaScopeInternal__)(&q))
 }
@@ -485,7 +470,6 @@ type Plan struct {
 	MaxVhosts    uint64
 	Sso          bool
 }
-
 type PlanInternal__ struct {
 	_struct      struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Id           *lib.PlanIDInternal__
@@ -599,7 +583,6 @@ func (p PlanInternal__) Import() Plan {
 		})(p.Sso),
 	}
 }
-
 func (p Plan) Export() *PlanInternal__ {
 	return &PlanInternal__{
 		Id:           p.Id.Export(),
@@ -632,7 +615,6 @@ func (p Plan) Export() *PlanInternal__ {
 		Sso:       &p.Sso,
 	}
 }
-
 func (p *Plan) Encode(enc rpc.Encoder) error {
 	return enc.Encode(p.Export())
 }
@@ -653,7 +635,6 @@ type PaymentInterval struct {
 	Interval Interval
 	Count    uint64
 }
-
 type PaymentIntervalInternal__ struct {
 	_struct  struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Interval *IntervalInternal__
@@ -676,14 +657,12 @@ func (p PaymentIntervalInternal__) Import() PaymentInterval {
 		})(p.Count),
 	}
 }
-
 func (p PaymentInterval) Export() *PaymentIntervalInternal__ {
 	return &PaymentIntervalInternal__{
 		Interval: p.Interval.Export(),
 		Count:    &p.Count,
 	}
 }
-
 func (p *PaymentInterval) Encode(enc rpc.Encoder) error {
 	return enc.Encode(p.Export())
 }
@@ -708,7 +687,6 @@ type PlanPrice struct {
 	Promoted      bool
 	Pri           int64
 }
-
 type PlanPriceInternal__ struct {
 	_struct       struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Id            *lib.PriceIDInternal__
@@ -759,7 +737,6 @@ func (p PlanPriceInternal__) Import() PlanPrice {
 		})(p.Pri),
 	}
 }
-
 func (p PlanPrice) Export() *PlanPriceInternal__ {
 	return &PlanPriceInternal__{
 		Id:            p.Id.Export(),
@@ -770,7 +747,6 @@ func (p PlanPrice) Export() *PlanPriceInternal__ {
 		Pri:           &p.Pri,
 	}
 }
-
 func (p *PlanPrice) Encode(enc rpc.Encoder) error {
 	return enc.Encode(p.Export())
 }
@@ -800,7 +776,6 @@ var PlanStatusMap = map[string]PlanStatus{
 	"Overtime": 1,
 	"Expired":  2,
 }
-
 var PlanStatusRevMap = map[PlanStatus]string{
 	0: "Active",
 	1: "Overtime",
@@ -812,7 +787,6 @@ type PlanStatusInternal__ PlanStatus
 func (p PlanStatusInternal__) Import() PlanStatus {
 	return PlanStatus(p)
 }
-
 func (p PlanStatus) Export() *PlanStatusInternal__ {
 	return ((*PlanStatusInternal__)(&p))
 }
@@ -826,7 +800,6 @@ type UserPlan struct {
 	PaidThrough    lib.Time
 	SubscriptionId StripeSubscriptionID
 }
-
 type UserPlanInternal__ struct {
 	_struct        struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Plan           *PlanInternal__
@@ -884,7 +857,6 @@ func (u UserPlanInternal__) Import() UserPlan {
 		})(u.SubscriptionId),
 	}
 }
-
 func (u UserPlan) Export() *UserPlanInternal__ {
 	return &UserPlanInternal__{
 		Plan:           u.Plan.Export(),
@@ -896,7 +868,6 @@ func (u UserPlan) Export() *UserPlanInternal__ {
 		SubscriptionId: u.SubscriptionId.Export(),
 	}
 }
-
 func (u *UserPlan) Encode(enc rpc.Encoder) error {
 	return enc.Encode(u.Export())
 }
@@ -920,7 +891,6 @@ type StripeInvoice struct {
 	Url  lib.URLString
 	Desc string
 }
-
 type StripeInvoiceInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Id      *StripeInvoiceIDInternal__
@@ -964,7 +934,6 @@ func (s StripeInvoiceInternal__) Import() StripeInvoice {
 		})(s.Desc),
 	}
 }
-
 func (s StripeInvoice) Export() *StripeInvoiceInternal__ {
 	return &StripeInvoiceInternal__{
 		Id:   s.Id.Export(),
@@ -974,7 +943,6 @@ func (s StripeInvoice) Export() *StripeInvoiceInternal__ {
 		Desc: &s.Desc,
 	}
 }
-
 func (s *StripeInvoice) Encode(enc rpc.Encoder) error {
 	return enc.Encode(s.Export())
 }
@@ -1006,7 +974,6 @@ var CannedVHostStageMap = map[string]CannedVHostStage{
 	"Aborted":  2,
 	"Stage1":   3,
 }
-
 var CannedVHostStageRevMap = map[CannedVHostStage]string{
 	0: "None",
 	1: "Complete",
@@ -1019,7 +986,6 @@ type CannedVHostStageInternal__ CannedVHostStage
 func (c CannedVHostStageInternal__) Import() CannedVHostStage {
 	return CannedVHostStage(c)
 }
-
 func (c CannedVHostStage) Export() *CannedVHostStageInternal__ {
 	return ((*CannedVHostStageInternal__)(&c))
 }
@@ -1039,7 +1005,6 @@ var AutocertStatusMap = map[string]AutocertStatus{
 	"Granted": 2,
 	"Aborted": 3,
 }
-
 var AutocertStatusRevMap = map[AutocertStatus]string{
 	0: "None",
 	1: "Staged",
@@ -1052,7 +1017,6 @@ type AutocertStatusInternal__ AutocertStatus
 func (a AutocertStatusInternal__) Import() AutocertStatus {
 	return AutocertStatus(a)
 }
-
 func (a AutocertStatus) Export() *AutocertStatusInternal__ {
 	return ((*AutocertStatusInternal__)(&a))
 }
@@ -1070,7 +1034,6 @@ var IntervalMap = map[string]Interval{
 	"Month": 1,
 	"Year":  2,
 }
-
 var IntervalRevMap = map[Interval]string{
 	0: "Day",
 	1: "Month",
@@ -1082,14 +1045,12 @@ type IntervalInternal__ Interval
 func (i IntervalInternal__) Import() Interval {
 	return Interval(i)
 }
-
 func (i Interval) Export() *IntervalInternal__ {
 	return ((*IntervalInternal__)(&i))
 }
 
 type MakePlanOpts struct {
 }
-
 type MakePlanOptsInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 }
@@ -1097,11 +1058,9 @@ type MakePlanOptsInternal__ struct {
 func (m MakePlanOptsInternal__) Import() MakePlanOpts {
 	return MakePlanOpts{}
 }
-
 func (m MakePlanOpts) Export() *MakePlanOptsInternal__ {
 	return &MakePlanOptsInternal__{}
 }
-
 func (m *MakePlanOpts) Encode(enc rpc.Encoder) error {
 	return enc.Encode(m.Export())
 }
@@ -1124,7 +1083,6 @@ type Slacks struct {
 	PlanUser     lib.Size
 	PaidThrough  lib.DurationSecs
 }
-
 type SlacksInternal__ struct {
 	_struct      struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	FloatingTeam *lib.SizeInternal__
@@ -1161,7 +1119,6 @@ func (s SlacksInternal__) Import() Slacks {
 		})(s.PaidThrough),
 	}
 }
-
 func (s Slacks) Export() *SlacksInternal__ {
 	return &SlacksInternal__{
 		FloatingTeam: s.FloatingTeam.Export(),
@@ -1170,7 +1127,6 @@ func (s Slacks) Export() *SlacksInternal__ {
 		PaidThrough:  s.PaidThrough.Export(),
 	}
 }
-
 func (s *Slacks) Encode(enc rpc.Encoder) error {
 	return enc.Encode(s.Export())
 }
@@ -1191,7 +1147,6 @@ var QuotaProtocolID rpc.ProtocolUniqueID = rpc.ProtocolUniqueID(0xfa82ee9c)
 
 type QuotaPokeArg struct {
 }
-
 type QuotaPokeArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 }
@@ -1199,11 +1154,9 @@ type QuotaPokeArgInternal__ struct {
 func (q QuotaPokeArgInternal__) Import() QuotaPokeArg {
 	return QuotaPokeArg{}
 }
-
 func (q QuotaPokeArg) Export() *QuotaPokeArgInternal__ {
 	return &QuotaPokeArgInternal__{}
 }
-
 func (q *QuotaPokeArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(q.Export())
 }
@@ -1223,7 +1176,6 @@ func (q *QuotaPokeArg) Bytes() []byte { return nil }
 type TestSetConfigArg struct {
 	Config QuotaConfig
 }
-
 type TestSetConfigArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Config  *QuotaConfigInternal__
@@ -1239,13 +1191,11 @@ func (t TestSetConfigArgInternal__) Import() TestSetConfigArg {
 		})(t.Config),
 	}
 }
-
 func (t TestSetConfigArg) Export() *TestSetConfigArgInternal__ {
 	return &TestSetConfigArgInternal__{
 		Config: t.Config.Export(),
 	}
 }
-
 func (t *TestSetConfigArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(t.Export())
 }
@@ -1264,7 +1214,6 @@ func (t *TestSetConfigArg) Bytes() []byte { return nil }
 
 type TestUnsetConfigArg struct {
 }
-
 type TestUnsetConfigArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 }
@@ -1272,11 +1221,9 @@ type TestUnsetConfigArgInternal__ struct {
 func (t TestUnsetConfigArgInternal__) Import() TestUnsetConfigArg {
 	return TestUnsetConfigArg{}
 }
-
 func (t TestUnsetConfigArg) Export() *TestUnsetConfigArgInternal__ {
 	return &TestUnsetConfigArgInternal__{}
 }
-
 func (t *TestUnsetConfigArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(t.Export())
 }
@@ -1298,7 +1245,6 @@ type TestBumpUsageArg struct {
 	Pid lib.PartyID
 	Amt lib.Size
 }
-
 type TestBumpUsageArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Hid     *lib.HostIDInternal__
@@ -1328,7 +1274,6 @@ func (t TestBumpUsageArgInternal__) Import() TestBumpUsageArg {
 		})(t.Amt),
 	}
 }
-
 func (t TestBumpUsageArg) Export() *TestBumpUsageArgInternal__ {
 	return &TestBumpUsageArgInternal__{
 		Hid: t.Hid.Export(),
@@ -1336,7 +1281,6 @@ func (t TestBumpUsageArg) Export() *TestBumpUsageArgInternal__ {
 		Amt: t.Amt.Export(),
 	}
 }
-
 func (t *TestBumpUsageArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(t.Export())
 }
@@ -1357,7 +1301,6 @@ type MakePlanArg struct {
 	Plan Plan
 	Opts MakePlanOpts
 }
-
 type MakePlanArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Plan    *PlanInternal__
@@ -1380,14 +1323,12 @@ func (m MakePlanArgInternal__) Import() MakePlanArg {
 		})(m.Opts),
 	}
 }
-
 func (m MakePlanArg) Export() *MakePlanArgInternal__ {
 	return &MakePlanArgInternal__{
 		Plan: m.Plan.Export(),
 		Opts: m.Opts.Export(),
 	}
 }
-
 func (m *MakePlanArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(m.Export())
 }
@@ -1412,7 +1353,6 @@ type SetPlanArg struct {
 	ValidFor    lib.DurationSecs
 	StripeSubId StripeSubscriptionID
 }
-
 type SetPlanArgInternal__ struct {
 	_struct     struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Fqu         *lib.FQUserInternal__
@@ -1463,7 +1403,6 @@ func (s SetPlanArgInternal__) Import() SetPlanArg {
 		})(s.StripeSubId),
 	}
 }
-
 func (s SetPlanArg) Export() *SetPlanArgInternal__ {
 	return &SetPlanArgInternal__{
 		Fqu:         s.Fqu.Export(),
@@ -1474,7 +1413,6 @@ func (s SetPlanArg) Export() *SetPlanArgInternal__ {
 		StripeSubId: s.StripeSubId.Export(),
 	}
 }
-
 func (s *SetPlanArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(s.Export())
 }
@@ -1494,7 +1432,6 @@ func (s *SetPlanArg) Bytes() []byte { return nil }
 type CancelPlanArg struct {
 	Fqu lib.FQUser
 }
-
 type CancelPlanArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Fqu     *lib.FQUserInternal__
@@ -1510,13 +1447,11 @@ func (c CancelPlanArgInternal__) Import() CancelPlanArg {
 		})(c.Fqu),
 	}
 }
-
 func (c CancelPlanArg) Export() *CancelPlanArgInternal__ {
 	return &CancelPlanArgInternal__{
 		Fqu: c.Fqu.Export(),
 	}
 }
-
 func (c *CancelPlanArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(c.Export())
 }
@@ -1537,7 +1472,6 @@ type AssignQuotaMasterArg struct {
 	Fqu  lib.FQUser
 	Team lib.TeamID
 }
-
 type AssignQuotaMasterArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Fqu     *lib.FQUserInternal__
@@ -1560,14 +1494,12 @@ func (a AssignQuotaMasterArgInternal__) Import() AssignQuotaMasterArg {
 		})(a.Team),
 	}
 }
-
 func (a AssignQuotaMasterArg) Export() *AssignQuotaMasterArgInternal__ {
 	return &AssignQuotaMasterArgInternal__{
 		Fqu:  a.Fqu.Export(),
 		Team: a.Team.Export(),
 	}
 }
-
 func (a *AssignQuotaMasterArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(a.Export())
 }
@@ -1588,7 +1520,6 @@ type UnassignQuotaMasterArg struct {
 	Fqu  lib.FQUser
 	Team lib.TeamID
 }
-
 type UnassignQuotaMasterArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Fqu     *lib.FQUserInternal__
@@ -1611,14 +1542,12 @@ func (u UnassignQuotaMasterArgInternal__) Import() UnassignQuotaMasterArg {
 		})(u.Team),
 	}
 }
-
 func (u UnassignQuotaMasterArg) Export() *UnassignQuotaMasterArgInternal__ {
 	return &UnassignQuotaMasterArgInternal__{
 		Fqu:  u.Fqu.Export(),
 		Team: u.Team.Export(),
 	}
 }
-
 func (u *UnassignQuotaMasterArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(u.Export())
 }
@@ -1671,7 +1600,7 @@ func (q quotaErrorUnwrapperAdapter) MakeArg() interface{} {
 func (q quotaErrorUnwrapperAdapter) UnwrapError(raw interface{}) (appError error, dispatchError error) {
 	sTmp, ok := raw.(*lib.StatusInternal__)
 	if !ok {
-		return nil, errors.New("Error converting to internal type in UnwrapError")
+		return nil, errors.New("error converting to internal type in UnwrapError")
 	}
 	if sTmp == nil {
 		return nil, nil
@@ -1695,7 +1624,6 @@ func (c QuotaClient) Poke(ctx context.Context) (err error) {
 	}
 	return
 }
-
 func (c QuotaClient) TestSetConfig(ctx context.Context, config QuotaConfig) (err error) {
 	arg := TestSetConfigArg{
 		Config: config,
@@ -1707,7 +1635,6 @@ func (c QuotaClient) TestSetConfig(ctx context.Context, config QuotaConfig) (err
 	}
 	return
 }
-
 func (c QuotaClient) TestUnsetConfig(ctx context.Context) (err error) {
 	var arg TestUnsetConfigArg
 	warg := arg.Export()
@@ -1717,7 +1644,6 @@ func (c QuotaClient) TestUnsetConfig(ctx context.Context) (err error) {
 	}
 	return
 }
-
 func (c QuotaClient) TestBumpUsage(ctx context.Context, arg TestBumpUsageArg) (err error) {
 	warg := arg.Export()
 	err = c.Cli.Call2(ctx, rpc.NewMethodV2(QuotaProtocolID, 3, "Quota.testBumpUsage"), warg, nil, 0*time.Millisecond, quotaErrorUnwrapperAdapter{h: c.ErrorUnwrapper})
@@ -1726,7 +1652,6 @@ func (c QuotaClient) TestBumpUsage(ctx context.Context, arg TestBumpUsageArg) (e
 	}
 	return
 }
-
 func (c QuotaClient) MakePlan(ctx context.Context, arg MakePlanArg) (res Plan, err error) {
 	warg := arg.Export()
 	var tmp PlanInternal__
@@ -1737,7 +1662,6 @@ func (c QuotaClient) MakePlan(ctx context.Context, arg MakePlanArg) (res Plan, e
 	res = tmp.Import()
 	return
 }
-
 func (c QuotaClient) SetPlan(ctx context.Context, arg SetPlanArg) (res lib.CancelID, err error) {
 	warg := arg.Export()
 	var tmp lib.CancelIDInternal__
@@ -1748,7 +1672,6 @@ func (c QuotaClient) SetPlan(ctx context.Context, arg SetPlanArg) (res lib.Cance
 	res = tmp.Import()
 	return
 }
-
 func (c QuotaClient) CancelPlan(ctx context.Context, fqu lib.FQUser) (res lib.CancelID, err error) {
 	arg := CancelPlanArg{
 		Fqu: fqu,
@@ -1762,7 +1685,6 @@ func (c QuotaClient) CancelPlan(ctx context.Context, fqu lib.FQUser) (res lib.Ca
 	res = tmp.Import()
 	return
 }
-
 func (c QuotaClient) AssignQuotaMaster(ctx context.Context, arg AssignQuotaMasterArg) (err error) {
 	warg := arg.Export()
 	err = c.Cli.Call2(ctx, rpc.NewMethodV2(QuotaProtocolID, 7, "Quota.assignQuotaMaster"), warg, nil, 0*time.Millisecond, quotaErrorUnwrapperAdapter{h: c.ErrorUnwrapper})
@@ -1771,7 +1693,6 @@ func (c QuotaClient) AssignQuotaMaster(ctx context.Context, arg AssignQuotaMaste
 	}
 	return
 }
-
 func (c QuotaClient) UnassignQuotaMaster(ctx context.Context, arg UnassignQuotaMasterArg) (err error) {
 	warg := arg.Export()
 	err = c.Cli.Call2(ctx, rpc.NewMethodV2(QuotaProtocolID, 8, "Quota.unassignQuotaMaster"), warg, nil, 0*time.Millisecond, quotaErrorUnwrapperAdapter{h: c.ErrorUnwrapper})
@@ -1780,7 +1701,6 @@ func (c QuotaClient) UnassignQuotaMaster(ctx context.Context, arg UnassignQuotaM
 	}
 	return
 }
-
 func QuotaProtocol(i QuotaInterface) rpc.ProtocolV2 {
 	return rpc.ProtocolV2{
 		Name: "Quota",

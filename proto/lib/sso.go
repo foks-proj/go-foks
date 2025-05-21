@@ -1,5 +1,5 @@
-// Auto-generated to Go types and interfaces using @foks-proj/snowpack-compiler 1.0.8 (git+https://github.com/foks-proj/node-snowpack-compiler.git)
-//  Input file: ../../proto-src/lib/sso.snowp
+// Auto-generated to Go types and interfaces using snowpc 0.0.4 (https://github.com/foks-proj/go-snowpack-compiler)
+//  Input file:../../proto-src/lib/sso.snowp
 
 package lib
 
@@ -14,7 +14,6 @@ func (s SSOClientID) Export() *SSOClientIDInternal__ {
 	tmp := ((string)(s))
 	return ((*SSOClientIDInternal__)(&tmp))
 }
-
 func (s SSOClientIDInternal__) Import() SSOClientID {
 	tmp := (string)(s)
 	return SSOClientID((func(x *string) (ret string) {
@@ -48,7 +47,6 @@ type SSOLoginRes struct {
 	Email    Email
 	Issuer   URLString
 }
-
 type SSOLoginResInternal__ struct {
 	_struct  struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Username *NameUtf8Internal__
@@ -78,7 +76,6 @@ func (s SSOLoginResInternal__) Import() SSOLoginRes {
 		})(s.Issuer),
 	}
 }
-
 func (s SSOLoginRes) Export() *SSOLoginResInternal__ {
 	return &SSOLoginResInternal__{
 		Username: s.Username.Export(),
@@ -86,7 +83,6 @@ func (s SSOLoginRes) Export() *SSOLoginResInternal__ {
 		Issuer:   s.Issuer.Export(),
 	}
 }
-
 func (s *SSOLoginRes) Encode(enc rpc.Encoder) error {
 	return enc.Encode(s.Export())
 }
@@ -110,7 +106,6 @@ type OAuth2Config struct {
 	ClientSecret OAuth2ClientSecret
 	RedirectURI  URLString
 }
-
 type OAuth2ConfigInternal__ struct {
 	_struct      struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Id           *SSOConfigIDInternal__
@@ -154,7 +149,6 @@ func (o OAuth2ConfigInternal__) Import() OAuth2Config {
 		})(o.RedirectURI),
 	}
 }
-
 func (o OAuth2Config) Export() *OAuth2ConfigInternal__ {
 	return &OAuth2ConfigInternal__{
 		Id:           o.Id.Export(),
@@ -164,7 +158,6 @@ func (o OAuth2Config) Export() *OAuth2ConfigInternal__ {
 		RedirectURI:  o.RedirectURI.Export(),
 	}
 }
-
 func (o *OAuth2Config) Encode(enc rpc.Encoder) error {
 	return enc.Encode(o.Export())
 }
@@ -194,7 +187,6 @@ var SSOProtocolTypeMap = map[string]SSOProtocolType{
 	"Oauth2": 1,
 	"SAML":   2,
 }
-
 var SSOProtocolTypeRevMap = map[SSOProtocolType]string{
 	0: "None",
 	1: "Oauth2",
@@ -206,7 +198,6 @@ type SSOProtocolTypeInternal__ SSOProtocolType
 func (s SSOProtocolTypeInternal__) Import() SSOProtocolType {
 	return SSOProtocolType(s)
 }
-
 func (s SSOProtocolType) Export() *SSOProtocolTypeInternal__ {
 	return ((*SSOProtocolTypeInternal__)(&s))
 }
@@ -215,7 +206,6 @@ type SSOConfig struct {
 	Active SSOProtocolType
 	Oauth2 *OAuth2Config
 }
-
 type SSOConfigInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Active  *SSOProtocolTypeInternal__
@@ -244,7 +234,6 @@ func (s SSOConfigInternal__) Import() SSOConfig {
 		})(s.Oauth2),
 	}
 }
-
 func (s SSOConfig) Export() *SSOConfigInternal__ {
 	return &SSOConfigInternal__{
 		Active: s.Active.Export(),
@@ -256,7 +245,6 @@ func (s SSOConfig) Export() *SSOConfigInternal__ {
 		})(s.Oauth2),
 	}
 }
-
 func (s *SSOConfig) Encode(enc rpc.Encoder) error {
 	return enc.Encode(s.Export())
 }
@@ -279,7 +267,6 @@ type OAuth2TokenSet struct {
 	Expires     Time
 	Username    NameUtf8
 }
-
 type OAuth2TokenSetInternal__ struct {
 	_struct     struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	AccessToken *OAuth2AccessTokenInternal__
@@ -316,7 +303,6 @@ func (o OAuth2TokenSetInternal__) Import() OAuth2TokenSet {
 		})(o.Username),
 	}
 }
-
 func (o OAuth2TokenSet) Export() *OAuth2TokenSetInternal__ {
 	return &OAuth2TokenSetInternal__{
 		AccessToken: o.AccessToken.Export(),
@@ -325,7 +311,6 @@ func (o OAuth2TokenSet) Export() *OAuth2TokenSetInternal__ {
 		Username:    o.Username.Export(),
 	}
 }
-
 func (o *OAuth2TokenSet) Encode(enc rpc.Encoder) error {
 	return enc.Encode(o.Export())
 }
@@ -345,7 +330,6 @@ var OAuth2TokenSetTypeUniqueID = rpc.TypeUniqueID(0x9c72432bd3f5bfc8)
 func (o *OAuth2TokenSet) GetTypeUniqueID() rpc.TypeUniqueID {
 	return OAuth2TokenSetTypeUniqueID
 }
-
 func (o *OAuth2TokenSet) Bytes() []byte { return nil }
 
 type OAuth2Random [16]byte
@@ -355,7 +339,6 @@ func (o OAuth2Random) Export() *OAuth2RandomInternal__ {
 	tmp := (([16]byte)(o))
 	return ((*OAuth2RandomInternal__)(&tmp))
 }
-
 func (o OAuth2RandomInternal__) Import() OAuth2Random {
 	tmp := ([16]byte)(o)
 	return OAuth2Random((func(x *[16]byte) (ret [16]byte) {
@@ -391,7 +374,6 @@ func (o OAuth2Nonce) Export() *OAuth2NonceInternal__ {
 	tmp := ((string)(o))
 	return ((*OAuth2NonceInternal__)(&tmp))
 }
-
 func (o OAuth2NonceInternal__) Import() OAuth2Nonce {
 	tmp := (string)(o)
 	return OAuth2Nonce((func(x *string) (ret string) {
@@ -427,7 +409,6 @@ func (o OAuth2PKCEChallengeCode) Export() *OAuth2PKCEChallengeCodeInternal__ {
 	tmp := ((string)(o))
 	return ((*OAuth2PKCEChallengeCodeInternal__)(&tmp))
 }
-
 func (o OAuth2PKCEChallengeCodeInternal__) Import() OAuth2PKCEChallengeCode {
 	tmp := (string)(o)
 	return OAuth2PKCEChallengeCode((func(x *string) (ret string) {
@@ -463,7 +444,6 @@ func (o OAuth2PKCEVerifier) Export() *OAuth2PKCEVerifierInternal__ {
 	tmp := ((string)(o))
 	return ((*OAuth2PKCEVerifierInternal__)(&tmp))
 }
-
 func (o OAuth2PKCEVerifierInternal__) Import() OAuth2PKCEVerifier {
 	tmp := (string)(o)
 	return OAuth2PKCEVerifier((func(x *string) (ret string) {
@@ -499,7 +479,6 @@ func (o OAuth2Code) Export() *OAuth2CodeInternal__ {
 	tmp := ((string)(o))
 	return ((*OAuth2CodeInternal__)(&tmp))
 }
-
 func (o OAuth2CodeInternal__) Import() OAuth2Code {
 	tmp := (string)(o)
 	return OAuth2Code((func(x *string) (ret string) {
@@ -535,7 +514,6 @@ func (o OAuth2AccessToken) Export() *OAuth2AccessTokenInternal__ {
 	tmp := ((string)(o))
 	return ((*OAuth2AccessTokenInternal__)(&tmp))
 }
-
 func (o OAuth2AccessTokenInternal__) Import() OAuth2AccessToken {
 	tmp := (string)(o)
 	return OAuth2AccessToken((func(x *string) (ret string) {
@@ -571,7 +549,6 @@ func (o OAuth2RefreshToken) Export() *OAuth2RefreshTokenInternal__ {
 	tmp := ((string)(o))
 	return ((*OAuth2RefreshTokenInternal__)(&tmp))
 }
-
 func (o OAuth2RefreshTokenInternal__) Import() OAuth2RefreshToken {
 	tmp := (string)(o)
 	return OAuth2RefreshToken((func(x *string) (ret string) {
@@ -607,7 +584,6 @@ func (o OAuth2IDToken) Export() *OAuth2IDTokenInternal__ {
 	tmp := ((string)(o))
 	return ((*OAuth2IDTokenInternal__)(&tmp))
 }
-
 func (o OAuth2IDTokenInternal__) Import() OAuth2IDToken {
 	tmp := (string)(o)
 	return OAuth2IDToken((func(x *string) (ret string) {
@@ -643,7 +619,6 @@ func (o OAuth2ClientID) Export() *OAuth2ClientIDInternal__ {
 	tmp := ((string)(o))
 	return ((*OAuth2ClientIDInternal__)(&tmp))
 }
-
 func (o OAuth2ClientIDInternal__) Import() OAuth2ClientID {
 	tmp := (string)(o)
 	return OAuth2ClientID((func(x *string) (ret string) {
@@ -679,7 +654,6 @@ func (o OAuth2ClientSecret) Export() *OAuth2ClientSecretInternal__ {
 	tmp := ((string)(o))
 	return ((*OAuth2ClientSecretInternal__)(&tmp))
 }
-
 func (o OAuth2ClientSecretInternal__) Import() OAuth2ClientSecret {
 	tmp := (string)(o)
 	return OAuth2ClientSecret((func(x *string) (ret string) {
@@ -715,7 +689,6 @@ func (o OAuth2Subject) Export() *OAuth2SubjectInternal__ {
 	tmp := ((string)(o))
 	return ((*OAuth2SubjectInternal__)(&tmp))
 }
-
 func (o OAuth2SubjectInternal__) Import() OAuth2Subject {
 	tmp := (string)(o)
 	return OAuth2Subject((func(x *string) (ret string) {
@@ -749,7 +722,6 @@ type OAuth2Binding struct {
 	Root TreeRoot
 	Rand OAuth2Random
 }
-
 type OAuth2BindingInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Fqu     *FQUserInternal__
@@ -779,7 +751,6 @@ func (o OAuth2BindingInternal__) Import() OAuth2Binding {
 		})(o.Rand),
 	}
 }
-
 func (o OAuth2Binding) Export() *OAuth2BindingInternal__ {
 	return &OAuth2BindingInternal__{
 		Fqu:  o.Fqu.Export(),
@@ -787,7 +758,6 @@ func (o OAuth2Binding) Export() *OAuth2BindingInternal__ {
 		Rand: o.Rand.Export(),
 	}
 }
-
 func (o *OAuth2Binding) Encode(enc rpc.Encoder) error {
 	return enc.Encode(o.Export())
 }
@@ -807,7 +777,6 @@ var OAuth2BindingTypeUniqueID = rpc.TypeUniqueID(0xa785bb21f4d713b6)
 func (o *OAuth2Binding) GetTypeUniqueID() rpc.TypeUniqueID {
 	return OAuth2BindingTypeUniqueID
 }
-
 func (o *OAuth2Binding) Bytes() []byte { return nil }
 
 type OAuth2Session struct {
@@ -819,7 +788,6 @@ type OAuth2Session struct {
 	AuthURI       URLString
 	Idtok         *OAuth2ParsedIDToken
 }
-
 type OAuth2SessionInternal__ struct {
 	_struct       struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Id            *OAuth2SessionIDInternal__
@@ -883,7 +851,6 @@ func (o OAuth2SessionInternal__) Import() OAuth2Session {
 		})(o.Idtok),
 	}
 }
-
 func (o OAuth2Session) Export() *OAuth2SessionInternal__ {
 	return &OAuth2SessionInternal__{
 		Id:            o.Id.Export(),
@@ -900,7 +867,6 @@ func (o OAuth2Session) Export() *OAuth2SessionInternal__ {
 		})(o.Idtok),
 	}
 }
-
 func (o *OAuth2Session) Encode(enc rpc.Encoder) error {
 	return enc.Encode(o.Export())
 }
@@ -927,7 +893,6 @@ type OAuth2ParsedIDToken struct {
 	DisplayName NameUtf8
 	Subject     OAuth2Subject
 }
-
 type OAuth2ParsedIDTokenInternal__ struct {
 	_struct     struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Raw         *OAuth2IDTokenInternal__
@@ -992,7 +957,6 @@ func (o OAuth2ParsedIDTokenInternal__) Import() OAuth2ParsedIDToken {
 		})(o.Subject),
 	}
 }
-
 func (o OAuth2ParsedIDToken) Export() *OAuth2ParsedIDTokenInternal__ {
 	return &OAuth2ParsedIDTokenInternal__{
 		Raw:         o.Raw.Export(),
@@ -1005,7 +969,6 @@ func (o OAuth2ParsedIDToken) Export() *OAuth2ParsedIDTokenInternal__ {
 		Subject:     o.Subject.Export(),
 	}
 }
-
 func (o *OAuth2ParsedIDToken) Encode(enc rpc.Encoder) error {
 	return enc.Encode(o.Export())
 }
@@ -1026,7 +989,6 @@ type OAuth2IDTokenBindingPayload struct {
 	IdToken OAuth2IDToken
 	Binding OAuth2Binding
 }
-
 type OAuth2IDTokenBindingPayloadInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	IdToken *OAuth2IDTokenInternal__
@@ -1049,14 +1011,12 @@ func (o OAuth2IDTokenBindingPayloadInternal__) Import() OAuth2IDTokenBindingPayl
 		})(o.Binding),
 	}
 }
-
 func (o OAuth2IDTokenBindingPayload) Export() *OAuth2IDTokenBindingPayloadInternal__ {
 	return &OAuth2IDTokenBindingPayloadInternal__{
 		IdToken: o.IdToken.Export(),
 		Binding: o.Binding.Export(),
 	}
 }
-
 func (o *OAuth2IDTokenBindingPayload) Encode(enc rpc.Encoder) error {
 	return enc.Encode(o.Export())
 }
@@ -1080,7 +1040,6 @@ func (o OAuth2IDTokenBindingBlob) Export() *OAuth2IDTokenBindingBlobInternal__ {
 	tmp := (([]byte)(o))
 	return ((*OAuth2IDTokenBindingBlobInternal__)(&tmp))
 }
-
 func (o OAuth2IDTokenBindingBlobInternal__) Import() OAuth2IDTokenBindingBlob {
 	tmp := ([]byte)(o)
 	return OAuth2IDTokenBindingBlob((func(x *[]byte) (ret []byte) {
@@ -1110,11 +1069,9 @@ var OAuth2IDTokenBindingBlobTypeUniqueID = rpc.TypeUniqueID(0x81c5c0695efde1c9)
 func (o *OAuth2IDTokenBindingBlob) GetTypeUniqueID() rpc.TypeUniqueID {
 	return OAuth2IDTokenBindingBlobTypeUniqueID
 }
-
 func (o OAuth2IDTokenBindingBlob) Bytes() []byte {
 	return (o)[:]
 }
-
 func (o *OAuth2IDTokenBindingBlob) AllocAndDecode(f rpc.DecoderFactory) (*OAuth2IDTokenBindingPayload, error) {
 	var ret OAuth2IDTokenBindingPayload
 	src := f.NewDecoderBytes(&ret, o.Bytes())
@@ -1124,9 +1081,7 @@ func (o *OAuth2IDTokenBindingBlob) AllocAndDecode(f rpc.DecoderFactory) (*OAuth2
 	}
 	return &ret, nil
 }
-
 func (o *OAuth2IDTokenBindingBlob) AssertNormalized() error { return nil }
-
 func (o *OAuth2IDTokenBindingPayload) EncodeTyped(f rpc.EncoderFactory) (*OAuth2IDTokenBindingBlob, error) {
 	var tmp []byte
 	enc := f.NewEncoderBytes(&tmp)
@@ -1137,9 +1092,8 @@ func (o *OAuth2IDTokenBindingPayload) EncodeTyped(f rpc.EncoderFactory) (*OAuth2
 	ret := OAuth2IDTokenBindingBlob(tmp)
 	return &ret, nil
 }
-
-func (o *OAuth2IDTokenBindingPayload) ChildBlob(_b []byte) OAuth2IDTokenBindingBlob {
-	return OAuth2IDTokenBindingBlob(_b)
+func (o *OAuth2IDTokenBindingPayload) ChildBlob(__b []byte) OAuth2IDTokenBindingBlob {
+	return OAuth2IDTokenBindingBlob(__b)
 }
 
 type OAuth2IDTokenBinding struct {
@@ -1147,7 +1101,6 @@ type OAuth2IDTokenBinding struct {
 	Sig   Signature
 	Key   EntityID
 }
-
 type OAuth2IDTokenBindingInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Inner   *OAuth2IDTokenBindingBlobInternal__
@@ -1177,7 +1130,6 @@ func (o OAuth2IDTokenBindingInternal__) Import() OAuth2IDTokenBinding {
 		})(o.Key),
 	}
 }
-
 func (o OAuth2IDTokenBinding) Export() *OAuth2IDTokenBindingInternal__ {
 	return &OAuth2IDTokenBindingInternal__{
 		Inner: o.Inner.Export(),
@@ -1185,7 +1137,6 @@ func (o OAuth2IDTokenBinding) Export() *OAuth2IDTokenBindingInternal__ {
 		Key:   o.Key.Export(),
 	}
 }
-
 func (o *OAuth2IDTokenBinding) Encode(enc rpc.Encoder) error {
 	return enc.Encode(o.Export())
 }

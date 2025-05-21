@@ -1,5 +1,5 @@
-// Auto-generated to Go types and interfaces using @foks-proj/snowpack-compiler 1.0.8 (git+https://github.com/foks-proj/node-snowpack-compiler.git)
-//  Input file: ../../proto-src/rem/reg.snowp
+// Auto-generated to Go types and interfaces using snowpc 0.0.4 (https://github.com/foks-proj/go-snowpack-compiler)
+//  Input file:../../proto-src/rem/reg.snowp
 
 package rem
 
@@ -20,7 +20,6 @@ type ChallengePayload struct {
 	Rand      lib.Random16
 	Time      lib.Time
 }
-
 type ChallengePayloadInternal__ struct {
 	_struct   struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	HmacKeyID *lib.HMACKeyIDInternal__
@@ -64,7 +63,6 @@ func (c ChallengePayloadInternal__) Import() ChallengePayload {
 		})(c.Time),
 	}
 }
-
 func (c ChallengePayload) Export() *ChallengePayloadInternal__ {
 	return &ChallengePayloadInternal__{
 		HmacKeyID: c.HmacKeyID.Export(),
@@ -74,7 +72,6 @@ func (c ChallengePayload) Export() *ChallengePayloadInternal__ {
 		Time:      c.Time.Export(),
 	}
 }
-
 func (c *ChallengePayload) Encode(enc rpc.Encoder) error {
 	return enc.Encode(c.Export())
 }
@@ -94,7 +91,6 @@ var ChallengePayloadTypeUniqueID = rpc.TypeUniqueID(0x92bb9122e9d5ae59)
 func (c *ChallengePayload) GetTypeUniqueID() rpc.TypeUniqueID {
 	return ChallengePayloadTypeUniqueID
 }
-
 func (c *ChallengePayload) Bytes() []byte { return nil }
 
 type NameType int
@@ -108,7 +104,6 @@ var NameTypeMap = map[string]NameType{
 	"User": 1,
 	"Team": 2,
 }
-
 var NameTypeRevMap = map[NameType]string{
 	1: "User",
 	2: "Team",
@@ -119,7 +114,6 @@ type NameTypeInternal__ NameType
 func (n NameTypeInternal__) Import() NameType {
 	return NameType(n)
 }
-
 func (n NameType) Export() *NameTypeInternal__ {
 	return ((*NameTypeInternal__)(&n))
 }
@@ -128,7 +122,6 @@ type Challenge struct {
 	Payload ChallengePayload
 	Mac     lib.HMAC
 }
-
 type ChallengeInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Payload *ChallengePayloadInternal__
@@ -151,14 +144,12 @@ func (c ChallengeInternal__) Import() Challenge {
 		})(c.Mac),
 	}
 }
-
 func (c Challenge) Export() *ChallengeInternal__ {
 	return &ChallengeInternal__{
 		Payload: c.Payload.Export(),
 		Mac:     c.Mac.Export(),
 	}
 }
-
 func (c *Challenge) Encode(enc rpc.Encoder) error {
 	return enc.Encode(c.Export())
 }
@@ -180,7 +171,6 @@ type LoginRes struct {
 	SkwkBox       lib.SecretBox
 	PassphraseBox lib.PpePassphraseBox
 }
-
 type LoginResInternal__ struct {
 	_struct       struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	PpGen         *lib.PassphraseGenerationInternal__
@@ -210,7 +200,6 @@ func (l LoginResInternal__) Import() LoginRes {
 		})(l.PassphraseBox),
 	}
 }
-
 func (l LoginRes) Export() *LoginResInternal__ {
 	return &LoginResInternal__{
 		PpGen:         l.PpGen.Export(),
@@ -218,7 +207,6 @@ func (l LoginRes) Export() *LoginResInternal__ {
 		PassphraseBox: l.PassphraseBox.Export(),
 	}
 }
-
 func (l *LoginRes) Encode(enc rpc.Encoder) error {
 	return enc.Encode(l.Export())
 }
@@ -240,7 +228,6 @@ type ReserveNameRes struct {
 	Seq   lib.NameSeqno
 	Etime lib.Time
 }
-
 type ReserveNameResInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Tok     *lib.ReservationTokenInternal__
@@ -270,7 +257,6 @@ func (r ReserveNameResInternal__) Import() ReserveNameRes {
 		})(r.Etime),
 	}
 }
-
 func (r ReserveNameRes) Export() *ReserveNameResInternal__ {
 	return &ReserveNameResInternal__{
 		Tok:   r.Tok.Export(),
@@ -278,7 +264,6 @@ func (r ReserveNameRes) Export() *ReserveNameResInternal__ {
 		Etime: r.Etime.Export(),
 	}
 }
-
 func (r *ReserveNameRes) Encode(enc rpc.Encoder) error {
 	return enc.Encode(r.Export())
 }
@@ -299,7 +284,6 @@ type NameCommitment struct {
 	Name lib.Name
 	Seq  lib.NameSeqno
 }
-
 type NameCommitmentInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Name    *lib.NameInternal__
@@ -322,14 +306,12 @@ func (n NameCommitmentInternal__) Import() NameCommitment {
 		})(n.Seq),
 	}
 }
-
 func (n NameCommitment) Export() *NameCommitmentInternal__ {
 	return &NameCommitmentInternal__{
 		Name: n.Name.Export(),
 		Seq:  n.Seq.Export(),
 	}
 }
-
 func (n *NameCommitment) Encode(enc rpc.Encoder) error {
 	return enc.Encode(n.Export())
 }
@@ -349,7 +331,6 @@ var NameCommitmentTypeUniqueID = rpc.TypeUniqueID(0xe37b1fcfba972353)
 func (n *NameCommitment) GetTypeUniqueID() rpc.TypeUniqueID {
 	return NameCommitmentTypeUniqueID
 }
-
 func (n *NameCommitment) Bytes() []byte { return nil }
 
 type LookupUserRes struct {
@@ -359,7 +340,6 @@ type LookupUserRes struct {
 	Role         lib.Role
 	YubiPQHint   *lib.YubiSlotAndPQKeyID
 }
-
 type LookupUserResInternal__ struct {
 	_struct      struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Fqu          *lib.FQUserInternal__
@@ -409,7 +389,6 @@ func (l LookupUserResInternal__) Import() LookupUserRes {
 		})(l.YubiPQHint),
 	}
 }
-
 func (l LookupUserRes) Export() *LookupUserResInternal__ {
 	return &LookupUserResInternal__{
 		Fqu:          l.Fqu.Export(),
@@ -424,7 +403,6 @@ func (l LookupUserRes) Export() *LookupUserResInternal__ {
 		})(l.YubiPQHint),
 	}
 }
-
 func (l *LookupUserRes) Encode(enc rpc.Encoder) error {
 	return enc.Encode(l.Export())
 }
@@ -445,7 +423,6 @@ type OAuth2PollRes struct {
 	Toks lib.OAuth2TokenSet
 	Res  ReserveNameRes
 }
-
 type OAuth2PollResInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Toks    *lib.OAuth2TokenSetInternal__
@@ -468,14 +445,12 @@ func (o OAuth2PollResInternal__) Import() OAuth2PollRes {
 		})(o.Res),
 	}
 }
-
 func (o OAuth2PollRes) Export() *OAuth2PollResInternal__ {
 	return &OAuth2PollResInternal__{
 		Toks: o.Toks.Export(),
 		Res:  o.Res.Export(),
 	}
 }
-
 func (o *OAuth2PollRes) Encode(enc rpc.Encoder) error {
 	return enc.Encode(o.Export())
 }
@@ -496,13 +471,11 @@ type RegSSOArgs struct {
 	T     lib.SSOProtocolType
 	F_1__ *RegSSOArgsOAuth2 `json:"f1,omitempty"`
 }
-
 type RegSSOArgsInternal__ struct {
 	_struct  struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	T        lib.SSOProtocolType
 	Switch__ RegSSOArgsInternalSwitch__
 }
-
 type RegSSOArgsInternalSwitch__ struct {
 	_struct struct{}                    `codec:",omitempty"` //lint:ignore U1000 msgpack internal field
 	F_1__   *RegSSOArgsOAuth2Internal__ `codec:"1"`
@@ -519,30 +492,26 @@ func (r RegSSOArgs) GetT() (ret lib.SSOProtocolType, err error) {
 	}
 	return r.T, nil
 }
-
 func (r RegSSOArgs) Oauth2() RegSSOArgsOAuth2 {
 	if r.F_1__ == nil {
-		panic("unexepected nil case; should have been checked")
+		panic("unexpected nil case; should have been checked")
 	}
 	if r.T != lib.SSOProtocolType_Oauth2 {
 		panic(fmt.Sprintf("unexpected switch value (%v) when Oauth2 is called", r.T))
 	}
 	return *r.F_1__
 }
-
 func NewRegSSOArgsWithNone() RegSSOArgs {
 	return RegSSOArgs{
 		T: lib.SSOProtocolType_None,
 	}
 }
-
 func NewRegSSOArgsWithOauth2(v RegSSOArgsOAuth2) RegSSOArgs {
 	return RegSSOArgs{
 		T:     lib.SSOProtocolType_Oauth2,
 		F_1__: &v,
 	}
 }
-
 func (r RegSSOArgsInternal__) Import() RegSSOArgs {
 	return RegSSOArgs{
 		T: r.T,
@@ -560,7 +529,6 @@ func (r RegSSOArgsInternal__) Import() RegSSOArgs {
 		})(r.Switch__.F_1__),
 	}
 }
-
 func (r RegSSOArgs) Export() *RegSSOArgsInternal__ {
 	return &RegSSOArgsInternal__{
 		T: r.T,
@@ -574,7 +542,6 @@ func (r RegSSOArgs) Export() *RegSSOArgsInternal__ {
 		},
 	}
 }
-
 func (r *RegSSOArgs) Encode(enc rpc.Encoder) error {
 	return enc.Encode(r.Export())
 }
@@ -595,7 +562,6 @@ type RegSSOArgsOAuth2 struct {
 	Id  lib.OAuth2SessionID
 	Sig lib.OAuth2IDTokenBinding
 }
-
 type RegSSOArgsOAuth2Internal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Id      *lib.OAuth2SessionIDInternal__
@@ -618,14 +584,12 @@ func (r RegSSOArgsOAuth2Internal__) Import() RegSSOArgsOAuth2 {
 		})(r.Sig),
 	}
 }
-
 func (r RegSSOArgsOAuth2) Export() *RegSSOArgsOAuth2Internal__ {
 	return &RegSSOArgsOAuth2Internal__{
 		Id:  r.Id.Export(),
 		Sig: r.Sig.Export(),
 	}
 }
-
 func (r *RegSSOArgsOAuth2) Encode(enc rpc.Encoder) error {
 	return enc.Encode(r.Export())
 }
@@ -647,7 +611,6 @@ var RegProtocolID rpc.ProtocolUniqueID = rpc.ProtocolUniqueID(0xf7ab85f3)
 type ReserveUsernameArg struct {
 	N lib.Name
 }
-
 type ReserveUsernameArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	N       *lib.NameInternal__
@@ -663,13 +626,11 @@ func (r ReserveUsernameArgInternal__) Import() ReserveUsernameArg {
 		})(r.N),
 	}
 }
-
 func (r ReserveUsernameArg) Export() *ReserveUsernameArgInternal__ {
 	return &ReserveUsernameArgInternal__{
 		N: r.N.Export(),
 	}
 }
-
 func (r *ReserveUsernameArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(r.Export())
 }
@@ -690,7 +651,6 @@ type GetClientCertChainArg struct {
 	Uid lib.UID
 	Key lib.EntityID
 }
-
 type GetClientCertChainArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Uid     *lib.UIDInternal__
@@ -713,14 +673,12 @@ func (g GetClientCertChainArgInternal__) Import() GetClientCertChainArg {
 		})(g.Key),
 	}
 }
-
 func (g GetClientCertChainArg) Export() *GetClientCertChainArgInternal__ {
 	return &GetClientCertChainArgInternal__{
 		Uid: g.Uid.Export(),
 		Key: g.Key.Export(),
 	}
 }
-
 func (g *GetClientCertChainArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(g.Export())
 }
@@ -755,7 +713,6 @@ type SignupArg struct {
 	YubiPQhint               *lib.YubiSlotAndPQKeyID
 	Sso                      RegSSOArgs
 }
-
 type SignupArgInternal__ struct {
 	_struct                  struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	UsernameUtf8             *lib.NameUtf8Internal__
@@ -894,7 +851,6 @@ func (s SignupArgInternal__) Import() SignupArg {
 		})(s.Sso),
 	}
 }
-
 func (s SignupArg) Export() *SignupArgInternal__ {
 	return &SignupArgInternal__{
 		UsernameUtf8:          s.UsernameUtf8.Export(),
@@ -930,7 +886,6 @@ func (s SignupArg) Export() *SignupArgInternal__ {
 		Sso: s.Sso.Export(),
 	}
 }
-
 func (s *SignupArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(s.Export())
 }
@@ -949,7 +904,6 @@ func (s *SignupArg) Bytes() []byte { return nil }
 
 type GetHostIDArg struct {
 }
-
 type GetHostIDArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 }
@@ -957,11 +911,9 @@ type GetHostIDArgInternal__ struct {
 func (g GetHostIDArgInternal__) Import() GetHostIDArg {
 	return GetHostIDArg{}
 }
-
 func (g GetHostIDArg) Export() *GetHostIDArgInternal__ {
 	return &GetHostIDArgInternal__{}
 }
-
 func (g *GetHostIDArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(g.Export())
 }
@@ -981,7 +933,6 @@ func (g *GetHostIDArg) Bytes() []byte { return nil }
 type GetLoginChallengeArg struct {
 	Uid lib.UID
 }
-
 type GetLoginChallengeArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Uid     *lib.UIDInternal__
@@ -997,13 +948,11 @@ func (g GetLoginChallengeArgInternal__) Import() GetLoginChallengeArg {
 		})(g.Uid),
 	}
 }
-
 func (g GetLoginChallengeArg) Export() *GetLoginChallengeArgInternal__ {
 	return &GetLoginChallengeArgInternal__{
 		Uid: g.Uid.Export(),
 	}
 }
-
 func (g *GetLoginChallengeArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(g.Export())
 }
@@ -1025,7 +974,6 @@ type LoginArg struct {
 	Challenge Challenge
 	Signature lib.Signature
 }
-
 type LoginArgInternal__ struct {
 	_struct   struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Uid       *lib.UIDInternal__
@@ -1055,7 +1003,6 @@ func (l LoginArgInternal__) Import() LoginArg {
 		})(l.Signature),
 	}
 }
-
 func (l LoginArg) Export() *LoginArgInternal__ {
 	return &LoginArgInternal__{
 		Uid:       l.Uid.Export(),
@@ -1063,7 +1010,6 @@ func (l LoginArg) Export() *LoginArgInternal__ {
 		Signature: l.Signature.Export(),
 	}
 }
-
 func (l *LoginArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(l.Export())
 }
@@ -1083,7 +1029,6 @@ func (l *LoginArg) Bytes() []byte { return nil }
 type GetUIDLookupChallegeArg struct {
 	EntityID lib.EntityID
 }
-
 type GetUIDLookupChallegeArgInternal__ struct {
 	_struct  struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	EntityID *lib.EntityIDInternal__
@@ -1099,13 +1044,11 @@ func (g GetUIDLookupChallegeArgInternal__) Import() GetUIDLookupChallegeArg {
 		})(g.EntityID),
 	}
 }
-
 func (g GetUIDLookupChallegeArg) Export() *GetUIDLookupChallegeArgInternal__ {
 	return &GetUIDLookupChallegeArgInternal__{
 		EntityID: g.EntityID.Export(),
 	}
 }
-
 func (g *GetUIDLookupChallegeArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(g.Export())
 }
@@ -1127,7 +1070,6 @@ type LookupUIDByDeviceArg struct {
 	Challenge Challenge
 	Signature lib.Signature
 }
-
 type LookupUIDByDeviceArgInternal__ struct {
 	_struct   struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	EntityID  *lib.EntityIDInternal__
@@ -1157,7 +1099,6 @@ func (l LookupUIDByDeviceArgInternal__) Import() LookupUIDByDeviceArg {
 		})(l.Signature),
 	}
 }
-
 func (l LookupUIDByDeviceArg) Export() *LookupUIDByDeviceArgInternal__ {
 	return &LookupUIDByDeviceArgInternal__{
 		EntityID:  l.EntityID.Export(),
@@ -1165,7 +1106,6 @@ func (l LookupUIDByDeviceArg) Export() *LookupUIDByDeviceArgInternal__ {
 		Signature: l.Signature.Export(),
 	}
 }
-
 func (l *LookupUIDByDeviceArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(l.Export())
 }
@@ -1185,7 +1125,6 @@ func (l *LookupUIDByDeviceArg) Bytes() []byte { return nil }
 type CheckInviteCodeArg struct {
 	InviteCode InviteCode
 }
-
 type CheckInviteCodeArgInternal__ struct {
 	_struct    struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	InviteCode *InviteCodeInternal__
@@ -1201,13 +1140,11 @@ func (c CheckInviteCodeArgInternal__) Import() CheckInviteCodeArg {
 		})(c.InviteCode),
 	}
 }
-
 func (c CheckInviteCodeArg) Export() *CheckInviteCodeArgInternal__ {
 	return &CheckInviteCodeArgInternal__{
 		InviteCode: c.InviteCode.Export(),
 	}
 }
-
 func (c *CheckInviteCodeArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(c.Export())
 }
@@ -1227,7 +1164,6 @@ func (c *CheckInviteCodeArg) Bytes() []byte { return nil }
 type JoinWaitListArg struct {
 	Email lib.Email
 }
-
 type JoinWaitListArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Email   *lib.EmailInternal__
@@ -1243,13 +1179,11 @@ func (j JoinWaitListArgInternal__) Import() JoinWaitListArg {
 		})(j.Email),
 	}
 }
-
 func (j JoinWaitListArg) Export() *JoinWaitListArgInternal__ {
 	return &JoinWaitListArgInternal__{
 		Email: j.Email.Export(),
 	}
 }
-
 func (j *JoinWaitListArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(j.Export())
 }
@@ -1269,7 +1203,6 @@ func (j *JoinWaitListArg) Bytes() []byte { return nil }
 type CheckNameExistsArg struct {
 	Name lib.Name
 }
-
 type CheckNameExistsArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Name    *lib.NameInternal__
@@ -1285,13 +1218,11 @@ func (c CheckNameExistsArgInternal__) Import() CheckNameExistsArg {
 		})(c.Name),
 	}
 }
-
 func (c CheckNameExistsArg) Export() *CheckNameExistsArgInternal__ {
 	return &CheckNameExistsArgInternal__{
 		Name: c.Name.Export(),
 	}
 }
-
 func (c *CheckNameExistsArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(c.Export())
 }
@@ -1311,7 +1242,6 @@ func (c *CheckNameExistsArg) Bytes() []byte { return nil }
 type RegLoadUserChainArg struct {
 	A LoadUserChainArg
 }
-
 type RegLoadUserChainArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	A       *LoadUserChainArgInternal__
@@ -1327,13 +1257,11 @@ func (r RegLoadUserChainArgInternal__) Import() RegLoadUserChainArg {
 		})(r.A),
 	}
 }
-
 func (r RegLoadUserChainArg) Export() *RegLoadUserChainArgInternal__ {
 	return &RegLoadUserChainArgInternal__{
 		A: r.A.Export(),
 	}
 }
-
 func (r *RegLoadUserChainArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(r.Export())
 }
@@ -1353,7 +1281,6 @@ func (r *RegLoadUserChainArg) Bytes() []byte { return nil }
 type GetSubkeyBoxChallengeArg struct {
 	Parent lib.EntityID
 }
-
 type GetSubkeyBoxChallengeArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Parent  *lib.EntityIDInternal__
@@ -1369,13 +1296,11 @@ func (g GetSubkeyBoxChallengeArgInternal__) Import() GetSubkeyBoxChallengeArg {
 		})(g.Parent),
 	}
 }
-
 func (g GetSubkeyBoxChallengeArg) Export() *GetSubkeyBoxChallengeArgInternal__ {
 	return &GetSubkeyBoxChallengeArgInternal__{
 		Parent: g.Parent.Export(),
 	}
 }
-
 func (g *GetSubkeyBoxChallengeArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(g.Export())
 }
@@ -1397,7 +1322,6 @@ type LoadSubkeyBoxArg struct {
 	Challenge Challenge
 	Signature lib.Signature
 }
-
 type LoadSubkeyBoxArgInternal__ struct {
 	_struct   struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Parent    *lib.EntityIDInternal__
@@ -1427,7 +1351,6 @@ func (l LoadSubkeyBoxArgInternal__) Import() LoadSubkeyBoxArg {
 		})(l.Signature),
 	}
 }
-
 func (l LoadSubkeyBoxArg) Export() *LoadSubkeyBoxArgInternal__ {
 	return &LoadSubkeyBoxArgInternal__{
 		Parent:    l.Parent.Export(),
@@ -1435,7 +1358,6 @@ func (l LoadSubkeyBoxArg) Export() *LoadSubkeyBoxArgInternal__ {
 		Signature: l.Signature.Export(),
 	}
 }
-
 func (l *LoadSubkeyBoxArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(l.Export())
 }
@@ -1454,7 +1376,6 @@ func (l *LoadSubkeyBoxArg) Bytes() []byte { return nil }
 
 type RegStretchVersionArg struct {
 }
-
 type RegStretchVersionArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 }
@@ -1462,11 +1383,9 @@ type RegStretchVersionArgInternal__ struct {
 func (r RegStretchVersionArgInternal__) Import() RegStretchVersionArg {
 	return RegStretchVersionArg{}
 }
-
 func (r RegStretchVersionArg) Export() *RegStretchVersionArgInternal__ {
 	return &RegStretchVersionArgInternal__{}
 }
-
 func (r *RegStretchVersionArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(r.Export())
 }
@@ -1486,7 +1405,6 @@ func (r *RegStretchVersionArg) Bytes() []byte { return nil }
 type RegSelectVhost struct {
 	Host lib.HostID
 }
-
 type RegSelectVhostInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Host    *lib.HostIDInternal__
@@ -1502,13 +1420,11 @@ func (r RegSelectVhostInternal__) Import() RegSelectVhost {
 		})(r.Host),
 	}
 }
-
 func (r RegSelectVhost) Export() *RegSelectVhostInternal__ {
 	return &RegSelectVhostInternal__{
 		Host: r.Host.Export(),
 	}
 }
-
 func (r *RegSelectVhost) Encode(enc rpc.Encoder) error {
 	return enc.Encode(r.Export())
 }
@@ -1528,7 +1444,6 @@ func (r *RegSelectVhost) Bytes() []byte { return nil }
 type RegResolveUsernameArg struct {
 	A ResolveUsernameArg
 }
-
 type RegResolveUsernameArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	A       *ResolveUsernameArgInternal__
@@ -1544,13 +1459,11 @@ func (r RegResolveUsernameArgInternal__) Import() RegResolveUsernameArg {
 		})(r.A),
 	}
 }
-
 func (r RegResolveUsernameArg) Export() *RegResolveUsernameArgInternal__ {
 	return &RegResolveUsernameArgInternal__{
 		A: r.A.Export(),
 	}
 }
-
 func (r *RegResolveUsernameArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(r.Export())
 }
@@ -1569,7 +1482,6 @@ func (r *RegResolveUsernameArg) Bytes() []byte { return nil }
 
 type GetServerConfigArg struct {
 }
-
 type GetServerConfigArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 }
@@ -1577,11 +1489,9 @@ type GetServerConfigArgInternal__ struct {
 func (g GetServerConfigArgInternal__) Import() GetServerConfigArg {
 	return GetServerConfigArg{}
 }
-
 func (g GetServerConfigArg) Export() *GetServerConfigArgInternal__ {
 	return &GetServerConfigArgInternal__{}
 }
-
 func (g *GetServerConfigArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(g.Export())
 }
@@ -1604,7 +1514,6 @@ type InitOAuth2SessionArg struct {
 	Nonce        lib.OAuth2Nonce
 	Uid          *lib.UID
 }
-
 type InitOAuth2SessionArgInternal__ struct {
 	_struct      struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Id           *lib.OAuth2SessionIDInternal__
@@ -1647,7 +1556,6 @@ func (i InitOAuth2SessionArgInternal__) Import() InitOAuth2SessionArg {
 		})(i.Uid),
 	}
 }
-
 func (i InitOAuth2SessionArg) Export() *InitOAuth2SessionArgInternal__ {
 	return &InitOAuth2SessionArgInternal__{
 		Id:           i.Id.Export(),
@@ -1661,7 +1569,6 @@ func (i InitOAuth2SessionArg) Export() *InitOAuth2SessionArgInternal__ {
 		})(i.Uid),
 	}
 }
-
 func (i *InitOAuth2SessionArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(i.Export())
 }
@@ -1683,7 +1590,6 @@ type PollOAuth2SessionCompletionArg struct {
 	Wait     lib.DurationMilli
 	ForLogin bool
 }
-
 type PollOAuth2SessionCompletionArgInternal__ struct {
 	_struct  struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Id       *lib.OAuth2SessionIDInternal__
@@ -1713,7 +1619,6 @@ func (p PollOAuth2SessionCompletionArgInternal__) Import() PollOAuth2SessionComp
 		})(p.ForLogin),
 	}
 }
-
 func (p PollOAuth2SessionCompletionArg) Export() *PollOAuth2SessionCompletionArgInternal__ {
 	return &PollOAuth2SessionCompletionArgInternal__{
 		Id:       p.Id.Export(),
@@ -1721,7 +1626,6 @@ func (p PollOAuth2SessionCompletionArg) Export() *PollOAuth2SessionCompletionArg
 		ForLogin: &p.ForLogin,
 	}
 }
-
 func (p *PollOAuth2SessionCompletionArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(p.Export())
 }
@@ -1742,7 +1646,6 @@ type SsoLoginArg struct {
 	Uid  lib.UID
 	Args RegSSOArgs
 }
-
 type SsoLoginArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Uid     *lib.UIDInternal__
@@ -1765,14 +1668,12 @@ func (s SsoLoginArgInternal__) Import() SsoLoginArg {
 		})(s.Args),
 	}
 }
-
 func (s SsoLoginArg) Export() *SsoLoginArgInternal__ {
 	return &SsoLoginArgInternal__{
 		Uid:  s.Uid.Export(),
 		Args: s.Args.Export(),
 	}
 }
-
 func (s *SsoLoginArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(s.Export())
 }
@@ -1794,7 +1695,6 @@ type ProbeKeyExistsArg struct {
 	DevID   lib.DeviceID
 	SelfTok lib.PermissionToken
 }
-
 type ProbeKeyExistsArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Uid     *lib.UIDInternal__
@@ -1824,7 +1724,6 @@ func (p ProbeKeyExistsArgInternal__) Import() ProbeKeyExistsArg {
 		})(p.SelfTok),
 	}
 }
-
 func (p ProbeKeyExistsArg) Export() *ProbeKeyExistsArgInternal__ {
 	return &ProbeKeyExistsArgInternal__{
 		Uid:     p.Uid.Export(),
@@ -1832,7 +1731,6 @@ func (p ProbeKeyExistsArg) Export() *ProbeKeyExistsArgInternal__ {
 		SelfTok: p.SelfTok.Export(),
 	}
 }
-
 func (p *ProbeKeyExistsArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(p.Export())
 }
@@ -1851,7 +1749,6 @@ func (p *ProbeKeyExistsArg) Bytes() []byte { return nil }
 
 type GetVHostMgmtHostArg struct {
 }
-
 type GetVHostMgmtHostArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 }
@@ -1859,11 +1756,9 @@ type GetVHostMgmtHostArgInternal__ struct {
 func (g GetVHostMgmtHostArgInternal__) Import() GetVHostMgmtHostArg {
 	return GetVHostMgmtHostArg{}
 }
-
 func (g GetVHostMgmtHostArg) Export() *GetVHostMgmtHostArgInternal__ {
 	return &GetVHostMgmtHostArgInternal__{}
 }
-
 func (g *GetVHostMgmtHostArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(g.Export())
 }
@@ -1883,7 +1778,6 @@ func (g *GetVHostMgmtHostArg) Bytes() []byte { return nil }
 type GetClientVersionInfoArg struct {
 	Me lib.ClientVersionExt
 }
-
 type GetClientVersionInfoArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Me      *lib.ClientVersionExtInternal__
@@ -1899,13 +1793,11 @@ func (g GetClientVersionInfoArgInternal__) Import() GetClientVersionInfoArg {
 		})(g.Me),
 	}
 }
-
 func (g GetClientVersionInfoArg) Export() *GetClientVersionInfoArgInternal__ {
 	return &GetClientVersionInfoArgInternal__{
 		Me: g.Me.Export(),
 	}
 }
-
 func (g *GetClientVersionInfoArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(g.Export())
 }
@@ -1949,7 +1841,6 @@ type RegInterface interface {
 	GetClientVersionInfo(context.Context, lib.ClientVersionExt) (lib.ServerClientVersionInfo, error)
 	ErrorWrapper() func(error) lib.Status
 	CheckArgHeader(ctx context.Context, h lib.Header) error
-
 	MakeResHeader() lib.Header
 }
 
@@ -1976,7 +1867,7 @@ func (r regErrorUnwrapperAdapter) MakeArg() interface{} {
 func (r regErrorUnwrapperAdapter) UnwrapError(raw interface{}) (appError error, dispatchError error) {
 	sTmp, ok := raw.(*lib.StatusInternal__)
 	if !ok {
-		return nil, errors.New("Error converting to internal type in UnwrapError")
+		return nil, errors.New("error converting to internal type in UnwrapError")
 	}
 	if sTmp == nil {
 		return nil, nil
@@ -2017,7 +1908,6 @@ func (c RegClient) ReserveUsername(ctx context.Context, n lib.Name) (res Reserve
 	res = tmp.Data.Import()
 	return
 }
-
 func (c RegClient) GetClientCertChain(ctx context.Context, arg GetClientCertChainArg) (res [][]byte, err error) {
 	warg := &rpc.DataWrap[lib.Header, *GetClientCertChainArgInternal__]{
 		Data: arg.Export(),
@@ -2053,7 +1943,6 @@ func (c RegClient) GetClientCertChain(ctx context.Context, arg GetClientCertChai
 	})(&tmp.Data)
 	return
 }
-
 func (c RegClient) Signup(ctx context.Context, arg SignupArg) (err error) {
 	warg := &rpc.DataWrap[lib.Header, *SignupArgInternal__]{
 		Data: arg.Export(),
@@ -2074,7 +1963,6 @@ func (c RegClient) Signup(ctx context.Context, arg SignupArg) (err error) {
 	}
 	return
 }
-
 func (c RegClient) GetHostID(ctx context.Context) (res lib.HostID, err error) {
 	var arg GetHostIDArg
 	warg := &rpc.DataWrap[lib.Header, *GetHostIDArgInternal__]{
@@ -2097,7 +1985,6 @@ func (c RegClient) GetHostID(ctx context.Context) (res lib.HostID, err error) {
 	res = tmp.Data.Import()
 	return
 }
-
 func (c RegClient) GetLoginChallenge(ctx context.Context, uid lib.UID) (res Challenge, err error) {
 	arg := GetLoginChallengeArg{
 		Uid: uid,
@@ -2122,7 +2009,6 @@ func (c RegClient) GetLoginChallenge(ctx context.Context, uid lib.UID) (res Chal
 	res = tmp.Data.Import()
 	return
 }
-
 func (c RegClient) Login(ctx context.Context, arg LoginArg) (res LoginRes, err error) {
 	warg := &rpc.DataWrap[lib.Header, *LoginArgInternal__]{
 		Data: arg.Export(),
@@ -2144,7 +2030,6 @@ func (c RegClient) Login(ctx context.Context, arg LoginArg) (res LoginRes, err e
 	res = tmp.Data.Import()
 	return
 }
-
 func (c RegClient) GetUIDLookupChallege(ctx context.Context, entityID lib.EntityID) (res Challenge, err error) {
 	arg := GetUIDLookupChallegeArg{
 		EntityID: entityID,
@@ -2169,7 +2054,6 @@ func (c RegClient) GetUIDLookupChallege(ctx context.Context, entityID lib.Entity
 	res = tmp.Data.Import()
 	return
 }
-
 func (c RegClient) LookupUIDByDevice(ctx context.Context, arg LookupUIDByDeviceArg) (res lib.LookupUserRes, err error) {
 	warg := &rpc.DataWrap[lib.Header, *LookupUIDByDeviceArgInternal__]{
 		Data: arg.Export(),
@@ -2191,7 +2075,6 @@ func (c RegClient) LookupUIDByDevice(ctx context.Context, arg LookupUIDByDeviceA
 	res = tmp.Data.Import()
 	return
 }
-
 func (c RegClient) CheckInviteCode(ctx context.Context, inviteCode InviteCode) (err error) {
 	arg := CheckInviteCodeArg{
 		InviteCode: inviteCode,
@@ -2215,7 +2098,6 @@ func (c RegClient) CheckInviteCode(ctx context.Context, inviteCode InviteCode) (
 	}
 	return
 }
-
 func (c RegClient) JoinWaitList(ctx context.Context, email lib.Email) (res lib.WaitListID, err error) {
 	arg := JoinWaitListArg{
 		Email: email,
@@ -2240,7 +2122,6 @@ func (c RegClient) JoinWaitList(ctx context.Context, email lib.Email) (res lib.W
 	res = tmp.Data.Import()
 	return
 }
-
 func (c RegClient) CheckNameExists(ctx context.Context, name lib.Name) (err error) {
 	arg := CheckNameExistsArg{
 		Name: name,
@@ -2264,7 +2145,6 @@ func (c RegClient) CheckNameExists(ctx context.Context, name lib.Name) (err erro
 	}
 	return
 }
-
 func (c RegClient) LoadUserChain(ctx context.Context, a LoadUserChainArg) (res UserChain, err error) {
 	arg := RegLoadUserChainArg{
 		A: a,
@@ -2289,7 +2169,6 @@ func (c RegClient) LoadUserChain(ctx context.Context, a LoadUserChainArg) (res U
 	res = tmp.Data.Import()
 	return
 }
-
 func (c RegClient) GetSubkeyBoxChallenge(ctx context.Context, parent lib.EntityID) (res Challenge, err error) {
 	arg := GetSubkeyBoxChallengeArg{
 		Parent: parent,
@@ -2314,7 +2193,6 @@ func (c RegClient) GetSubkeyBoxChallenge(ctx context.Context, parent lib.EntityI
 	res = tmp.Data.Import()
 	return
 }
-
 func (c RegClient) LoadSubkeyBox(ctx context.Context, arg LoadSubkeyBoxArg) (res lib.Box, err error) {
 	warg := &rpc.DataWrap[lib.Header, *LoadSubkeyBoxArgInternal__]{
 		Data: arg.Export(),
@@ -2336,7 +2214,6 @@ func (c RegClient) LoadSubkeyBox(ctx context.Context, arg LoadSubkeyBoxArg) (res
 	res = tmp.Data.Import()
 	return
 }
-
 func (c RegClient) StretchVersion(ctx context.Context) (res lib.StretchVersion, err error) {
 	var arg RegStretchVersionArg
 	warg := &rpc.DataWrap[lib.Header, *RegStretchVersionArgInternal__]{
@@ -2359,7 +2236,6 @@ func (c RegClient) StretchVersion(ctx context.Context) (res lib.StretchVersion, 
 	res = tmp.Data.Import()
 	return
 }
-
 func (c RegClient) SelectVHost(ctx context.Context, host lib.HostID) (err error) {
 	arg := RegSelectVhost{
 		Host: host,
@@ -2383,7 +2259,6 @@ func (c RegClient) SelectVHost(ctx context.Context, host lib.HostID) (err error)
 	}
 	return
 }
-
 func (c RegClient) ResolveUsername(ctx context.Context, a ResolveUsernameArg) (res lib.UID, err error) {
 	arg := RegResolveUsernameArg{
 		A: a,
@@ -2408,7 +2283,6 @@ func (c RegClient) ResolveUsername(ctx context.Context, a ResolveUsernameArg) (r
 	res = tmp.Data.Import()
 	return
 }
-
 func (c RegClient) GetServerConfig(ctx context.Context) (res lib.RegServerConfig, err error) {
 	var arg GetServerConfigArg
 	warg := &rpc.DataWrap[lib.Header, *GetServerConfigArgInternal__]{
@@ -2431,7 +2305,6 @@ func (c RegClient) GetServerConfig(ctx context.Context) (res lib.RegServerConfig
 	res = tmp.Data.Import()
 	return
 }
-
 func (c RegClient) InitOAuth2Session(ctx context.Context, arg InitOAuth2SessionArg) (res lib.URLString, err error) {
 	warg := &rpc.DataWrap[lib.Header, *InitOAuth2SessionArgInternal__]{
 		Data: arg.Export(),
@@ -2453,7 +2326,6 @@ func (c RegClient) InitOAuth2Session(ctx context.Context, arg InitOAuth2SessionA
 	res = tmp.Data.Import()
 	return
 }
-
 func (c RegClient) PollOAuth2SessionCompletion(ctx context.Context, arg PollOAuth2SessionCompletionArg) (res OAuth2PollRes, err error) {
 	warg := &rpc.DataWrap[lib.Header, *PollOAuth2SessionCompletionArgInternal__]{
 		Data: arg.Export(),
@@ -2475,7 +2347,6 @@ func (c RegClient) PollOAuth2SessionCompletion(ctx context.Context, arg PollOAut
 	res = tmp.Data.Import()
 	return
 }
-
 func (c RegClient) SsoLogin(ctx context.Context, arg SsoLoginArg) (err error) {
 	warg := &rpc.DataWrap[lib.Header, *SsoLoginArgInternal__]{
 		Data: arg.Export(),
@@ -2496,7 +2367,6 @@ func (c RegClient) SsoLogin(ctx context.Context, arg SsoLoginArg) (err error) {
 	}
 	return
 }
-
 func (c RegClient) ProbeKeyExists(ctx context.Context, arg ProbeKeyExistsArg) (err error) {
 	warg := &rpc.DataWrap[lib.Header, *ProbeKeyExistsArgInternal__]{
 		Data: arg.Export(),
@@ -2517,7 +2387,6 @@ func (c RegClient) ProbeKeyExists(ctx context.Context, arg ProbeKeyExistsArg) (e
 	}
 	return
 }
-
 func (c RegClient) GetVHostMgmtHost(ctx context.Context) (res lib.TCPAddr, err error) {
 	var arg GetVHostMgmtHostArg
 	warg := &rpc.DataWrap[lib.Header, *GetVHostMgmtHostArgInternal__]{
@@ -2540,7 +2409,6 @@ func (c RegClient) GetVHostMgmtHost(ctx context.Context) (res lib.TCPAddr, err e
 	res = tmp.Data.Import()
 	return
 }
-
 func (c RegClient) GetClientVersionInfo(ctx context.Context, me lib.ClientVersionExt) (res lib.ServerClientVersionInfo, err error) {
 	arg := GetClientVersionInfoArg{
 		Me: me,
@@ -2565,7 +2433,6 @@ func (c RegClient) GetClientVersionInfo(ctx context.Context, me lib.ClientVersio
 	res = tmp.Data.Import()
 	return
 }
-
 func RegProtocol(i RegInterface) rpc.ProtocolV2 {
 	return rpc.ProtocolV2{
 		Name: "Reg",

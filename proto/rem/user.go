@@ -1,5 +1,5 @@
-// Auto-generated to Go types and interfaces using @foks-proj/snowpack-compiler 1.0.8 (git+https://github.com/foks-proj/node-snowpack-compiler.git)
-//  Input file: ../../proto-src/rem/user.snowp
+// Auto-generated to Go types and interfaces using snowpc 0.0.4 (https://github.com/foks-proj/go-snowpack-compiler)
+//  Input file:../../proto-src/rem/user.snowp
 
 package rem
 
@@ -20,7 +20,6 @@ func (w WebSession) Export() *WebSessionInternal__ {
 	tmp := (([20]byte)(w))
 	return ((*WebSessionInternal__)(&tmp))
 }
-
 func (w WebSessionInternal__) Import() WebSession {
 	tmp := ([20]byte)(w)
 	return WebSession((func(x *[20]byte) (ret [20]byte) {
@@ -56,7 +55,6 @@ func (w WebSessionString) Export() *WebSessionStringInternal__ {
 	tmp := ((string)(w))
 	return ((*WebSessionStringInternal__)(&tmp))
 }
-
 func (w WebSessionStringInternal__) Import() WebSessionString {
 	tmp := (string)(w)
 	return WebSessionString((func(x *string) (ret string) {
@@ -89,7 +87,6 @@ type DeviceLabelNameAndCommitmentKey struct {
 	Dln           lib.DeviceLabelAndName
 	CommitmentKey lib.RandomCommitmentKey
 }
-
 type DeviceLabelNameAndCommitmentKeyInternal__ struct {
 	_struct       struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Dln           *lib.DeviceLabelAndNameInternal__
@@ -112,14 +109,12 @@ func (d DeviceLabelNameAndCommitmentKeyInternal__) Import() DeviceLabelNameAndCo
 		})(d.CommitmentKey),
 	}
 }
-
 func (d DeviceLabelNameAndCommitmentKey) Export() *DeviceLabelNameAndCommitmentKeyInternal__ {
 	return &DeviceLabelNameAndCommitmentKeyInternal__{
 		Dln:           d.Dln.Export(),
 		CommitmentKey: d.CommitmentKey.Export(),
 	}
 }
-
 func (d *DeviceLabelNameAndCommitmentKey) Encode(enc rpc.Encoder) error {
 	return enc.Encode(d.Export())
 }
@@ -153,7 +148,6 @@ var LoadUserChainAuthTypeMap = map[string]LoadUserChainAuthType{
 	"AsLocalTeam": 3,
 	"OpenVHost":   4,
 }
-
 var LoadUserChainAuthTypeRevMap = map[LoadUserChainAuthType]string{
 	0: "AsLocalUser",
 	1: "Token",
@@ -167,7 +161,6 @@ type LoadUserChainAuthTypeInternal__ LoadUserChainAuthType
 func (l LoadUserChainAuthTypeInternal__) Import() LoadUserChainAuthType {
 	return LoadUserChainAuthType(l)
 }
-
 func (l LoadUserChainAuthType) Export() *LoadUserChainAuthTypeInternal__ {
 	return ((*LoadUserChainAuthTypeInternal__)(&l))
 }
@@ -178,13 +171,11 @@ type LoadUserChainAuth struct {
 	F_2__ *lib.PermissionToken `json:"f2,omitempty"`
 	F_3__ *TeamVOBearerToken   `json:"f3,omitempty"`
 }
-
 type LoadUserChainAuthInternal__ struct {
 	_struct  struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	T        LoadUserChainAuthType
 	Switch__ LoadUserChainAuthInternalSwitch__
 }
-
 type LoadUserChainAuthInternalSwitch__ struct {
 	_struct struct{}                       `codec:",omitempty"` //lint:ignore U1000 msgpack internal field
 	F_1__   *lib.PermissionTokenInternal__ `codec:"1"`
@@ -213,70 +204,61 @@ func (l LoadUserChainAuth) GetT() (ret LoadUserChainAuthType, err error) {
 	}
 	return l.T, nil
 }
-
 func (l LoadUserChainAuth) Token() lib.PermissionToken {
 	if l.F_1__ == nil {
-		panic("unexepected nil case; should have been checked")
+		panic("unexpected nil case; should have been checked")
 	}
 	if l.T != LoadUserChainAuthType_Token {
 		panic(fmt.Sprintf("unexpected switch value (%v) when Token is called", l.T))
 	}
 	return *l.F_1__
 }
-
 func (l LoadUserChainAuth) Selftoken() lib.PermissionToken {
 	if l.F_2__ == nil {
-		panic("unexepected nil case; should have been checked")
+		panic("unexpected nil case; should have been checked")
 	}
 	if l.T != LoadUserChainAuthType_SelfToken {
 		panic(fmt.Sprintf("unexpected switch value (%v) when Selftoken is called", l.T))
 	}
 	return *l.F_2__
 }
-
 func (l LoadUserChainAuth) Aslocalteam() TeamVOBearerToken {
 	if l.F_3__ == nil {
-		panic("unexepected nil case; should have been checked")
+		panic("unexpected nil case; should have been checked")
 	}
 	if l.T != LoadUserChainAuthType_AsLocalTeam {
 		panic(fmt.Sprintf("unexpected switch value (%v) when Aslocalteam is called", l.T))
 	}
 	return *l.F_3__
 }
-
 func NewLoadUserChainAuthWithAslocaluser() LoadUserChainAuth {
 	return LoadUserChainAuth{
 		T: LoadUserChainAuthType_AsLocalUser,
 	}
 }
-
 func NewLoadUserChainAuthWithToken(v lib.PermissionToken) LoadUserChainAuth {
 	return LoadUserChainAuth{
 		T:     LoadUserChainAuthType_Token,
 		F_1__: &v,
 	}
 }
-
 func NewLoadUserChainAuthWithSelftoken(v lib.PermissionToken) LoadUserChainAuth {
 	return LoadUserChainAuth{
 		T:     LoadUserChainAuthType_SelfToken,
 		F_2__: &v,
 	}
 }
-
 func NewLoadUserChainAuthWithAslocalteam(v TeamVOBearerToken) LoadUserChainAuth {
 	return LoadUserChainAuth{
 		T:     LoadUserChainAuthType_AsLocalTeam,
 		F_3__: &v,
 	}
 }
-
 func NewLoadUserChainAuthWithOpenvhost() LoadUserChainAuth {
 	return LoadUserChainAuth{
 		T: LoadUserChainAuthType_OpenVHost,
 	}
 }
-
 func (l LoadUserChainAuthInternal__) Import() LoadUserChainAuth {
 	return LoadUserChainAuth{
 		T: l.T,
@@ -318,7 +300,6 @@ func (l LoadUserChainAuthInternal__) Import() LoadUserChainAuth {
 		})(l.Switch__.F_3__),
 	}
 }
-
 func (l LoadUserChainAuth) Export() *LoadUserChainAuthInternal__ {
 	return &LoadUserChainAuthInternal__{
 		T: l.T,
@@ -344,7 +325,6 @@ func (l LoadUserChainAuth) Export() *LoadUserChainAuthInternal__ {
 		},
 	}
 }
-
 func (l *LoadUserChainAuth) Encode(enc rpc.Encoder) error {
 	return enc.Encode(l.Export())
 }
@@ -367,7 +347,6 @@ type LoadUserChainArg struct {
 	Username *NameSeqnoPair
 	Auth     LoadUserChainAuth
 }
-
 type LoadUserChainArgInternal__ struct {
 	_struct  struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Uid      *lib.UIDInternal__
@@ -410,7 +389,6 @@ func (l LoadUserChainArgInternal__) Import() LoadUserChainArg {
 		})(l.Auth),
 	}
 }
-
 func (l LoadUserChainArg) Export() *LoadUserChainArgInternal__ {
 	return &LoadUserChainArgInternal__{
 		Uid:   l.Uid.Export(),
@@ -424,7 +402,6 @@ func (l LoadUserChainArg) Export() *LoadUserChainArgInternal__ {
 		Auth: l.Auth.Export(),
 	}
 }
-
 func (l *LoadUserChainArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(l.Export())
 }
@@ -445,7 +422,6 @@ type NameSeqnoPair struct {
 	N lib.Name
 	S lib.NameSeqno
 }
-
 type NameSeqnoPairInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	N       *lib.NameInternal__
@@ -468,14 +444,12 @@ func (n NameSeqnoPairInternal__) Import() NameSeqnoPair {
 		})(n.S),
 	}
 }
-
 func (n NameSeqnoPair) Export() *NameSeqnoPairInternal__ {
 	return &NameSeqnoPairInternal__{
 		N: n.N.Export(),
 		S: n.S.Export(),
 	}
 }
-
 func (n *NameSeqnoPair) Encode(enc rpc.Encoder) error {
 	return enc.Encode(n.Export())
 }
@@ -496,7 +470,6 @@ type ResolveUsernameArg struct {
 	N    lib.Name
 	Auth LoadUserChainAuth
 }
-
 type ResolveUsernameArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	N       *lib.NameInternal__
@@ -519,14 +492,12 @@ func (r ResolveUsernameArgInternal__) Import() ResolveUsernameArg {
 		})(r.Auth),
 	}
 }
-
 func (r ResolveUsernameArg) Export() *ResolveUsernameArgInternal__ {
 	return &ResolveUsernameArgInternal__{
 		N:    r.N.Export(),
 		Auth: r.Auth.Export(),
 	}
 }
-
 func (r *ResolveUsernameArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(r.Export())
 }
@@ -547,7 +518,6 @@ type NameCommitmentAndKey struct {
 	Unc NameCommitment
 	Key lib.RandomCommitmentKey
 }
-
 type NameCommitmentAndKeyInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Unc     *NameCommitmentInternal__
@@ -570,14 +540,12 @@ func (n NameCommitmentAndKeyInternal__) Import() NameCommitmentAndKey {
 		})(n.Key),
 	}
 }
-
 func (n NameCommitmentAndKey) Export() *NameCommitmentAndKeyInternal__ {
 	return &NameCommitmentAndKeyInternal__{
 		Unc: n.Unc.Export(),
 		Key: n.Key.Export(),
 	}
 }
-
 func (n *NameCommitmentAndKey) Encode(enc rpc.Encoder) error {
 	return enc.Encode(n.Export())
 }
@@ -604,7 +572,6 @@ type UserChain struct {
 	NumUsernameLinks uint64
 	Hepks            lib.HEPKSet
 }
-
 type UserChainInternal__ struct {
 	_struct          struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Links            *[](*lib.LinkOuterInternal__)
@@ -717,7 +684,6 @@ func (u UserChainInternal__) Import() UserChain {
 		})(u.Hepks),
 	}
 }
-
 func (u UserChain) Export() *UserChainInternal__ {
 	return &UserChainInternal__{
 		Links: (func(x []lib.LinkOuter) *[](*lib.LinkOuterInternal__) {
@@ -766,7 +732,6 @@ func (u UserChain) Export() *UserChainInternal__ {
 		Hepks:            u.Hepks.Export(),
 	}
 }
-
 func (u *UserChain) Encode(enc rpc.Encoder) error {
 	return enc.Encode(u.Export())
 }
@@ -787,7 +752,6 @@ type SetPassphraseAnnex struct {
 	Arg  ChangePassphraseArg
 	Link PostGenericLinkArg
 }
-
 type SetPassphraseAnnexInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Arg     *ChangePassphraseArgInternal__
@@ -810,14 +774,12 @@ func (s SetPassphraseAnnexInternal__) Import() SetPassphraseAnnex {
 		})(s.Link),
 	}
 }
-
 func (s SetPassphraseAnnex) Export() *SetPassphraseAnnexInternal__ {
 	return &SetPassphraseAnnexInternal__{
 		Arg:  s.Arg.Export(),
 		Link: s.Link.Export(),
 	}
 }
-
 func (s *SetPassphraseAnnex) Encode(enc rpc.Encoder) error {
 	return enc.Encode(s.Export())
 }
@@ -839,7 +801,6 @@ type GrantLocalViewPermissionPayload struct {
 	Viewer lib.PartyID
 	Tm     lib.Time
 }
-
 type GrantLocalViewPermissionPayloadInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Viewee  *lib.PartyIDInternal__
@@ -869,7 +830,6 @@ func (g GrantLocalViewPermissionPayloadInternal__) Import() GrantLocalViewPermis
 		})(g.Tm),
 	}
 }
-
 func (g GrantLocalViewPermissionPayload) Export() *GrantLocalViewPermissionPayloadInternal__ {
 	return &GrantLocalViewPermissionPayloadInternal__{
 		Viewee: g.Viewee.Export(),
@@ -877,7 +837,6 @@ func (g GrantLocalViewPermissionPayload) Export() *GrantLocalViewPermissionPaylo
 		Tm:     g.Tm.Export(),
 	}
 }
-
 func (g *GrantLocalViewPermissionPayload) Encode(enc rpc.Encoder) error {
 	return enc.Encode(g.Export())
 }
@@ -897,7 +856,6 @@ var GrantLocalViewPermissionPayloadTypeUniqueID = rpc.TypeUniqueID(0xf620e4a9845
 func (g *GrantLocalViewPermissionPayload) GetTypeUniqueID() rpc.TypeUniqueID {
 	return GrantLocalViewPermissionPayloadTypeUniqueID
 }
-
 func (g *GrantLocalViewPermissionPayload) Bytes() []byte { return nil }
 
 type ChangedUsernameFullUpdateArg struct {
@@ -906,7 +864,6 @@ type ChangedUsernameFullUpdateArg struct {
 	Rur                   ReserveNameRes
 	NextTreeLocation      lib.TreeLocation
 }
-
 type ChangedUsernameFullUpdateArgInternal__ struct {
 	_struct               struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Link                  *lib.LinkOuterInternal__
@@ -943,7 +900,6 @@ func (c ChangedUsernameFullUpdateArgInternal__) Import() ChangedUsernameFullUpda
 		})(c.NextTreeLocation),
 	}
 }
-
 func (c ChangedUsernameFullUpdateArg) Export() *ChangedUsernameFullUpdateArgInternal__ {
 	return &ChangedUsernameFullUpdateArgInternal__{
 		Link:                  c.Link.Export(),
@@ -952,7 +908,6 @@ func (c ChangedUsernameFullUpdateArg) Export() *ChangedUsernameFullUpdateArgInte
 		NextTreeLocation:      c.NextTreeLocation.Export(),
 	}
 }
-
 func (c *ChangedUsernameFullUpdateArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(c.Export())
 }
@@ -975,7 +930,6 @@ type GenericChain struct {
 	Merkle       lib.MerklePathsCompressed
 	LocationSeed *lib.TreeLocation
 }
-
 type GenericChainInternal__ struct {
 	_struct      struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Links        *[](*lib.LinkOuterInternal__)
@@ -1042,7 +996,6 @@ func (g GenericChainInternal__) Import() GenericChain {
 		})(g.LocationSeed),
 	}
 }
-
 func (g GenericChain) Export() *GenericChainInternal__ {
 	return &GenericChainInternal__{
 		Links: (func(x []lib.LinkOuter) *[](*lib.LinkOuterInternal__) {
@@ -1074,7 +1027,6 @@ func (g GenericChain) Export() *GenericChainInternal__ {
 		})(g.LocationSeed),
 	}
 }
-
 func (g *GenericChain) Encode(enc rpc.Encoder) error {
 	return enc.Encode(g.Export())
 }
@@ -1096,7 +1048,6 @@ type GrantRemoteViewPermissionPayload struct {
 	Viewer lib.FQParty
 	Tm     lib.Time
 }
-
 type GrantRemoteViewPermissionPayloadInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Viewee  *lib.PartyIDInternal__
@@ -1126,7 +1077,6 @@ func (g GrantRemoteViewPermissionPayloadInternal__) Import() GrantRemoteViewPerm
 		})(g.Tm),
 	}
 }
-
 func (g GrantRemoteViewPermissionPayload) Export() *GrantRemoteViewPermissionPayloadInternal__ {
 	return &GrantRemoteViewPermissionPayloadInternal__{
 		Viewee: g.Viewee.Export(),
@@ -1134,7 +1084,6 @@ func (g GrantRemoteViewPermissionPayload) Export() *GrantRemoteViewPermissionPay
 		Tm:     g.Tm.Export(),
 	}
 }
-
 func (g *GrantRemoteViewPermissionPayload) Encode(enc rpc.Encoder) error {
 	return enc.Encode(g.Export())
 }
@@ -1154,7 +1103,6 @@ var GrantRemoteViewPermissionPayloadTypeUniqueID = rpc.TypeUniqueID(0xc83da75604
 func (g *GrantRemoteViewPermissionPayload) GetTypeUniqueID() rpc.TypeUniqueID {
 	return GrantRemoteViewPermissionPayloadTypeUniqueID
 }
-
 func (g *GrantRemoteViewPermissionPayload) Bytes() []byte { return nil }
 
 type LocalTeamListEntry struct {
@@ -1164,7 +1112,6 @@ type LocalTeamListEntry struct {
 	Seqno   lib.Seqno
 	KeyGen  lib.Generation
 }
-
 type LocalTeamListEntryInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Id      *lib.TeamIDInternal__
@@ -1208,7 +1155,6 @@ func (l LocalTeamListEntryInternal__) Import() LocalTeamListEntry {
 		})(l.KeyGen),
 	}
 }
-
 func (l LocalTeamListEntry) Export() *LocalTeamListEntryInternal__ {
 	return &LocalTeamListEntryInternal__{
 		Id:      l.Id.Export(),
@@ -1218,7 +1164,6 @@ func (l LocalTeamListEntry) Export() *LocalTeamListEntryInternal__ {
 		KeyGen:  l.KeyGen.Export(),
 	}
 }
-
 func (l *LocalTeamListEntry) Encode(enc rpc.Encoder) error {
 	return enc.Encode(l.Export())
 }
@@ -1240,7 +1185,6 @@ type NamedLocalTeamListEntry struct {
 	Name        lib.NameUtf8
 	QuotaMaster *lib.UID
 }
-
 type NamedLocalTeamListEntryInternal__ struct {
 	_struct     struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Te          *LocalTeamListEntryInternal__
@@ -1276,7 +1220,6 @@ func (n NamedLocalTeamListEntryInternal__) Import() NamedLocalTeamListEntry {
 		})(n.QuotaMaster),
 	}
 }
-
 func (n NamedLocalTeamListEntry) Export() *NamedLocalTeamListEntryInternal__ {
 	return &NamedLocalTeamListEntryInternal__{
 		Te:   n.Te.Export(),
@@ -1289,7 +1232,6 @@ func (n NamedLocalTeamListEntry) Export() *NamedLocalTeamListEntryInternal__ {
 		})(n.QuotaMaster),
 	}
 }
-
 func (n *NamedLocalTeamListEntry) Encode(enc rpc.Encoder) error {
 	return enc.Encode(n.Export())
 }
@@ -1322,7 +1264,6 @@ func (n NamedLocalTeamList) Export() *NamedLocalTeamListInternal__ {
 		return &ret
 	})(tmp)))
 }
-
 func (n NamedLocalTeamListInternal__) Import() NamedLocalTeamList {
 	tmp := ([](*NamedLocalTeamListEntryInternal__))(n)
 	return NamedLocalTeamList((func(x *[](*NamedLocalTeamListEntryInternal__)) (ret []NamedLocalTeamListEntry) {
@@ -1379,7 +1320,6 @@ func (l LocalTeamList) Export() *LocalTeamListInternal__ {
 		return &ret
 	})(tmp)))
 }
-
 func (l LocalTeamListInternal__) Import() LocalTeamList {
 	tmp := ([](*LocalTeamListEntryInternal__))(l)
 	return LocalTeamList((func(x *[](*LocalTeamListEntryInternal__)) (ret []LocalTeamListEntry) {
@@ -1429,7 +1369,6 @@ const (
 var EntityIDMerkleValueVersionMap = map[string]EntityIDMerkleValueVersion{
 	"V1": 1,
 }
-
 var EntityIDMerkleValueVersionRevMap = map[EntityIDMerkleValueVersion]string{
 	1: "V1",
 }
@@ -1439,7 +1378,6 @@ type EntityIDMerkleValueVersionInternal__ EntityIDMerkleValueVersion
 func (e EntityIDMerkleValueVersionInternal__) Import() EntityIDMerkleValueVersion {
 	return EntityIDMerkleValueVersion(e)
 }
-
 func (e EntityIDMerkleValueVersion) Export() *EntityIDMerkleValueVersionInternal__ {
 	return ((*EntityIDMerkleValueVersionInternal__)(&e))
 }
@@ -1448,13 +1386,11 @@ type EntityIDMerkleValue struct {
 	V     EntityIDMerkleValueVersion
 	F_1__ *lib.EntityID `json:"f1,omitempty"`
 }
-
 type EntityIDMerkleValueInternal__ struct {
 	_struct  struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	V        EntityIDMerkleValueVersion
 	Switch__ EntityIDMerkleValueInternalSwitch__
 }
-
 type EntityIDMerkleValueInternalSwitch__ struct {
 	_struct struct{}                `codec:",omitempty"` //lint:ignore U1000 msgpack internal field
 	F_1__   *lib.EntityIDInternal__ `codec:"1"`
@@ -1469,24 +1405,21 @@ func (e EntityIDMerkleValue) GetV() (ret EntityIDMerkleValueVersion, err error) 
 	}
 	return e.V, nil
 }
-
 func (e EntityIDMerkleValue) V1() lib.EntityID {
 	if e.F_1__ == nil {
-		panic("unexepected nil case; should have been checked")
+		panic("unexpected nil case; should have been checked")
 	}
 	if e.V != EntityIDMerkleValueVersion_V1 {
 		panic(fmt.Sprintf("unexpected switch value (%v) when V1 is called", e.V))
 	}
 	return *e.F_1__
 }
-
 func NewEntityIDMerkleValueWithV1(v lib.EntityID) EntityIDMerkleValue {
 	return EntityIDMerkleValue{
 		V:     EntityIDMerkleValueVersion_V1,
 		F_1__: &v,
 	}
 }
-
 func (e EntityIDMerkleValueInternal__) Import() EntityIDMerkleValue {
 	return EntityIDMerkleValue{
 		V: e.V,
@@ -1504,7 +1437,6 @@ func (e EntityIDMerkleValueInternal__) Import() EntityIDMerkleValue {
 		})(e.Switch__.F_1__),
 	}
 }
-
 func (e EntityIDMerkleValue) Export() *EntityIDMerkleValueInternal__ {
 	return &EntityIDMerkleValueInternal__{
 		V: e.V,
@@ -1518,7 +1450,6 @@ func (e EntityIDMerkleValue) Export() *EntityIDMerkleValueInternal__ {
 		},
 	}
 }
-
 func (e *EntityIDMerkleValue) Encode(enc rpc.Encoder) error {
 	return enc.Encode(e.Export())
 }
@@ -1538,14 +1469,12 @@ var EntityIDMerkleValueTypeUniqueID = rpc.TypeUniqueID(0xd3d21c7dc1d64ea1)
 func (e *EntityIDMerkleValue) GetTypeUniqueID() rpc.TypeUniqueID {
 	return EntityIDMerkleValueTypeUniqueID
 }
-
 func (e *EntityIDMerkleValue) Bytes() []byte { return nil }
 
 type TreeLocationPair struct {
 	Seqno lib.Seqno
 	Loc   lib.TreeLocation
 }
-
 type TreeLocationPairInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Seqno   *lib.SeqnoInternal__
@@ -1568,14 +1497,12 @@ func (t TreeLocationPairInternal__) Import() TreeLocationPair {
 		})(t.Loc),
 	}
 }
-
 func (t TreeLocationPair) Export() *TreeLocationPairInternal__ {
 	return &TreeLocationPairInternal__{
 		Seqno: t.Seqno.Export(),
 		Loc:   t.Loc.Export(),
 	}
 }
-
 func (t *TreeLocationPair) Encode(enc rpc.Encoder) error {
 	return enc.Encode(t.Export())
 }
@@ -1598,7 +1525,6 @@ type YubiEncryptedManagementKey struct {
 	Gen  lib.Generation
 	Role lib.Role
 }
-
 type YubiEncryptedManagementKeyInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Yk      *lib.YubiIDInternal__
@@ -1635,7 +1561,6 @@ func (y YubiEncryptedManagementKeyInternal__) Import() YubiEncryptedManagementKe
 		})(y.Role),
 	}
 }
-
 func (y YubiEncryptedManagementKey) Export() *YubiEncryptedManagementKeyInternal__ {
 	return &YubiEncryptedManagementKeyInternal__{
 		Yk:   y.Yk.Export(),
@@ -1644,7 +1569,6 @@ func (y YubiEncryptedManagementKey) Export() *YubiEncryptedManagementKeyInternal
 		Role: y.Role.Export(),
 	}
 }
-
 func (y *YubiEncryptedManagementKey) Encode(enc rpc.Encoder) error {
 	return enc.Encode(y.Export())
 }
@@ -1665,7 +1589,6 @@ var UserProtocolID rpc.ProtocolUniqueID = rpc.ProtocolUniqueID(0x823f0899)
 
 type PingArg struct {
 }
-
 type PingArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 }
@@ -1673,11 +1596,9 @@ type PingArgInternal__ struct {
 func (p PingArgInternal__) Import() PingArg {
 	return PingArg{}
 }
-
 func (p PingArg) Export() *PingArgInternal__ {
 	return &PingArgInternal__{}
 }
-
 func (p *PingArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(p.Export())
 }
@@ -1705,7 +1626,6 @@ type SetPassphraseArg struct {
 	NextTreeLocation lib.TreeLocation
 	UserSettingsLink *PostGenericLinkArg
 }
-
 type SetPassphraseArgInternal__ struct {
 	_struct          struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Key              *lib.EntityIDInternal__
@@ -1789,7 +1709,6 @@ func (s SetPassphraseArgInternal__) Import() SetPassphraseArg {
 		})(s.UserSettingsLink),
 	}
 }
-
 func (s SetPassphraseArg) Export() *SetPassphraseArgInternal__ {
 	return &SetPassphraseArgInternal__{
 		Key:           s.Key.Export(),
@@ -1813,7 +1732,6 @@ func (s SetPassphraseArg) Export() *SetPassphraseArgInternal__ {
 		})(s.UserSettingsLink),
 	}
 }
-
 func (s *SetPassphraseArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(s.Export())
 }
@@ -1839,7 +1757,6 @@ type ChangePassphraseArg struct {
 	PpGen            lib.PassphraseGeneration
 	UserSettingsLink *PostGenericLinkArg
 }
-
 type ChangePassphraseArgInternal__ struct {
 	_struct          struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Key              *lib.EntityIDInternal__
@@ -1909,7 +1826,6 @@ func (c ChangePassphraseArgInternal__) Import() ChangePassphraseArg {
 		})(c.UserSettingsLink),
 	}
 }
-
 func (c ChangePassphraseArg) Export() *ChangePassphraseArgInternal__ {
 	return &ChangePassphraseArgInternal__{
 		Key:           c.Key.Export(),
@@ -1931,7 +1847,6 @@ func (c ChangePassphraseArg) Export() *ChangePassphraseArgInternal__ {
 		})(c.UserSettingsLink),
 	}
 }
-
 func (c *ChangePassphraseArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(c.Export())
 }
@@ -1950,7 +1865,6 @@ func (c *ChangePassphraseArg) Bytes() []byte { return nil }
 
 type GetSaltArg struct {
 }
-
 type GetSaltArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 }
@@ -1958,11 +1872,9 @@ type GetSaltArgInternal__ struct {
 func (g GetSaltArgInternal__) Import() GetSaltArg {
 	return GetSaltArg{}
 }
-
 func (g GetSaltArg) Export() *GetSaltArgInternal__ {
 	return &GetSaltArgInternal__{}
 }
-
 func (g *GetSaltArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(g.Export())
 }
@@ -1981,7 +1893,6 @@ func (g *GetSaltArg) Bytes() []byte { return nil }
 
 type NextPassphraseGenerationArg struct {
 }
-
 type NextPassphraseGenerationArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 }
@@ -1989,11 +1900,9 @@ type NextPassphraseGenerationArgInternal__ struct {
 func (n NextPassphraseGenerationArgInternal__) Import() NextPassphraseGenerationArg {
 	return NextPassphraseGenerationArg{}
 }
-
 func (n NextPassphraseGenerationArg) Export() *NextPassphraseGenerationArgInternal__ {
 	return &NextPassphraseGenerationArgInternal__{}
 }
-
 func (n *NextPassphraseGenerationArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(n.Export())
 }
@@ -2012,7 +1921,6 @@ func (n *NextPassphraseGenerationArg) Bytes() []byte { return nil }
 
 type StretchVersionArg struct {
 }
-
 type StretchVersionArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 }
@@ -2020,11 +1928,9 @@ type StretchVersionArgInternal__ struct {
 func (s StretchVersionArgInternal__) Import() StretchVersionArg {
 	return StretchVersionArg{}
 }
-
 func (s StretchVersionArg) Export() *StretchVersionArgInternal__ {
 	return &StretchVersionArgInternal__{}
 }
-
 func (s *StretchVersionArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(s.Export())
 }
@@ -2051,7 +1957,6 @@ type ProvisionDeviceArg struct {
 	Hepks            lib.HEPKSet
 	YubiPQhint       *lib.YubiSlotAndPQKeyID
 }
-
 type ProvisionDeviceArgInternal__ struct {
 	_struct          struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Link             *lib.LinkOuterInternal__
@@ -2135,7 +2040,6 @@ func (p ProvisionDeviceArgInternal__) Import() ProvisionDeviceArg {
 		})(p.YubiPQhint),
 	}
 }
-
 func (p ProvisionDeviceArg) Export() *ProvisionDeviceArgInternal__ {
 	return &ProvisionDeviceArgInternal__{
 		Link:             p.Link.Export(),
@@ -2158,7 +2062,6 @@ func (p ProvisionDeviceArg) Export() *ProvisionDeviceArgInternal__ {
 		})(p.YubiPQhint),
 	}
 }
-
 func (p *ProvisionDeviceArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(p.Export())
 }
@@ -2183,7 +2086,6 @@ type RevokeDeviceArg struct {
 	Ppa              *SetPassphraseAnnex
 	Hepks            lib.HEPKSet
 }
-
 type RevokeDeviceArgInternal__ struct {
 	_struct          struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Link             *lib.LinkOuterInternal__
@@ -2252,7 +2154,6 @@ func (r RevokeDeviceArgInternal__) Import() RevokeDeviceArg {
 		})(r.Hepks),
 	}
 }
-
 func (r RevokeDeviceArg) Export() *RevokeDeviceArgInternal__ {
 	return &RevokeDeviceArgInternal__{
 		Link:     r.Link.Export(),
@@ -2277,7 +2178,6 @@ func (r RevokeDeviceArg) Export() *RevokeDeviceArgInternal__ {
 		Hepks: r.Hepks.Export(),
 	}
 }
-
 func (r *RevokeDeviceArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(r.Export())
 }
@@ -2297,7 +2197,6 @@ func (r *RevokeDeviceArg) Bytes() []byte { return nil }
 type UserLoadUserChainArg struct {
 	A LoadUserChainArg
 }
-
 type UserLoadUserChainArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	A       *LoadUserChainArgInternal__
@@ -2313,13 +2212,11 @@ func (u UserLoadUserChainArgInternal__) Import() UserLoadUserChainArg {
 		})(u.A),
 	}
 }
-
 func (u UserLoadUserChainArg) Export() *UserLoadUserChainArgInternal__ {
 	return &UserLoadUserChainArgInternal__{
 		A: u.A.Export(),
 	}
 }
-
 func (u *UserLoadUserChainArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(u.Export())
 }
@@ -2339,7 +2236,6 @@ func (u *UserLoadUserChainArg) Bytes() []byte { return nil }
 type GrantLocalViewPermissionForUserArg struct {
 	P GrantLocalViewPermissionPayload
 }
-
 type GrantLocalViewPermissionForUserArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	P       *GrantLocalViewPermissionPayloadInternal__
@@ -2355,13 +2251,11 @@ func (g GrantLocalViewPermissionForUserArgInternal__) Import() GrantLocalViewPer
 		})(g.P),
 	}
 }
-
 func (g GrantLocalViewPermissionForUserArg) Export() *GrantLocalViewPermissionForUserArgInternal__ {
 	return &GrantLocalViewPermissionForUserArgInternal__{
 		P: g.P.Export(),
 	}
 }
-
 func (g *GrantLocalViewPermissionForUserArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(g.Export())
 }
@@ -2382,7 +2276,6 @@ type ChangeUsernameArg struct {
 	UsernameUtf8 lib.NameUtf8
 	Full         *ChangedUsernameFullUpdateArg
 }
-
 type ChangeUsernameArgInternal__ struct {
 	_struct      struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	UsernameUtf8 *lib.NameUtf8Internal__
@@ -2411,7 +2304,6 @@ func (c ChangeUsernameArgInternal__) Import() ChangeUsernameArg {
 		})(c.Full),
 	}
 }
-
 func (c ChangeUsernameArg) Export() *ChangeUsernameArgInternal__ {
 	return &ChangeUsernameArgInternal__{
 		UsernameUtf8: c.UsernameUtf8.Export(),
@@ -2423,7 +2315,6 @@ func (c ChangeUsernameArg) Export() *ChangeUsernameArgInternal__ {
 		})(c.Full),
 	}
 }
-
 func (c *ChangeUsernameArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(c.Export())
 }
@@ -2443,7 +2334,6 @@ func (c *ChangeUsernameArg) Bytes() []byte { return nil }
 type ReserveUsernameForChangeArg struct {
 	Un lib.Name
 }
-
 type ReserveUsernameForChangeArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Un      *lib.NameInternal__
@@ -2459,13 +2349,11 @@ func (r ReserveUsernameForChangeArgInternal__) Import() ReserveUsernameForChange
 		})(r.Un),
 	}
 }
-
 func (r ReserveUsernameForChangeArg) Export() *ReserveUsernameForChangeArgInternal__ {
 	return &ReserveUsernameForChangeArgInternal__{
 		Un: r.Un.Export(),
 	}
 }
-
 func (r *ReserveUsernameForChangeArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(r.Export())
 }
@@ -2485,7 +2373,6 @@ func (r *ReserveUsernameForChangeArg) Bytes() []byte { return nil }
 type GetTreeLocationArg struct {
 	Seqno lib.Seqno
 }
-
 type GetTreeLocationArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Seqno   *lib.SeqnoInternal__
@@ -2501,13 +2388,11 @@ func (g GetTreeLocationArgInternal__) Import() GetTreeLocationArg {
 		})(g.Seqno),
 	}
 }
-
 func (g GetTreeLocationArg) Export() *GetTreeLocationArgInternal__ {
 	return &GetTreeLocationArgInternal__{
 		Seqno: g.Seqno.Export(),
 	}
 }
-
 func (g *GetTreeLocationArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(g.Export())
 }
@@ -2528,7 +2413,6 @@ type GetPUKForRoleArg struct {
 	Role              lib.Role
 	TargetPublicKeyId lib.EntityID
 }
-
 type GetPUKForRoleArgInternal__ struct {
 	_struct           struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Role              *lib.RoleInternal__
@@ -2551,14 +2435,12 @@ func (g GetPUKForRoleArgInternal__) Import() GetPUKForRoleArg {
 		})(g.TargetPublicKeyId),
 	}
 }
-
 func (g GetPUKForRoleArg) Export() *GetPUKForRoleArgInternal__ {
 	return &GetPUKForRoleArgInternal__{
 		Role:              g.Role.Export(),
 		TargetPublicKeyId: g.TargetPublicKeyId.Export(),
 	}
 }
-
 func (g *GetPUKForRoleArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(g.Export())
 }
@@ -2577,7 +2459,6 @@ func (g *GetPUKForRoleArg) Bytes() []byte { return nil }
 
 type GetPpeParcelArg struct {
 }
-
 type GetPpeParcelArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 }
@@ -2585,11 +2466,9 @@ type GetPpeParcelArgInternal__ struct {
 func (g GetPpeParcelArgInternal__) Import() GetPpeParcelArg {
 	return GetPpeParcelArg{}
 }
-
 func (g GetPpeParcelArg) Export() *GetPpeParcelArgInternal__ {
 	return &GetPpeParcelArgInternal__{}
 }
-
 func (g *GetPpeParcelArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(g.Export())
 }
@@ -2610,7 +2489,6 @@ type PostGenericLinkArg struct {
 	Link             lib.LinkOuter
 	NextTreeLocation lib.TreeLocation
 }
-
 type PostGenericLinkArgInternal__ struct {
 	_struct          struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Link             *lib.LinkOuterInternal__
@@ -2633,14 +2511,12 @@ func (p PostGenericLinkArgInternal__) Import() PostGenericLinkArg {
 		})(p.NextTreeLocation),
 	}
 }
-
 func (p PostGenericLinkArg) Export() *PostGenericLinkArgInternal__ {
 	return &PostGenericLinkArgInternal__{
 		Link:             p.Link.Export(),
 		NextTreeLocation: p.NextTreeLocation.Export(),
 	}
 }
-
 func (p *PostGenericLinkArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(p.Export())
 }
@@ -2662,7 +2538,6 @@ type LoadGenericChainArg struct {
 	Typ   lib.ChainType
 	Start lib.Seqno
 }
-
 type LoadGenericChainArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Eid     *lib.EntityIDInternal__
@@ -2692,7 +2567,6 @@ func (l LoadGenericChainArgInternal__) Import() LoadGenericChainArg {
 		})(l.Start),
 	}
 }
-
 func (l LoadGenericChainArg) Export() *LoadGenericChainArgInternal__ {
 	return &LoadGenericChainArgInternal__{
 		Eid:   l.Eid.Export(),
@@ -2700,7 +2574,6 @@ func (l LoadGenericChainArg) Export() *LoadGenericChainArgInternal__ {
 		Start: l.Start.Export(),
 	}
 }
-
 func (l *LoadGenericChainArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(l.Export())
 }
@@ -2720,7 +2593,6 @@ func (l *LoadGenericChainArg) Bytes() []byte { return nil }
 type GrantRemoteViewPermissionForUserArg struct {
 	P GrantRemoteViewPermissionPayload
 }
-
 type GrantRemoteViewPermissionForUserArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	P       *GrantRemoteViewPermissionPayloadInternal__
@@ -2736,13 +2608,11 @@ func (g GrantRemoteViewPermissionForUserArgInternal__) Import() GrantRemoteViewP
 		})(g.P),
 	}
 }
-
 func (g GrantRemoteViewPermissionForUserArg) Export() *GrantRemoteViewPermissionForUserArgInternal__ {
 	return &GrantRemoteViewPermissionForUserArgInternal__{
 		P: g.P.Export(),
 	}
 }
-
 func (g *GrantRemoteViewPermissionForUserArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(g.Export())
 }
@@ -2761,7 +2631,6 @@ func (g *GrantRemoteViewPermissionForUserArg) Bytes() []byte { return nil }
 
 type GetTeamListServerTrustArg struct {
 }
-
 type GetTeamListServerTrustArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 }
@@ -2769,11 +2638,9 @@ type GetTeamListServerTrustArgInternal__ struct {
 func (g GetTeamListServerTrustArgInternal__) Import() GetTeamListServerTrustArg {
 	return GetTeamListServerTrustArg{}
 }
-
 func (g GetTeamListServerTrustArg) Export() *GetTeamListServerTrustArgInternal__ {
 	return &GetTeamListServerTrustArgInternal__{}
 }
-
 func (g *GetTeamListServerTrustArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(g.Export())
 }
@@ -2793,7 +2660,6 @@ func (g *GetTeamListServerTrustArg) Bytes() []byte { return nil }
 type AssertPQKeyNotInUseArg struct {
 	PqKey lib.YubiPQKeyID
 }
-
 type AssertPQKeyNotInUseArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	PqKey   *lib.YubiPQKeyIDInternal__
@@ -2809,13 +2675,11 @@ func (a AssertPQKeyNotInUseArgInternal__) Import() AssertPQKeyNotInUseArg {
 		})(a.PqKey),
 	}
 }
-
 func (a AssertPQKeyNotInUseArg) Export() *AssertPQKeyNotInUseArgInternal__ {
 	return &AssertPQKeyNotInUseArgInternal__{
 		PqKey: a.PqKey.Export(),
 	}
 }
-
 func (a *AssertPQKeyNotInUseArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(a.Export())
 }
@@ -2834,7 +2698,6 @@ func (a *AssertPQKeyNotInUseArg) Bytes() []byte { return nil }
 
 type NewWebAdminPanelURLArg struct {
 }
-
 type NewWebAdminPanelURLArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 }
@@ -2842,11 +2705,9 @@ type NewWebAdminPanelURLArgInternal__ struct {
 func (n NewWebAdminPanelURLArgInternal__) Import() NewWebAdminPanelURLArg {
 	return NewWebAdminPanelURLArg{}
 }
-
 func (n NewWebAdminPanelURLArg) Export() *NewWebAdminPanelURLArgInternal__ {
 	return &NewWebAdminPanelURLArgInternal__{}
 }
-
 func (n *NewWebAdminPanelURLArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(n.Export())
 }
@@ -2866,7 +2727,6 @@ func (n *NewWebAdminPanelURLArg) Bytes() []byte { return nil }
 type CheckURLArg struct {
 	Url lib.URLString
 }
-
 type CheckURLArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Url     *lib.URLStringInternal__
@@ -2882,13 +2742,11 @@ func (c CheckURLArgInternal__) Import() CheckURLArg {
 		})(c.Url),
 	}
 }
-
 func (c CheckURLArg) Export() *CheckURLArgInternal__ {
 	return &CheckURLArgInternal__{
 		Url: c.Url.Export(),
 	}
 }
-
 func (c *CheckURLArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(c.Export())
 }
@@ -2908,7 +2766,6 @@ func (c *CheckURLArg) Bytes() []byte { return nil }
 type UserResolveUsernameArg struct {
 	A ResolveUsernameArg
 }
-
 type UserResolveUsernameArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	A       *ResolveUsernameArgInternal__
@@ -2924,13 +2781,11 @@ func (u UserResolveUsernameArgInternal__) Import() UserResolveUsernameArg {
 		})(u.A),
 	}
 }
-
 func (u UserResolveUsernameArg) Export() *UserResolveUsernameArgInternal__ {
 	return &UserResolveUsernameArgInternal__{
 		A: u.A.Export(),
 	}
 }
-
 func (u *UserResolveUsernameArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(u.Export())
 }
@@ -2949,7 +2804,6 @@ func (u *UserResolveUsernameArg) Bytes() []byte { return nil }
 
 type GetHostConfigArg struct {
 }
-
 type GetHostConfigArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 }
@@ -2957,11 +2811,9 @@ type GetHostConfigArgInternal__ struct {
 func (g GetHostConfigArgInternal__) Import() GetHostConfigArg {
 	return GetHostConfigArg{}
 }
-
 func (g GetHostConfigArg) Export() *GetHostConfigArgInternal__ {
 	return &GetHostConfigArgInternal__{}
 }
-
 func (g *GetHostConfigArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(g.Export())
 }
@@ -2980,7 +2832,6 @@ func (g *GetHostConfigArg) Bytes() []byte { return nil }
 
 type GetDeviceNagArg struct {
 }
-
 type GetDeviceNagArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 }
@@ -2988,11 +2839,9 @@ type GetDeviceNagArgInternal__ struct {
 func (g GetDeviceNagArgInternal__) Import() GetDeviceNagArg {
 	return GetDeviceNagArg{}
 }
-
 func (g GetDeviceNagArg) Export() *GetDeviceNagArgInternal__ {
 	return &GetDeviceNagArgInternal__{}
 }
-
 func (g *GetDeviceNagArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(g.Export())
 }
@@ -3012,7 +2861,6 @@ func (g *GetDeviceNagArg) Bytes() []byte { return nil }
 type ClearDeviceNagArg struct {
 	Cleared bool
 }
-
 type ClearDeviceNagArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Cleared *bool
@@ -3028,13 +2876,11 @@ func (c ClearDeviceNagArgInternal__) Import() ClearDeviceNagArg {
 		})(c.Cleared),
 	}
 }
-
 func (c ClearDeviceNagArg) Export() *ClearDeviceNagArgInternal__ {
 	return &ClearDeviceNagArgInternal__{
 		Cleared: &c.Cleared,
 	}
 }
-
 func (c *ClearDeviceNagArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(c.Export())
 }
@@ -3054,7 +2900,6 @@ func (c *ClearDeviceNagArg) Bytes() []byte { return nil }
 type PutYubiManagementKeyArg struct {
 	Ymk YubiEncryptedManagementKey
 }
-
 type PutYubiManagementKeyArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Ymk     *YubiEncryptedManagementKeyInternal__
@@ -3070,13 +2915,11 @@ func (p PutYubiManagementKeyArgInternal__) Import() PutYubiManagementKeyArg {
 		})(p.Ymk),
 	}
 }
-
 func (p PutYubiManagementKeyArg) Export() *PutYubiManagementKeyArgInternal__ {
 	return &PutYubiManagementKeyArgInternal__{
 		Ymk: p.Ymk.Export(),
 	}
 }
-
 func (p *PutYubiManagementKeyArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(p.Export())
 }
@@ -3096,7 +2939,6 @@ func (p *PutYubiManagementKeyArg) Bytes() []byte { return nil }
 type GetYubiManagementKeyArg struct {
 	Yk lib.YubiID
 }
-
 type GetYubiManagementKeyArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Yk      *lib.YubiIDInternal__
@@ -3112,13 +2954,11 @@ func (g GetYubiManagementKeyArgInternal__) Import() GetYubiManagementKeyArg {
 		})(g.Yk),
 	}
 }
-
 func (g GetYubiManagementKeyArg) Export() *GetYubiManagementKeyArgInternal__ {
 	return &GetYubiManagementKeyArgInternal__{
 		Yk: g.Yk.Export(),
 	}
 }
-
 func (g *GetYubiManagementKeyArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(g.Export())
 }
@@ -3137,7 +2977,6 @@ func (g *GetYubiManagementKeyArg) Bytes() []byte { return nil }
 
 type GetAllYubiManagementKeysArg struct {
 }
-
 type GetAllYubiManagementKeysArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 }
@@ -3145,11 +2984,9 @@ type GetAllYubiManagementKeysArgInternal__ struct {
 func (g GetAllYubiManagementKeysArgInternal__) Import() GetAllYubiManagementKeysArg {
 	return GetAllYubiManagementKeysArg{}
 }
-
 func (g GetAllYubiManagementKeysArg) Export() *GetAllYubiManagementKeysArgInternal__ {
 	return &GetAllYubiManagementKeysArgInternal__{}
 }
-
 func (g *GetAllYubiManagementKeysArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(g.Export())
 }
@@ -3198,7 +3035,6 @@ type UserInterface interface {
 	GetAllYubiManagementKeys(context.Context) ([]YubiEncryptedManagementKey, error)
 	ErrorWrapper() func(error) lib.Status
 	CheckArgHeader(ctx context.Context, h lib.Header) error
-
 	MakeResHeader() lib.Header
 }
 
@@ -3225,7 +3061,7 @@ func (u userErrorUnwrapperAdapter) MakeArg() interface{} {
 func (u userErrorUnwrapperAdapter) UnwrapError(raw interface{}) (appError error, dispatchError error) {
 	sTmp, ok := raw.(*lib.StatusInternal__)
 	if !ok {
-		return nil, errors.New("Error converting to internal type in UnwrapError")
+		return nil, errors.New("error converting to internal type in UnwrapError")
 	}
 	if sTmp == nil {
 		return nil, nil
@@ -3264,7 +3100,6 @@ func (c UserClient) Ping(ctx context.Context) (res lib.UID, err error) {
 	res = tmp.Data.Import()
 	return
 }
-
 func (c UserClient) SetPassphrase(ctx context.Context, arg SetPassphraseArg) (err error) {
 	warg := &rpc.DataWrap[lib.Header, *SetPassphraseArgInternal__]{
 		Data: arg.Export(),
@@ -3285,7 +3120,6 @@ func (c UserClient) SetPassphrase(ctx context.Context, arg SetPassphraseArg) (er
 	}
 	return
 }
-
 func (c UserClient) ChangePassphrase(ctx context.Context, arg ChangePassphraseArg) (err error) {
 	warg := &rpc.DataWrap[lib.Header, *ChangePassphraseArgInternal__]{
 		Data: arg.Export(),
@@ -3306,7 +3140,6 @@ func (c UserClient) ChangePassphrase(ctx context.Context, arg ChangePassphraseAr
 	}
 	return
 }
-
 func (c UserClient) GetSalt(ctx context.Context) (res lib.PassphraseSalt, err error) {
 	var arg GetSaltArg
 	warg := &rpc.DataWrap[lib.Header, *GetSaltArgInternal__]{
@@ -3329,7 +3162,6 @@ func (c UserClient) GetSalt(ctx context.Context) (res lib.PassphraseSalt, err er
 	res = tmp.Data.Import()
 	return
 }
-
 func (c UserClient) NextPassphraseGeneration(ctx context.Context) (res lib.PassphraseGeneration, err error) {
 	var arg NextPassphraseGenerationArg
 	warg := &rpc.DataWrap[lib.Header, *NextPassphraseGenerationArgInternal__]{
@@ -3352,7 +3184,6 @@ func (c UserClient) NextPassphraseGeneration(ctx context.Context) (res lib.Passp
 	res = tmp.Data.Import()
 	return
 }
-
 func (c UserClient) StretchVersion(ctx context.Context) (res lib.StretchVersion, err error) {
 	var arg StretchVersionArg
 	warg := &rpc.DataWrap[lib.Header, *StretchVersionArgInternal__]{
@@ -3375,7 +3206,6 @@ func (c UserClient) StretchVersion(ctx context.Context) (res lib.StretchVersion,
 	res = tmp.Data.Import()
 	return
 }
-
 func (c UserClient) ProvisionDevice(ctx context.Context, arg ProvisionDeviceArg) (err error) {
 	warg := &rpc.DataWrap[lib.Header, *ProvisionDeviceArgInternal__]{
 		Data: arg.Export(),
@@ -3396,7 +3226,6 @@ func (c UserClient) ProvisionDevice(ctx context.Context, arg ProvisionDeviceArg)
 	}
 	return
 }
-
 func (c UserClient) RevokeDevice(ctx context.Context, arg RevokeDeviceArg) (err error) {
 	warg := &rpc.DataWrap[lib.Header, *RevokeDeviceArgInternal__]{
 		Data: arg.Export(),
@@ -3417,7 +3246,6 @@ func (c UserClient) RevokeDevice(ctx context.Context, arg RevokeDeviceArg) (err 
 	}
 	return
 }
-
 func (c UserClient) LoadUserChain(ctx context.Context, a LoadUserChainArg) (res UserChain, err error) {
 	arg := UserLoadUserChainArg{
 		A: a,
@@ -3442,7 +3270,6 @@ func (c UserClient) LoadUserChain(ctx context.Context, a LoadUserChainArg) (res 
 	res = tmp.Data.Import()
 	return
 }
-
 func (c UserClient) GrantLocalViewPermissionForUser(ctx context.Context, p GrantLocalViewPermissionPayload) (res lib.PermissionToken, err error) {
 	arg := GrantLocalViewPermissionForUserArg{
 		P: p,
@@ -3467,7 +3294,6 @@ func (c UserClient) GrantLocalViewPermissionForUser(ctx context.Context, p Grant
 	res = tmp.Data.Import()
 	return
 }
-
 func (c UserClient) ChangeUsername(ctx context.Context, arg ChangeUsernameArg) (err error) {
 	warg := &rpc.DataWrap[lib.Header, *ChangeUsernameArgInternal__]{
 		Data: arg.Export(),
@@ -3488,7 +3314,6 @@ func (c UserClient) ChangeUsername(ctx context.Context, arg ChangeUsernameArg) (
 	}
 	return
 }
-
 func (c UserClient) ReserveUsernameForChange(ctx context.Context, un lib.Name) (res ReserveNameRes, err error) {
 	arg := ReserveUsernameForChangeArg{
 		Un: un,
@@ -3513,7 +3338,6 @@ func (c UserClient) ReserveUsernameForChange(ctx context.Context, un lib.Name) (
 	res = tmp.Data.Import()
 	return
 }
-
 func (c UserClient) GetTreeLocation(ctx context.Context, seqno lib.Seqno) (res lib.TreeLocation, err error) {
 	arg := GetTreeLocationArg{
 		Seqno: seqno,
@@ -3538,7 +3362,6 @@ func (c UserClient) GetTreeLocation(ctx context.Context, seqno lib.Seqno) (res l
 	res = tmp.Data.Import()
 	return
 }
-
 func (c UserClient) GetPUKForRole(ctx context.Context, arg GetPUKForRoleArg) (res lib.SharedKeyParcel, err error) {
 	warg := &rpc.DataWrap[lib.Header, *GetPUKForRoleArgInternal__]{
 		Data: arg.Export(),
@@ -3560,7 +3383,6 @@ func (c UserClient) GetPUKForRole(ctx context.Context, arg GetPUKForRoleArg) (re
 	res = tmp.Data.Import()
 	return
 }
-
 func (c UserClient) GetPpeParcel(ctx context.Context) (res lib.PpeParcel, err error) {
 	var arg GetPpeParcelArg
 	warg := &rpc.DataWrap[lib.Header, *GetPpeParcelArgInternal__]{
@@ -3583,7 +3405,6 @@ func (c UserClient) GetPpeParcel(ctx context.Context) (res lib.PpeParcel, err er
 	res = tmp.Data.Import()
 	return
 }
-
 func (c UserClient) PostGenericLink(ctx context.Context, arg PostGenericLinkArg) (err error) {
 	warg := &rpc.DataWrap[lib.Header, *PostGenericLinkArgInternal__]{
 		Data: arg.Export(),
@@ -3604,7 +3425,6 @@ func (c UserClient) PostGenericLink(ctx context.Context, arg PostGenericLinkArg)
 	}
 	return
 }
-
 func (c UserClient) LoadGenericChain(ctx context.Context, arg LoadGenericChainArg) (res GenericChain, err error) {
 	warg := &rpc.DataWrap[lib.Header, *LoadGenericChainArgInternal__]{
 		Data: arg.Export(),
@@ -3626,7 +3446,6 @@ func (c UserClient) LoadGenericChain(ctx context.Context, arg LoadGenericChainAr
 	res = tmp.Data.Import()
 	return
 }
-
 func (c UserClient) GrantRemoteViewPermissionForUser(ctx context.Context, p GrantRemoteViewPermissionPayload) (res lib.PermissionToken, err error) {
 	arg := GrantRemoteViewPermissionForUserArg{
 		P: p,
@@ -3651,7 +3470,6 @@ func (c UserClient) GrantRemoteViewPermissionForUser(ctx context.Context, p Gran
 	res = tmp.Data.Import()
 	return
 }
-
 func (c UserClient) GetTeamListServerTrust(ctx context.Context) (res LocalTeamList, err error) {
 	var arg GetTeamListServerTrustArg
 	warg := &rpc.DataWrap[lib.Header, *GetTeamListServerTrustArgInternal__]{
@@ -3674,7 +3492,6 @@ func (c UserClient) GetTeamListServerTrust(ctx context.Context) (res LocalTeamLi
 	res = tmp.Data.Import()
 	return
 }
-
 func (c UserClient) AssertPQKeyNotInUse(ctx context.Context, pqKey lib.YubiPQKeyID) (err error) {
 	arg := AssertPQKeyNotInUseArg{
 		PqKey: pqKey,
@@ -3698,7 +3515,6 @@ func (c UserClient) AssertPQKeyNotInUse(ctx context.Context, pqKey lib.YubiPQKey
 	}
 	return
 }
-
 func (c UserClient) NewWebAdminPanelURL(ctx context.Context) (res lib.URLString, err error) {
 	var arg NewWebAdminPanelURLArg
 	warg := &rpc.DataWrap[lib.Header, *NewWebAdminPanelURLArgInternal__]{
@@ -3721,7 +3537,6 @@ func (c UserClient) NewWebAdminPanelURL(ctx context.Context) (res lib.URLString,
 	res = tmp.Data.Import()
 	return
 }
-
 func (c UserClient) CheckURL(ctx context.Context, url lib.URLString) (err error) {
 	arg := CheckURLArg{
 		Url: url,
@@ -3745,7 +3560,6 @@ func (c UserClient) CheckURL(ctx context.Context, url lib.URLString) (err error)
 	}
 	return
 }
-
 func (c UserClient) ResolveUsername(ctx context.Context, a ResolveUsernameArg) (res lib.UID, err error) {
 	arg := UserResolveUsernameArg{
 		A: a,
@@ -3770,7 +3584,6 @@ func (c UserClient) ResolveUsername(ctx context.Context, a ResolveUsernameArg) (
 	res = tmp.Data.Import()
 	return
 }
-
 func (c UserClient) GetHostConfig(ctx context.Context) (res lib.HostConfig, err error) {
 	var arg GetHostConfigArg
 	warg := &rpc.DataWrap[lib.Header, *GetHostConfigArgInternal__]{
@@ -3793,7 +3606,6 @@ func (c UserClient) GetHostConfig(ctx context.Context) (res lib.HostConfig, err 
 	res = tmp.Data.Import()
 	return
 }
-
 func (c UserClient) GetDeviceNag(ctx context.Context) (res lib.DeviceNagInfo, err error) {
 	var arg GetDeviceNagArg
 	warg := &rpc.DataWrap[lib.Header, *GetDeviceNagArgInternal__]{
@@ -3816,7 +3628,6 @@ func (c UserClient) GetDeviceNag(ctx context.Context) (res lib.DeviceNagInfo, er
 	res = tmp.Data.Import()
 	return
 }
-
 func (c UserClient) ClearDeviceNag(ctx context.Context, cleared bool) (err error) {
 	arg := ClearDeviceNagArg{
 		Cleared: cleared,
@@ -3840,7 +3651,6 @@ func (c UserClient) ClearDeviceNag(ctx context.Context, cleared bool) (err error
 	}
 	return
 }
-
 func (c UserClient) PutYubiManagementKey(ctx context.Context, ymk YubiEncryptedManagementKey) (err error) {
 	arg := PutYubiManagementKeyArg{
 		Ymk: ymk,
@@ -3864,7 +3674,6 @@ func (c UserClient) PutYubiManagementKey(ctx context.Context, ymk YubiEncryptedM
 	}
 	return
 }
-
 func (c UserClient) GetYubiManagementKey(ctx context.Context, yk lib.YubiID) (res YubiEncryptedManagementKey, err error) {
 	arg := GetYubiManagementKeyArg{
 		Yk: yk,
@@ -3889,7 +3698,6 @@ func (c UserClient) GetYubiManagementKey(ctx context.Context, yk lib.YubiID) (re
 	res = tmp.Data.Import()
 	return
 }
-
 func (c UserClient) GetAllYubiManagementKeys(ctx context.Context) (res []YubiEncryptedManagementKey, err error) {
 	var arg GetAllYubiManagementKeysArg
 	warg := &rpc.DataWrap[lib.Header, *GetAllYubiManagementKeysArgInternal__]{
@@ -3929,7 +3737,6 @@ func (c UserClient) GetAllYubiManagementKeys(ctx context.Context) (res []YubiEnc
 	})(&tmp.Data)
 	return
 }
-
 func UserProtocol(i UserInterface) rpc.ProtocolV2 {
 	return rpc.ProtocolV2{
 		Name: "User",

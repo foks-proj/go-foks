@@ -1,5 +1,5 @@
-// Auto-generated to Go types and interfaces using @foks-proj/snowpack-compiler 1.0.8 (git+https://github.com/foks-proj/node-snowpack-compiler.git)
-//  Input file: ../../proto-src/lib/probe.snowp
+// Auto-generated to Go types and interfaces using snowpc 0.0.4 (https://github.com/foks-proj/go-snowpack-compiler)
+//  Input file:../../proto-src/lib/probe.snowp
 
 package lib
 
@@ -14,7 +14,6 @@ type PublicServices struct {
 	MerkleQuery TCPAddr
 	KvStore     TCPAddr
 }
-
 type PublicServicesInternal__ struct {
 	_struct     struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Probe       *TCPAddrInternal__
@@ -58,7 +57,6 @@ func (p PublicServicesInternal__) Import() PublicServices {
 		})(p.KvStore),
 	}
 }
-
 func (p PublicServices) Export() *PublicServicesInternal__ {
 	return &PublicServicesInternal__{
 		Probe:       p.Probe.Export(),
@@ -68,7 +66,6 @@ func (p PublicServices) Export() *PublicServicesInternal__ {
 		KvStore:     p.KvStore.Export(),
 	}
 }
-
 func (p *PublicServices) Encode(enc rpc.Encoder) error {
 	return enc.Encode(p.Export())
 }
@@ -89,7 +86,6 @@ type PublicZone struct {
 	Ttl      DurationSecs
 	Services PublicServices
 }
-
 type PublicZoneInternal__ struct {
 	_struct  struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Ttl      *DurationSecsInternal__
@@ -112,14 +108,12 @@ func (p PublicZoneInternal__) Import() PublicZone {
 		})(p.Services),
 	}
 }
-
 func (p PublicZone) Export() *PublicZoneInternal__ {
 	return &PublicZoneInternal__{
 		Ttl:      p.Ttl.Export(),
 		Services: p.Services.Export(),
 	}
 }
-
 func (p *PublicZone) Encode(enc rpc.Encoder) error {
 	return enc.Encode(p.Export())
 }
@@ -143,7 +137,6 @@ func (p PublicZoneBlob) Export() *PublicZoneBlobInternal__ {
 	tmp := (([]byte)(p))
 	return ((*PublicZoneBlobInternal__)(&tmp))
 }
-
 func (p PublicZoneBlobInternal__) Import() PublicZoneBlob {
 	tmp := ([]byte)(p)
 	return PublicZoneBlob((func(x *[]byte) (ret []byte) {
@@ -173,11 +166,9 @@ var PublicZoneBlobTypeUniqueID = rpc.TypeUniqueID(0xd4f1ec4f90eb2c6d)
 func (p *PublicZoneBlob) GetTypeUniqueID() rpc.TypeUniqueID {
 	return PublicZoneBlobTypeUniqueID
 }
-
 func (p PublicZoneBlob) Bytes() []byte {
 	return (p)[:]
 }
-
 func (p *PublicZoneBlob) AllocAndDecode(f rpc.DecoderFactory) (*PublicZone, error) {
 	var ret PublicZone
 	src := f.NewDecoderBytes(&ret, p.Bytes())
@@ -187,9 +178,7 @@ func (p *PublicZoneBlob) AllocAndDecode(f rpc.DecoderFactory) (*PublicZone, erro
 	}
 	return &ret, nil
 }
-
 func (p *PublicZoneBlob) AssertNormalized() error { return nil }
-
 func (p *PublicZone) EncodeTyped(f rpc.EncoderFactory) (*PublicZoneBlob, error) {
 	var tmp []byte
 	enc := f.NewEncoderBytes(&tmp)
@@ -200,16 +189,14 @@ func (p *PublicZone) EncodeTyped(f rpc.EncoderFactory) (*PublicZoneBlob, error) 
 	ret := PublicZoneBlob(tmp)
 	return &ret, nil
 }
-
-func (p *PublicZone) ChildBlob(_b []byte) PublicZoneBlob {
-	return PublicZoneBlob(_b)
+func (p *PublicZone) ChildBlob(__b []byte) PublicZoneBlob {
+	return PublicZoneBlob(__b)
 }
 
 type SignedPublicZone struct {
 	Inner PublicZoneBlob
 	Sig   Signature
 }
-
 type SignedPublicZoneInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Inner   *PublicZoneBlobInternal__
@@ -232,14 +219,12 @@ func (s SignedPublicZoneInternal__) Import() SignedPublicZone {
 		})(s.Sig),
 	}
 }
-
 func (s SignedPublicZone) Export() *SignedPublicZoneInternal__ {
 	return &SignedPublicZoneInternal__{
 		Inner: s.Inner.Export(),
 		Sig:   s.Sig.Export(),
 	}
 }
-
 func (s *SignedPublicZone) Encode(enc rpc.Encoder) error {
 	return enc.Encode(s.Export())
 }

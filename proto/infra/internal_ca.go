@@ -1,5 +1,5 @@
-// Auto-generated to Go types and interfaces using @foks-proj/snowpack-compiler 1.0.8 (git+https://github.com/foks-proj/node-snowpack-compiler.git)
-//  Input file: ../../proto-src/infra/internal_ca.snowp
+// Auto-generated to Go types and interfaces using snowpc 0.0.4 (https://github.com/foks-proj/go-snowpack-compiler)
+//  Input file:../../proto-src/infra/internal_ca.snowp
 
 package infra
 
@@ -18,7 +18,6 @@ type GetClientCertChainForServiceArg struct {
 	Service lib.UID
 	Key     lib.DeviceID
 }
-
 type GetClientCertChainForServiceArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Service *lib.UIDInternal__
@@ -41,14 +40,12 @@ func (g GetClientCertChainForServiceArgInternal__) Import() GetClientCertChainFo
 		})(g.Key),
 	}
 }
-
 func (g GetClientCertChainForServiceArg) Export() *GetClientCertChainForServiceArgInternal__ {
 	return &GetClientCertChainForServiceArgInternal__{
 		Service: g.Service.Export(),
 		Key:     g.Key.Export(),
 	}
 }
-
 func (g *GetClientCertChainForServiceArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(g.Export())
 }
@@ -93,7 +90,7 @@ func (i internalCAErrorUnwrapperAdapter) MakeArg() interface{} {
 func (i internalCAErrorUnwrapperAdapter) UnwrapError(raw interface{}) (appError error, dispatchError error) {
 	sTmp, ok := raw.(*lib.StatusInternal__)
 	if !ok {
-		return nil, errors.New("Error converting to internal type in UnwrapError")
+		return nil, errors.New("error converting to internal type in UnwrapError")
 	}
 	if sTmp == nil {
 		return nil, nil
@@ -132,7 +129,6 @@ func (c InternalCAClient) GetClientCertChainForService(ctx context.Context, arg 
 	})(&tmp)
 	return
 }
-
 func InternalCAProtocol(i InternalCAInterface) rpc.ProtocolV2 {
 	return rpc.ProtocolV2{
 		Name: "InternalCA",

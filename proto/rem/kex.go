@@ -1,5 +1,5 @@
-// Auto-generated to Go types and interfaces using @foks-proj/snowpack-compiler 1.0.8 (git+https://github.com/foks-proj/node-snowpack-compiler.git)
-//  Input file: ../../proto-src/rem/kex.snowp
+// Auto-generated to Go types and interfaces using snowpc 0.0.4 (https://github.com/foks-proj/go-snowpack-compiler)
+//  Input file:../../proto-src/rem/kex.snowp
 
 package rem
 
@@ -16,7 +16,6 @@ type QueueMsg struct {
 	Seneder lib.EntityID
 	Seqno   lib.KexSeqNo
 }
-
 type QueueMsgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Seneder *lib.EntityIDInternal__
@@ -39,14 +38,12 @@ func (q QueueMsgInternal__) Import() QueueMsg {
 		})(q.Seqno),
 	}
 }
-
 func (q QueueMsg) Export() *QueueMsgInternal__ {
 	return &QueueMsgInternal__{
 		Seneder: q.Seneder.Export(),
 		Seqno:   q.Seqno.Export(),
 	}
 }
-
 func (q *QueueMsg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(q.Export())
 }
@@ -74,7 +71,6 @@ var KexActorTypeMap = map[string]KexActorType{
 	"Provisioner": 1,
 	"Provisionee": 2,
 }
-
 var KexActorTypeRevMap = map[KexActorType]string{
 	1: "Provisioner",
 	2: "Provisionee",
@@ -85,7 +81,6 @@ type KexActorTypeInternal__ KexActorType
 func (k KexActorTypeInternal__) Import() KexActorType {
 	return KexActorType(k)
 }
-
 func (k KexActorType) Export() *KexActorTypeInternal__ {
 	return ((*KexActorTypeInternal__)(&k))
 }
@@ -96,7 +91,6 @@ type KexWrapperMsg struct {
 	Seq       lib.KexSeqNo
 	Payload   lib.SecretBox
 }
-
 type KexWrapperMsgInternal__ struct {
 	_struct   struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	SessionID *lib.KexSessionIDInternal__
@@ -133,7 +127,6 @@ func (k KexWrapperMsgInternal__) Import() KexWrapperMsg {
 		})(k.Payload),
 	}
 }
-
 func (k KexWrapperMsg) Export() *KexWrapperMsgInternal__ {
 	return &KexWrapperMsgInternal__{
 		SessionID: k.SessionID.Export(),
@@ -142,7 +135,6 @@ func (k KexWrapperMsg) Export() *KexWrapperMsgInternal__ {
 		Payload:   k.Payload.Export(),
 	}
 }
-
 func (k *KexWrapperMsg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(k.Export())
 }
@@ -162,7 +154,6 @@ var KexWrapperMsgTypeUniqueID = rpc.TypeUniqueID(0xc59be470ee7ecc62)
 func (k *KexWrapperMsg) GetTypeUniqueID() rpc.TypeUniqueID {
 	return KexWrapperMsgTypeUniqueID
 }
-
 func (k *KexWrapperMsg) Bytes() []byte { return nil }
 
 var KexProtocolID rpc.ProtocolUniqueID = rpc.ProtocolUniqueID(0xae4df828)
@@ -172,7 +163,6 @@ type SendArg struct {
 	Sig   lib.Signature
 	Actor KexActorType
 }
-
 type SendArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Msg     *KexWrapperMsgInternal__
@@ -202,7 +192,6 @@ func (s SendArgInternal__) Import() SendArg {
 		})(s.Actor),
 	}
 }
-
 func (s SendArg) Export() *SendArgInternal__ {
 	return &SendArgInternal__{
 		Msg:   s.Msg.Export(),
@@ -210,7 +199,6 @@ func (s SendArg) Export() *SendArgInternal__ {
 		Actor: s.Actor.Export(),
 	}
 }
-
 func (s *SendArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(s.Export())
 }
@@ -234,7 +222,6 @@ type ReceiveArg struct {
 	PollWait  lib.DurationMilli
 	Actor     KexActorType
 }
-
 type ReceiveArgInternal__ struct {
 	_struct   struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	SessionID *lib.KexSessionIDInternal__
@@ -278,7 +265,6 @@ func (r ReceiveArgInternal__) Import() ReceiveArg {
 		})(r.Actor),
 	}
 }
-
 func (r ReceiveArg) Export() *ReceiveArgInternal__ {
 	return &ReceiveArgInternal__{
 		SessionID: r.SessionID.Export(),
@@ -288,7 +274,6 @@ func (r ReceiveArg) Export() *ReceiveArgInternal__ {
 		Actor:     r.Actor.Export(),
 	}
 }
-
 func (r *ReceiveArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(r.Export())
 }
@@ -334,7 +319,7 @@ func (k kexErrorUnwrapperAdapter) MakeArg() interface{} {
 func (k kexErrorUnwrapperAdapter) UnwrapError(raw interface{}) (appError error, dispatchError error) {
 	sTmp, ok := raw.(*lib.StatusInternal__)
 	if !ok {
-		return nil, errors.New("Error converting to internal type in UnwrapError")
+		return nil, errors.New("error converting to internal type in UnwrapError")
 	}
 	if sTmp == nil {
 		return nil, nil
@@ -357,7 +342,6 @@ func (c KexClient) Send(ctx context.Context, arg SendArg) (err error) {
 	}
 	return
 }
-
 func (c KexClient) Receive(ctx context.Context, arg ReceiveArg) (res KexWrapperMsg, err error) {
 	warg := arg.Export()
 	var tmp KexWrapperMsgInternal__
@@ -368,7 +352,6 @@ func (c KexClient) Receive(ctx context.Context, arg ReceiveArg) (res KexWrapperM
 	res = tmp.Import()
 	return
 }
-
 func KexProtocol(i KexInterface) rpc.ProtocolV2 {
 	return rpc.ProtocolV2{
 		Name: "kex",

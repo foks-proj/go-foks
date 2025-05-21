@@ -1,5 +1,5 @@
-// Auto-generated to Go types and interfaces using @foks-proj/snowpack-compiler 1.0.8 (git+https://github.com/foks-proj/node-snowpack-compiler.git)
-//  Input file: ../../proto-src/rem/beacon.snowp
+// Auto-generated to Go types and interfaces using snowpc 0.0.4 (https://github.com/foks-proj/go-snowpack-compiler)
+//  Input file:../../proto-src/rem/beacon.snowp
 
 package rem
 
@@ -19,7 +19,6 @@ type BeaconRegisterArg struct {
 	Port   lib.Port
 	HostID lib.HostID
 }
-
 type BeaconRegisterArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Host    *lib.HostnameInternal__
@@ -49,7 +48,6 @@ func (b BeaconRegisterArgInternal__) Import() BeaconRegisterArg {
 		})(b.HostID),
 	}
 }
-
 func (b BeaconRegisterArg) Export() *BeaconRegisterArgInternal__ {
 	return &BeaconRegisterArgInternal__{
 		Host:   b.Host.Export(),
@@ -57,7 +55,6 @@ func (b BeaconRegisterArg) Export() *BeaconRegisterArgInternal__ {
 		HostID: b.HostID.Export(),
 	}
 }
-
 func (b *BeaconRegisterArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(b.Export())
 }
@@ -77,7 +74,6 @@ func (b *BeaconRegisterArg) Bytes() []byte { return nil }
 type BeaconLookupArg struct {
 	HostID lib.HostID
 }
-
 type BeaconLookupArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	HostID  *lib.HostIDInternal__
@@ -93,13 +89,11 @@ func (b BeaconLookupArgInternal__) Import() BeaconLookupArg {
 		})(b.HostID),
 	}
 }
-
 func (b BeaconLookupArg) Export() *BeaconLookupArgInternal__ {
 	return &BeaconLookupArgInternal__{
 		HostID: b.HostID.Export(),
 	}
 }
-
 func (b *BeaconLookupArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(b.Export())
 }
@@ -121,7 +115,6 @@ type BeaconInterface interface {
 	BeaconLookup(context.Context, lib.HostID) (lib.TCPAddr, error)
 	ErrorWrapper() func(error) lib.Status
 	CheckArgHeader(ctx context.Context, h lib.Header) error
-
 	MakeResHeader() lib.Header
 }
 
@@ -148,7 +141,7 @@ func (b beaconErrorUnwrapperAdapter) MakeArg() interface{} {
 func (b beaconErrorUnwrapperAdapter) UnwrapError(raw interface{}) (appError error, dispatchError error) {
 	sTmp, ok := raw.(*lib.StatusInternal__)
 	if !ok {
-		return nil, errors.New("Error converting to internal type in UnwrapError")
+		return nil, errors.New("error converting to internal type in UnwrapError")
 	}
 	if sTmp == nil {
 		return nil, nil
@@ -185,7 +178,6 @@ func (c BeaconClient) BeaconRegister(ctx context.Context, arg BeaconRegisterArg)
 	}
 	return
 }
-
 func (c BeaconClient) BeaconLookup(ctx context.Context, hostID lib.HostID) (res lib.TCPAddr, err error) {
 	arg := BeaconLookupArg{
 		HostID: hostID,
@@ -210,7 +202,6 @@ func (c BeaconClient) BeaconLookup(ctx context.Context, hostID lib.HostID) (res 
 	res = tmp.Data.Import()
 	return
 }
-
 func BeaconProtocol(i BeaconInterface) rpc.ProtocolV2 {
 	return rpc.ProtocolV2{
 		Name: "Beacon",

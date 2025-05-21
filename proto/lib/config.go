@@ -1,5 +1,5 @@
-// Auto-generated to Go types and interfaces using @foks-proj/snowpack-compiler 1.0.8 (git+https://github.com/foks-proj/node-snowpack-compiler.git)
-//  Input file: ../../proto-src/lib/config.snowp
+// Auto-generated to Go types and interfaces using snowpc 0.0.4 (https://github.com/foks-proj/go-snowpack-compiler)
+//  Input file:../../proto-src/lib/config.snowp
 
 package lib
 
@@ -20,7 +20,6 @@ var ViewershipModeMap = map[string]ViewershipMode{
 	"OpenToAdmin": 1,
 	"OpenToAll":   2,
 }
-
 var ViewershipModeRevMap = map[ViewershipMode]string{
 	0: "Closed",
 	1: "OpenToAdmin",
@@ -32,7 +31,6 @@ type ViewershipModeInternal__ ViewershipMode
 func (v ViewershipModeInternal__) Import() ViewershipMode {
 	return ViewershipMode(v)
 }
-
 func (v ViewershipMode) Export() *ViewershipModeInternal__ {
 	return ((*ViewershipModeInternal__)(&v))
 }
@@ -52,7 +50,6 @@ var HostTypeMap = map[string]HostType{
 	"VHostManagement": 2,
 	"VHost":           3,
 }
-
 var HostTypeRevMap = map[HostType]string{
 	0: "None",
 	1: "BigTop",
@@ -65,7 +62,6 @@ type HostTypeInternal__ HostType
 func (h HostTypeInternal__) Import() HostType {
 	return HostType(h)
 }
-
 func (h HostType) Export() *HostTypeInternal__ {
 	return ((*HostTypeInternal__)(&h))
 }
@@ -74,7 +70,6 @@ type HostViewership struct {
 	User ViewershipMode
 	Team ViewershipMode
 }
-
 type HostViewershipInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	User    *ViewershipModeInternal__
@@ -97,14 +92,12 @@ func (h HostViewershipInternal__) Import() HostViewership {
 		})(h.Team),
 	}
 }
-
 func (h HostViewership) Export() *HostViewershipInternal__ {
 	return &HostViewershipInternal__{
 		User: h.User.Export(),
 		Team: h.Team.Export(),
 	}
 }
-
 func (h *HostViewership) Encode(enc rpc.Encoder) error {
 	return enc.Encode(h.Export())
 }
@@ -126,7 +119,6 @@ type Metering struct {
 	VHosts       bool
 	PerVHostDisk bool
 }
-
 type MeteringInternal__ struct {
 	_struct      struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Users        *bool
@@ -156,7 +148,6 @@ func (m MeteringInternal__) Import() Metering {
 		})(m.PerVHostDisk),
 	}
 }
-
 func (m Metering) Export() *MeteringInternal__ {
 	return &MeteringInternal__{
 		Users:        &m.Users,
@@ -164,7 +155,6 @@ func (m Metering) Export() *MeteringInternal__ {
 		PerVHostDisk: &m.PerVHostDisk,
 	}
 }
-
 func (m *Metering) Encode(enc rpc.Encoder) error {
 	return enc.Encode(m.Export())
 }
@@ -186,7 +176,6 @@ type HostConfig struct {
 	Viewership HostViewership
 	Typ        HostType
 }
-
 type HostConfigInternal__ struct {
 	_struct    struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Metering   *MeteringInternal__
@@ -216,7 +205,6 @@ func (h HostConfigInternal__) Import() HostConfig {
 		})(h.Typ),
 	}
 }
-
 func (h HostConfig) Export() *HostConfigInternal__ {
 	return &HostConfigInternal__{
 		Metering:   h.Metering.Export(),
@@ -224,7 +212,6 @@ func (h HostConfig) Export() *HostConfigInternal__ {
 		Typ:        h.Typ.Export(),
 	}
 }
-
 func (h *HostConfig) Encode(enc rpc.Encoder) error {
 	return enc.Encode(h.Export())
 }

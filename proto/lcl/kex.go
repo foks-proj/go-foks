@@ -1,5 +1,5 @@
-// Auto-generated to Go types and interfaces using @foks-proj/snowpack-compiler 1.0.8 (git+https://github.com/foks-proj/node-snowpack-compiler.git)
-//  Input file: ../../proto-src/lcl/kex.snowp
+// Auto-generated to Go types and interfaces using snowpc 0.0.4 (https://github.com/foks-proj/go-snowpack-compiler)
+//  Input file:../../proto-src/lcl/kex.snowp
 
 package lcl
 
@@ -22,7 +22,6 @@ var KexDerivationTypeMap = map[string]KexDerivationType{
 	"SessionID":    0,
 	"SecretBoxKey": 1,
 }
-
 var KexDerivationTypeRevMap = map[KexDerivationType]string{
 	0: "SessionID",
 	1: "SecretBoxKey",
@@ -33,7 +32,6 @@ type KexDerivationTypeInternal__ KexDerivationType
 func (k KexDerivationTypeInternal__) Import() KexDerivationType {
 	return KexDerivationType(k)
 }
-
 func (k KexDerivationType) Export() *KexDerivationTypeInternal__ {
 	return ((*KexDerivationTypeInternal__)(&k))
 }
@@ -41,13 +39,11 @@ func (k KexDerivationType) Export() *KexDerivationTypeInternal__ {
 type KexKeyDerivation struct {
 	T KexDerivationType
 }
-
 type KexKeyDerivationInternal__ struct {
 	_struct  struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	T        KexDerivationType
 	Switch__ KexKeyDerivationInternalSwitch__
 }
-
 type KexKeyDerivationInternalSwitch__ struct {
 	_struct struct{} `codec:",omitempty"` //lint:ignore U1000 msgpack internal field
 }
@@ -59,26 +55,22 @@ func (k KexKeyDerivation) GetT() (ret KexDerivationType, err error) {
 	}
 	return k.T, nil
 }
-
 func NewKexKeyDerivationDefault(s KexDerivationType) KexKeyDerivation {
 	return KexKeyDerivation{
 		T: s,
 	}
 }
-
 func (k KexKeyDerivationInternal__) Import() KexKeyDerivation {
 	return KexKeyDerivation{
 		T: k.T,
 	}
 }
-
 func (k KexKeyDerivation) Export() *KexKeyDerivationInternal__ {
 	return &KexKeyDerivationInternal__{
 		T:        k.T,
 		Switch__: KexKeyDerivationInternalSwitch__{},
 	}
 }
-
 func (k *KexKeyDerivation) Encode(enc rpc.Encoder) error {
 	return enc.Encode(k.Export())
 }
@@ -98,7 +90,6 @@ var KexKeyDerivationTypeUniqueID = rpc.TypeUniqueID(0x8d7bc7703f63ad64)
 func (k *KexKeyDerivation) GetTypeUniqueID() rpc.TypeUniqueID {
 	return KexKeyDerivationTypeUniqueID
 }
-
 func (k *KexKeyDerivation) Bytes() []byte { return nil }
 
 type KexCleartext struct {
@@ -107,7 +98,6 @@ type KexCleartext struct {
 	Seq       lib.KexSeqNo
 	Msg       KexMsg
 }
-
 type KexCleartextInternal__ struct {
 	_struct   struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	SeesionID *lib.KexSessionIDInternal__
@@ -144,7 +134,6 @@ func (k KexCleartextInternal__) Import() KexCleartext {
 		})(k.Msg),
 	}
 }
-
 func (k KexCleartext) Export() *KexCleartextInternal__ {
 	return &KexCleartextInternal__{
 		SeesionID: k.SeesionID.Export(),
@@ -153,7 +142,6 @@ func (k KexCleartext) Export() *KexCleartextInternal__ {
 		Msg:       k.Msg.Export(),
 	}
 }
-
 func (k *KexCleartext) Encode(enc rpc.Encoder) error {
 	return enc.Encode(k.Export())
 }
@@ -173,13 +161,11 @@ var KexCleartextTypeUniqueID = rpc.TypeUniqueID(0xd2bce8263ea1dc0b)
 func (k *KexCleartext) GetTypeUniqueID() rpc.TypeUniqueID {
 	return KexCleartextTypeUniqueID
 }
-
 func (k *KexCleartext) Bytes() []byte { return nil }
 
 type KexError struct {
 	Status lib.Status
 }
-
 type KexErrorInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Status  *lib.StatusInternal__
@@ -195,13 +181,11 @@ func (k KexErrorInternal__) Import() KexError {
 		})(k.Status),
 	}
 }
-
 func (k KexError) Export() *KexErrorInternal__ {
 	return &KexErrorInternal__{
 		Status: k.Status.Export(),
 	}
 }
-
 func (k *KexError) Encode(enc rpc.Encoder) error {
 	return enc.Encode(k.Export())
 }
@@ -237,7 +221,6 @@ var KexMsgTypeMap = map[string]KexMsgType{
 	"OkSigned":   4,
 	"Done":       5,
 }
-
 var KexMsgTypeRevMap = map[KexMsgType]string{
 	0: "Error",
 	1: "Start",
@@ -252,7 +235,6 @@ type KexMsgTypeInternal__ KexMsgType
 func (k KexMsgTypeInternal__) Import() KexMsgType {
 	return KexMsgType(k)
 }
-
 func (k KexMsgType) Export() *KexMsgTypeInternal__ {
 	return ((*KexMsgTypeInternal__)(&k))
 }
@@ -262,7 +244,6 @@ type PleaseSign struct {
 	Ppe  *KexPPE
 	Tok  lib.PermissionToken
 }
-
 type PleaseSignInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Link    *lib.LinkOuterInternal__
@@ -298,7 +279,6 @@ func (p PleaseSignInternal__) Import() PleaseSign {
 		})(p.Tok),
 	}
 }
-
 func (p PleaseSign) Export() *PleaseSignInternal__ {
 	return &PleaseSignInternal__{
 		Link: p.Link.Export(),
@@ -311,7 +291,6 @@ func (p PleaseSign) Export() *PleaseSignInternal__ {
 		Tok: p.Tok.Export(),
 	}
 }
-
 func (p *PleaseSign) Encode(enc rpc.Encoder) error {
 	return enc.Encode(p.Export())
 }
@@ -331,7 +310,6 @@ func (p *PleaseSign) Bytes() []byte { return nil }
 type OkSigned struct {
 	Sig lib.Signature
 }
-
 type OkSignedInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Sig     *lib.SignatureInternal__
@@ -347,13 +325,11 @@ func (o OkSignedInternal__) Import() OkSigned {
 		})(o.Sig),
 	}
 }
-
 func (o OkSigned) Export() *OkSignedInternal__ {
 	return &OkSignedInternal__{
 		Sig: o.Sig.Export(),
 	}
 }
-
 func (o *OkSigned) Encode(enc rpc.Encoder) error {
 	return enc.Encode(o.Export())
 }
@@ -374,7 +350,6 @@ type HelloMsg struct {
 	KeySuite lib.KeySuite
 	Dln      lib.DeviceLabelAndName
 }
-
 type HelloMsgInternal__ struct {
 	_struct  struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	KeySuite *lib.KeySuiteInternal__
@@ -397,14 +372,12 @@ func (h HelloMsgInternal__) Import() HelloMsg {
 		})(h.Dln),
 	}
 }
-
 func (h HelloMsg) Export() *HelloMsgInternal__ {
 	return &HelloMsgInternal__{
 		KeySuite: h.KeySuite.Export(),
 		Dln:      h.Dln.Export(),
 	}
 }
-
 func (h *HelloMsg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(h.Export())
 }
@@ -428,13 +401,11 @@ type KexMsg struct {
 	F_2__ *PleaseSign `json:"f2,omitempty"`
 	F_3__ *OkSigned   `json:"f3,omitempty"`
 }
-
 type KexMsgInternal__ struct {
 	_struct  struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	T        KexMsgType
 	Switch__ KexMsgInternalSwitch__
 }
-
 type KexMsgInternalSwitch__ struct {
 	_struct struct{}              `codec:",omitempty"` //lint:ignore U1000 msgpack internal field
 	F_0__   *KexErrorInternal__   `codec:"0"`
@@ -466,87 +437,76 @@ func (k KexMsg) GetT() (ret KexMsgType, err error) {
 	}
 	return k.T, nil
 }
-
 func (k KexMsg) Error() KexError {
 	if k.F_0__ == nil {
-		panic("unexepected nil case; should have been checked")
+		panic("unexpected nil case; should have been checked")
 	}
 	if k.T != KexMsgType_Error {
 		panic(fmt.Sprintf("unexpected switch value (%v) when Error is called", k.T))
 	}
 	return *k.F_0__
 }
-
 func (k KexMsg) Hello() HelloMsg {
 	if k.F_1__ == nil {
-		panic("unexepected nil case; should have been checked")
+		panic("unexpected nil case; should have been checked")
 	}
 	if k.T != KexMsgType_Hello {
 		panic(fmt.Sprintf("unexpected switch value (%v) when Hello is called", k.T))
 	}
 	return *k.F_1__
 }
-
 func (k KexMsg) Pleasesign() PleaseSign {
 	if k.F_2__ == nil {
-		panic("unexepected nil case; should have been checked")
+		panic("unexpected nil case; should have been checked")
 	}
 	if k.T != KexMsgType_PleaseSign {
 		panic(fmt.Sprintf("unexpected switch value (%v) when Pleasesign is called", k.T))
 	}
 	return *k.F_2__
 }
-
 func (k KexMsg) Oksigned() OkSigned {
 	if k.F_3__ == nil {
-		panic("unexepected nil case; should have been checked")
+		panic("unexpected nil case; should have been checked")
 	}
 	if k.T != KexMsgType_OkSigned {
 		panic(fmt.Sprintf("unexpected switch value (%v) when Oksigned is called", k.T))
 	}
 	return *k.F_3__
 }
-
 func NewKexMsgWithError(v KexError) KexMsg {
 	return KexMsg{
 		T:     KexMsgType_Error,
 		F_0__: &v,
 	}
 }
-
 func NewKexMsgWithStart() KexMsg {
 	return KexMsg{
 		T: KexMsgType_Start,
 	}
 }
-
 func NewKexMsgWithDone() KexMsg {
 	return KexMsg{
 		T: KexMsgType_Done,
 	}
 }
-
 func NewKexMsgWithHello(v HelloMsg) KexMsg {
 	return KexMsg{
 		T:     KexMsgType_Hello,
 		F_1__: &v,
 	}
 }
-
 func NewKexMsgWithPleasesign(v PleaseSign) KexMsg {
 	return KexMsg{
 		T:     KexMsgType_PleaseSign,
 		F_2__: &v,
 	}
 }
-
 func NewKexMsgWithOksigned(v OkSigned) KexMsg {
 	return KexMsg{
 		T:     KexMsgType_OkSigned,
 		F_3__: &v,
 	}
 }
-
 func (k KexMsgInternal__) Import() KexMsg {
 	return KexMsg{
 		T: k.T,
@@ -600,7 +560,6 @@ func (k KexMsgInternal__) Import() KexMsg {
 		})(k.Switch__.F_3__),
 	}
 }
-
 func (k KexMsg) Export() *KexMsgInternal__ {
 	return &KexMsgInternal__{
 		T: k.T,
@@ -632,7 +591,6 @@ func (k KexMsg) Export() *KexMsgInternal__ {
 		},
 	}
 }
-
 func (k *KexMsg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(k.Export())
 }
@@ -652,7 +610,6 @@ var KexMsgTypeUniqueID = rpc.TypeUniqueID(0x90ff590c87e01621)
 func (k *KexMsg) GetTypeUniqueID() rpc.TypeUniqueID {
 	return KexMsgTypeUniqueID
 }
-
 func (k *KexMsg) Bytes() []byte { return nil }
 
 func init() {

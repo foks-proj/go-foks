@@ -14,11 +14,11 @@ struct PpePUKBox {
 }
 
 struct PpeParcel {
-    skwkBox @0 : lib.SecretBox;
-    ppGen @1 : lib.PassphraseGeneration;
+    skwkBox @0 : SecretBox;
+    ppGen @1 : PassphraseGeneration;
     passphraseBox @2 : PpePassphraseBox;
-    pukBox @3 : Option(lib.PpePUKBox);
-    salt @4 : lib.PassphraseSalt;
-    sv @5 : lib.StretchVersion;
-    verifyKey @6 : lib.EntityID; 
+    pukBox @3 : Option(PpePUKBox);
+    salt @4 : PassphraseSalt;
+    sv @5 : StretchVersion;
+    verifyKey @6 : EntityID; 
 }

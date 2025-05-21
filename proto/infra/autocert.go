@@ -1,5 +1,5 @@
-// Auto-generated to Go types and interfaces using @foks-proj/snowpack-compiler 1.0.8 (git+https://github.com/foks-proj/node-snowpack-compiler.git)
-//  Input file: ../../proto-src/infra/autocert.snowp
+// Auto-generated to Go types and interfaces using snowpc 0.0.4 (https://github.com/foks-proj/go-snowpack-compiler)
+//  Input file:../../proto-src/infra/autocert.snowp
 
 package infra
 
@@ -19,7 +19,6 @@ func (k KVShardID) Export() *KVShardIDInternal__ {
 	tmp := ((uint64)(k))
 	return ((*KVShardIDInternal__)(&tmp))
 }
-
 func (k KVShardIDInternal__) Import() KVShardID {
 	tmp := (uint64)(k)
 	return KVShardID((func(x *uint64) (ret uint64) {
@@ -54,7 +53,6 @@ type AutocertPackage struct {
 	Styp     lib.ServerType
 	IsVanity bool
 }
-
 type AutocertPackageInternal__ struct {
 	_struct  struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Hostname *lib.HostnameInternal__
@@ -91,7 +89,6 @@ func (a AutocertPackageInternal__) Import() AutocertPackage {
 		})(a.IsVanity),
 	}
 }
-
 func (a AutocertPackage) Export() *AutocertPackageInternal__ {
 	return &AutocertPackageInternal__{
 		Hostname: a.Hostname.Export(),
@@ -100,7 +97,6 @@ func (a AutocertPackage) Export() *AutocertPackageInternal__ {
 		IsVanity: &a.IsVanity,
 	}
 }
-
 func (a *AutocertPackage) Encode(enc rpc.Encoder) error {
 	return enc.Encode(a.Export())
 }
@@ -123,7 +119,6 @@ type DoAutocertArg struct {
 	Pkg     AutocertPackage
 	WaitFor lib.DurationMilli
 }
-
 type DoAutocertArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Pkg     *AutocertPackageInternal__
@@ -146,14 +141,12 @@ func (d DoAutocertArgInternal__) Import() DoAutocertArg {
 		})(d.WaitFor),
 	}
 }
-
 func (d DoAutocertArg) Export() *DoAutocertArgInternal__ {
 	return &DoAutocertArgInternal__{
 		Pkg:     d.Pkg.Export(),
 		WaitFor: d.WaitFor.Export(),
 	}
 }
-
 func (d *DoAutocertArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(d.Export())
 }
@@ -172,7 +165,6 @@ func (d *DoAutocertArg) Bytes() []byte { return nil }
 
 type AutocertPokeArg struct {
 }
-
 type AutocertPokeArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 }
@@ -180,11 +172,9 @@ type AutocertPokeArgInternal__ struct {
 func (a AutocertPokeArgInternal__) Import() AutocertPokeArg {
 	return AutocertPokeArg{}
 }
-
 func (a AutocertPokeArg) Export() *AutocertPokeArgInternal__ {
 	return &AutocertPokeArgInternal__{}
 }
-
 func (a *AutocertPokeArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(a.Export())
 }
@@ -230,7 +220,7 @@ func (a autocertErrorUnwrapperAdapter) MakeArg() interface{} {
 func (a autocertErrorUnwrapperAdapter) UnwrapError(raw interface{}) (appError error, dispatchError error) {
 	sTmp, ok := raw.(*lib.StatusInternal__)
 	if !ok {
-		return nil, errors.New("Error converting to internal type in UnwrapError")
+		return nil, errors.New("error converting to internal type in UnwrapError")
 	}
 	if sTmp == nil {
 		return nil, nil
@@ -253,7 +243,6 @@ func (c AutocertClient) DoAutocert(ctx context.Context, arg DoAutocertArg) (err 
 	}
 	return
 }
-
 func (c AutocertClient) Poke(ctx context.Context) (err error) {
 	var arg AutocertPokeArg
 	warg := arg.Export()
@@ -263,7 +252,6 @@ func (c AutocertClient) Poke(ctx context.Context) (err error) {
 	}
 	return
 }
-
 func AutocertProtocol(i AutocertInterface) rpc.ProtocolV2 {
 	return rpc.ProtocolV2{
 		Name: "Autocert",

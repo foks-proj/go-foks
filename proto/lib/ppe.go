@@ -1,5 +1,5 @@
-// Auto-generated to Go types and interfaces using @foks-proj/snowpack-compiler 1.0.8 (git+https://github.com/foks-proj/node-snowpack-compiler.git)
-//  Input file: ../../proto-src/lib/ppe.snowp
+// Auto-generated to Go types and interfaces using snowpc 0.0.4 (https://github.com/foks-proj/go-snowpack-compiler)
+//  Input file:../../proto-src/lib/ppe.snowp
 
 package lib
 
@@ -10,7 +10,6 @@ import (
 type PpePassphraseBox struct {
 	Box Box
 }
-
 type PpePassphraseBoxInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Box     *BoxInternal__
@@ -26,13 +25,11 @@ func (p PpePassphraseBoxInternal__) Import() PpePassphraseBox {
 		})(p.Box),
 	}
 }
-
 func (p PpePassphraseBox) Export() *PpePassphraseBoxInternal__ {
 	return &PpePassphraseBoxInternal__{
 		Box: p.Box.Export(),
 	}
 }
-
 func (p *PpePassphraseBox) Encode(enc rpc.Encoder) error {
 	return enc.Encode(p.Export())
 }
@@ -54,7 +51,6 @@ type PpePUKBox struct {
 	PukGen  Generation
 	PukRole Role
 }
-
 type PpePUKBoxInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Box     *SecretBoxInternal__
@@ -84,7 +80,6 @@ func (p PpePUKBoxInternal__) Import() PpePUKBox {
 		})(p.PukRole),
 	}
 }
-
 func (p PpePUKBox) Export() *PpePUKBoxInternal__ {
 	return &PpePUKBoxInternal__{
 		Box:     p.Box.Export(),
@@ -92,7 +87,6 @@ func (p PpePUKBox) Export() *PpePUKBoxInternal__ {
 		PukRole: p.PukRole.Export(),
 	}
 }
-
 func (p *PpePUKBox) Encode(enc rpc.Encoder) error {
 	return enc.Encode(p.Export())
 }
@@ -118,7 +112,6 @@ type PpeParcel struct {
 	Sv            StretchVersion
 	VerifyKey     EntityID
 }
-
 type PpeParcelInternal__ struct {
 	_struct       struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	SkwkBox       *SecretBoxInternal__
@@ -182,7 +175,6 @@ func (p PpeParcelInternal__) Import() PpeParcel {
 		})(p.VerifyKey),
 	}
 }
-
 func (p PpeParcel) Export() *PpeParcelInternal__ {
 	return &PpeParcelInternal__{
 		SkwkBox:       p.SkwkBox.Export(),
@@ -199,7 +191,6 @@ func (p PpeParcel) Export() *PpeParcelInternal__ {
 		VerifyKey: p.VerifyKey.Export(),
 	}
 }
-
 func (p *PpeParcel) Encode(enc rpc.Encoder) error {
 	return enc.Encode(p.Export())
 }

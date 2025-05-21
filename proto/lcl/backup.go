@@ -1,5 +1,5 @@
-// Auto-generated to Go types and interfaces using @foks-proj/snowpack-compiler 1.0.8 (git+https://github.com/foks-proj/node-snowpack-compiler.git)
-//  Input file: ../../proto-src/lcl/backup.snowp
+// Auto-generated to Go types and interfaces using snowpc 0.0.4 (https://github.com/foks-proj/go-snowpack-compiler)
+//  Input file:../../proto-src/lcl/backup.snowp
 
 package lcl
 
@@ -26,7 +26,6 @@ func (b BackupHESP) Export() *BackupHESPInternal__ {
 		return &ret
 	})(tmp)))
 }
-
 func (b BackupHESPInternal__) Import() BackupHESP {
 	tmp := ([](string))(b)
 	return BackupHESP((func(x *[](string)) (ret []string) {
@@ -71,7 +70,6 @@ func (b BackupHESPString) Export() *BackupHESPStringInternal__ {
 	tmp := ((string)(b))
 	return ((*BackupHESPStringInternal__)(&tmp))
 }
-
 func (b BackupHESPStringInternal__) Import() BackupHESPString {
 	tmp := (string)(b)
 	return BackupHESPString((func(x *string) (ret string) {
@@ -105,7 +103,6 @@ var BackupProtocolID rpc.ProtocolUniqueID = rpc.ProtocolUniqueID(0xf01cb7eb)
 type BackupNewArg struct {
 	Role lib.Role
 }
-
 type BackupNewArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Role    *lib.RoleInternal__
@@ -121,13 +118,11 @@ func (b BackupNewArgInternal__) Import() BackupNewArg {
 		})(b.Role),
 	}
 }
-
 func (b BackupNewArg) Export() *BackupNewArgInternal__ {
 	return &BackupNewArgInternal__{
 		Role: b.Role.Export(),
 	}
 }
-
 func (b *BackupNewArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(b.Export())
 }
@@ -148,7 +143,6 @@ type BackupLoadPutHESPArg struct {
 	SessionId lib.UISessionID
 	Hesp      BackupHESP
 }
-
 type BackupLoadPutHESPArgInternal__ struct {
 	_struct   struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	SessionId *lib.UISessionIDInternal__
@@ -171,14 +165,12 @@ func (b BackupLoadPutHESPArgInternal__) Import() BackupLoadPutHESPArg {
 		})(b.Hesp),
 	}
 }
-
 func (b BackupLoadPutHESPArg) Export() *BackupLoadPutHESPArgInternal__ {
 	return &BackupLoadPutHESPArgInternal__{
 		SessionId: b.SessionId.Export(),
 		Hesp:      b.Hesp.Export(),
 	}
 }
-
 func (b *BackupLoadPutHESPArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(b.Export())
 }
@@ -200,7 +192,6 @@ type BackupInterface interface {
 	BackupLoadPutHESP(context.Context, BackupLoadPutHESPArg) error
 	ErrorWrapper() func(error) lib.Status
 	CheckArgHeader(ctx context.Context, h Header) error
-
 	MakeResHeader() Header
 }
 
@@ -227,7 +218,7 @@ func (b backupErrorUnwrapperAdapter) MakeArg() interface{} {
 func (b backupErrorUnwrapperAdapter) UnwrapError(raw interface{}) (appError error, dispatchError error) {
 	sTmp, ok := raw.(*lib.StatusInternal__)
 	if !ok {
-		return nil, errors.New("Error converting to internal type in UnwrapError")
+		return nil, errors.New("error converting to internal type in UnwrapError")
 	}
 	if sTmp == nil {
 		return nil, nil
@@ -268,7 +259,6 @@ func (c BackupClient) BackupNew(ctx context.Context, role lib.Role) (res BackupH
 	res = tmp.Data.Import()
 	return
 }
-
 func (c BackupClient) BackupLoadPutHESP(ctx context.Context, arg BackupLoadPutHESPArg) (err error) {
 	warg := &rpc.DataWrap[Header, *BackupLoadPutHESPArgInternal__]{
 		Data: arg.Export(),
@@ -289,7 +279,6 @@ func (c BackupClient) BackupLoadPutHESP(ctx context.Context, arg BackupLoadPutHE
 	}
 	return
 }
-
 func BackupProtocol(i BackupInterface) rpc.ProtocolV2 {
 	return rpc.ProtocolV2{
 		Name: "Backup",

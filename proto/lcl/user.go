@@ -1,5 +1,5 @@
-// Auto-generated to Go types and interfaces using @foks-proj/snowpack-compiler 1.0.8 (git+https://github.com/foks-proj/node-snowpack-compiler.git)
-//  Input file: ../../proto-src/lcl/user.snowp
+// Auto-generated to Go types and interfaces using snowpc 0.0.4 (https://github.com/foks-proj/go-snowpack-compiler)
+//  Input file:../../proto-src/lcl/user.snowp
 
 package lcl
 
@@ -18,7 +18,6 @@ type LocalUserIndexParsed struct {
 	KeyGenus *lib.KeyGenus
 	KeyID    lib.EntityID
 }
-
 type LocalUserIndexParsedInternal__ struct {
 	_struct  struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Fqu      *lib.FQUserParsedInternal__
@@ -61,7 +60,6 @@ func (l LocalUserIndexParsedInternal__) Import() LocalUserIndexParsed {
 		})(l.KeyID),
 	}
 }
-
 func (l LocalUserIndexParsed) Export() *LocalUserIndexParsedInternal__ {
 	return &LocalUserIndexParsedInternal__{
 		Fqu:  l.Fqu.Export(),
@@ -75,7 +73,6 @@ func (l LocalUserIndexParsed) Export() *LocalUserIndexParsedInternal__ {
 		KeyID: l.KeyID.Export(),
 	}
 }
-
 func (l *LocalUserIndexParsed) Encode(enc rpc.Encoder) error {
 	return enc.Encode(l.Export())
 }
@@ -97,7 +94,6 @@ type AgentStatus struct {
 	Socket string
 	Users  []lib.UserContext
 }
-
 type AgentStatusInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Pid     *int64
@@ -139,7 +135,6 @@ func (a AgentStatusInternal__) Import() AgentStatus {
 		})(a.Users),
 	}
 }
-
 func (a AgentStatus) Export() *AgentStatusInternal__ {
 	return &AgentStatusInternal__{
 		Pid:    &a.Pid,
@@ -156,7 +151,6 @@ func (a AgentStatus) Export() *AgentStatusInternal__ {
 		})(a.Users),
 	}
 }
-
 func (a *AgentStatus) Encode(enc rpc.Encoder) error {
 	return enc.Encode(a.Export())
 }
@@ -177,7 +171,6 @@ type ActiveUserCheckLockedRes struct {
 	User       lib.UserContext
 	LockStatus lib.Status
 }
-
 type ActiveUserCheckLockedResInternal__ struct {
 	_struct    struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	User       *lib.UserContextInternal__
@@ -200,14 +193,12 @@ func (a ActiveUserCheckLockedResInternal__) Import() ActiveUserCheckLockedRes {
 		})(a.LockStatus),
 	}
 }
-
 func (a ActiveUserCheckLockedRes) Export() *ActiveUserCheckLockedResInternal__ {
 	return &ActiveUserCheckLockedResInternal__{
 		User:       a.User.Export(),
 		LockStatus: a.LockStatus.Export(),
 	}
 }
-
 func (a *ActiveUserCheckLockedRes) Encode(enc rpc.Encoder) error {
 	return enc.Encode(a.Export())
 }
@@ -228,7 +219,6 @@ var UserProtocolID rpc.ProtocolUniqueID = rpc.ProtocolUniqueID(0xcc5e1b3e)
 
 type ClearArg struct {
 }
-
 type ClearArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 }
@@ -236,11 +226,9 @@ type ClearArgInternal__ struct {
 func (c ClearArgInternal__) Import() ClearArg {
 	return ClearArg{}
 }
-
 func (c ClearArg) Export() *ClearArgInternal__ {
 	return &ClearArgInternal__{}
 }
-
 func (c *ClearArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(c.Export())
 }
@@ -259,7 +247,6 @@ func (c *ClearArg) Bytes() []byte { return nil }
 
 type AgentStatusArg struct {
 }
-
 type AgentStatusArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 }
@@ -267,11 +254,9 @@ type AgentStatusArgInternal__ struct {
 func (a AgentStatusArgInternal__) Import() AgentStatusArg {
 	return AgentStatusArg{}
 }
-
 func (a AgentStatusArg) Export() *AgentStatusArgInternal__ {
 	return &AgentStatusArgInternal__{}
 }
-
 func (a *AgentStatusArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(a.Export())
 }
@@ -290,7 +275,6 @@ func (a *AgentStatusArg) Bytes() []byte { return nil }
 
 type ActiveUserArg struct {
 }
-
 type ActiveUserArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 }
@@ -298,11 +282,9 @@ type ActiveUserArgInternal__ struct {
 func (a ActiveUserArgInternal__) Import() ActiveUserArg {
 	return ActiveUserArg{}
 }
-
 func (a ActiveUserArg) Export() *ActiveUserArgInternal__ {
 	return &ActiveUserArgInternal__{}
 }
-
 func (a *ActiveUserArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(a.Export())
 }
@@ -322,7 +304,6 @@ func (a *ActiveUserArg) Bytes() []byte { return nil }
 type SwitchUserArg struct {
 	Fqu LocalUserIndexParsed
 }
-
 type SwitchUserArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Fqu     *LocalUserIndexParsedInternal__
@@ -338,13 +319,11 @@ func (s SwitchUserArgInternal__) Import() SwitchUserArg {
 		})(s.Fqu),
 	}
 }
-
 func (s SwitchUserArg) Export() *SwitchUserArgInternal__ {
 	return &SwitchUserArgInternal__{
 		Fqu: s.Fqu.Export(),
 	}
 }
-
 func (s *SwitchUserArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(s.Export())
 }
@@ -364,7 +343,6 @@ func (s *SwitchUserArg) Bytes() []byte { return nil }
 type SwitchUserByInfoArg struct {
 	I lib.UserInfo
 }
-
 type SwitchUserByInfoArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	I       *lib.UserInfoInternal__
@@ -380,13 +358,11 @@ func (s SwitchUserByInfoArgInternal__) Import() SwitchUserByInfoArg {
 		})(s.I),
 	}
 }
-
 func (s SwitchUserByInfoArg) Export() *SwitchUserByInfoArgInternal__ {
 	return &SwitchUserByInfoArgInternal__{
 		I: s.I.Export(),
 	}
 }
-
 func (s *SwitchUserByInfoArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(s.Export())
 }
@@ -405,7 +381,6 @@ func (s *SwitchUserByInfoArg) Bytes() []byte { return nil }
 
 type GetExistingUsersArg struct {
 }
-
 type GetExistingUsersArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 }
@@ -413,11 +388,9 @@ type GetExistingUsersArgInternal__ struct {
 func (g GetExistingUsersArgInternal__) Import() GetExistingUsersArg {
 	return GetExistingUsersArg{}
 }
-
 func (g GetExistingUsersArg) Export() *GetExistingUsersArgInternal__ {
 	return &GetExistingUsersArgInternal__{}
 }
-
 func (g *GetExistingUsersArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(g.Export())
 }
@@ -436,7 +409,6 @@ func (g *GetExistingUsersArg) Bytes() []byte { return nil }
 
 type ActiveUserCheckLockedArg struct {
 }
-
 type ActiveUserCheckLockedArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 }
@@ -444,11 +416,9 @@ type ActiveUserCheckLockedArgInternal__ struct {
 func (a ActiveUserCheckLockedArgInternal__) Import() ActiveUserCheckLockedArg {
 	return ActiveUserCheckLockedArg{}
 }
-
 func (a ActiveUserCheckLockedArg) Export() *ActiveUserCheckLockedArgInternal__ {
 	return &ActiveUserCheckLockedArgInternal__{}
 }
-
 func (a *ActiveUserCheckLockedArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(a.Export())
 }
@@ -467,7 +437,6 @@ func (a *ActiveUserCheckLockedArg) Bytes() []byte { return nil }
 
 type LoadMeArg struct {
 }
-
 type LoadMeArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 }
@@ -475,11 +444,9 @@ type LoadMeArgInternal__ struct {
 func (l LoadMeArgInternal__) Import() LoadMeArg {
 	return LoadMeArg{}
 }
-
 func (l LoadMeArg) Export() *LoadMeArgInternal__ {
 	return &LoadMeArgInternal__{}
 }
-
 func (l *LoadMeArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(l.Export())
 }
@@ -498,7 +465,6 @@ func (l *LoadMeArg) Bytes() []byte { return nil }
 
 type SkmInfoArg struct {
 }
-
 type SkmInfoArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 }
@@ -506,11 +472,9 @@ type SkmInfoArgInternal__ struct {
 func (s SkmInfoArgInternal__) Import() SkmInfoArg {
 	return SkmInfoArg{}
 }
-
 func (s SkmInfoArg) Export() *SkmInfoArgInternal__ {
 	return &SkmInfoArgInternal__{}
 }
-
 func (s *SkmInfoArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(s.Export())
 }
@@ -530,7 +494,6 @@ func (s *SkmInfoArg) Bytes() []byte { return nil }
 type SetSkmEncryptionArg struct {
 	Mode lib.SecretKeyStorageType
 }
-
 type SetSkmEncryptionArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Mode    *lib.SecretKeyStorageTypeInternal__
@@ -546,13 +509,11 @@ func (s SetSkmEncryptionArgInternal__) Import() SetSkmEncryptionArg {
 		})(s.Mode),
 	}
 }
-
 func (s SetSkmEncryptionArg) Export() *SetSkmEncryptionArgInternal__ {
 	return &SetSkmEncryptionArgInternal__{
 		Mode: s.Mode.Export(),
 	}
 }
-
 func (s *SetSkmEncryptionArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(s.Export())
 }
@@ -571,7 +532,6 @@ func (s *SetSkmEncryptionArg) Bytes() []byte { return nil }
 
 type UserLockArg struct {
 }
-
 type UserLockArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 }
@@ -579,11 +539,9 @@ type UserLockArgInternal__ struct {
 func (u UserLockArgInternal__) Import() UserLockArg {
 	return UserLockArg{}
 }
-
 func (u UserLockArg) Export() *UserLockArgInternal__ {
 	return &UserLockArgInternal__{}
 }
-
 func (u *UserLockArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(u.Export())
 }
@@ -602,7 +560,6 @@ func (u *UserLockArg) Bytes() []byte { return nil }
 
 type ClientUserPingArg struct {
 }
-
 type ClientUserPingArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 }
@@ -610,11 +567,9 @@ type ClientUserPingArgInternal__ struct {
 func (c ClientUserPingArgInternal__) Import() ClientUserPingArg {
 	return ClientUserPingArg{}
 }
-
 func (c ClientUserPingArg) Export() *ClientUserPingArgInternal__ {
 	return &ClientUserPingArgInternal__{}
 }
-
 func (c *ClientUserPingArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(c.Export())
 }
@@ -634,7 +589,6 @@ func (c *ClientUserPingArg) Bytes() []byte { return nil }
 type LoginStartSsoLoginFlowArg struct {
 	SessionId lib.UISessionID
 }
-
 type LoginStartSsoLoginFlowArgInternal__ struct {
 	_struct   struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	SessionId *lib.UISessionIDInternal__
@@ -650,13 +604,11 @@ func (l LoginStartSsoLoginFlowArgInternal__) Import() LoginStartSsoLoginFlowArg 
 		})(l.SessionId),
 	}
 }
-
 func (l LoginStartSsoLoginFlowArg) Export() *LoginStartSsoLoginFlowArgInternal__ {
 	return &LoginStartSsoLoginFlowArgInternal__{
 		SessionId: l.SessionId.Export(),
 	}
 }
-
 func (l *LoginStartSsoLoginFlowArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(l.Export())
 }
@@ -676,7 +628,6 @@ func (l *LoginStartSsoLoginFlowArg) Bytes() []byte { return nil }
 type LoginWaitForSsoLoginArg struct {
 	SessionId lib.UISessionID
 }
-
 type LoginWaitForSsoLoginArgInternal__ struct {
 	_struct   struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	SessionId *lib.UISessionIDInternal__
@@ -692,13 +643,11 @@ func (l LoginWaitForSsoLoginArgInternal__) Import() LoginWaitForSsoLoginArg {
 		})(l.SessionId),
 	}
 }
-
 func (l LoginWaitForSsoLoginArg) Export() *LoginWaitForSsoLoginArgInternal__ {
 	return &LoginWaitForSsoLoginArgInternal__{
 		SessionId: l.SessionId.Export(),
 	}
 }
-
 func (l *LoginWaitForSsoLoginArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(l.Export())
 }
@@ -732,7 +681,6 @@ type UserInterface interface {
 	LoginWaitForSsoLogin(context.Context, lib.UISessionID) (lib.SSOLoginRes, error)
 	ErrorWrapper() func(error) lib.Status
 	CheckArgHeader(ctx context.Context, h Header) error
-
 	MakeResHeader() Header
 }
 
@@ -759,7 +707,7 @@ func (u userErrorUnwrapperAdapter) MakeArg() interface{} {
 func (u userErrorUnwrapperAdapter) UnwrapError(raw interface{}) (appError error, dispatchError error) {
 	sTmp, ok := raw.(*lib.StatusInternal__)
 	if !ok {
-		return nil, errors.New("Error converting to internal type in UnwrapError")
+		return nil, errors.New("error converting to internal type in UnwrapError")
 	}
 	if sTmp == nil {
 		return nil, nil
@@ -797,7 +745,6 @@ func (c UserClient) Clear(ctx context.Context) (err error) {
 	}
 	return
 }
-
 func (c UserClient) AgentStatus(ctx context.Context) (res AgentStatus, err error) {
 	var arg AgentStatusArg
 	warg := &rpc.DataWrap[Header, *AgentStatusArgInternal__]{
@@ -820,7 +767,6 @@ func (c UserClient) AgentStatus(ctx context.Context) (res AgentStatus, err error
 	res = tmp.Data.Import()
 	return
 }
-
 func (c UserClient) ActiveUser(ctx context.Context) (res lib.UserContext, err error) {
 	var arg ActiveUserArg
 	warg := &rpc.DataWrap[Header, *ActiveUserArgInternal__]{
@@ -843,7 +789,6 @@ func (c UserClient) ActiveUser(ctx context.Context) (res lib.UserContext, err er
 	res = tmp.Data.Import()
 	return
 }
-
 func (c UserClient) SwitchUser(ctx context.Context, fqu LocalUserIndexParsed) (err error) {
 	arg := SwitchUserArg{
 		Fqu: fqu,
@@ -867,7 +812,6 @@ func (c UserClient) SwitchUser(ctx context.Context, fqu LocalUserIndexParsed) (e
 	}
 	return
 }
-
 func (c UserClient) SwitchUserByInfo(ctx context.Context, i lib.UserInfo) (err error) {
 	arg := SwitchUserByInfoArg{
 		I: i,
@@ -891,7 +835,6 @@ func (c UserClient) SwitchUserByInfo(ctx context.Context, i lib.UserInfo) (err e
 	}
 	return
 }
-
 func (c UserClient) GetExistingUsers(ctx context.Context) (res []lib.UserInfo, err error) {
 	var arg GetExistingUsersArg
 	warg := &rpc.DataWrap[Header, *GetExistingUsersArgInternal__]{
@@ -931,7 +874,6 @@ func (c UserClient) GetExistingUsers(ctx context.Context) (res []lib.UserInfo, e
 	})(&tmp.Data)
 	return
 }
-
 func (c UserClient) ActiveUserCheckLocked(ctx context.Context) (res ActiveUserCheckLockedRes, err error) {
 	var arg ActiveUserCheckLockedArg
 	warg := &rpc.DataWrap[Header, *ActiveUserCheckLockedArgInternal__]{
@@ -954,7 +896,6 @@ func (c UserClient) ActiveUserCheckLocked(ctx context.Context) (res ActiveUserCh
 	res = tmp.Data.Import()
 	return
 }
-
 func (c UserClient) LoadMe(ctx context.Context) (res UserMetadataAndSigchainState, err error) {
 	var arg LoadMeArg
 	warg := &rpc.DataWrap[Header, *LoadMeArgInternal__]{
@@ -977,7 +918,6 @@ func (c UserClient) LoadMe(ctx context.Context) (res UserMetadataAndSigchainStat
 	res = tmp.Data.Import()
 	return
 }
-
 func (c UserClient) SkmInfo(ctx context.Context) (res StoredSecretKeyBundle, err error) {
 	var arg SkmInfoArg
 	warg := &rpc.DataWrap[Header, *SkmInfoArgInternal__]{
@@ -1000,7 +940,6 @@ func (c UserClient) SkmInfo(ctx context.Context) (res StoredSecretKeyBundle, err
 	res = tmp.Data.Import()
 	return
 }
-
 func (c UserClient) SetSkmEncryption(ctx context.Context, mode lib.SecretKeyStorageType) (err error) {
 	arg := SetSkmEncryptionArg{
 		Mode: mode,
@@ -1024,7 +963,6 @@ func (c UserClient) SetSkmEncryption(ctx context.Context, mode lib.SecretKeyStor
 	}
 	return
 }
-
 func (c UserClient) UserLock(ctx context.Context) (err error) {
 	var arg UserLockArg
 	warg := &rpc.DataWrap[Header, *UserLockArgInternal__]{
@@ -1046,7 +984,6 @@ func (c UserClient) UserLock(ctx context.Context) (err error) {
 	}
 	return
 }
-
 func (c UserClient) Ping(ctx context.Context) (res lib.FQUser, err error) {
 	var arg ClientUserPingArg
 	warg := &rpc.DataWrap[Header, *ClientUserPingArgInternal__]{
@@ -1069,7 +1006,6 @@ func (c UserClient) Ping(ctx context.Context) (res lib.FQUser, err error) {
 	res = tmp.Data.Import()
 	return
 }
-
 func (c UserClient) LoginStartSsoLoginFlow(ctx context.Context, sessionId lib.UISessionID) (res SsoLoginFlow, err error) {
 	arg := LoginStartSsoLoginFlowArg{
 		SessionId: sessionId,
@@ -1094,7 +1030,6 @@ func (c UserClient) LoginStartSsoLoginFlow(ctx context.Context, sessionId lib.UI
 	res = tmp.Data.Import()
 	return
 }
-
 func (c UserClient) LoginWaitForSsoLogin(ctx context.Context, sessionId lib.UISessionID) (res lib.SSOLoginRes, err error) {
 	arg := LoginWaitForSsoLoginArg{
 		SessionId: sessionId,
@@ -1119,7 +1054,6 @@ func (c UserClient) LoginWaitForSsoLogin(ctx context.Context, sessionId lib.UISe
 	res = tmp.Data.Import()
 	return
 }
-
 func UserProtocol(i UserInterface) rpc.ProtocolV2 {
 	return rpc.ProtocolV2{
 		Name: "User",

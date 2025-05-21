@@ -15,7 +15,7 @@ to get started.
 ### Prerequisites
 * A modern go, v1.24 or later
 * Optional
-   * A modern Node.Js
+   * A modern NodeJS if building the admin Web portal (not needed for the CLI)
    * Docker; for MacOS, Docker Desktop is very nice. This is used in testing to run PostgreSQL
 
 ### Build the Client (to test against live alpha prod data):

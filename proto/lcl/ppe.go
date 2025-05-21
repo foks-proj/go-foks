@@ -1,5 +1,5 @@
-// Auto-generated to Go types and interfaces using @foks-proj/snowpack-compiler 1.0.8 (git+https://github.com/foks-proj/node-snowpack-compiler.git)
-//  Input file: ../../proto-src/lcl/ppe.snowp
+// Auto-generated to Go types and interfaces using snowpc 0.0.4 (https://github.com/foks-proj/go-snowpack-compiler)
+//  Input file:../../proto-src/lcl/ppe.snowp
 
 package lcl
 
@@ -16,7 +16,6 @@ func (s SKMWK) Export() *SKMWKInternal__ {
 	tmp := ((lib.SecretBoxKey)(s))
 	return ((*SKMWKInternal__)(tmp.Export()))
 }
-
 func (s SKMWKInternal__) Import() SKMWK {
 	tmp := (lib.SecretBoxKeyInternal__)(s)
 	return SKMWK((func(x *lib.SecretBoxKeyInternal__) (ret lib.SecretBoxKey) {
@@ -49,7 +48,6 @@ type SKMWKList struct {
 	Fqu  lib.FQUser
 	Keys []SKMWK
 }
-
 type SKMWKListInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Fqu     *lib.FQUserInternal__
@@ -84,7 +82,6 @@ func (s SKMWKListInternal__) Import() SKMWKList {
 		})(s.Keys),
 	}
 }
-
 func (s SKMWKList) Export() *SKMWKListInternal__ {
 	return &SKMWKListInternal__{
 		Fqu: s.Fqu.Export(),
@@ -100,7 +97,6 @@ func (s SKMWKList) Export() *SKMWKListInternal__ {
 		})(s.Keys),
 	}
 }
-
 func (s *SKMWKList) Encode(enc rpc.Encoder) error {
 	return enc.Encode(s.Export())
 }
@@ -120,7 +116,6 @@ var SKMWKListTypeUniqueID = rpc.TypeUniqueID(0x813191a3c2c88094)
 func (s *SKMWKList) GetTypeUniqueID() rpc.TypeUniqueID {
 	return SKMWKListTypeUniqueID
 }
-
 func (s *SKMWKList) Bytes() []byte { return nil }
 
 type PpeSessionKey [32]byte
@@ -130,7 +125,6 @@ func (p PpeSessionKey) Export() *PpeSessionKeyInternal__ {
 	tmp := (([32]byte)(p))
 	return ((*PpeSessionKeyInternal__)(&tmp))
 }
-
 func (p PpeSessionKeyInternal__) Import() PpeSessionKey {
 	tmp := ([32]byte)(p)
 	return PpeSessionKey((func(x *[32]byte) (ret [32]byte) {
@@ -164,7 +158,6 @@ type PpePUKBoxPayload struct {
 	Sesskey    PpeSessionKey
 	Passphrase lib.HEPK
 }
-
 type PpePUKBoxPayloadInternal__ struct {
 	_struct    struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Gen        *lib.PassphraseGenerationInternal__
@@ -194,7 +187,6 @@ func (p PpePUKBoxPayloadInternal__) Import() PpePUKBoxPayload {
 		})(p.Passphrase),
 	}
 }
-
 func (p PpePUKBoxPayload) Export() *PpePUKBoxPayloadInternal__ {
 	return &PpePUKBoxPayloadInternal__{
 		Gen:        p.Gen.Export(),
@@ -202,7 +194,6 @@ func (p PpePUKBoxPayload) Export() *PpePUKBoxPayloadInternal__ {
 		Passphrase: p.Passphrase.Export(),
 	}
 }
-
 func (p *PpePUKBoxPayload) Encode(enc rpc.Encoder) error {
 	return enc.Encode(p.Export())
 }
@@ -222,14 +213,12 @@ var PpePUKBoxPayloadTypeUniqueID = rpc.TypeUniqueID(0x82a769eb072624cd)
 func (p *PpePUKBoxPayload) GetTypeUniqueID() rpc.TypeUniqueID {
 	return PpePUKBoxPayloadTypeUniqueID
 }
-
 func (p *PpePUKBoxPayload) Bytes() []byte { return nil }
 
 type PpePassphraseBoxPayload struct {
 	Gen     lib.PassphraseGeneration
 	Sesskey PpeSessionKey
 }
-
 type PpePassphraseBoxPayloadInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Gen     *lib.PassphraseGenerationInternal__
@@ -252,14 +241,12 @@ func (p PpePassphraseBoxPayloadInternal__) Import() PpePassphraseBoxPayload {
 		})(p.Sesskey),
 	}
 }
-
 func (p PpePassphraseBoxPayload) Export() *PpePassphraseBoxPayloadInternal__ {
 	return &PpePassphraseBoxPayloadInternal__{
 		Gen:     p.Gen.Export(),
 		Sesskey: p.Sesskey.Export(),
 	}
 }
-
 func (p *PpePassphraseBoxPayload) Encode(enc rpc.Encoder) error {
 	return enc.Encode(p.Export())
 }
@@ -279,7 +266,6 @@ var PpePassphraseBoxPayloadTypeUniqueID = rpc.TypeUniqueID(0x978c22a7627d777b)
 func (p *PpePassphraseBoxPayload) GetTypeUniqueID() rpc.TypeUniqueID {
 	return PpePassphraseBoxPayloadTypeUniqueID
 }
-
 func (p *PpePassphraseBoxPayload) Bytes() []byte { return nil }
 
 type RotatePPEWithPUK struct {
@@ -288,7 +274,6 @@ type RotatePPEWithPUK struct {
 	PassphraseBox lib.PpePassphraseBox
 	PukBox        lib.PpePUKBox
 }
-
 type RotatePPEWithPUKInternal__ struct {
 	_struct       struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	PpGen         *lib.PassphraseGenerationInternal__
@@ -325,7 +310,6 @@ func (r RotatePPEWithPUKInternal__) Import() RotatePPEWithPUK {
 		})(r.PukBox),
 	}
 }
-
 func (r RotatePPEWithPUK) Export() *RotatePPEWithPUKInternal__ {
 	return &RotatePPEWithPUKInternal__{
 		PpGen:         r.PpGen.Export(),
@@ -334,7 +318,6 @@ func (r RotatePPEWithPUK) Export() *RotatePPEWithPUKInternal__ {
 		PukBox:        r.PukBox.Export(),
 	}
 }
-
 func (r *RotatePPEWithPUK) Encode(enc rpc.Encoder) error {
 	return enc.Encode(r.Export())
 }
@@ -357,7 +340,6 @@ type KexPPE struct {
 	Salt  lib.PassphraseSalt
 	Sv    lib.StretchVersion
 }
-
 type KexPPEInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Skwk    *SKMWKInternal__
@@ -394,7 +376,6 @@ func (k KexPPEInternal__) Import() KexPPE {
 		})(k.Sv),
 	}
 }
-
 func (k KexPPE) Export() *KexPPEInternal__ {
 	return &KexPPEInternal__{
 		Skwk:  k.Skwk.Export(),
@@ -403,7 +384,6 @@ func (k KexPPE) Export() *KexPPEInternal__ {
 		Sv:    k.Sv.Export(),
 	}
 }
-
 func (k *KexPPE) Encode(enc rpc.Encoder) error {
 	return enc.Encode(k.Export())
 }
@@ -428,7 +408,6 @@ type UnlockedSKMWK struct {
 	Sv          lib.StretchVersion
 	VerifyKey   lib.EntityID
 }
-
 type UnlockedSKMWKInternal__ struct {
 	_struct     struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Lst         *[](*SKMWKInternal__)
@@ -491,7 +470,6 @@ func (u UnlockedSKMWKInternal__) Import() UnlockedSKMWK {
 		})(u.VerifyKey),
 	}
 }
-
 func (u UnlockedSKMWK) Export() *UnlockedSKMWKInternal__ {
 	return &UnlockedSKMWKInternal__{
 		Lst: (func(x []SKMWK) *[](*SKMWKInternal__) {
@@ -511,7 +489,6 @@ func (u UnlockedSKMWK) Export() *UnlockedSKMWKInternal__ {
 		VerifyKey:   u.VerifyKey.Export(),
 	}
 }
-
 func (u *UnlockedSKMWK) Encode(enc rpc.Encoder) error {
 	return enc.Encode(u.Export())
 }

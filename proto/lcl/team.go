@@ -1,5 +1,5 @@
-// Auto-generated to Go types and interfaces using @foks-proj/snowpack-compiler 1.0.8 (git+https://github.com/foks-proj/node-snowpack-compiler.git)
-//  Input file: ../../proto-src/lcl/team.snowp
+// Auto-generated to Go types and interfaces using snowpc 0.0.4 (https://github.com/foks-proj/go-snowpack-compiler)
+//  Input file:../../proto-src/lcl/team.snowp
 
 package lcl
 
@@ -15,7 +15,6 @@ import lib "github.com/foks-proj/go-foks/proto/lib"
 type TeamCreateRes struct {
 	Id lib.TeamID
 }
-
 type TeamCreateResInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Id      *lib.TeamIDInternal__
@@ -31,13 +30,11 @@ func (t TeamCreateResInternal__) Import() TeamCreateRes {
 		})(t.Id),
 	}
 }
-
 func (t TeamCreateRes) Export() *TeamCreateResInternal__ {
 	return &TeamCreateResInternal__{
 		Id: t.Id.Export(),
 	}
 }
-
 func (t *TeamCreateRes) Encode(enc rpc.Encoder) error {
 	return enc.Encode(t.Export())
 }
@@ -59,7 +56,6 @@ type NamedFQParty struct {
 	Name lib.NameUtf8
 	Host lib.Hostname
 }
-
 type NamedFQPartyInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Fqp     *lib.FQPartyInternal__
@@ -89,7 +85,6 @@ func (n NamedFQPartyInternal__) Import() NamedFQParty {
 		})(n.Host),
 	}
 }
-
 func (n NamedFQParty) Export() *NamedFQPartyInternal__ {
 	return &NamedFQPartyInternal__{
 		Fqp:  n.Fqp.Export(),
@@ -97,7 +92,6 @@ func (n NamedFQParty) Export() *NamedFQPartyInternal__ {
 		Host: n.Host.Export(),
 	}
 }
-
 func (n *NamedFQParty) Encode(enc rpc.Encoder) error {
 	return enc.Encode(n.Export())
 }
@@ -118,7 +112,6 @@ type ChainDate struct {
 	Seqno lib.Seqno
 	Time  lib.Time
 }
-
 type ChainDateInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Seqno   *lib.SeqnoInternal__
@@ -141,14 +134,12 @@ func (c ChainDateInternal__) Import() ChainDate {
 		})(c.Time),
 	}
 }
-
 func (c ChainDate) Export() *ChainDateInternal__ {
 	return &ChainDateInternal__{
 		Seqno: c.Seqno.Export(),
 		Time:  c.Time.Export(),
 	}
 }
-
 func (c *ChainDate) Encode(enc rpc.Encoder) error {
 	return enc.Encode(c.Export())
 }
@@ -173,7 +164,6 @@ type TeamRosterMember struct {
 	Added      ChainDate
 	NumMembers int64
 }
-
 type TeamRosterMemberInternal__ struct {
 	_struct    struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Mem        *NamedFQPartyInternal__
@@ -224,7 +214,6 @@ func (t TeamRosterMemberInternal__) Import() TeamRosterMember {
 		})(t.NumMembers),
 	}
 }
-
 func (t TeamRosterMember) Export() *TeamRosterMemberInternal__ {
 	return &TeamRosterMemberInternal__{
 		Mem:        t.Mem.Export(),
@@ -235,7 +224,6 @@ func (t TeamRosterMember) Export() *TeamRosterMemberInternal__ {
 		NumMembers: &t.NumMembers,
 	}
 }
-
 func (t *TeamRosterMember) Encode(enc rpc.Encoder) error {
 	return enc.Encode(t.Export())
 }
@@ -256,7 +244,6 @@ type FQTeamParsedAndRole struct {
 	Fqtp lib.FQTeamParsed
 	Role lib.Role
 }
-
 type FQTeamParsedAndRoleInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Fqtp    *lib.FQTeamParsedInternal__
@@ -279,14 +266,12 @@ func (f FQTeamParsedAndRoleInternal__) Import() FQTeamParsedAndRole {
 		})(f.Role),
 	}
 }
-
 func (f FQTeamParsedAndRole) Export() *FQTeamParsedAndRoleInternal__ {
 	return &FQTeamParsedAndRoleInternal__{
 		Fqtp: f.Fqtp.Export(),
 		Role: f.Role.Export(),
 	}
 }
-
 func (f *FQTeamParsedAndRole) Encode(enc rpc.Encoder) error {
 	return enc.Encode(f.Export())
 }
@@ -307,7 +292,6 @@ type TeamRoster struct {
 	Fqp     NamedFQParty
 	Members []TeamRosterMember
 }
-
 type TeamRosterInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Fqp     *NamedFQPartyInternal__
@@ -342,7 +326,6 @@ func (t TeamRosterInternal__) Import() TeamRoster {
 		})(t.Members),
 	}
 }
-
 func (t TeamRoster) Export() *TeamRosterInternal__ {
 	return &TeamRosterInternal__{
 		Fqp: t.Fqp.Export(),
@@ -358,7 +341,6 @@ func (t TeamRoster) Export() *TeamRosterInternal__ {
 		})(t.Members),
 	}
 }
-
 func (t *TeamRoster) Encode(enc rpc.Encoder) error {
 	return enc.Encode(t.Export())
 }
@@ -380,7 +362,6 @@ type FQNamedTeam struct {
 	Name lib.NameUtf8
 	Host lib.Hostname
 }
-
 type FQNamedTeamInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Id      *lib.FQTeamInternal__
@@ -410,7 +391,6 @@ func (f FQNamedTeamInternal__) Import() FQNamedTeam {
 		})(f.Host),
 	}
 }
-
 func (f FQNamedTeam) Export() *FQNamedTeamInternal__ {
 	return &FQNamedTeamInternal__{
 		Id:   f.Id.Export(),
@@ -418,7 +398,6 @@ func (f FQNamedTeam) Export() *FQNamedTeamInternal__ {
 		Host: f.Host.Export(),
 	}
 }
-
 func (f *FQNamedTeam) Encode(enc rpc.Encoder) error {
 	return enc.Encode(f.Export())
 }
@@ -439,7 +418,6 @@ type TeamAcceptInviteRes struct {
 	Tok  *lib.TeamRSVPRemote
 	Team FQNamedTeam
 }
-
 type TeamAcceptInviteResInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Tok     *lib.TeamRSVPRemoteInternal__
@@ -468,7 +446,6 @@ func (t TeamAcceptInviteResInternal__) Import() TeamAcceptInviteRes {
 		})(t.Team),
 	}
 }
-
 func (t TeamAcceptInviteRes) Export() *TeamAcceptInviteResInternal__ {
 	return &TeamAcceptInviteResInternal__{
 		Tok: (func(x *lib.TeamRSVPRemote) *lib.TeamRSVPRemoteInternal__ {
@@ -480,7 +457,6 @@ func (t TeamAcceptInviteRes) Export() *TeamAcceptInviteResInternal__ {
 		Team: t.Team.Export(),
 	}
 }
-
 func (t *TeamAcceptInviteRes) Encode(enc rpc.Encoder) error {
 	return enc.Encode(t.Export())
 }
@@ -508,7 +484,6 @@ type TeamInboxRow struct {
 	Hepks         lib.HEPKSet
 	AutofixStatus *lib.Status
 }
-
 type TeamInboxRowInternal__ struct {
 	_struct       struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Time          *lib.TimeInternal__
@@ -592,7 +567,6 @@ func (t TeamInboxRowInternal__) Import() TeamInboxRow {
 		})(t.AutofixStatus),
 	}
 }
-
 func (t TeamInboxRow) Export() *TeamInboxRowInternal__ {
 	return &TeamInboxRowInternal__{
 		Time:    t.Time.Export(),
@@ -616,7 +590,6 @@ func (t TeamInboxRow) Export() *TeamInboxRowInternal__ {
 		})(t.AutofixStatus),
 	}
 }
-
 func (t *TeamInboxRow) Encode(enc rpc.Encoder) error {
 	return enc.Encode(t.Export())
 }
@@ -637,7 +610,6 @@ type TeamInboxReject struct {
 	Fpq    lib.FQParty
 	Status lib.Status
 }
-
 type TeamInboxRejectInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Fpq     *lib.FQPartyInternal__
@@ -660,14 +632,12 @@ func (t TeamInboxRejectInternal__) Import() TeamInboxReject {
 		})(t.Status),
 	}
 }
-
 func (t TeamInboxReject) Export() *TeamInboxRejectInternal__ {
 	return &TeamInboxRejectInternal__{
 		Fpq:    t.Fpq.Export(),
 		Status: t.Status.Export(),
 	}
 }
-
 func (t *TeamInboxReject) Encode(enc rpc.Encoder) error {
 	return enc.Encode(t.Export())
 }
@@ -687,7 +657,6 @@ func (t *TeamInboxReject) Bytes() []byte { return nil }
 type TeamInbox struct {
 	Rows []TeamInboxRow
 }
-
 type TeamInboxInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Rows    *[](*TeamInboxRowInternal__)
@@ -715,7 +684,6 @@ func (t TeamInboxInternal__) Import() TeamInbox {
 		})(t.Rows),
 	}
 }
-
 func (t TeamInbox) Export() *TeamInboxInternal__ {
 	return &TeamInboxInternal__{
 		Rows: (func(x []TeamInboxRow) *[](*TeamInboxRowInternal__) {
@@ -730,7 +698,6 @@ func (t TeamInbox) Export() *TeamInboxInternal__ {
 		})(t.Rows),
 	}
 }
-
 func (t *TeamInbox) Encode(enc rpc.Encoder) error {
 	return enc.Encode(t.Export())
 }
@@ -751,7 +718,6 @@ type TokRole struct {
 	Tok  lib.TeamRSVP
 	Role lib.Role
 }
-
 type TokRoleInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Tok     *lib.TeamRSVPInternal__
@@ -774,14 +740,12 @@ func (t TokRoleInternal__) Import() TokRole {
 		})(t.Role),
 	}
 }
-
 func (t TokRole) Export() *TokRoleInternal__ {
 	return &TokRoleInternal__{
 		Tok:  t.Tok.Export(),
 		Role: t.Role.Export(),
 	}
 }
-
 func (t *TokRole) Encode(enc rpc.Encoder) error {
 	return enc.Encode(t.Export())
 }
@@ -805,7 +769,6 @@ func (f FQPartyAndRoleString) Export() *FQPartyAndRoleStringInternal__ {
 	tmp := ((string)(f))
 	return ((*FQPartyAndRoleStringInternal__)(&tmp))
 }
-
 func (f FQPartyAndRoleStringInternal__) Import() FQPartyAndRoleString {
 	tmp := (string)(f)
 	return FQPartyAndRoleString((func(x *string) (ret string) {
@@ -841,7 +804,6 @@ func (r RoleChangeString) Export() *RoleChangeStringInternal__ {
 	tmp := ((string)(r))
 	return ((*RoleChangeStringInternal__)(&tmp))
 }
-
 func (r RoleChangeStringInternal__) Import() RoleChangeString {
 	tmp := (string)(r)
 	return RoleChangeString((func(x *string) (ret string) {
@@ -874,7 +836,6 @@ type FQPartyParsedAndRole struct {
 	Fqp  lib.FQPartyParsed
 	Role *lib.Role
 }
-
 type FQPartyParsedAndRoleInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Fqp     *lib.FQPartyParsedInternal__
@@ -903,7 +864,6 @@ func (f FQPartyParsedAndRoleInternal__) Import() FQPartyParsedAndRole {
 		})(f.Role),
 	}
 }
-
 func (f FQPartyParsedAndRole) Export() *FQPartyParsedAndRoleInternal__ {
 	return &FQPartyParsedAndRoleInternal__{
 		Fqp: f.Fqp.Export(),
@@ -915,7 +875,6 @@ func (f FQPartyParsedAndRole) Export() *FQPartyParsedAndRoleInternal__ {
 		})(f.Role),
 	}
 }
-
 func (f *FQPartyParsedAndRole) Encode(enc rpc.Encoder) error {
 	return enc.Encode(f.Export())
 }
@@ -936,7 +895,6 @@ type RoleChange struct {
 	Member  FQPartyParsedAndRole
 	NewRole lib.Role
 }
-
 type RoleChangeInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Member  *FQPartyParsedAndRoleInternal__
@@ -959,14 +917,12 @@ func (r RoleChangeInternal__) Import() RoleChange {
 		})(r.NewRole),
 	}
 }
-
 func (r RoleChange) Export() *RoleChangeInternal__ {
 	return &RoleChangeInternal__{
 		Member:  r.Member.Export(),
 		NewRole: r.NewRole.Export(),
 	}
 }
-
 func (r *RoleChange) Encode(enc rpc.Encoder) error {
 	return enc.Encode(r.Export())
 }
@@ -990,7 +946,6 @@ type TeamMembership struct {
 	Via     *NamedFQParty
 	Tir     lib.RationalRange
 }
-
 type TeamMembershipInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Team    *NamedFQPartyInternal__
@@ -1040,7 +995,6 @@ func (t TeamMembershipInternal__) Import() TeamMembership {
 		})(t.Tir),
 	}
 }
-
 func (t TeamMembership) Export() *TeamMembershipInternal__ {
 	return &TeamMembershipInternal__{
 		Team:    t.Team.Export(),
@@ -1055,7 +1009,6 @@ func (t TeamMembership) Export() *TeamMembershipInternal__ {
 		Tir: t.Tir.Export(),
 	}
 }
-
 func (t *TeamMembership) Encode(enc rpc.Encoder) error {
 	return enc.Encode(t.Export())
 }
@@ -1076,7 +1029,6 @@ type ListMembershipsRes struct {
 	HomeHost lib.HostID
 	Teams    []TeamMembership
 }
-
 type ListMembershipsResInternal__ struct {
 	_struct  struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	HomeHost *lib.HostIDInternal__
@@ -1111,7 +1063,6 @@ func (l ListMembershipsResInternal__) Import() ListMembershipsRes {
 		})(l.Teams),
 	}
 }
-
 func (l ListMembershipsRes) Export() *ListMembershipsResInternal__ {
 	return &ListMembershipsResInternal__{
 		HomeHost: l.HomeHost.Export(),
@@ -1127,7 +1078,6 @@ func (l ListMembershipsRes) Export() *ListMembershipsResInternal__ {
 		})(l.Teams),
 	}
 }
-
 func (l *ListMembershipsRes) Encode(enc rpc.Encoder) error {
 	return enc.Encode(l.Export())
 }
@@ -1151,7 +1101,6 @@ func (t TokRoleString) Export() *TokRoleStringInternal__ {
 	tmp := ((string)(t))
 	return ((*TokRoleStringInternal__)(&tmp))
 }
-
 func (t TokRoleStringInternal__) Import() TokRoleString {
 	tmp := (string)(t)
 	return TokRoleString((func(x *string) (ret string) {
@@ -1185,7 +1134,6 @@ var TeamProtocolID rpc.ProtocolUniqueID = rpc.ProtocolUniqueID(0xa7b878de)
 type TeamCreateArg struct {
 	NameUtf8 lib.NameUtf8
 }
-
 type TeamCreateArgInternal__ struct {
 	_struct  struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	NameUtf8 *lib.NameUtf8Internal__
@@ -1201,13 +1149,11 @@ func (t TeamCreateArgInternal__) Import() TeamCreateArg {
 		})(t.NameUtf8),
 	}
 }
-
 func (t TeamCreateArg) Export() *TeamCreateArgInternal__ {
 	return &TeamCreateArgInternal__{
 		NameUtf8: t.NameUtf8.Export(),
 	}
 }
-
 func (t *TeamCreateArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(t.Export())
 }
@@ -1227,7 +1173,6 @@ func (t *TeamCreateArg) Bytes() []byte { return nil }
 type TeamListArg struct {
 	Team lib.FQTeamParsed
 }
-
 type TeamListArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Team    *lib.FQTeamParsedInternal__
@@ -1243,13 +1188,11 @@ func (t TeamListArgInternal__) Import() TeamListArg {
 		})(t.Team),
 	}
 }
-
 func (t TeamListArg) Export() *TeamListArgInternal__ {
 	return &TeamListArgInternal__{
 		Team: t.Team.Export(),
 	}
 }
-
 func (t *TeamListArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(t.Export())
 }
@@ -1269,7 +1212,6 @@ func (t *TeamListArg) Bytes() []byte { return nil }
 type TeamCreateInviteArg struct {
 	Team lib.FQTeamParsed
 }
-
 type TeamCreateInviteArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Team    *lib.FQTeamParsedInternal__
@@ -1285,13 +1227,11 @@ func (t TeamCreateInviteArgInternal__) Import() TeamCreateInviteArg {
 		})(t.Team),
 	}
 }
-
 func (t TeamCreateInviteArg) Export() *TeamCreateInviteArgInternal__ {
 	return &TeamCreateInviteArgInternal__{
 		Team: t.Team.Export(),
 	}
 }
-
 func (t *TeamCreateInviteArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(t.Export())
 }
@@ -1312,7 +1252,6 @@ type TeamAcceptInviteArg struct {
 	I        lib.TeamInvite
 	ActingAs *FQTeamParsedAndRole
 }
-
 type TeamAcceptInviteArgInternal__ struct {
 	_struct  struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	I        *lib.TeamInviteInternal__
@@ -1341,7 +1280,6 @@ func (t TeamAcceptInviteArgInternal__) Import() TeamAcceptInviteArg {
 		})(t.ActingAs),
 	}
 }
-
 func (t TeamAcceptInviteArg) Export() *TeamAcceptInviteArgInternal__ {
 	return &TeamAcceptInviteArgInternal__{
 		I: t.I.Export(),
@@ -1353,7 +1291,6 @@ func (t TeamAcceptInviteArg) Export() *TeamAcceptInviteArgInternal__ {
 		})(t.ActingAs),
 	}
 }
-
 func (t *TeamAcceptInviteArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(t.Export())
 }
@@ -1373,7 +1310,6 @@ func (t *TeamAcceptInviteArg) Bytes() []byte { return nil }
 type TeamInboxArg struct {
 	Team lib.FQTeamParsed
 }
-
 type TeamInboxArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Team    *lib.FQTeamParsedInternal__
@@ -1389,13 +1325,11 @@ func (t TeamInboxArgInternal__) Import() TeamInboxArg {
 		})(t.Team),
 	}
 }
-
 func (t TeamInboxArg) Export() *TeamInboxArgInternal__ {
 	return &TeamInboxArgInternal__{
 		Team: t.Team.Export(),
 	}
 }
-
 func (t *TeamInboxArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(t.Export())
 }
@@ -1416,7 +1350,6 @@ type TeamAdmitArg struct {
 	Team    lib.FQTeamParsed
 	Members []TokRole
 }
-
 type TeamAdmitArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Team    *lib.FQTeamParsedInternal__
@@ -1451,7 +1384,6 @@ func (t TeamAdmitArgInternal__) Import() TeamAdmitArg {
 		})(t.Members),
 	}
 }
-
 func (t TeamAdmitArg) Export() *TeamAdmitArgInternal__ {
 	return &TeamAdmitArgInternal__{
 		Team: t.Team.Export(),
@@ -1467,7 +1399,6 @@ func (t TeamAdmitArg) Export() *TeamAdmitArgInternal__ {
 		})(t.Members),
 	}
 }
-
 func (t *TeamAdmitArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(t.Export())
 }
@@ -1487,7 +1418,6 @@ func (t *TeamAdmitArg) Bytes() []byte { return nil }
 type TeamIndexRangeGetArg struct {
 	Team lib.FQTeamParsed
 }
-
 type TeamIndexRangeGetArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Team    *lib.FQTeamParsedInternal__
@@ -1503,13 +1433,11 @@ func (t TeamIndexRangeGetArgInternal__) Import() TeamIndexRangeGetArg {
 		})(t.Team),
 	}
 }
-
 func (t TeamIndexRangeGetArg) Export() *TeamIndexRangeGetArgInternal__ {
 	return &TeamIndexRangeGetArgInternal__{
 		Team: t.Team.Export(),
 	}
 }
-
 func (t *TeamIndexRangeGetArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(t.Export())
 }
@@ -1529,7 +1457,6 @@ func (t *TeamIndexRangeGetArg) Bytes() []byte { return nil }
 type TeamIndexRangeLowerArg struct {
 	Team lib.FQTeamParsed
 }
-
 type TeamIndexRangeLowerArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Team    *lib.FQTeamParsedInternal__
@@ -1545,13 +1472,11 @@ func (t TeamIndexRangeLowerArgInternal__) Import() TeamIndexRangeLowerArg {
 		})(t.Team),
 	}
 }
-
 func (t TeamIndexRangeLowerArg) Export() *TeamIndexRangeLowerArgInternal__ {
 	return &TeamIndexRangeLowerArgInternal__{
 		Team: t.Team.Export(),
 	}
 }
-
 func (t *TeamIndexRangeLowerArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(t.Export())
 }
@@ -1571,7 +1496,6 @@ func (t *TeamIndexRangeLowerArg) Bytes() []byte { return nil }
 type TeamIndexRangeRaiseArg struct {
 	Team lib.FQTeamParsed
 }
-
 type TeamIndexRangeRaiseArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Team    *lib.FQTeamParsedInternal__
@@ -1587,13 +1511,11 @@ func (t TeamIndexRangeRaiseArgInternal__) Import() TeamIndexRangeRaiseArg {
 		})(t.Team),
 	}
 }
-
 func (t TeamIndexRangeRaiseArg) Export() *TeamIndexRangeRaiseArgInternal__ {
 	return &TeamIndexRangeRaiseArgInternal__{
 		Team: t.Team.Export(),
 	}
 }
-
 func (t *TeamIndexRangeRaiseArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(t.Export())
 }
@@ -1614,7 +1536,6 @@ type TeamIndexRangeSetArg struct {
 	Team  lib.FQTeamParsed
 	Range lib.RationalRange
 }
-
 type TeamIndexRangeSetArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Team    *lib.FQTeamParsedInternal__
@@ -1637,14 +1558,12 @@ func (t TeamIndexRangeSetArgInternal__) Import() TeamIndexRangeSetArg {
 		})(t.Range),
 	}
 }
-
 func (t TeamIndexRangeSetArg) Export() *TeamIndexRangeSetArgInternal__ {
 	return &TeamIndexRangeSetArgInternal__{
 		Team:  t.Team.Export(),
 		Range: t.Range.Export(),
 	}
 }
-
 func (t *TeamIndexRangeSetArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(t.Export())
 }
@@ -1665,7 +1584,6 @@ type TeamIndexRangeSetLowArg struct {
 	Team lib.FQTeamParsed
 	Low  lib.Rational
 }
-
 type TeamIndexRangeSetLowArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Team    *lib.FQTeamParsedInternal__
@@ -1688,14 +1606,12 @@ func (t TeamIndexRangeSetLowArgInternal__) Import() TeamIndexRangeSetLowArg {
 		})(t.Low),
 	}
 }
-
 func (t TeamIndexRangeSetLowArg) Export() *TeamIndexRangeSetLowArgInternal__ {
 	return &TeamIndexRangeSetLowArgInternal__{
 		Team: t.Team.Export(),
 		Low:  t.Low.Export(),
 	}
 }
-
 func (t *TeamIndexRangeSetLowArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(t.Export())
 }
@@ -1716,7 +1632,6 @@ type TeamIndexRangeSetHighArg struct {
 	Team lib.FQTeamParsed
 	High lib.Rational
 }
-
 type TeamIndexRangeSetHighArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Team    *lib.FQTeamParsedInternal__
@@ -1739,14 +1654,12 @@ func (t TeamIndexRangeSetHighArgInternal__) Import() TeamIndexRangeSetHighArg {
 		})(t.High),
 	}
 }
-
 func (t TeamIndexRangeSetHighArg) Export() *TeamIndexRangeSetHighArgInternal__ {
 	return &TeamIndexRangeSetHighArgInternal__{
 		Team: t.Team.Export(),
 		High: t.High.Export(),
 	}
 }
-
 func (t *TeamIndexRangeSetHighArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(t.Export())
 }
@@ -1765,7 +1678,6 @@ func (t *TeamIndexRangeSetHighArg) Bytes() []byte { return nil }
 
 type TeamListMembershipsArg struct {
 }
-
 type TeamListMembershipsArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 }
@@ -1773,11 +1685,9 @@ type TeamListMembershipsArgInternal__ struct {
 func (t TeamListMembershipsArgInternal__) Import() TeamListMembershipsArg {
 	return TeamListMembershipsArg{}
 }
-
 func (t TeamListMembershipsArg) Export() *TeamListMembershipsArgInternal__ {
 	return &TeamListMembershipsArgInternal__{}
 }
-
 func (t *TeamListMembershipsArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(t.Export())
 }
@@ -1799,7 +1709,6 @@ type TeamAddArg struct {
 	Members []FQPartyParsedAndRole
 	DstRole *lib.Role
 }
-
 type TeamAddArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Team    *lib.FQTeamParsedInternal__
@@ -1847,7 +1756,6 @@ func (t TeamAddArgInternal__) Import() TeamAddArg {
 		})(t.DstRole),
 	}
 }
-
 func (t TeamAddArg) Export() *TeamAddArgInternal__ {
 	return &TeamAddArgInternal__{
 		Team: t.Team.Export(),
@@ -1869,7 +1777,6 @@ func (t TeamAddArg) Export() *TeamAddArgInternal__ {
 		})(t.DstRole),
 	}
 }
-
 func (t *TeamAddArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(t.Export())
 }
@@ -1890,7 +1797,6 @@ type TeamChangeRolesArg struct {
 	Team    lib.FQTeamParsed
 	Changes []RoleChange
 }
-
 type TeamChangeRolesArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Team    *lib.FQTeamParsedInternal__
@@ -1925,7 +1831,6 @@ func (t TeamChangeRolesArgInternal__) Import() TeamChangeRolesArg {
 		})(t.Changes),
 	}
 }
-
 func (t TeamChangeRolesArg) Export() *TeamChangeRolesArgInternal__ {
 	return &TeamChangeRolesArgInternal__{
 		Team: t.Team.Export(),
@@ -1941,7 +1846,6 @@ func (t TeamChangeRolesArg) Export() *TeamChangeRolesArgInternal__ {
 		})(t.Changes),
 	}
 }
-
 func (t *TeamChangeRolesArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(t.Export())
 }
@@ -1976,7 +1880,6 @@ type TeamInterface interface {
 	TeamChangeRoles(context.Context, TeamChangeRolesArg) error
 	ErrorWrapper() func(error) lib.Status
 	CheckArgHeader(ctx context.Context, h Header) error
-
 	MakeResHeader() Header
 }
 
@@ -2003,7 +1906,7 @@ func (t teamErrorUnwrapperAdapter) MakeArg() interface{} {
 func (t teamErrorUnwrapperAdapter) UnwrapError(raw interface{}) (appError error, dispatchError error) {
 	sTmp, ok := raw.(*lib.StatusInternal__)
 	if !ok {
-		return nil, errors.New("Error converting to internal type in UnwrapError")
+		return nil, errors.New("error converting to internal type in UnwrapError")
 	}
 	if sTmp == nil {
 		return nil, nil
@@ -2044,7 +1947,6 @@ func (c TeamClient) TeamCreate(ctx context.Context, nameUtf8 lib.NameUtf8) (res 
 	res = tmp.Data.Import()
 	return
 }
-
 func (c TeamClient) TeamList(ctx context.Context, team lib.FQTeamParsed) (res TeamRoster, err error) {
 	arg := TeamListArg{
 		Team: team,
@@ -2069,7 +1971,6 @@ func (c TeamClient) TeamList(ctx context.Context, team lib.FQTeamParsed) (res Te
 	res = tmp.Data.Import()
 	return
 }
-
 func (c TeamClient) TeamCreateInvite(ctx context.Context, team lib.FQTeamParsed) (res lib.TeamInvite, err error) {
 	arg := TeamCreateInviteArg{
 		Team: team,
@@ -2094,7 +1995,6 @@ func (c TeamClient) TeamCreateInvite(ctx context.Context, team lib.FQTeamParsed)
 	res = tmp.Data.Import()
 	return
 }
-
 func (c TeamClient) TeamAcceptInvite(ctx context.Context, arg TeamAcceptInviteArg) (res TeamAcceptInviteRes, err error) {
 	warg := &rpc.DataWrap[Header, *TeamAcceptInviteArgInternal__]{
 		Data: arg.Export(),
@@ -2116,7 +2016,6 @@ func (c TeamClient) TeamAcceptInvite(ctx context.Context, arg TeamAcceptInviteAr
 	res = tmp.Data.Import()
 	return
 }
-
 func (c TeamClient) TeamInbox(ctx context.Context, team lib.FQTeamParsed) (res TeamInbox, err error) {
 	arg := TeamInboxArg{
 		Team: team,
@@ -2141,7 +2040,6 @@ func (c TeamClient) TeamInbox(ctx context.Context, team lib.FQTeamParsed) (res T
 	res = tmp.Data.Import()
 	return
 }
-
 func (c TeamClient) TeamAdmit(ctx context.Context, arg TeamAdmitArg) (err error) {
 	warg := &rpc.DataWrap[Header, *TeamAdmitArgInternal__]{
 		Data: arg.Export(),
@@ -2162,7 +2060,6 @@ func (c TeamClient) TeamAdmit(ctx context.Context, arg TeamAdmitArg) (err error)
 	}
 	return
 }
-
 func (c TeamClient) TeamIndexRangeGet(ctx context.Context, team lib.FQTeamParsed) (res lib.RationalRange, err error) {
 	arg := TeamIndexRangeGetArg{
 		Team: team,
@@ -2187,7 +2084,6 @@ func (c TeamClient) TeamIndexRangeGet(ctx context.Context, team lib.FQTeamParsed
 	res = tmp.Data.Import()
 	return
 }
-
 func (c TeamClient) TeamIndexRangeLower(ctx context.Context, team lib.FQTeamParsed) (res lib.RationalRange, err error) {
 	arg := TeamIndexRangeLowerArg{
 		Team: team,
@@ -2212,7 +2108,6 @@ func (c TeamClient) TeamIndexRangeLower(ctx context.Context, team lib.FQTeamPars
 	res = tmp.Data.Import()
 	return
 }
-
 func (c TeamClient) TeamIndexRangeRaise(ctx context.Context, team lib.FQTeamParsed) (res lib.RationalRange, err error) {
 	arg := TeamIndexRangeRaiseArg{
 		Team: team,
@@ -2237,7 +2132,6 @@ func (c TeamClient) TeamIndexRangeRaise(ctx context.Context, team lib.FQTeamPars
 	res = tmp.Data.Import()
 	return
 }
-
 func (c TeamClient) TeamIndexRangeSet(ctx context.Context, arg TeamIndexRangeSetArg) (res lib.RationalRange, err error) {
 	warg := &rpc.DataWrap[Header, *TeamIndexRangeSetArgInternal__]{
 		Data: arg.Export(),
@@ -2259,7 +2153,6 @@ func (c TeamClient) TeamIndexRangeSet(ctx context.Context, arg TeamIndexRangeSet
 	res = tmp.Data.Import()
 	return
 }
-
 func (c TeamClient) TeamIndexRangeSetLow(ctx context.Context, arg TeamIndexRangeSetLowArg) (res lib.RationalRange, err error) {
 	warg := &rpc.DataWrap[Header, *TeamIndexRangeSetLowArgInternal__]{
 		Data: arg.Export(),
@@ -2281,7 +2174,6 @@ func (c TeamClient) TeamIndexRangeSetLow(ctx context.Context, arg TeamIndexRange
 	res = tmp.Data.Import()
 	return
 }
-
 func (c TeamClient) TeamIndexRangeSetHigh(ctx context.Context, arg TeamIndexRangeSetHighArg) (res lib.RationalRange, err error) {
 	warg := &rpc.DataWrap[Header, *TeamIndexRangeSetHighArgInternal__]{
 		Data: arg.Export(),
@@ -2303,7 +2195,6 @@ func (c TeamClient) TeamIndexRangeSetHigh(ctx context.Context, arg TeamIndexRang
 	res = tmp.Data.Import()
 	return
 }
-
 func (c TeamClient) TeamListMemberships(ctx context.Context) (res ListMembershipsRes, err error) {
 	var arg TeamListMembershipsArg
 	warg := &rpc.DataWrap[Header, *TeamListMembershipsArgInternal__]{
@@ -2326,7 +2217,6 @@ func (c TeamClient) TeamListMemberships(ctx context.Context) (res ListMembership
 	res = tmp.Data.Import()
 	return
 }
-
 func (c TeamClient) TeamAdd(ctx context.Context, arg TeamAddArg) (err error) {
 	warg := &rpc.DataWrap[Header, *TeamAddArgInternal__]{
 		Data: arg.Export(),
@@ -2347,7 +2237,6 @@ func (c TeamClient) TeamAdd(ctx context.Context, arg TeamAddArg) (err error) {
 	}
 	return
 }
-
 func (c TeamClient) TeamChangeRoles(ctx context.Context, arg TeamChangeRolesArg) (err error) {
 	warg := &rpc.DataWrap[Header, *TeamChangeRolesArgInternal__]{
 		Data: arg.Export(),
@@ -2368,7 +2257,6 @@ func (c TeamClient) TeamChangeRoles(ctx context.Context, arg TeamChangeRolesArg)
 	}
 	return
 }
-
 func TeamProtocol(i TeamInterface) rpc.ProtocolV2 {
 	return rpc.ProtocolV2{
 		Name: "Team",

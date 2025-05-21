@@ -1,5 +1,5 @@
-// Auto-generated to Go types and interfaces using @foks-proj/snowpack-compiler 1.0.8 (git+https://github.com/foks-proj/node-snowpack-compiler.git)
-//  Input file: ../../proto-src/lib/web.snowp
+// Auto-generated to Go types and interfaces using snowpc 0.0.4 (https://github.com/foks-proj/go-snowpack-compiler)
+//  Input file:../../proto-src/lib/web.snowp
 
 package lib
 
@@ -13,7 +13,6 @@ type CSRFPayload struct {
 	Uid   UID
 	Etime Time
 }
-
 type CSRFPayloadInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Uid     *UIDInternal__
@@ -36,14 +35,12 @@ func (c CSRFPayloadInternal__) Import() CSRFPayload {
 		})(c.Etime),
 	}
 }
-
 func (c CSRFPayload) Export() *CSRFPayloadInternal__ {
 	return &CSRFPayloadInternal__{
 		Uid:   c.Uid.Export(),
 		Etime: c.Etime.Export(),
 	}
 }
-
 func (c *CSRFPayload) Encode(enc rpc.Encoder) error {
 	return enc.Encode(c.Export())
 }
@@ -63,7 +60,6 @@ var CSRFPayloadTypeUniqueID = rpc.TypeUniqueID(0x88a926cac9fa88ee)
 func (c *CSRFPayload) GetTypeUniqueID() rpc.TypeUniqueID {
 	return CSRFPayloadTypeUniqueID
 }
-
 func (c *CSRFPayload) Bytes() []byte { return nil }
 
 type CSRFTokenV1 struct {
@@ -71,7 +67,6 @@ type CSRFTokenV1 struct {
 	Etime Time
 	Hmac  HMAC
 }
-
 type CSRFTokenV1Internal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	KeyID   *HMACKeyIDInternal__
@@ -101,7 +96,6 @@ func (c CSRFTokenV1Internal__) Import() CSRFTokenV1 {
 		})(c.Hmac),
 	}
 }
-
 func (c CSRFTokenV1) Export() *CSRFTokenV1Internal__ {
 	return &CSRFTokenV1Internal__{
 		KeyID: c.KeyID.Export(),
@@ -109,7 +103,6 @@ func (c CSRFTokenV1) Export() *CSRFTokenV1Internal__ {
 		Hmac:  c.Hmac.Export(),
 	}
 }
-
 func (c *CSRFTokenV1) Encode(enc rpc.Encoder) error {
 	return enc.Encode(c.Export())
 }
@@ -135,7 +128,6 @@ const (
 var CSRFTokenVersionMap = map[string]CSRFTokenVersion{
 	"V1": 1,
 }
-
 var CSRFTokenVersionRevMap = map[CSRFTokenVersion]string{
 	1: "V1",
 }
@@ -145,7 +137,6 @@ type CSRFTokenVersionInternal__ CSRFTokenVersion
 func (c CSRFTokenVersionInternal__) Import() CSRFTokenVersion {
 	return CSRFTokenVersion(c)
 }
-
 func (c CSRFTokenVersion) Export() *CSRFTokenVersionInternal__ {
 	return ((*CSRFTokenVersionInternal__)(&c))
 }
@@ -154,13 +145,11 @@ type CSRFToken struct {
 	V     CSRFTokenVersion
 	F_1__ *CSRFTokenV1 `json:"f1,omitempty"`
 }
-
 type CSRFTokenInternal__ struct {
 	_struct  struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	V        CSRFTokenVersion
 	Switch__ CSRFTokenInternalSwitch__
 }
-
 type CSRFTokenInternalSwitch__ struct {
 	_struct struct{}               `codec:",omitempty"` //lint:ignore U1000 msgpack internal field
 	F_1__   *CSRFTokenV1Internal__ `codec:"1"`
@@ -175,24 +164,21 @@ func (c CSRFToken) GetV() (ret CSRFTokenVersion, err error) {
 	}
 	return c.V, nil
 }
-
 func (c CSRFToken) V1() CSRFTokenV1 {
 	if c.F_1__ == nil {
-		panic("unexepected nil case; should have been checked")
+		panic("unexpected nil case; should have been checked")
 	}
 	if c.V != CSRFTokenVersion_V1 {
 		panic(fmt.Sprintf("unexpected switch value (%v) when V1 is called", c.V))
 	}
 	return *c.F_1__
 }
-
 func NewCSRFTokenWithV1(v CSRFTokenV1) CSRFToken {
 	return CSRFToken{
 		V:     CSRFTokenVersion_V1,
 		F_1__: &v,
 	}
 }
-
 func (c CSRFTokenInternal__) Import() CSRFToken {
 	return CSRFToken{
 		V: c.V,
@@ -210,7 +196,6 @@ func (c CSRFTokenInternal__) Import() CSRFToken {
 		})(c.Switch__.F_1__),
 	}
 }
-
 func (c CSRFToken) Export() *CSRFTokenInternal__ {
 	return &CSRFTokenInternal__{
 		V: c.V,
@@ -224,7 +209,6 @@ func (c CSRFToken) Export() *CSRFTokenInternal__ {
 		},
 	}
 }
-
 func (c *CSRFToken) Encode(enc rpc.Encoder) error {
 	return enc.Encode(c.Export())
 }

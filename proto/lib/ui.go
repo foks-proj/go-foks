@@ -1,5 +1,5 @@
-// Auto-generated to Go types and interfaces using @foks-proj/snowpack-compiler 1.0.8 (git+https://github.com/foks-proj/node-snowpack-compiler.git)
-//  Input file: ../../proto-src/lib/ui.snowp
+// Auto-generated to Go types and interfaces using snowpc 0.0.4 (https://github.com/foks-proj/go-snowpack-compiler)
+//  Input file:../../proto-src/lib/ui.snowp
 
 package lib
 
@@ -14,7 +14,6 @@ func (u UISessionCtr) Export() *UISessionCtrInternal__ {
 	tmp := ((uint64)(u))
 	return ((*UISessionCtrInternal__)(&tmp))
 }
-
 func (u UISessionCtrInternal__) Import() UISessionCtr {
 	tmp := (uint64)(u)
 	return UISessionCtr((func(x *uint64) (ret uint64) {
@@ -47,7 +46,6 @@ type UISessionID struct {
 	Type UISessionType
 	Ctr  UISessionCtr
 }
-
 type UISessionIDInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Type    *UISessionTypeInternal__
@@ -70,14 +68,12 @@ func (u UISessionIDInternal__) Import() UISessionID {
 		})(u.Ctr),
 	}
 }
-
 func (u UISessionID) Export() *UISessionIDInternal__ {
 	return &UISessionIDInternal__{
 		Type: u.Type.Export(),
 		Ctr:  u.Ctr.Export(),
 	}
 }
-
 func (u *UISessionID) Encode(enc rpc.Encoder) error {
 	return enc.Encode(u.Export())
 }
@@ -121,7 +117,6 @@ var UISessionTypeMap = map[string]UISessionType{
 	"NewKeyWizard":  9,
 	"YubiSPP":       10,
 }
-
 var UISessionTypeRevMap = map[UISessionType]string{
 	1:  "Signup",
 	2:  "Provision",
@@ -140,7 +135,6 @@ type UISessionTypeInternal__ UISessionType
 func (u UISessionTypeInternal__) Import() UISessionType {
 	return UISessionType(u)
 }
-
 func (u UISessionType) Export() *UISessionTypeInternal__ {
 	return ((*UISessionTypeInternal__)(&u))
 }

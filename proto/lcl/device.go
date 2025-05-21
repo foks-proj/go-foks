@@ -1,5 +1,5 @@
-// Auto-generated to Go types and interfaces using @foks-proj/snowpack-compiler 1.0.8 (git+https://github.com/foks-proj/node-snowpack-compiler.git)
-//  Input file: ../../proto-src/lcl/device.snowp
+// Auto-generated to Go types and interfaces using snowpc 0.0.4 (https://github.com/foks-proj/go-snowpack-compiler)
+//  Input file:../../proto-src/lcl/device.snowp
 
 package lcl
 
@@ -16,7 +16,6 @@ type KexSessionAndHESP struct {
 	SessionId lib.UISessionID
 	Hesp      lib.KexHESP
 }
-
 type KexSessionAndHESPInternal__ struct {
 	_struct   struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	SessionId *lib.UISessionIDInternal__
@@ -39,14 +38,12 @@ func (k KexSessionAndHESPInternal__) Import() KexSessionAndHESP {
 		})(k.Hesp),
 	}
 }
-
 func (k KexSessionAndHESP) Export() *KexSessionAndHESPInternal__ {
 	return &KexSessionAndHESPInternal__{
 		SessionId: k.SessionId.Export(),
 		Hesp:      k.Hesp.Export(),
 	}
 }
-
 func (k *KexSessionAndHESP) Encode(enc rpc.Encoder) error {
 	return enc.Encode(k.Export())
 }
@@ -68,7 +65,6 @@ var DeviceAssistProtocolID rpc.ProtocolUniqueID = rpc.ProtocolUniqueID(0xbd6aaf3
 type AssistInitArg struct {
 	Id lib.UISessionID
 }
-
 type AssistInitArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Id      *lib.UISessionIDInternal__
@@ -84,13 +80,11 @@ func (a AssistInitArgInternal__) Import() AssistInitArg {
 		})(a.Id),
 	}
 }
-
 func (a AssistInitArg) Export() *AssistInitArgInternal__ {
 	return &AssistInitArgInternal__{
 		Id: a.Id.Export(),
 	}
 }
-
 func (a *AssistInitArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(a.Export())
 }
@@ -110,7 +104,6 @@ func (a *AssistInitArg) Bytes() []byte { return nil }
 type AssistStartKexArg struct {
 	Id lib.UISessionID
 }
-
 type AssistStartKexArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Id      *lib.UISessionIDInternal__
@@ -126,13 +119,11 @@ func (a AssistStartKexArgInternal__) Import() AssistStartKexArg {
 		})(a.Id),
 	}
 }
-
 func (a AssistStartKexArg) Export() *AssistStartKexArgInternal__ {
 	return &AssistStartKexArgInternal__{
 		Id: a.Id.Export(),
 	}
 }
-
 func (a *AssistStartKexArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(a.Export())
 }
@@ -152,7 +143,6 @@ func (a *AssistStartKexArg) Bytes() []byte { return nil }
 type AssistGotKexInputArg struct {
 	K KexSessionAndHESP
 }
-
 type AssistGotKexInputArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	K       *KexSessionAndHESPInternal__
@@ -168,13 +158,11 @@ func (a AssistGotKexInputArgInternal__) Import() AssistGotKexInputArg {
 		})(a.K),
 	}
 }
-
 func (a AssistGotKexInputArg) Export() *AssistGotKexInputArgInternal__ {
 	return &AssistGotKexInputArgInternal__{
 		K: a.K.Export(),
 	}
 }
-
 func (a *AssistGotKexInputArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(a.Export())
 }
@@ -194,7 +182,6 @@ func (a *AssistGotKexInputArg) Bytes() []byte { return nil }
 type AssistKexCancelInputArg struct {
 	Id lib.UISessionID
 }
-
 type AssistKexCancelInputArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Id      *lib.UISessionIDInternal__
@@ -210,13 +197,11 @@ func (a AssistKexCancelInputArgInternal__) Import() AssistKexCancelInputArg {
 		})(a.Id),
 	}
 }
-
 func (a AssistKexCancelInputArg) Export() *AssistKexCancelInputArgInternal__ {
 	return &AssistKexCancelInputArgInternal__{
 		Id: a.Id.Export(),
 	}
 }
-
 func (a *AssistKexCancelInputArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(a.Export())
 }
@@ -236,7 +221,6 @@ func (a *AssistKexCancelInputArg) Bytes() []byte { return nil }
 type AssistWaitForKexCompleteArg struct {
 	Id lib.UISessionID
 }
-
 type AssistWaitForKexCompleteArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Id      *lib.UISessionIDInternal__
@@ -252,13 +236,11 @@ func (a AssistWaitForKexCompleteArgInternal__) Import() AssistWaitForKexComplete
 		})(a.Id),
 	}
 }
-
 func (a AssistWaitForKexCompleteArg) Export() *AssistWaitForKexCompleteArgInternal__ {
 	return &AssistWaitForKexCompleteArgInternal__{
 		Id: a.Id.Export(),
 	}
 }
-
 func (a *AssistWaitForKexCompleteArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(a.Export())
 }
@@ -283,7 +265,6 @@ type DeviceAssistInterface interface {
 	AssistWaitForKexComplete(context.Context, lib.UISessionID) error
 	ErrorWrapper() func(error) lib.Status
 	CheckArgHeader(ctx context.Context, h Header) error
-
 	MakeResHeader() Header
 }
 
@@ -310,7 +291,7 @@ func (d deviceAssistErrorUnwrapperAdapter) MakeArg() interface{} {
 func (d deviceAssistErrorUnwrapperAdapter) UnwrapError(raw interface{}) (appError error, dispatchError error) {
 	sTmp, ok := raw.(*lib.StatusInternal__)
 	if !ok {
-		return nil, errors.New("Error converting to internal type in UnwrapError")
+		return nil, errors.New("error converting to internal type in UnwrapError")
 	}
 	if sTmp == nil {
 		return nil, nil
@@ -351,7 +332,6 @@ func (c DeviceAssistClient) AssistInit(ctx context.Context, id lib.UISessionID) 
 	res = tmp.Data.Import()
 	return
 }
-
 func (c DeviceAssistClient) AssistStartKex(ctx context.Context, id lib.UISessionID) (res lib.KexHESP, err error) {
 	arg := AssistStartKexArg{
 		Id: id,
@@ -376,7 +356,6 @@ func (c DeviceAssistClient) AssistStartKex(ctx context.Context, id lib.UISession
 	res = tmp.Data.Import()
 	return
 }
-
 func (c DeviceAssistClient) AssistGotKexInput(ctx context.Context, k KexSessionAndHESP) (err error) {
 	arg := AssistGotKexInputArg{
 		K: k,
@@ -400,7 +379,6 @@ func (c DeviceAssistClient) AssistGotKexInput(ctx context.Context, k KexSessionA
 	}
 	return
 }
-
 func (c DeviceAssistClient) AssistKexCancelInput(ctx context.Context, id lib.UISessionID) (err error) {
 	arg := AssistKexCancelInputArg{
 		Id: id,
@@ -424,7 +402,6 @@ func (c DeviceAssistClient) AssistKexCancelInput(ctx context.Context, id lib.UIS
 	}
 	return
 }
-
 func (c DeviceAssistClient) AssistWaitForKexComplete(ctx context.Context, id lib.UISessionID) (err error) {
 	arg := AssistWaitForKexCompleteArg{
 		Id: id,
@@ -448,7 +425,6 @@ func (c DeviceAssistClient) AssistWaitForKexComplete(ctx context.Context, id lib
 	}
 	return
 }
-
 func DeviceAssistProtocol(i DeviceAssistInterface) rpc.ProtocolV2 {
 	return rpc.ProtocolV2{
 		Name: "DeviceAssist",
@@ -606,7 +582,6 @@ type ActiveDeviceInfo struct {
 	Active   bool
 	Unlocked bool
 }
-
 type ActiveDeviceInfoInternal__ struct {
 	_struct  struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Di       *lib.DeviceInfoInternal__
@@ -636,7 +611,6 @@ func (a ActiveDeviceInfoInternal__) Import() ActiveDeviceInfo {
 		})(a.Unlocked),
 	}
 }
-
 func (a ActiveDeviceInfo) Export() *ActiveDeviceInfoInternal__ {
 	return &ActiveDeviceInfoInternal__{
 		Di:       a.Di.Export(),
@@ -644,7 +618,6 @@ func (a ActiveDeviceInfo) Export() *ActiveDeviceInfoInternal__ {
 		Unlocked: &a.Unlocked,
 	}
 }
-
 func (a *ActiveDeviceInfo) Encode(enc rpc.Encoder) error {
 	return enc.Encode(a.Export())
 }
@@ -667,7 +640,6 @@ type SelfProvisionArg struct {
 	Role lib.Role
 	Dln  lib.DeviceLabelAndName
 }
-
 type SelfProvisionArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Role    *lib.RoleInternal__
@@ -690,14 +662,12 @@ func (s SelfProvisionArgInternal__) Import() SelfProvisionArg {
 		})(s.Dln),
 	}
 }
-
 func (s SelfProvisionArg) Export() *SelfProvisionArgInternal__ {
 	return &SelfProvisionArgInternal__{
 		Role: s.Role.Export(),
 		Dln:  s.Dln.Export(),
 	}
 }
-
 func (s *SelfProvisionArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(s.Export())
 }
@@ -718,7 +688,6 @@ type DeviceInterface interface {
 	SelfProvision(context.Context, SelfProvisionArg) error
 	ErrorWrapper() func(error) lib.Status
 	CheckArgHeader(ctx context.Context, h Header) error
-
 	MakeResHeader() Header
 }
 
@@ -745,7 +714,7 @@ func (d deviceErrorUnwrapperAdapter) MakeArg() interface{} {
 func (d deviceErrorUnwrapperAdapter) UnwrapError(raw interface{}) (appError error, dispatchError error) {
 	sTmp, ok := raw.(*lib.StatusInternal__)
 	if !ok {
-		return nil, errors.New("Error converting to internal type in UnwrapError")
+		return nil, errors.New("error converting to internal type in UnwrapError")
 	}
 	if sTmp == nil {
 		return nil, nil
@@ -782,7 +751,6 @@ func (c DeviceClient) SelfProvision(ctx context.Context, arg SelfProvisionArg) (
 	}
 	return
 }
-
 func DeviceProtocol(i DeviceInterface) rpc.ProtocolV2 {
 	return rpc.ProtocolV2{
 		Name: "Device",

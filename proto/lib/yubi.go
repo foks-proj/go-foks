@@ -1,5 +1,5 @@
-// Auto-generated to Go types and interfaces using @foks-proj/snowpack-compiler 1.0.8 (git+https://github.com/foks-proj/node-snowpack-compiler.git)
-//  Input file: ../../proto-src/lib/yubi.snowp
+// Auto-generated to Go types and interfaces using snowpc 0.0.4 (https://github.com/foks-proj/go-snowpack-compiler)
+//  Input file:../../proto-src/lib/yubi.snowp
 
 package lib
 
@@ -16,7 +16,6 @@ func (y YubiCardName) Export() *YubiCardNameInternal__ {
 	tmp := ((string)(y))
 	return ((*YubiCardNameInternal__)(&tmp))
 }
-
 func (y YubiCardNameInternal__) Import() YubiCardName {
 	tmp := (string)(y)
 	return YubiCardName((func(x *string) (ret string) {
@@ -52,7 +51,6 @@ func (y YubiSerial) Export() *YubiSerialInternal__ {
 	tmp := ((uint64)(y))
 	return ((*YubiSerialInternal__)(&tmp))
 }
-
 func (y YubiSerialInternal__) Import() YubiSerial {
 	tmp := (uint64)(y)
 	return YubiSerial((func(x *uint64) (ret uint64) {
@@ -88,7 +86,6 @@ func (y YubiSlot) Export() *YubiSlotInternal__ {
 	tmp := ((uint64)(y))
 	return ((*YubiSlotInternal__)(&tmp))
 }
-
 func (y YubiSlotInternal__) Import() YubiSlot {
 	tmp := (uint64)(y)
 	return YubiSlot((func(x *uint64) (ret uint64) {
@@ -124,7 +121,6 @@ func (y YubiPIN) Export() *YubiPINInternal__ {
 	tmp := ((string)(y))
 	return ((*YubiPINInternal__)(&tmp))
 }
-
 func (y YubiPINInternal__) Import() YubiPIN {
 	tmp := (string)(y)
 	return YubiPIN((func(x *string) (ret string) {
@@ -160,7 +156,6 @@ func (y YubiPUK) Export() *YubiPUKInternal__ {
 	tmp := ((string)(y))
 	return ((*YubiPUKInternal__)(&tmp))
 }
-
 func (y YubiPUKInternal__) Import() YubiPUK {
 	tmp := (string)(y)
 	return YubiPUK((func(x *string) (ret string) {
@@ -196,7 +191,6 @@ func (y YubiManagementKey) Export() *YubiManagementKeyInternal__ {
 	tmp := (([24]byte)(y))
 	return ((*YubiManagementKeyInternal__)(&tmp))
 }
-
 func (y YubiManagementKeyInternal__) Import() YubiManagementKey {
 	tmp := ([24]byte)(y)
 	return YubiManagementKey((func(x *[24]byte) (ret [24]byte) {
@@ -242,7 +236,6 @@ var ManagementKeyStateMap = map[string]ManagementKeyState{
 	"ShouldTryPIN": 3,
 	"Unknown":      4,
 }
-
 var ManagementKeyStateRevMap = map[ManagementKeyState]string{
 	0: "None",
 	1: "Default",
@@ -256,7 +249,6 @@ type ManagementKeyStateInternal__ ManagementKeyState
 func (m ManagementKeyStateInternal__) Import() ManagementKeyState {
 	return ManagementKeyState(m)
 }
-
 func (m ManagementKeyState) Export() *ManagementKeyStateInternal__ {
 	return ((*ManagementKeyStateInternal__)(&m))
 }
@@ -265,7 +257,6 @@ type YubiCardID struct {
 	Name   YubiCardName
 	Serial YubiSerial
 }
-
 type YubiCardIDInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Name    *YubiCardNameInternal__
@@ -288,14 +279,12 @@ func (y YubiCardIDInternal__) Import() YubiCardID {
 		})(y.Serial),
 	}
 }
-
 func (y YubiCardID) Export() *YubiCardIDInternal__ {
 	return &YubiCardIDInternal__{
 		Name:   y.Name.Export(),
 		Serial: y.Serial.Export(),
 	}
 }
-
 func (y *YubiCardID) Encode(enc rpc.Encoder) error {
 	return enc.Encode(y.Export())
 }
@@ -319,7 +308,6 @@ type YubiCardInfo struct {
 	Selected   []YubiSlotAndKeyID
 	Mks        ManagementKeyState
 }
-
 type YubiCardInfoInternal__ struct {
 	_struct    struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Id         *YubiCardIDInternal__
@@ -399,7 +387,6 @@ func (y YubiCardInfoInternal__) Import() YubiCardInfo {
 		})(y.Mks),
 	}
 }
-
 func (y YubiCardInfo) Export() *YubiCardInfoInternal__ {
 	return &YubiCardInfoInternal__{
 		Id: y.Id.Export(),
@@ -436,7 +423,6 @@ func (y YubiCardInfo) Export() *YubiCardInfoInternal__ {
 		Mks: y.Mks.Export(),
 	}
 }
-
 func (y *YubiCardInfo) Encode(enc rpc.Encoder) error {
 	return enc.Encode(y.Export())
 }
@@ -457,7 +443,6 @@ type YubiSlotAndKeyID struct {
 	Slot YubiSlot
 	Id   YubiID
 }
-
 type YubiSlotAndKeyIDInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Slot    *YubiSlotInternal__
@@ -480,14 +465,12 @@ func (y YubiSlotAndKeyIDInternal__) Import() YubiSlotAndKeyID {
 		})(y.Id),
 	}
 }
-
 func (y YubiSlotAndKeyID) Export() *YubiSlotAndKeyIDInternal__ {
 	return &YubiSlotAndKeyIDInternal__{
 		Slot: y.Slot.Export(),
 		Id:   y.Id.Export(),
 	}
 }
-
 func (y *YubiSlotAndKeyID) Encode(enc rpc.Encoder) error {
 	return enc.Encode(y.Export())
 }
@@ -508,7 +491,6 @@ type YubiKeyInfo struct {
 	Card YubiCardID
 	Key  YubiSlotAndKeyID
 }
-
 type YubiKeyInfoInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Card    *YubiCardIDInternal__
@@ -531,14 +513,12 @@ func (y YubiKeyInfoInternal__) Import() YubiKeyInfo {
 		})(y.Key),
 	}
 }
-
 func (y YubiKeyInfo) Export() *YubiKeyInfoInternal__ {
 	return &YubiKeyInfoInternal__{
 		Card: y.Card.Export(),
 		Key:  y.Key.Export(),
 	}
 }
-
 func (y *YubiKeyInfo) Encode(enc rpc.Encoder) error {
 	return enc.Encode(y.Export())
 }
@@ -559,7 +539,6 @@ type YubiSlotAndPQKeyID struct {
 	Slot YubiSlot
 	Id   YubiPQKeyID
 }
-
 type YubiSlotAndPQKeyIDInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Slot    *YubiSlotInternal__
@@ -582,14 +561,12 @@ func (y YubiSlotAndPQKeyIDInternal__) Import() YubiSlotAndPQKeyID {
 		})(y.Id),
 	}
 }
-
 func (y YubiSlotAndPQKeyID) Export() *YubiSlotAndPQKeyIDInternal__ {
 	return &YubiSlotAndPQKeyIDInternal__{
 		Slot: y.Slot.Export(),
 		Id:   y.Id.Export(),
 	}
 }
-
 func (y *YubiSlotAndPQKeyID) Encode(enc rpc.Encoder) error {
 	return enc.Encode(y.Export())
 }
@@ -610,7 +587,6 @@ type YubiKeyInfoPQ struct {
 	Card YubiCardID
 	Key  YubiSlotAndPQKeyID
 }
-
 type YubiKeyInfoPQInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Card    *YubiCardIDInternal__
@@ -633,14 +609,12 @@ func (y YubiKeyInfoPQInternal__) Import() YubiKeyInfoPQ {
 		})(y.Key),
 	}
 }
-
 func (y YubiKeyInfoPQ) Export() *YubiKeyInfoPQInternal__ {
 	return &YubiKeyInfoPQInternal__{
 		Card: y.Card.Export(),
 		Key:  y.Key.Export(),
 	}
 }
-
 func (y *YubiKeyInfoPQ) Encode(enc rpc.Encoder) error {
 	return enc.Encode(y.Export())
 }
@@ -662,7 +636,6 @@ type YubiKeyInfoHybrid struct {
 	Key   YubiSlotAndKeyID
 	PqKey YubiSlotAndPQKeyID
 }
-
 type YubiKeyInfoHybridInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Card    *YubiCardIDInternal__
@@ -692,7 +665,6 @@ func (y YubiKeyInfoHybridInternal__) Import() YubiKeyInfoHybrid {
 		})(y.PqKey),
 	}
 }
-
 func (y YubiKeyInfoHybrid) Export() *YubiKeyInfoHybridInternal__ {
 	return &YubiKeyInfoHybridInternal__{
 		Card:  y.Card.Export(),
@@ -700,7 +672,6 @@ func (y YubiKeyInfoHybrid) Export() *YubiKeyInfoHybridInternal__ {
 		PqKey: y.PqKey.Export(),
 	}
 }
-
 func (y *YubiKeyInfoHybrid) Encode(enc rpc.Encoder) error {
 	return enc.Encode(y.Export())
 }
@@ -730,7 +701,6 @@ var YubiIndexTypeMap = map[string]YubiIndexType{
 	"Empty": 1,
 	"Reuse": 2,
 }
-
 var YubiIndexTypeRevMap = map[YubiIndexType]string{
 	0: "None",
 	1: "Empty",
@@ -742,7 +712,6 @@ type YubiIndexTypeInternal__ YubiIndexType
 func (y YubiIndexTypeInternal__) Import() YubiIndexType {
 	return YubiIndexType(y)
 }
-
 func (y YubiIndexType) Export() *YubiIndexTypeInternal__ {
 	return ((*YubiIndexTypeInternal__)(&y))
 }
@@ -752,13 +721,11 @@ type YubiIndex struct {
 	F_1__ *uint64 `json:"f1,omitempty"`
 	F_2__ *uint64 `json:"f2,omitempty"`
 }
-
 type YubiIndexInternal__ struct {
 	_struct  struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	T        YubiIndexType
 	Switch__ YubiIndexInternalSwitch__
 }
-
 type YubiIndexInternalSwitch__ struct {
 	_struct struct{} `codec:",omitempty"` //lint:ignore U1000 msgpack internal field
 	F_1__   *uint64  `codec:"1"`
@@ -780,47 +747,41 @@ func (y YubiIndex) GetT() (ret YubiIndexType, err error) {
 	}
 	return y.T, nil
 }
-
 func (y YubiIndex) Empty() uint64 {
 	if y.F_1__ == nil {
-		panic("unexepected nil case; should have been checked")
+		panic("unexpected nil case; should have been checked")
 	}
 	if y.T != YubiIndexType_Empty {
 		panic(fmt.Sprintf("unexpected switch value (%v) when Empty is called", y.T))
 	}
 	return *y.F_1__
 }
-
 func (y YubiIndex) Reuse() uint64 {
 	if y.F_2__ == nil {
-		panic("unexepected nil case; should have been checked")
+		panic("unexpected nil case; should have been checked")
 	}
 	if y.T != YubiIndexType_Reuse {
 		panic(fmt.Sprintf("unexpected switch value (%v) when Reuse is called", y.T))
 	}
 	return *y.F_2__
 }
-
 func NewYubiIndexWithEmpty(v uint64) YubiIndex {
 	return YubiIndex{
 		T:     YubiIndexType_Empty,
 		F_1__: &v,
 	}
 }
-
 func NewYubiIndexWithReuse(v uint64) YubiIndex {
 	return YubiIndex{
 		T:     YubiIndexType_Reuse,
 		F_2__: &v,
 	}
 }
-
 func NewYubiIndexDefault(s YubiIndexType) YubiIndex {
 	return YubiIndex{
 		T: s,
 	}
 }
-
 func (y YubiIndexInternal__) Import() YubiIndex {
 	return YubiIndex{
 		T:     y.T,
@@ -828,7 +789,6 @@ func (y YubiIndexInternal__) Import() YubiIndex {
 		F_2__: y.Switch__.F_2__,
 	}
 }
-
 func (y YubiIndex) Export() *YubiIndexInternal__ {
 	return &YubiIndexInternal__{
 		T: y.T,
@@ -838,7 +798,6 @@ func (y YubiIndex) Export() *YubiIndexInternal__ {
 		},
 	}
 }
-
 func (y *YubiIndex) Encode(enc rpc.Encoder) error {
 	return enc.Encode(y.Export())
 }
@@ -860,7 +819,6 @@ type YubiSerialSlotHost struct {
 	Slot   YubiSlot
 	Host   TCPAddr
 }
-
 type YubiSerialSlotHostInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Serial  *YubiSerialInternal__
@@ -890,7 +848,6 @@ func (y YubiSerialSlotHostInternal__) Import() YubiSerialSlotHost {
 		})(y.Host),
 	}
 }
-
 func (y YubiSerialSlotHost) Export() *YubiSerialSlotHostInternal__ {
 	return &YubiSerialSlotHostInternal__{
 		Serial: y.Serial.Export(),
@@ -898,7 +855,6 @@ func (y YubiSerialSlotHost) Export() *YubiSerialSlotHostInternal__ {
 		Host:   y.Host.Export(),
 	}
 }
-
 func (y *YubiSerialSlotHost) Encode(enc rpc.Encoder) error {
 	return enc.Encode(y.Export())
 }
@@ -919,7 +875,6 @@ type YubiSerialSlot struct {
 	Serial YubiSerial
 	Slot   YubiSlot
 }
-
 type YubiSerialSlotInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Serial  *YubiSerialInternal__
@@ -942,14 +897,12 @@ func (y YubiSerialSlotInternal__) Import() YubiSerialSlot {
 		})(y.Slot),
 	}
 }
-
 func (y YubiSerialSlot) Export() *YubiSerialSlotInternal__ {
 	return &YubiSerialSlotInternal__{
 		Serial: y.Serial.Export(),
 		Slot:   y.Slot.Export(),
 	}
 }
-
 func (y *YubiSerialSlot) Encode(enc rpc.Encoder) error {
 	return enc.Encode(y.Export())
 }
@@ -973,7 +926,6 @@ func (y YubiPQKeyID) Export() *YubiPQKeyIDInternal__ {
 	tmp := (([32]byte)(y))
 	return ((*YubiPQKeyIDInternal__)(&tmp))
 }
-
 func (y YubiPQKeyIDInternal__) Import() YubiPQKeyID {
 	tmp := ([32]byte)(y)
 	return YubiPQKeyID((func(x *[32]byte) (ret [32]byte) {
@@ -1008,7 +960,6 @@ type YubiManagementKeyBoxPayload struct {
 	Slot YubiSlot
 	Yk   YubiID
 }
-
 type YubiManagementKeyBoxPayloadInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Mk      *YubiManagementKeyInternal__
@@ -1045,7 +996,6 @@ func (y YubiManagementKeyBoxPayloadInternal__) Import() YubiManagementKeyBoxPayl
 		})(y.Yk),
 	}
 }
-
 func (y YubiManagementKeyBoxPayload) Export() *YubiManagementKeyBoxPayloadInternal__ {
 	return &YubiManagementKeyBoxPayloadInternal__{
 		Mk:   y.Mk.Export(),
@@ -1054,7 +1004,6 @@ func (y YubiManagementKeyBoxPayload) Export() *YubiManagementKeyBoxPayloadIntern
 		Yk:   y.Yk.Export(),
 	}
 }
-
 func (y *YubiManagementKeyBoxPayload) Encode(enc rpc.Encoder) error {
 	return enc.Encode(y.Export())
 }
@@ -1074,7 +1023,6 @@ var YubiManagementKeyBoxPayloadTypeUniqueID = rpc.TypeUniqueID(0xc939af74e0147c7
 func (y *YubiManagementKeyBoxPayload) GetTypeUniqueID() rpc.TypeUniqueID {
 	return YubiManagementKeyBoxPayloadTypeUniqueID
 }
-
 func (y *YubiManagementKeyBoxPayload) Bytes() []byte { return nil }
 
 func init() {

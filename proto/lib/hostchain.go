@@ -1,5 +1,5 @@
-// Auto-generated to Go types and interfaces using @foks-proj/snowpack-compiler 1.0.8 (git+https://github.com/foks-proj/node-snowpack-compiler.git)
-//  Input file: ../../proto-src/lib/hostchain.snowp
+// Auto-generated to Go types and interfaces using snowpc 0.0.4 (https://github.com/foks-proj/go-snowpack-compiler)
+//  Input file:../../proto-src/lib/hostchain.snowp
 
 package lib
 
@@ -24,7 +24,6 @@ var HostchainChangeTypeMap = map[string]HostchainChangeType{
 	"Key":    2,
 	"TLSCA":  3,
 }
-
 var HostchainChangeTypeRevMap = map[HostchainChangeType]string{
 	0: "None",
 	1: "Revoke",
@@ -37,7 +36,6 @@ type HostchainChangeTypeInternal__ HostchainChangeType
 func (h HostchainChangeTypeInternal__) Import() HostchainChangeType {
 	return HostchainChangeType(h)
 }
-
 func (h HostchainChangeType) Export() *HostchainChangeTypeInternal__ {
 	return ((*HostchainChangeTypeInternal__)(&h))
 }
@@ -46,7 +44,6 @@ type HostTLSCA struct {
 	Id   HostTLSCAID
 	Cert []byte
 }
-
 type HostTLSCAInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Id      *HostTLSCAIDInternal__
@@ -69,14 +66,12 @@ func (h HostTLSCAInternal__) Import() HostTLSCA {
 		})(h.Cert),
 	}
 }
-
 func (h HostTLSCA) Export() *HostTLSCAInternal__ {
 	return &HostTLSCAInternal__{
 		Id:   h.Id.Export(),
 		Cert: &h.Cert,
 	}
 }
-
 func (h *HostTLSCA) Encode(enc rpc.Encoder) error {
 	return enc.Encode(h.Export())
 }
@@ -99,13 +94,11 @@ type HostchainChangeItem struct {
 	F_2__ *EntityID  `json:"f2,omitempty"`
 	F_3__ *HostTLSCA `json:"f3,omitempty"`
 }
-
 type HostchainChangeItemInternal__ struct {
 	_struct  struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	T        HostchainChangeType
 	Switch__ HostchainChangeItemInternalSwitch__
 }
-
 type HostchainChangeItemInternalSwitch__ struct {
 	_struct struct{}             `codec:",omitempty"` //lint:ignore U1000 msgpack internal field
 	F_1__   *EntityIDInternal__  `codec:"1"`
@@ -130,58 +123,51 @@ func (h HostchainChangeItem) GetT() (ret HostchainChangeType, err error) {
 	}
 	return h.T, nil
 }
-
 func (h HostchainChangeItem) Revoke() EntityID {
 	if h.F_1__ == nil {
-		panic("unexepected nil case; should have been checked")
+		panic("unexpected nil case; should have been checked")
 	}
 	if h.T != HostchainChangeType_Revoke {
 		panic(fmt.Sprintf("unexpected switch value (%v) when Revoke is called", h.T))
 	}
 	return *h.F_1__
 }
-
 func (h HostchainChangeItem) Key() EntityID {
 	if h.F_2__ == nil {
-		panic("unexepected nil case; should have been checked")
+		panic("unexpected nil case; should have been checked")
 	}
 	if h.T != HostchainChangeType_Key {
 		panic(fmt.Sprintf("unexpected switch value (%v) when Key is called", h.T))
 	}
 	return *h.F_2__
 }
-
 func (h HostchainChangeItem) Tlsca() HostTLSCA {
 	if h.F_3__ == nil {
-		panic("unexepected nil case; should have been checked")
+		panic("unexpected nil case; should have been checked")
 	}
 	if h.T != HostchainChangeType_TLSCA {
 		panic(fmt.Sprintf("unexpected switch value (%v) when Tlsca is called", h.T))
 	}
 	return *h.F_3__
 }
-
 func NewHostchainChangeItemWithRevoke(v EntityID) HostchainChangeItem {
 	return HostchainChangeItem{
 		T:     HostchainChangeType_Revoke,
 		F_1__: &v,
 	}
 }
-
 func NewHostchainChangeItemWithKey(v EntityID) HostchainChangeItem {
 	return HostchainChangeItem{
 		T:     HostchainChangeType_Key,
 		F_2__: &v,
 	}
 }
-
 func NewHostchainChangeItemWithTlsca(v HostTLSCA) HostchainChangeItem {
 	return HostchainChangeItem{
 		T:     HostchainChangeType_TLSCA,
 		F_3__: &v,
 	}
 }
-
 func (h HostchainChangeItemInternal__) Import() HostchainChangeItem {
 	return HostchainChangeItem{
 		T: h.T,
@@ -223,7 +209,6 @@ func (h HostchainChangeItemInternal__) Import() HostchainChangeItem {
 		})(h.Switch__.F_3__),
 	}
 }
-
 func (h HostchainChangeItem) Export() *HostchainChangeItemInternal__ {
 	return &HostchainChangeItemInternal__{
 		T: h.T,
@@ -249,7 +234,6 @@ func (h HostchainChangeItem) Export() *HostchainChangeItemInternal__ {
 		},
 	}
 }
-
 func (h *HostchainChangeItem) Encode(enc rpc.Encoder) error {
 	return enc.Encode(h.Export())
 }
@@ -269,7 +253,6 @@ var HostchainChangeItemTypeUniqueID = rpc.TypeUniqueID(0xf653d2ca359b0624)
 func (h *HostchainChangeItem) GetTypeUniqueID() rpc.TypeUniqueID {
 	return HostchainChangeItemTypeUniqueID
 }
-
 func (h *HostchainChangeItem) Bytes() []byte { return nil }
 
 type HostchainChange struct {
@@ -278,7 +261,6 @@ type HostchainChange struct {
 	Signer  HostID
 	Changes []HostchainChangeItem
 }
-
 type HostchainChangeInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Chainer *BaseChainerInternal__
@@ -327,7 +309,6 @@ func (h HostchainChangeInternal__) Import() HostchainChange {
 		})(h.Changes),
 	}
 }
-
 func (h HostchainChange) Export() *HostchainChangeInternal__ {
 	return &HostchainChangeInternal__{
 		Chainer: h.Chainer.Export(),
@@ -345,7 +326,6 @@ func (h HostchainChange) Export() *HostchainChangeInternal__ {
 		})(h.Changes),
 	}
 }
-
 func (h *HostchainChange) Encode(enc rpc.Encoder) error {
 	return enc.Encode(h.Export())
 }
@@ -365,7 +345,6 @@ var HostchainChangeTypeUniqueID = rpc.TypeUniqueID(0xfac18a7a1f30f887)
 func (h *HostchainChange) GetTypeUniqueID() rpc.TypeUniqueID {
 	return HostchainChangeTypeUniqueID
 }
-
 func (h *HostchainChange) Bytes() []byte { return nil }
 
 type HostchainLinkType int
@@ -379,7 +358,6 @@ var HostchainLinkTypeMap = map[string]HostchainLinkType{
 	"Change":    1,
 	"Discovery": 2,
 }
-
 var HostchainLinkTypeRevMap = map[HostchainLinkType]string{
 	1: "Change",
 	2: "Discovery",
@@ -390,7 +368,6 @@ type HostchainLinkTypeInternal__ HostchainLinkType
 func (h HostchainLinkTypeInternal__) Import() HostchainLinkType {
 	return HostchainLinkType(h)
 }
-
 func (h HostchainLinkType) Export() *HostchainLinkTypeInternal__ {
 	return ((*HostchainLinkTypeInternal__)(&h))
 }
@@ -399,13 +376,11 @@ type HostchainLinkInner struct {
 	T     HostchainLinkType
 	F_1__ *HostchainChange `json:"f1,omitempty"`
 }
-
 type HostchainLinkInnerInternal__ struct {
 	_struct  struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	T        HostchainLinkType
 	Switch__ HostchainLinkInnerInternalSwitch__
 }
-
 type HostchainLinkInnerInternalSwitch__ struct {
 	_struct struct{}                   `codec:",omitempty"` //lint:ignore U1000 msgpack internal field
 	F_1__   *HostchainChangeInternal__ `codec:"1"`
@@ -420,24 +395,21 @@ func (h HostchainLinkInner) GetT() (ret HostchainLinkType, err error) {
 	}
 	return h.T, nil
 }
-
 func (h HostchainLinkInner) Change() HostchainChange {
 	if h.F_1__ == nil {
-		panic("unexepected nil case; should have been checked")
+		panic("unexpected nil case; should have been checked")
 	}
 	if h.T != HostchainLinkType_Change {
 		panic(fmt.Sprintf("unexpected switch value (%v) when Change is called", h.T))
 	}
 	return *h.F_1__
 }
-
 func NewHostchainLinkInnerWithChange(v HostchainChange) HostchainLinkInner {
 	return HostchainLinkInner{
 		T:     HostchainLinkType_Change,
 		F_1__: &v,
 	}
 }
-
 func (h HostchainLinkInnerInternal__) Import() HostchainLinkInner {
 	return HostchainLinkInner{
 		T: h.T,
@@ -455,7 +427,6 @@ func (h HostchainLinkInnerInternal__) Import() HostchainLinkInner {
 		})(h.Switch__.F_1__),
 	}
 }
-
 func (h HostchainLinkInner) Export() *HostchainLinkInnerInternal__ {
 	return &HostchainLinkInnerInternal__{
 		T: h.T,
@@ -469,7 +440,6 @@ func (h HostchainLinkInner) Export() *HostchainLinkInnerInternal__ {
 		},
 	}
 }
-
 func (h *HostchainLinkInner) Encode(enc rpc.Encoder) error {
 	return enc.Encode(h.Export())
 }
@@ -489,7 +459,6 @@ var HostchainLinkInnerTypeUniqueID = rpc.TypeUniqueID(0xc2fc3a01ef13daa8)
 func (h *HostchainLinkInner) GetTypeUniqueID() rpc.TypeUniqueID {
 	return HostchainLinkInnerTypeUniqueID
 }
-
 func (h *HostchainLinkInner) Bytes() []byte { return nil }
 
 type HostchainLinkVersion int
@@ -501,7 +470,6 @@ const (
 var HostchainLinkVersionMap = map[string]HostchainLinkVersion{
 	"V1": 1,
 }
-
 var HostchainLinkVersionRevMap = map[HostchainLinkVersion]string{
 	1: "V1",
 }
@@ -511,7 +479,6 @@ type HostchainLinkVersionInternal__ HostchainLinkVersion
 func (h HostchainLinkVersionInternal__) Import() HostchainLinkVersion {
 	return HostchainLinkVersion(h)
 }
-
 func (h HostchainLinkVersion) Export() *HostchainLinkVersionInternal__ {
 	return ((*HostchainLinkVersionInternal__)(&h))
 }
@@ -520,7 +487,6 @@ type HostchainLinkOuterV1 struct {
 	Inner      []byte
 	Signatures []Signature
 }
-
 type HostchainLinkOuterV1Internal__ struct {
 	_struct    struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Inner      *[]byte
@@ -555,7 +521,6 @@ func (h HostchainLinkOuterV1Internal__) Import() HostchainLinkOuterV1 {
 		})(h.Signatures),
 	}
 }
-
 func (h HostchainLinkOuterV1) Export() *HostchainLinkOuterV1Internal__ {
 	return &HostchainLinkOuterV1Internal__{
 		Inner: &h.Inner,
@@ -571,7 +536,6 @@ func (h HostchainLinkOuterV1) Export() *HostchainLinkOuterV1Internal__ {
 		})(h.Signatures),
 	}
 }
-
 func (h *HostchainLinkOuterV1) Encode(enc rpc.Encoder) error {
 	return enc.Encode(h.Export())
 }
@@ -591,20 +555,17 @@ var HostchainLinkOuterV1TypeUniqueID = rpc.TypeUniqueID(0xa23ba3620d758f7a)
 func (h *HostchainLinkOuterV1) GetTypeUniqueID() rpc.TypeUniqueID {
 	return HostchainLinkOuterV1TypeUniqueID
 }
-
 func (h *HostchainLinkOuterV1) Bytes() []byte { return nil }
 
 type HostchainLinkOuter struct {
 	V     HostchainLinkVersion
 	F_1__ *HostchainLinkOuterV1 `json:"f1,omitempty"`
 }
-
 type HostchainLinkOuterInternal__ struct {
 	_struct  struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	V        HostchainLinkVersion
 	Switch__ HostchainLinkOuterInternalSwitch__
 }
-
 type HostchainLinkOuterInternalSwitch__ struct {
 	_struct struct{}                        `codec:",omitempty"` //lint:ignore U1000 msgpack internal field
 	F_1__   *HostchainLinkOuterV1Internal__ `codec:"1"`
@@ -619,24 +580,21 @@ func (h HostchainLinkOuter) GetV() (ret HostchainLinkVersion, err error) {
 	}
 	return h.V, nil
 }
-
 func (h HostchainLinkOuter) V1() HostchainLinkOuterV1 {
 	if h.F_1__ == nil {
-		panic("unexepected nil case; should have been checked")
+		panic("unexpected nil case; should have been checked")
 	}
 	if h.V != HostchainLinkVersion_V1 {
 		panic(fmt.Sprintf("unexpected switch value (%v) when V1 is called", h.V))
 	}
 	return *h.F_1__
 }
-
 func NewHostchainLinkOuterWithV1(v HostchainLinkOuterV1) HostchainLinkOuter {
 	return HostchainLinkOuter{
 		V:     HostchainLinkVersion_V1,
 		F_1__: &v,
 	}
 }
-
 func (h HostchainLinkOuterInternal__) Import() HostchainLinkOuter {
 	return HostchainLinkOuter{
 		V: h.V,
@@ -654,7 +612,6 @@ func (h HostchainLinkOuterInternal__) Import() HostchainLinkOuter {
 		})(h.Switch__.F_1__),
 	}
 }
-
 func (h HostchainLinkOuter) Export() *HostchainLinkOuterInternal__ {
 	return &HostchainLinkOuterInternal__{
 		V: h.V,
@@ -668,7 +625,6 @@ func (h HostchainLinkOuter) Export() *HostchainLinkOuterInternal__ {
 		},
 	}
 }
-
 func (h *HostchainLinkOuter) Encode(enc rpc.Encoder) error {
 	return enc.Encode(h.Export())
 }
@@ -688,7 +644,6 @@ var HostchainLinkOuterTypeUniqueID = rpc.TypeUniqueID(0x8d87ac224920355c)
 func (h *HostchainLinkOuter) GetTypeUniqueID() rpc.TypeUniqueID {
 	return HostchainLinkOuterTypeUniqueID
 }
-
 func (h *HostchainLinkOuter) Bytes() []byte { return nil }
 
 type HostKeyPrivateStorageV1 struct {
@@ -696,7 +651,6 @@ type HostKeyPrivateStorageV1 struct {
 	Time Time
 	Seed Ed25519SecretKey
 }
-
 type HostKeyPrivateStorageV1Internal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Type    *EntityTypeInternal__
@@ -726,7 +680,6 @@ func (h HostKeyPrivateStorageV1Internal__) Import() HostKeyPrivateStorageV1 {
 		})(h.Seed),
 	}
 }
-
 func (h HostKeyPrivateStorageV1) Export() *HostKeyPrivateStorageV1Internal__ {
 	return &HostKeyPrivateStorageV1Internal__{
 		Type: h.Type.Export(),
@@ -734,7 +687,6 @@ func (h HostKeyPrivateStorageV1) Export() *HostKeyPrivateStorageV1Internal__ {
 		Seed: h.Seed.Export(),
 	}
 }
-
 func (h *HostKeyPrivateStorageV1) Encode(enc rpc.Encoder) error {
 	return enc.Encode(h.Export())
 }
@@ -760,7 +712,6 @@ const (
 var HostKeyPrivateStorageVersionMap = map[string]HostKeyPrivateStorageVersion{
 	"V1": 1,
 }
-
 var HostKeyPrivateStorageVersionRevMap = map[HostKeyPrivateStorageVersion]string{
 	1: "V1",
 }
@@ -770,7 +721,6 @@ type HostKeyPrivateStorageVersionInternal__ HostKeyPrivateStorageVersion
 func (h HostKeyPrivateStorageVersionInternal__) Import() HostKeyPrivateStorageVersion {
 	return HostKeyPrivateStorageVersion(h)
 }
-
 func (h HostKeyPrivateStorageVersion) Export() *HostKeyPrivateStorageVersionInternal__ {
 	return ((*HostKeyPrivateStorageVersionInternal__)(&h))
 }
@@ -779,13 +729,11 @@ type HostKeyPrivateStorage struct {
 	V     HostKeyPrivateStorageVersion
 	F_1__ *HostKeyPrivateStorageV1 `json:"f1,omitempty"`
 }
-
 type HostKeyPrivateStorageInternal__ struct {
 	_struct  struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	V        HostKeyPrivateStorageVersion
 	Switch__ HostKeyPrivateStorageInternalSwitch__
 }
-
 type HostKeyPrivateStorageInternalSwitch__ struct {
 	_struct struct{}                           `codec:",omitempty"` //lint:ignore U1000 msgpack internal field
 	F_1__   *HostKeyPrivateStorageV1Internal__ `codec:"1"`
@@ -800,24 +748,21 @@ func (h HostKeyPrivateStorage) GetV() (ret HostKeyPrivateStorageVersion, err err
 	}
 	return h.V, nil
 }
-
 func (h HostKeyPrivateStorage) V1() HostKeyPrivateStorageV1 {
 	if h.F_1__ == nil {
-		panic("unexepected nil case; should have been checked")
+		panic("unexpected nil case; should have been checked")
 	}
 	if h.V != HostKeyPrivateStorageVersion_V1 {
 		panic(fmt.Sprintf("unexpected switch value (%v) when V1 is called", h.V))
 	}
 	return *h.F_1__
 }
-
 func NewHostKeyPrivateStorageWithV1(v HostKeyPrivateStorageV1) HostKeyPrivateStorage {
 	return HostKeyPrivateStorage{
 		V:     HostKeyPrivateStorageVersion_V1,
 		F_1__: &v,
 	}
 }
-
 func (h HostKeyPrivateStorageInternal__) Import() HostKeyPrivateStorage {
 	return HostKeyPrivateStorage{
 		V: h.V,
@@ -835,7 +780,6 @@ func (h HostKeyPrivateStorageInternal__) Import() HostKeyPrivateStorage {
 		})(h.Switch__.F_1__),
 	}
 }
-
 func (h HostKeyPrivateStorage) Export() *HostKeyPrivateStorageInternal__ {
 	return &HostKeyPrivateStorageInternal__{
 		V: h.V,
@@ -849,7 +793,6 @@ func (h HostKeyPrivateStorage) Export() *HostKeyPrivateStorageInternal__ {
 		},
 	}
 }
-
 func (h *HostKeyPrivateStorage) Encode(enc rpc.Encoder) error {
 	return enc.Encode(h.Export())
 }
@@ -870,7 +813,6 @@ type KeyAtSeqno struct {
 	Seqno Seqno
 	Eid   EntityID
 }
-
 type KeyAtSeqnoInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Seqno   *SeqnoInternal__
@@ -893,14 +835,12 @@ func (k KeyAtSeqnoInternal__) Import() KeyAtSeqno {
 		})(k.Eid),
 	}
 }
-
 func (k KeyAtSeqno) Export() *KeyAtSeqnoInternal__ {
 	return &KeyAtSeqnoInternal__{
 		Seqno: k.Seqno.Export(),
 		Eid:   k.Eid.Export(),
 	}
 }
-
 func (k *KeyAtSeqno) Encode(enc rpc.Encoder) error {
 	return enc.Encode(k.Export())
 }
@@ -921,7 +861,6 @@ type HostTLSCAAtSeqno struct {
 	Seqno Seqno
 	Ca    HostTLSCA
 }
-
 type HostTLSCAAtSeqnoInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Seqno   *SeqnoInternal__
@@ -944,14 +883,12 @@ func (h HostTLSCAAtSeqnoInternal__) Import() HostTLSCAAtSeqno {
 		})(h.Ca),
 	}
 }
-
 func (h HostTLSCAAtSeqno) Export() *HostTLSCAAtSeqnoInternal__ {
 	return &HostTLSCAAtSeqnoInternal__{
 		Seqno: h.Seqno.Export(),
 		Ca:    h.Ca.Export(),
 	}
 }
-
 func (h *HostTLSCAAtSeqno) Encode(enc rpc.Encoder) error {
 	return enc.Encode(h.Export())
 }
@@ -977,7 +914,6 @@ type HostchainState struct {
 	Cas   []HostTLSCAAtSeqno
 	Addr  TCPAddr
 }
-
 type HostchainStateInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Seqno   *SeqnoInternal__
@@ -1059,7 +995,6 @@ func (h HostchainStateInternal__) Import() HostchainState {
 		})(h.Addr),
 	}
 }
-
 func (h HostchainState) Export() *HostchainStateInternal__ {
 	return &HostchainStateInternal__{
 		Seqno: h.Seqno.Export(),
@@ -1089,7 +1024,6 @@ func (h HostchainState) Export() *HostchainStateInternal__ {
 		Addr: h.Addr.Export(),
 	}
 }
-
 func (h *HostchainState) Encode(enc rpc.Encoder) error {
 	return enc.Encode(h.Export())
 }
@@ -1110,7 +1044,6 @@ type HostchainTail struct {
 	Seqno Seqno
 	Hash  LinkHash
 }
-
 type HostchainTailInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Seqno   *SeqnoInternal__
@@ -1133,14 +1066,12 @@ func (h HostchainTailInternal__) Import() HostchainTail {
 		})(h.Hash),
 	}
 }
-
 func (h HostchainTail) Export() *HostchainTailInternal__ {
 	return &HostchainTailInternal__{
 		Seqno: h.Seqno.Export(),
 		Hash:  h.Hash.Export(),
 	}
 }
-
 func (h *HostchainTail) Encode(enc rpc.Encoder) error {
 	return enc.Encode(h.Export())
 }

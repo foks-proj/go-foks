@@ -1,5 +1,5 @@
-// Auto-generated to Go types and interfaces using @foks-proj/snowpack-compiler 1.0.8 (git+https://github.com/foks-proj/node-snowpack-compiler.git)
-//  Input file: ../../proto-src/lcl/admin.snowp
+// Auto-generated to Go types and interfaces using snowpc 0.0.4 (https://github.com/foks-proj/go-snowpack-compiler)
+//  Input file:../../proto-src/lcl/admin.snowp
 
 package lcl
 
@@ -16,7 +16,6 @@ var AdminProtocolID rpc.ProtocolUniqueID = rpc.ProtocolUniqueID(0xa0a81e0b)
 
 type WebAdminPanelLinkArg struct {
 }
-
 type WebAdminPanelLinkArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 }
@@ -24,11 +23,9 @@ type WebAdminPanelLinkArgInternal__ struct {
 func (w WebAdminPanelLinkArgInternal__) Import() WebAdminPanelLinkArg {
 	return WebAdminPanelLinkArg{}
 }
-
 func (w WebAdminPanelLinkArg) Export() *WebAdminPanelLinkArgInternal__ {
 	return &WebAdminPanelLinkArgInternal__{}
 }
-
 func (w *WebAdminPanelLinkArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(w.Export())
 }
@@ -48,7 +45,6 @@ func (w *WebAdminPanelLinkArg) Bytes() []byte { return nil }
 type CheckLinkArg struct {
 	Url lib.URLString
 }
-
 type CheckLinkArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Url     *lib.URLStringInternal__
@@ -64,13 +60,11 @@ func (c CheckLinkArgInternal__) Import() CheckLinkArg {
 		})(c.Url),
 	}
 }
-
 func (c CheckLinkArg) Export() *CheckLinkArgInternal__ {
 	return &CheckLinkArgInternal__{
 		Url: c.Url.Export(),
 	}
 }
-
 func (c *CheckLinkArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(c.Export())
 }
@@ -92,7 +86,6 @@ type AdminInterface interface {
 	CheckLink(context.Context, lib.URLString) error
 	ErrorWrapper() func(error) lib.Status
 	CheckArgHeader(ctx context.Context, h Header) error
-
 	MakeResHeader() Header
 }
 
@@ -119,7 +112,7 @@ func (a adminErrorUnwrapperAdapter) MakeArg() interface{} {
 func (a adminErrorUnwrapperAdapter) UnwrapError(raw interface{}) (appError error, dispatchError error) {
 	sTmp, ok := raw.(*lib.StatusInternal__)
 	if !ok {
-		return nil, errors.New("Error converting to internal type in UnwrapError")
+		return nil, errors.New("error converting to internal type in UnwrapError")
 	}
 	if sTmp == nil {
 		return nil, nil
@@ -158,7 +151,6 @@ func (c AdminClient) WebAdminPanelLink(ctx context.Context) (res lib.URLString, 
 	res = tmp.Data.Import()
 	return
 }
-
 func (c AdminClient) CheckLink(ctx context.Context, url lib.URLString) (err error) {
 	arg := CheckLinkArg{
 		Url: url,
@@ -182,7 +174,6 @@ func (c AdminClient) CheckLink(ctx context.Context, url lib.URLString) (err erro
 	}
 	return
 }
-
 func AdminProtocol(i AdminInterface) rpc.ProtocolV2 {
 	return rpc.ProtocolV2{
 		Name: "Admin",

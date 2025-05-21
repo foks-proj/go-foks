@@ -1,5 +1,5 @@
-// Auto-generated to Go types and interfaces using @foks-proj/snowpack-compiler 1.0.8 (git+https://github.com/foks-proj/node-snowpack-compiler.git)
-//  Input file: ../../proto-src/lcl/git.snowp
+// Auto-generated to Go types and interfaces using snowpc 0.0.4 (https://github.com/foks-proj/go-snowpack-compiler)
+//  Input file:../../proto-src/lcl/git.snowp
 
 package lcl
 
@@ -15,7 +15,6 @@ import lib "github.com/foks-proj/go-foks/proto/lib"
 type GitOpRes struct {
 	Lines []string
 }
-
 type GitOpResInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Lines   *[](string)
@@ -40,7 +39,6 @@ func (g GitOpResInternal__) Import() GitOpRes {
 		})(g.Lines),
 	}
 }
-
 func (g GitOpRes) Export() *GitOpResInternal__ {
 	return &GitOpResInternal__{
 		Lines: (func(x []string) *[](string) {
@@ -53,7 +51,6 @@ func (g GitOpRes) Export() *GitOpResInternal__ {
 		})(g.Lines),
 	}
 }
-
 func (g *GitOpRes) Encode(enc rpc.Encoder) error {
 	return enc.Encode(g.Export())
 }
@@ -77,7 +74,6 @@ type GitInitArg struct {
 	Wd     lib.LocalFSPath
 	GitDir lib.LocalFSPath
 }
-
 type GitInitArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Argv    *[](string)
@@ -116,7 +112,6 @@ func (g GitInitArgInternal__) Import() GitInitArg {
 		})(g.GitDir),
 	}
 }
-
 func (g GitInitArg) Export() *GitInitArgInternal__ {
 	return &GitInitArgInternal__{
 		Argv: (func(x []string) *[](string) {
@@ -131,7 +126,6 @@ func (g GitInitArg) Export() *GitInitArgInternal__ {
 		GitDir: g.GitDir.Export(),
 	}
 }
-
 func (g *GitInitArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(g.Export())
 }
@@ -151,7 +145,6 @@ func (g *GitInitArg) Bytes() []byte { return nil }
 type GitOpArg struct {
 	Line string
 }
-
 type GitOpArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Line    *string
@@ -167,13 +160,11 @@ func (g GitOpArgInternal__) Import() GitOpArg {
 		})(g.Line),
 	}
 }
-
 func (g GitOpArg) Export() *GitOpArgInternal__ {
 	return &GitOpArgInternal__{
 		Line: &g.Line,
 	}
 }
-
 func (g *GitOpArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(g.Export())
 }
@@ -195,7 +186,6 @@ type GitHelperInterface interface {
 	GitOp(context.Context, string) (GitOpRes, error)
 	ErrorWrapper() func(error) lib.Status
 	CheckArgHeader(ctx context.Context, h Header) error
-
 	MakeResHeader() Header
 }
 
@@ -222,7 +212,7 @@ func (g gitHelperErrorUnwrapperAdapter) MakeArg() interface{} {
 func (g gitHelperErrorUnwrapperAdapter) UnwrapError(raw interface{}) (appError error, dispatchError error) {
 	sTmp, ok := raw.(*lib.StatusInternal__)
 	if !ok {
-		return nil, errors.New("Error converting to internal type in UnwrapError")
+		return nil, errors.New("error converting to internal type in UnwrapError")
 	}
 	if sTmp == nil {
 		return nil, nil
@@ -259,7 +249,6 @@ func (c GitHelperClient) GitInit(ctx context.Context, arg GitInitArg) (err error
 	}
 	return
 }
-
 func (c GitHelperClient) GitOp(ctx context.Context, line string) (res GitOpRes, err error) {
 	arg := GitOpArg{
 		Line: line,
@@ -284,7 +273,6 @@ func (c GitHelperClient) GitOp(ctx context.Context, line string) (res GitOpRes, 
 	res = tmp.Data.Import()
 	return
 }
-
 func GitHelperProtocol(i GitHelperInterface) rpc.ProtocolV2 {
 	return rpc.ProtocolV2{
 		Name: "GitHelper",
@@ -358,7 +346,6 @@ type GitCreateArg struct {
 	Cfg KVConfig
 	Nm  lib.GitRepo
 }
-
 type GitCreateArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Cfg     *KVConfigInternal__
@@ -381,14 +368,12 @@ func (g GitCreateArgInternal__) Import() GitCreateArg {
 		})(g.Nm),
 	}
 }
-
 func (g GitCreateArg) Export() *GitCreateArgInternal__ {
 	return &GitCreateArgInternal__{
 		Cfg: g.Cfg.Export(),
 		Nm:  g.Nm.Export(),
 	}
 }
-
 func (g *GitCreateArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(g.Export())
 }
@@ -408,7 +393,6 @@ func (g *GitCreateArg) Bytes() []byte { return nil }
 type GitLsArg struct {
 	Cfg KVConfig
 }
-
 type GitLsArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Cfg     *KVConfigInternal__
@@ -424,13 +408,11 @@ func (g GitLsArgInternal__) Import() GitLsArg {
 		})(g.Cfg),
 	}
 }
-
 func (g GitLsArg) Export() *GitLsArgInternal__ {
 	return &GitLsArgInternal__{
 		Cfg: g.Cfg.Export(),
 	}
 }
-
 func (g *GitLsArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(g.Export())
 }
@@ -452,7 +434,6 @@ type GitInterface interface {
 	GitLs(context.Context, KVConfig) ([]lib.GitURL, error)
 	ErrorWrapper() func(error) lib.Status
 	CheckArgHeader(ctx context.Context, h Header) error
-
 	MakeResHeader() Header
 }
 
@@ -479,7 +460,7 @@ func (g gitErrorUnwrapperAdapter) MakeArg() interface{} {
 func (g gitErrorUnwrapperAdapter) UnwrapError(raw interface{}) (appError error, dispatchError error) {
 	sTmp, ok := raw.(*lib.StatusInternal__)
 	if !ok {
-		return nil, errors.New("Error converting to internal type in UnwrapError")
+		return nil, errors.New("error converting to internal type in UnwrapError")
 	}
 	if sTmp == nil {
 		return nil, nil
@@ -517,7 +498,6 @@ func (c GitClient) GitCreate(ctx context.Context, arg GitCreateArg) (res lib.Git
 	res = tmp.Data.Import()
 	return
 }
-
 func (c GitClient) GitLs(ctx context.Context, cfg KVConfig) (res []lib.GitURL, err error) {
 	arg := GitLsArg{
 		Cfg: cfg,
@@ -559,7 +539,6 @@ func (c GitClient) GitLs(ctx context.Context, cfg KVConfig) (res []lib.GitURL, e
 	})(&tmp.Data)
 	return
 }
-
 func GitProtocol(i GitInterface) rpc.ProtocolV2 {
 	return rpc.ProtocolV2{
 		Name: "Git",
@@ -645,7 +624,6 @@ type LogLine struct {
 	Newline        bool
 	CarriageReturn bool
 }
-
 type LogLineInternal__ struct {
 	_struct        struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Msg            *string
@@ -675,7 +653,6 @@ func (l LogLineInternal__) Import() LogLine {
 		})(l.CarriageReturn),
 	}
 }
-
 func (l LogLine) Export() *LogLineInternal__ {
 	return &LogLineInternal__{
 		Msg:            &l.Msg,
@@ -683,7 +660,6 @@ func (l LogLine) Export() *LogLineInternal__ {
 		CarriageReturn: &l.CarriageReturn,
 	}
 }
-
 func (l *LogLine) Encode(enc rpc.Encoder) error {
 	return enc.Encode(l.Export())
 }
@@ -705,7 +681,6 @@ var GitHelperLogProtocolID rpc.ProtocolUniqueID = rpc.ProtocolUniqueID(0x8e3b3b3
 type GitLogArg struct {
 	Lines []LogLine
 }
-
 type GitLogArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Lines   *[](*LogLineInternal__)
@@ -733,7 +708,6 @@ func (g GitLogArgInternal__) Import() GitLogArg {
 		})(g.Lines),
 	}
 }
-
 func (g GitLogArg) Export() *GitLogArgInternal__ {
 	return &GitLogArgInternal__{
 		Lines: (func(x []LogLine) *[](*LogLineInternal__) {
@@ -748,7 +722,6 @@ func (g GitLogArg) Export() *GitLogArgInternal__ {
 		})(g.Lines),
 	}
 }
-
 func (g *GitLogArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(g.Export())
 }
@@ -793,7 +766,7 @@ func (g gitHelperLogErrorUnwrapperAdapter) MakeArg() interface{} {
 func (g gitHelperLogErrorUnwrapperAdapter) UnwrapError(raw interface{}) (appError error, dispatchError error) {
 	sTmp, ok := raw.(*lib.StatusInternal__)
 	if !ok {
-		return nil, errors.New("Error converting to internal type in UnwrapError")
+		return nil, errors.New("error converting to internal type in UnwrapError")
 	}
 	if sTmp == nil {
 		return nil, nil
@@ -819,7 +792,6 @@ func (c GitHelperLogClient) GitLog(ctx context.Context, lines []LogLine) (err er
 	}
 	return
 }
-
 func GitHelperLogProtocol(i GitHelperLogInterface) rpc.ProtocolV2 {
 	return rpc.ProtocolV2{
 		Name: "GitHelperLog",

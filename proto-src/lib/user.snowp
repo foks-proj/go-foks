@@ -34,11 +34,11 @@ struct RegServerConfig {
 typedef Email = Text;
 
 struct LookupUserRes {
-    fqu @0 : lib.FQUser;
-    username @1 : lib.Name;
-    usernameUtf8 @2 : lib.NameUtf8;
-    role @3 : lib.Role;
-    yubiPQHint @4 : Option(lib.YubiSlotAndPQKeyID);
+    fqu @0 : FQUser;
+    username @1 : Name;
+    usernameUtf8 @2 : NameUtf8;
+    role @3 : Role;
+    yubiPQHint @4 : Option(YubiSlotAndPQKeyID);
 }
 
 enum UserLockState {
@@ -58,11 +58,11 @@ struct UserInfoAndStatus {
 }
 
 struct LocalUserIndexAtHost @0xef52df3bdf52d9d1 {
-    uid @0 : lib.UID;
-    keyid @1 : lib.EntityID;
+    uid @0 : UID;
+    keyid @1 : EntityID;
 }
 
 struct LocalUserIndex @0xc2b545ad04c73d1b {
-    host @0 : lib.HostID;
+    host @0 : HostID;
     rest @1 : LocalUserIndexAtHost;
 }

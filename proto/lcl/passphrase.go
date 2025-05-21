@@ -1,5 +1,5 @@
-// Auto-generated to Go types and interfaces using @foks-proj/snowpack-compiler 1.0.8 (git+https://github.com/foks-proj/node-snowpack-compiler.git)
-//  Input file: ../../proto-src/lcl/passphrase.snowp
+// Auto-generated to Go types and interfaces using snowpc 0.0.4 (https://github.com/foks-proj/go-snowpack-compiler)
+//  Input file:../../proto-src/lcl/passphrase.snowp
 
 package lcl
 
@@ -17,7 +17,6 @@ var PassphraseProtocolID rpc.ProtocolUniqueID = rpc.ProtocolUniqueID(0xf099577a)
 type PassphraseUnlockArg struct {
 	Passphrase lib.Passphrase
 }
-
 type PassphraseUnlockArgInternal__ struct {
 	_struct    struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Passphrase *lib.PassphraseInternal__
@@ -33,13 +32,11 @@ func (p PassphraseUnlockArgInternal__) Import() PassphraseUnlockArg {
 		})(p.Passphrase),
 	}
 }
-
 func (p PassphraseUnlockArg) Export() *PassphraseUnlockArgInternal__ {
 	return &PassphraseUnlockArgInternal__{
 		Passphrase: p.Passphrase.Export(),
 	}
 }
-
 func (p *PassphraseUnlockArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(p.Export())
 }
@@ -60,7 +57,6 @@ type PassphraseSetArg struct {
 	Passphrase lib.Passphrase
 	First      bool
 }
-
 type PassphraseSetArgInternal__ struct {
 	_struct    struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Passphrase *lib.PassphraseInternal__
@@ -83,14 +79,12 @@ func (p PassphraseSetArgInternal__) Import() PassphraseSetArg {
 		})(p.First),
 	}
 }
-
 func (p PassphraseSetArg) Export() *PassphraseSetArgInternal__ {
 	return &PassphraseSetArgInternal__{
 		Passphrase: p.Passphrase.Export(),
 		First:      &p.First,
 	}
 }
-
 func (p *PassphraseSetArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(p.Export())
 }
@@ -136,7 +130,7 @@ func (p passphraseErrorUnwrapperAdapter) MakeArg() interface{} {
 func (p passphraseErrorUnwrapperAdapter) UnwrapError(raw interface{}) (appError error, dispatchError error) {
 	sTmp, ok := raw.(*lib.StatusInternal__)
 	if !ok {
-		return nil, errors.New("Error converting to internal type in UnwrapError")
+		return nil, errors.New("error converting to internal type in UnwrapError")
 	}
 	if sTmp == nil {
 		return nil, nil
@@ -162,7 +156,6 @@ func (c PassphraseClient) PassphraseUnlock(ctx context.Context, passphrase lib.P
 	}
 	return
 }
-
 func (c PassphraseClient) PassphraseSet(ctx context.Context, arg PassphraseSetArg) (err error) {
 	warg := arg.Export()
 	err = c.Cli.Call2(ctx, rpc.NewMethodV2(PassphraseProtocolID, 1, "Passphrase.passphraseSet"), warg, nil, 0*time.Millisecond, passphraseErrorUnwrapperAdapter{h: c.ErrorUnwrapper})
@@ -171,7 +164,6 @@ func (c PassphraseClient) PassphraseSet(ctx context.Context, arg PassphraseSetAr
 	}
 	return
 }
-
 func PassphraseProtocol(i PassphraseInterface) rpc.ProtocolV2 {
 	return rpc.ProtocolV2{
 		Name: "Passphrase",

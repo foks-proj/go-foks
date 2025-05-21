@@ -1,5 +1,5 @@
-// Auto-generated to Go types and interfaces using @foks-proj/snowpack-compiler 1.0.8 (git+https://github.com/foks-proj/node-snowpack-compiler.git)
-//  Input file: ../../proto-src/lib/kex.snowp
+// Auto-generated to Go types and interfaces using snowpc 0.0.4 (https://github.com/foks-proj/go-snowpack-compiler)
+//  Input file:../../proto-src/lib/kex.snowp
 
 package lib
 
@@ -14,7 +14,6 @@ func (k KexSeqNo) Export() *KexSeqNoInternal__ {
 	tmp := ((uint64)(k))
 	return ((*KexSeqNoInternal__)(&tmp))
 }
-
 func (k KexSeqNoInternal__) Import() KexSeqNo {
 	tmp := (uint64)(k)
 	return KexSeqNo((func(x *uint64) (ret uint64) {
@@ -50,7 +49,6 @@ func (k KexSecret) Export() *KexSecretInternal__ {
 	tmp := (([16]byte)(k))
 	return ((*KexSecretInternal__)(&tmp))
 }
-
 func (k KexSecretInternal__) Import() KexSecret {
 	tmp := ([16]byte)(k)
 	return KexSecret((func(x *[16]byte) (ret [16]byte) {
@@ -80,7 +78,6 @@ var KexSecretTypeUniqueID = rpc.TypeUniqueID(0xd11db788412b370b)
 func (k *KexSecret) GetTypeUniqueID() rpc.TypeUniqueID {
 	return KexSecretTypeUniqueID
 }
-
 func (k KexSecret) Bytes() []byte {
 	return (k)[:]
 }
@@ -92,7 +89,6 @@ func (k KexSessionID) Export() *KexSessionIDInternal__ {
 	tmp := (([32]byte)(k))
 	return ((*KexSessionIDInternal__)(&tmp))
 }
-
 func (k KexSessionIDInternal__) Import() KexSessionID {
 	tmp := ([32]byte)(k)
 	return KexSessionID((func(x *[32]byte) (ret [32]byte) {
@@ -135,7 +131,6 @@ func (k KexHESP) Export() *KexHESPInternal__ {
 		return &ret
 	})(tmp)))
 }
-
 func (k KexHESPInternal__) Import() KexHESP {
 	tmp := ([](string))(k)
 	return KexHESP((func(x *[](string)) (ret []string) {

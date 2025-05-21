@@ -1,5 +1,5 @@
-// Auto-generated to Go types and interfaces using @foks-proj/snowpack-compiler 1.0.8 (git+https://github.com/foks-proj/node-snowpack-compiler.git)
-//  Input file: ../../proto-src/lcl/ctl.snowp
+// Auto-generated to Go types and interfaces using snowpc 0.0.4 (https://github.com/foks-proj/go-snowpack-compiler)
+//  Input file:../../proto-src/lcl/ctl.snowp
 
 package lcl
 
@@ -16,7 +16,6 @@ var CtlProtocolID rpc.ProtocolUniqueID = rpc.ProtocolUniqueID(0xb9b6958c)
 
 type ShutdownArg struct {
 }
-
 type ShutdownArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 }
@@ -24,11 +23,9 @@ type ShutdownArgInternal__ struct {
 func (s ShutdownArgInternal__) Import() ShutdownArg {
 	return ShutdownArg{}
 }
-
 func (s ShutdownArg) Export() *ShutdownArgInternal__ {
 	return &ShutdownArgInternal__{}
 }
-
 func (s *ShutdownArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(s.Export())
 }
@@ -47,7 +44,6 @@ func (s *ShutdownArg) Bytes() []byte { return nil }
 
 type PingAgentArg struct {
 }
-
 type PingAgentArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 }
@@ -55,11 +51,9 @@ type PingAgentArgInternal__ struct {
 func (p PingAgentArgInternal__) Import() PingAgentArg {
 	return PingAgentArg{}
 }
-
 func (p PingAgentArg) Export() *PingAgentArgInternal__ {
 	return &PingAgentArgInternal__{}
 }
-
 func (p *PingAgentArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(p.Export())
 }
@@ -81,7 +75,6 @@ type CtlInterface interface {
 	PingAgent(context.Context) (uint64, error)
 	ErrorWrapper() func(error) lib.Status
 	CheckArgHeader(ctx context.Context, h Header) error
-
 	MakeResHeader() Header
 }
 
@@ -108,7 +101,7 @@ func (c ctlErrorUnwrapperAdapter) MakeArg() interface{} {
 func (c ctlErrorUnwrapperAdapter) UnwrapError(raw interface{}) (appError error, dispatchError error) {
 	sTmp, ok := raw.(*lib.StatusInternal__)
 	if !ok {
-		return nil, errors.New("Error converting to internal type in UnwrapError")
+		return nil, errors.New("error converting to internal type in UnwrapError")
 	}
 	if sTmp == nil {
 		return nil, nil
@@ -147,7 +140,6 @@ func (c CtlClient) Shutdown(ctx context.Context) (res uint64, err error) {
 	res = tmp.Data
 	return
 }
-
 func (c CtlClient) PingAgent(ctx context.Context) (res uint64, err error) {
 	var arg PingAgentArg
 	warg := &rpc.DataWrap[Header, *PingAgentArgInternal__]{
@@ -170,7 +162,6 @@ func (c CtlClient) PingAgent(ctx context.Context) (res uint64, err error) {
 	res = tmp.Data
 	return
 }
-
 func CtlProtocol(i CtlInterface) rpc.ProtocolV2 {
 	return rpc.ProtocolV2{
 		Name: "Ctl",

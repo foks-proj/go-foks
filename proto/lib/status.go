@@ -1,5 +1,5 @@
-// Auto-generated to Go types and interfaces using @foks-proj/snowpack-compiler 1.0.8 (git+https://github.com/foks-proj/node-snowpack-compiler.git)
-//  Input file: ../../proto-src/lib/status.snowp
+// Auto-generated to Go types and interfaces using snowpc 0.0.4 (https://github.com/foks-proj/go-snowpack-compiler)
+//  Input file:../../proto-src/lib/status.snowp
 
 package lib
 
@@ -278,7 +278,6 @@ var StatusCodeMap = map[string]StatusCode{
 	"HTTP_ERROR":                              10001,
 	"STRIPE_SESSION_EXISTS_ERROR":             11001,
 }
-
 var StatusCodeRevMap = map[StatusCode]string{
 	0:     "OK",
 	100:   "GENERIC_ERROR",
@@ -418,7 +417,6 @@ type StatusCodeInternal__ StatusCode
 func (s StatusCodeInternal__) Import() StatusCode {
 	return StatusCode(s)
 }
-
 func (s StatusCode) Export() *StatusCodeInternal__ {
 	return ((*StatusCodeInternal__)(&s))
 }
@@ -428,7 +426,6 @@ type HostPinError struct {
 	Old  HostID
 	New  HostID
 }
-
 type HostPinErrorInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Host    *HostnameInternal__
@@ -458,7 +455,6 @@ func (h HostPinErrorInternal__) Import() HostPinError {
 		})(h.New),
 	}
 }
-
 func (h HostPinError) Export() *HostPinErrorInternal__ {
 	return &HostPinErrorInternal__{
 		Host: h.Host.Export(),
@@ -466,7 +462,6 @@ func (h HostPinError) Export() *HostPinErrorInternal__ {
 		New:  h.New.Export(),
 	}
 }
-
 func (h *HostPinError) Encode(enc rpc.Encoder) error {
 	return enc.Encode(h.Export())
 }
@@ -488,7 +483,6 @@ type MethodV2 struct {
 	Method uint64
 	Name   string
 }
-
 type MethodV2Internal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Proto   *uint64
@@ -518,7 +512,6 @@ func (m MethodV2Internal__) Import() MethodV2 {
 		})(m.Name),
 	}
 }
-
 func (m MethodV2) Export() *MethodV2Internal__ {
 	return &MethodV2Internal__{
 		Proto:  &m.Proto,
@@ -526,7 +519,6 @@ func (m MethodV2) Export() *MethodV2Internal__ {
 		Name:   &m.Name,
 	}
 }
-
 func (m *MethodV2) Encode(enc rpc.Encoder) error {
 	return enc.Encode(m.Export())
 }
@@ -547,7 +539,6 @@ type ChainLoaderError struct {
 	Err  Status
 	Race bool
 }
-
 type ChainLoaderErrorInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Err     *StatusInternal__
@@ -570,14 +561,12 @@ func (c ChainLoaderErrorInternal__) Import() ChainLoaderError {
 		})(c.Race),
 	}
 }
-
 func (c ChainLoaderError) Export() *ChainLoaderErrorInternal__ {
 	return &ChainLoaderErrorInternal__{
 		Err:  c.Err.Export(),
 		Race: &c.Race,
 	}
 }
-
 func (c *ChainLoaderError) Encode(enc rpc.Encoder) error {
 	return enc.Encode(c.Export())
 }
@@ -598,7 +587,6 @@ type SharedKeyNotFound struct {
 	Gen  Generation
 	Role Role
 }
-
 type SharedKeyNotFoundInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Gen     *GenerationInternal__
@@ -621,14 +609,12 @@ func (s SharedKeyNotFoundInternal__) Import() SharedKeyNotFound {
 		})(s.Role),
 	}
 }
-
 func (s SharedKeyNotFound) Export() *SharedKeyNotFoundInternal__ {
 	return &SharedKeyNotFoundInternal__{
 		Gen:  s.Gen.Export(),
 		Role: s.Role.Export(),
 	}
 }
-
 func (s *SharedKeyNotFound) Encode(enc rpc.Encoder) error {
 	return enc.Encode(s.Export())
 }
@@ -658,7 +644,6 @@ var KVOpMap = map[string]KVOp{
 	"Read":  1,
 	"Write": 2,
 }
-
 var KVOpRevMap = map[KVOp]string{
 	0: "None",
 	1: "Read",
@@ -670,7 +655,6 @@ type KVOpInternal__ KVOp
 func (k KVOpInternal__) Import() KVOp {
 	return KVOp(k)
 }
-
 func (k KVOp) Export() *KVOpInternal__ {
 	return ((*KVOpInternal__)(&k))
 }
@@ -688,7 +672,6 @@ var KVResourceMap = map[string]KVResource{
 	"File": 1,
 	"Dir":  2,
 }
-
 var KVResourceRevMap = map[KVResource]string{
 	0: "None",
 	1: "File",
@@ -700,7 +683,6 @@ type KVResourceInternal__ KVResource
 func (k KVResourceInternal__) Import() KVResource {
 	return KVResource(k)
 }
-
 func (k KVResource) Export() *KVResourceInternal__ {
 	return ((*KVResourceInternal__)(&k))
 }
@@ -709,7 +691,6 @@ type KVPermError struct {
 	Op       KVOp
 	Resource KVNodeType
 }
-
 type KVPermErrorInternal__ struct {
 	_struct  struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Op       *KVOpInternal__
@@ -732,14 +713,12 @@ func (k KVPermErrorInternal__) Import() KVPermError {
 		})(k.Resource),
 	}
 }
-
 func (k KVPermError) Export() *KVPermErrorInternal__ {
 	return &KVPermErrorInternal__{
 		Op:       k.Op.Export(),
 		Resource: k.Resource.Export(),
 	}
 }
-
 func (k *KVPermError) Encode(enc rpc.Encoder) error {
 	return enc.Encode(k.Export())
 }
@@ -760,7 +739,6 @@ type TeamCycleError struct {
 	Joiner RationalRange
 	Joinee RationalRange
 }
-
 type TeamCycleErrorInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Joiner  *RationalRangeInternal__
@@ -783,14 +761,12 @@ func (t TeamCycleErrorInternal__) Import() TeamCycleError {
 		})(t.Joinee),
 	}
 }
-
 func (t TeamCycleError) Export() *TeamCycleErrorInternal__ {
 	return &TeamCycleErrorInternal__{
 		Joiner: t.Joiner.Export(),
 		Joinee: t.Joinee.Export(),
 	}
 }
-
 func (t *TeamCycleError) Encode(enc rpc.Encoder) error {
 	return enc.Encode(t.Export())
 }
@@ -812,7 +788,6 @@ type TooBigError struct {
 	Limit  uint64
 	Desc   string
 }
-
 type TooBigErrorInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Actual  *uint64
@@ -842,7 +817,6 @@ func (t TooBigErrorInternal__) Import() TooBigError {
 		})(t.Desc),
 	}
 }
-
 func (t TooBigError) Export() *TooBigErrorInternal__ {
 	return &TooBigErrorInternal__{
 		Actual: &t.Actual,
@@ -850,7 +824,6 @@ func (t TooBigError) Export() *TooBigErrorInternal__ {
 		Desc:   &t.Desc,
 	}
 }
-
 func (t *TooBigError) Encode(enc rpc.Encoder) error {
 	return enc.Encode(t.Export())
 }
@@ -871,7 +844,6 @@ type ConnectError struct {
 	Err  Status
 	Desc string
 }
-
 type ConnectErrorInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Err     *StatusInternal__
@@ -894,14 +866,12 @@ func (c ConnectErrorInternal__) Import() ConnectError {
 		})(c.Desc),
 	}
 }
-
 func (c ConnectError) Export() *ConnectErrorInternal__ {
 	return &ConnectErrorInternal__{
 		Err:  c.Err.Export(),
 		Desc: &c.Desc,
 	}
 }
-
 func (c *ConnectError) Encode(enc rpc.Encoder) error {
 	return enc.Encode(c.Export())
 }
@@ -923,7 +893,6 @@ type HttpError struct {
 	Err  Status
 	Desc string
 }
-
 type HttpErrorInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Code    *uint64
@@ -953,7 +922,6 @@ func (h HttpErrorInternal__) Import() HttpError {
 		})(h.Desc),
 	}
 }
-
 func (h HttpError) Export() *HttpErrorInternal__ {
 	return &HttpErrorInternal__{
 		Code: &h.Code,
@@ -961,7 +929,6 @@ func (h HttpError) Export() *HttpErrorInternal__ {
 		Desc: &h.Desc,
 	}
 }
-
 func (h *HttpError) Encode(enc rpc.Encoder) error {
 	return enc.Encode(h.Export())
 }
@@ -982,7 +949,6 @@ type DNSError struct {
 	Stage string
 	Err   Status
 }
-
 type DNSErrorInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Stage   *string
@@ -1005,14 +971,12 @@ func (d DNSErrorInternal__) Import() DNSError {
 		})(d.Err),
 	}
 }
-
 func (d DNSError) Export() *DNSErrorInternal__ {
 	return &DNSErrorInternal__{
 		Stage: &d.Stage,
 		Err:   d.Err.Export(),
 	}
 }
-
 func (d *DNSError) Encode(enc rpc.Encoder) error {
 	return enc.Encode(d.Export())
 }
@@ -1033,7 +997,6 @@ type SocketError struct {
 	Path string
 	Msg  string
 }
-
 type SocketErrorInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Path    *string
@@ -1056,14 +1019,12 @@ func (s SocketErrorInternal__) Import() SocketError {
 		})(s.Msg),
 	}
 }
-
 func (s SocketError) Export() *SocketErrorInternal__ {
 	return &SocketErrorInternal__{
 		Path: &s.Path,
 		Msg:  &s.Msg,
 	}
 }
-
 func (s *SocketError) Encode(enc rpc.Encoder) error {
 	return enc.Encode(s.Export())
 }
@@ -1084,7 +1045,6 @@ type OAuth2TokenError struct {
 	Err   Status
 	Which string
 }
-
 type OAuth2TokenErrorInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Err     *StatusInternal__
@@ -1107,14 +1067,12 @@ func (o OAuth2TokenErrorInternal__) Import() OAuth2TokenError {
 		})(o.Which),
 	}
 }
-
 func (o OAuth2TokenError) Export() *OAuth2TokenErrorInternal__ {
 	return &OAuth2TokenErrorInternal__{
 		Err:   o.Err.Export(),
 		Which: &o.Which,
 	}
 }
-
 func (o *OAuth2TokenError) Encode(enc rpc.Encoder) error {
 	return enc.Encode(o.Export())
 }
@@ -1136,7 +1094,6 @@ type OAuth2IdPError struct {
 	Err  string
 	Desc string
 }
-
 type OAuth2IdPErrorInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Code    *uint64
@@ -1166,7 +1123,6 @@ func (o OAuth2IdPErrorInternal__) Import() OAuth2IdPError {
 		})(o.Desc),
 	}
 }
-
 func (o OAuth2IdPError) Export() *OAuth2IdPErrorInternal__ {
 	return &OAuth2IdPErrorInternal__{
 		Code: &o.Code,
@@ -1174,7 +1130,6 @@ func (o OAuth2IdPError) Export() *OAuth2IdPErrorInternal__ {
 		Desc: &o.Desc,
 	}
 }
-
 func (o *OAuth2IdPError) Encode(enc rpc.Encoder) error {
 	return enc.Encode(o.Export())
 }
@@ -1216,13 +1171,11 @@ type Status struct {
 	F_21__ *int64                `json:"f21,omitempty"`
 	F_0__  *string               `json:"f0,omitempty"`
 }
-
 type StatusInternal__ struct {
 	_struct  struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Sc       StatusCode
 	Switch__ StatusInternalSwitch__
 }
-
 type StatusInternalSwitch__ struct {
 	_struct struct{}                        `codec:",omitempty"` //lint:ignore U1000 msgpack internal field
 	F_1__   *string                         `codec:"1"`
@@ -1344,1620 +1297,1413 @@ func (s Status) GetSc() (ret StatusCode, err error) {
 	}
 	return s.Sc, nil
 }
-
 func (s Status) TlsError() string {
 	if s.F_1__ == nil {
-		panic("unexepected nil case; should have been checked")
+		panic("unexpected nil case; should have been checked")
 	}
 	if s.Sc != StatusCode_TLS_ERROR {
 		panic(fmt.Sprintf("unexpected switch value (%v) when TlsError is called", s.Sc))
 	}
 	return *s.F_1__
 }
-
 func (s Status) ConfigError() string {
 	if s.F_1__ == nil {
-		panic("unexepected nil case; should have been checked")
+		panic("unexpected nil case; should have been checked")
 	}
 	if s.Sc != StatusCode_CONFIG_ERROR {
 		panic(fmt.Sprintf("unexpected switch value (%v) when ConfigError is called", s.Sc))
 	}
 	return *s.F_1__
 }
-
 func (s Status) DuplicateError() string {
 	if s.F_1__ == nil {
-		panic("unexepected nil case; should have been checked")
+		panic("unexpected nil case; should have been checked")
 	}
 	if s.Sc != StatusCode_DUPLICATE_ERROR {
 		panic(fmt.Sprintf("unexpected switch value (%v) when DuplicateError is called", s.Sc))
 	}
 	return *s.F_1__
 }
-
 func (s Status) ReservationError() string {
 	if s.F_1__ == nil {
-		panic("unexepected nil case; should have been checked")
+		panic("unexpected nil case; should have been checked")
 	}
 	if s.Sc != StatusCode_RESERVATION_ERROR {
 		panic(fmt.Sprintf("unexpected switch value (%v) when ReservationError is called", s.Sc))
 	}
 	return *s.F_1__
 }
-
 func (s Status) LinkError() string {
 	if s.F_1__ == nil {
-		panic("unexepected nil case; should have been checked")
+		panic("unexpected nil case; should have been checked")
 	}
 	if s.Sc != StatusCode_LINK_ERROR {
 		panic(fmt.Sprintf("unexpected switch value (%v) when LinkError is called", s.Sc))
 	}
 	return *s.F_1__
 }
-
 func (s Status) ValidationError() string {
 	if s.F_1__ == nil {
-		panic("unexepected nil case; should have been checked")
+		panic("unexpected nil case; should have been checked")
 	}
 	if s.Sc != StatusCode_VALIDATION_ERROR {
 		panic(fmt.Sprintf("unexpected switch value (%v) when ValidationError is called", s.Sc))
 	}
 	return *s.F_1__
 }
-
 func (s Status) VerifyError() string {
 	if s.F_1__ == nil {
-		panic("unexepected nil case; should have been checked")
+		panic("unexpected nil case; should have been checked")
 	}
 	if s.Sc != StatusCode_VERIFY_ERROR {
 		panic(fmt.Sprintf("unexpected switch value (%v) when VerifyError is called", s.Sc))
 	}
 	return *s.F_1__
 }
-
 func (s Status) X509Error() string {
 	if s.F_1__ == nil {
-		panic("unexepected nil case; should have been checked")
+		panic("unexpected nil case; should have been checked")
 	}
 	if s.Sc != StatusCode_X509_ERROR {
 		panic(fmt.Sprintf("unexpected switch value (%v) when X509Error is called", s.Sc))
 	}
 	return *s.F_1__
 }
-
 func (s Status) PermissionError() string {
 	if s.F_1__ == nil {
-		panic("unexepected nil case; should have been checked")
+		panic("unexpected nil case; should have been checked")
 	}
 	if s.Sc != StatusCode_PERMISSION_ERROR {
 		panic(fmt.Sprintf("unexpected switch value (%v) when PermissionError is called", s.Sc))
 	}
 	return *s.F_1__
 }
-
 func (s Status) PrevError() string {
 	if s.F_1__ == nil {
-		panic("unexepected nil case; should have been checked")
+		panic("unexpected nil case; should have been checked")
 	}
 	if s.Sc != StatusCode_PREV_ERROR {
 		panic(fmt.Sprintf("unexpected switch value (%v) when PrevError is called", s.Sc))
 	}
 	return *s.F_1__
 }
-
 func (s Status) BoxError() string {
 	if s.F_1__ == nil {
-		panic("unexepected nil case; should have been checked")
+		panic("unexpected nil case; should have been checked")
 	}
 	if s.Sc != StatusCode_BOX_ERROR {
 		panic(fmt.Sprintf("unexpected switch value (%v) when BoxError is called", s.Sc))
 	}
 	return *s.F_1__
 }
-
 func (s Status) InsertError() string {
 	if s.F_1__ == nil {
-		panic("unexepected nil case; should have been checked")
+		panic("unexpected nil case; should have been checked")
 	}
 	if s.Sc != StatusCode_INSERT_ERROR {
 		panic(fmt.Sprintf("unexpected switch value (%v) when InsertError is called", s.Sc))
 	}
 	return *s.F_1__
 }
-
 func (s Status) UpdateError() string {
 	if s.F_1__ == nil {
-		panic("unexepected nil case; should have been checked")
+		panic("unexpected nil case; should have been checked")
 	}
 	if s.Sc != StatusCode_UPDATE_ERROR {
 		panic(fmt.Sprintf("unexpected switch value (%v) when UpdateError is called", s.Sc))
 	}
 	return *s.F_1__
 }
-
 func (s Status) RevokeError() string {
 	if s.F_1__ == nil {
-		panic("unexepected nil case; should have been checked")
+		panic("unexpected nil case; should have been checked")
 	}
 	if s.Sc != StatusCode_REVOKE_ERROR {
 		panic(fmt.Sprintf("unexpected switch value (%v) when RevokeError is called", s.Sc))
 	}
 	return *s.F_1__
 }
-
 func (s Status) CommitmentError() string {
 	if s.F_1__ == nil {
-		panic("unexepected nil case; should have been checked")
+		panic("unexpected nil case; should have been checked")
 	}
 	if s.Sc != StatusCode_COMMITMENT_ERROR {
 		panic(fmt.Sprintf("unexpected switch value (%v) when CommitmentError is called", s.Sc))
 	}
 	return *s.F_1__
 }
-
 func (s Status) YubiError() string {
 	if s.F_1__ == nil {
-		panic("unexepected nil case; should have been checked")
+		panic("unexpected nil case; should have been checked")
 	}
 	if s.Sc != StatusCode_YUBI_ERROR {
 		panic(fmt.Sprintf("unexpected switch value (%v) when YubiError is called", s.Sc))
 	}
 	return *s.F_1__
 }
-
 func (s Status) HostchainError() string {
 	if s.F_1__ == nil {
-		panic("unexepected nil case; should have been checked")
+		panic("unexpected nil case; should have been checked")
 	}
 	if s.Sc != StatusCode_HOSTCHAIN_ERROR {
 		panic(fmt.Sprintf("unexpected switch value (%v) when HostchainError is called", s.Sc))
 	}
 	return *s.F_1__
 }
-
 func (s Status) GrantError() string {
 	if s.F_1__ == nil {
-		panic("unexepected nil case; should have been checked")
+		panic("unexpected nil case; should have been checked")
 	}
 	if s.Sc != StatusCode_GRANT_ERROR {
 		panic(fmt.Sprintf("unexpected switch value (%v) when GrantError is called", s.Sc))
 	}
 	return *s.F_1__
 }
-
 func (s Status) NoChangeError() string {
 	if s.F_1__ == nil {
-		panic("unexepected nil case; should have been checked")
+		panic("unexpected nil case; should have been checked")
 	}
 	if s.Sc != StatusCode_NO_CHANGE_ERROR {
 		panic(fmt.Sprintf("unexpected switch value (%v) when NoChangeError is called", s.Sc))
 	}
 	return *s.F_1__
 }
-
 func (s Status) BadArgsError() string {
 	if s.F_1__ == nil {
-		panic("unexepected nil case; should have been checked")
+		panic("unexpected nil case; should have been checked")
 	}
 	if s.Sc != StatusCode_BAD_ARGS_ERROR {
 		panic(fmt.Sprintf("unexpected switch value (%v) when BadArgsError is called", s.Sc))
 	}
 	return *s.F_1__
 }
-
 func (s Status) KeyNotFoundError() string {
 	if s.F_1__ == nil {
-		panic("unexepected nil case; should have been checked")
+		panic("unexpected nil case; should have been checked")
 	}
 	if s.Sc != StatusCode_KEY_NOT_FOUND_ERROR {
 		panic(fmt.Sprintf("unexpected switch value (%v) when KeyNotFoundError is called", s.Sc))
 	}
 	return *s.F_1__
 }
-
 func (s Status) ProtoDataError() string {
 	if s.F_1__ == nil {
-		panic("unexepected nil case; should have been checked")
+		panic("unexpected nil case; should have been checked")
 	}
 	if s.Sc != StatusCode_PROTO_DATA_ERROR {
 		panic(fmt.Sprintf("unexpected switch value (%v) when ProtoDataError is called", s.Sc))
 	}
 	return *s.F_1__
 }
-
 func (s Status) HostMismatchError() string {
 	if s.F_1__ == nil {
-		panic("unexepected nil case; should have been checked")
+		panic("unexpected nil case; should have been checked")
 	}
 	if s.Sc != StatusCode_HOST_MISMATCH_ERROR {
 		panic(fmt.Sprintf("unexpected switch value (%v) when HostMismatchError is called", s.Sc))
 	}
 	return *s.F_1__
 }
-
 func (s Status) BadFormatError() string {
 	if s.F_1__ == nil {
-		panic("unexepected nil case; should have been checked")
+		panic("unexpected nil case; should have been checked")
 	}
 	if s.Sc != StatusCode_BAD_FORMAT_ERROR {
 		panic(fmt.Sprintf("unexpected switch value (%v) when BadFormatError is called", s.Sc))
 	}
 	return *s.F_1__
 }
-
 func (s Status) AmbiguousError() string {
 	if s.F_1__ == nil {
-		panic("unexepected nil case; should have been checked")
+		panic("unexpected nil case; should have been checked")
 	}
 	if s.Sc != StatusCode_AMBIGUOUS_ERROR {
 		panic(fmt.Sprintf("unexpected switch value (%v) when AmbiguousError is called", s.Sc))
 	}
 	return *s.F_1__
 }
-
 func (s Status) RoleError() string {
 	if s.F_1__ == nil {
-		panic("unexepected nil case; should have been checked")
+		panic("unexpected nil case; should have been checked")
 	}
 	if s.Sc != StatusCode_ROLE_ERROR {
 		panic(fmt.Sprintf("unexpected switch value (%v) when RoleError is called", s.Sc))
 	}
 	return *s.F_1__
 }
-
 func (s Status) RevokeRaceError() string {
 	if s.F_1__ == nil {
-		panic("unexepected nil case; should have been checked")
+		panic("unexpected nil case; should have been checked")
 	}
 	if s.Sc != StatusCode_REVOKE_RACE_ERROR {
 		panic(fmt.Sprintf("unexpected switch value (%v) when RevokeRaceError is called", s.Sc))
 	}
 	return *s.F_1__
 }
-
 func (s Status) MerkleVerifyError() string {
 	if s.F_1__ == nil {
-		panic("unexepected nil case; should have been checked")
+		panic("unexpected nil case; should have been checked")
 	}
 	if s.Sc != StatusCode_MERKLE_VERIFY_ERROR {
 		panic(fmt.Sprintf("unexpected switch value (%v) when MerkleVerifyError is called", s.Sc))
 	}
 	return *s.F_1__
 }
-
 func (s Status) TeamError() string {
 	if s.F_1__ == nil {
-		panic("unexepected nil case; should have been checked")
+		panic("unexpected nil case; should have been checked")
 	}
 	if s.Sc != StatusCode_TEAM_ERROR {
 		panic(fmt.Sprintf("unexpected switch value (%v) when TeamError is called", s.Sc))
 	}
 	return *s.F_1__
 }
-
 func (s Status) TeamRaceError() string {
 	if s.F_1__ == nil {
-		panic("unexepected nil case; should have been checked")
+		panic("unexpected nil case; should have been checked")
 	}
 	if s.Sc != StatusCode_TEAM_RACE_ERROR {
 		panic(fmt.Sprintf("unexpected switch value (%v) when TeamRaceError is called", s.Sc))
 	}
 	return *s.F_1__
 }
-
 func (s Status) TeamBearerTokenStaleError() string {
 	if s.F_1__ == nil {
-		panic("unexepected nil case; should have been checked")
+		panic("unexpected nil case; should have been checked")
 	}
 	if s.Sc != StatusCode_TEAM_BEARER_TOKEN_STALE_ERROR {
 		panic(fmt.Sprintf("unexpected switch value (%v) when TeamBearerTokenStaleError is called", s.Sc))
 	}
 	return *s.F_1__
 }
-
 func (s Status) TeamCertError() string {
 	if s.F_1__ == nil {
-		panic("unexepected nil case; should have been checked")
+		panic("unexpected nil case; should have been checked")
 	}
 	if s.Sc != StatusCode_TEAM_CERT_ERROR {
 		panic(fmt.Sprintf("unexpected switch value (%v) when TeamCertError is called", s.Sc))
 	}
 	return *s.F_1__
 }
-
 func (s Status) TeamRosterError() string {
 	if s.F_1__ == nil {
-		panic("unexepected nil case; should have been checked")
+		panic("unexpected nil case; should have been checked")
 	}
 	if s.Sc != StatusCode_TEAM_ROSTER_ERROR {
 		panic(fmt.Sprintf("unexpected switch value (%v) when TeamRosterError is called", s.Sc))
 	}
 	return *s.F_1__
 }
-
 func (s Status) TeamKeyError() string {
 	if s.F_1__ == nil {
-		panic("unexepected nil case; should have been checked")
+		panic("unexpected nil case; should have been checked")
 	}
 	if s.Sc != StatusCode_TEAM_KEY_ERROR {
 		panic(fmt.Sprintf("unexpected switch value (%v) when TeamKeyError is called", s.Sc))
 	}
 	return *s.F_1__
 }
-
 func (s Status) TeamIndexRangeError() string {
 	if s.F_1__ == nil {
-		panic("unexepected nil case; should have been checked")
+		panic("unexpected nil case; should have been checked")
 	}
 	if s.Sc != StatusCode_TEAM_INDEX_RANGE_ERROR {
 		panic(fmt.Sprintf("unexpected switch value (%v) when TeamIndexRangeError is called", s.Sc))
 	}
 	return *s.F_1__
 }
-
 func (s Status) TeamRemovalKeyError() string {
 	if s.F_1__ == nil {
-		panic("unexepected nil case; should have been checked")
+		panic("unexpected nil case; should have been checked")
 	}
 	if s.Sc != StatusCode_TEAM_REMOVAL_KEY_ERROR {
 		panic(fmt.Sprintf("unexpected switch value (%v) when TeamRemovalKeyError is called", s.Sc))
 	}
 	return *s.F_1__
 }
-
 func (s Status) TeamExploreError() string {
 	if s.F_1__ == nil {
-		panic("unexepected nil case; should have been checked")
+		panic("unexpected nil case; should have been checked")
 	}
 	if s.Sc != StatusCode_TEAM_EXPLORE_ERROR {
 		panic(fmt.Sprintf("unexpected switch value (%v) when TeamExploreError is called", s.Sc))
 	}
 	return *s.F_1__
 }
-
 func (s Status) GenericNotFoundError() string {
 	if s.F_1__ == nil {
-		panic("unexepected nil case; should have been checked")
+		panic("unexpected nil case; should have been checked")
 	}
 	if s.Sc != StatusCode_GENERIC_NOT_FOUND_ERROR {
 		panic(fmt.Sprintf("unexpected switch value (%v) when GenericNotFoundError is called", s.Sc))
 	}
 	return *s.F_1__
 }
-
 func (s Status) KvUploadError() string {
 	if s.F_1__ == nil {
-		panic("unexepected nil case; should have been checked")
+		panic("unexpected nil case; should have been checked")
 	}
 	if s.Sc != StatusCode_KV_UPLOAD_ERROR {
 		panic(fmt.Sprintf("unexpected switch value (%v) when KvUploadError is called", s.Sc))
 	}
 	return *s.F_1__
 }
-
 func (s Status) KvRaceError() string {
 	if s.F_1__ == nil {
-		panic("unexepected nil case; should have been checked")
+		panic("unexpected nil case; should have been checked")
 	}
 	if s.Sc != StatusCode_KV_RACE_ERROR {
 		panic(fmt.Sprintf("unexpected switch value (%v) when KvRaceError is called", s.Sc))
 	}
 	return *s.F_1__
 }
-
 func (s Status) KvPathError() string {
 	if s.F_1__ == nil {
-		panic("unexepected nil case; should have been checked")
+		panic("unexpected nil case; should have been checked")
 	}
 	if s.Sc != StatusCode_KV_PATH_ERROR {
 		panic(fmt.Sprintf("unexpected switch value (%v) when KvPathError is called", s.Sc))
 	}
 	return *s.F_1__
 }
-
 func (s Status) KvMkdirError() string {
 	if s.F_1__ == nil {
-		panic("unexepected nil case; should have been checked")
+		panic("unexpected nil case; should have been checked")
 	}
 	if s.Sc != StatusCode_KV_MKDIR_ERROR {
 		panic(fmt.Sprintf("unexpected switch value (%v) when KvMkdirError is called", s.Sc))
 	}
 	return *s.F_1__
 }
-
 func (s Status) KvTypeError() string {
 	if s.F_1__ == nil {
-		panic("unexepected nil case; should have been checked")
+		panic("unexpected nil case; should have been checked")
 	}
 	if s.Sc != StatusCode_KV_TYPE_ERROR {
 		panic(fmt.Sprintf("unexpected switch value (%v) when KvTypeError is called", s.Sc))
 	}
 	return *s.F_1__
 }
-
 func (s Status) KvNoentError() string {
 	if s.F_1__ == nil {
-		panic("unexepected nil case; should have been checked")
+		panic("unexpected nil case; should have been checked")
 	}
 	if s.Sc != StatusCode_KV_NOENT_ERROR {
 		panic(fmt.Sprintf("unexpected switch value (%v) when KvNoentError is called", s.Sc))
 	}
 	return *s.F_1__
 }
-
 func (s Status) GitGenericError() string {
 	if s.F_1__ == nil {
-		panic("unexepected nil case; should have been checked")
+		panic("unexpected nil case; should have been checked")
 	}
 	if s.Sc != StatusCode_GIT_GENERIC_ERROR {
 		panic(fmt.Sprintf("unexpected switch value (%v) when GitGenericError is called", s.Sc))
 	}
 	return *s.F_1__
 }
-
 func (s Status) GitBadPathError() string {
 	if s.F_1__ == nil {
-		panic("unexepected nil case; should have been checked")
+		panic("unexpected nil case; should have been checked")
 	}
 	if s.Sc != StatusCode_GIT_BAD_PATH_ERROR {
 		panic(fmt.Sprintf("unexpected switch value (%v) when GitBadPathError is called", s.Sc))
 	}
 	return *s.F_1__
 }
-
 func (s Status) UpgradeNeededError() string {
 	if s.F_1__ == nil {
-		panic("unexepected nil case; should have been checked")
+		panic("unexpected nil case; should have been checked")
 	}
 	if s.Sc != StatusCode_UPGRADE_NEEDED_ERROR {
 		panic(fmt.Sprintf("unexpected switch value (%v) when UpgradeNeededError is called", s.Sc))
 	}
 	return *s.F_1__
 }
-
 func (s Status) VersionNotSupportedError() string {
 	if s.F_1__ == nil {
-		panic("unexepected nil case; should have been checked")
+		panic("unexpected nil case; should have been checked")
 	}
 	if s.Sc != StatusCode_VERSION_NOT_SUPPORTED_ERROR {
 		panic(fmt.Sprintf("unexpected switch value (%v) when VersionNotSupportedError is called", s.Sc))
 	}
 	return *s.F_1__
 }
-
 func (s Status) HostInUseError() string {
 	if s.F_1__ == nil {
-		panic("unexepected nil case; should have been checked")
+		panic("unexpected nil case; should have been checked")
 	}
 	if s.Sc != StatusCode_HOST_IN_USE_ERROR {
 		panic(fmt.Sprintf("unexpected switch value (%v) when HostInUseError is called", s.Sc))
 	}
 	return *s.F_1__
 }
-
 func (s Status) Oauth2Error() string {
 	if s.F_1__ == nil {
-		panic("unexepected nil case; should have been checked")
+		panic("unexpected nil case; should have been checked")
 	}
 	if s.Sc != StatusCode_OAUTH2_ERROR {
 		panic(fmt.Sprintf("unexpected switch value (%v) when Oauth2Error is called", s.Sc))
 	}
 	return *s.F_1__
 }
-
 func (s Status) YubiBusError() string {
 	if s.F_1__ == nil {
-		panic("unexepected nil case; should have been checked")
+		panic("unexpected nil case; should have been checked")
 	}
 	if s.Sc != StatusCode_YUBI_BUS_ERROR {
 		panic(fmt.Sprintf("unexpected switch value (%v) when YubiBusError is called", s.Sc))
 	}
 	return *s.F_1__
 }
-
 func (s Status) KeychainError() string {
 	if s.F_1__ == nil {
-		panic("unexepected nil case; should have been checked")
+		panic("unexpected nil case; should have been checked")
 	}
 	if s.Sc != StatusCode_KEYCHAIN_ERROR {
 		panic(fmt.Sprintf("unexpected switch value (%v) when KeychainError is called", s.Sc))
 	}
 	return *s.F_1__
 }
-
 func (s Status) AgentConnectError() string {
 	if s.F_1__ == nil {
-		panic("unexepected nil case; should have been checked")
+		panic("unexpected nil case; should have been checked")
 	}
 	if s.Sc != StatusCode_AGENT_CONNECT_ERROR {
 		panic(fmt.Sprintf("unexpected switch value (%v) when AgentConnectError is called", s.Sc))
 	}
 	return *s.F_1__
 }
-
 func (s Status) ProtoNotFoundError() uint64 {
 	if s.F_2__ == nil {
-		panic("unexepected nil case; should have been checked")
+		panic("unexpected nil case; should have been checked")
 	}
 	if s.Sc != StatusCode_PROTO_NOT_FOUND_ERROR {
 		panic(fmt.Sprintf("unexpected switch value (%v) when ProtoNotFoundError is called", s.Sc))
 	}
 	return *s.F_2__
 }
-
 func (s Status) MethodNotFoundError() MethodV2 {
 	if s.F_3__ == nil {
-		panic("unexepected nil case; should have been checked")
+		panic("unexpected nil case; should have been checked")
 	}
 	if s.Sc != StatusCode_METHOD_NOT_FOUND_ERROR {
 		panic(fmt.Sprintf("unexpected switch value (%v) when MethodNotFoundError is called", s.Sc))
 	}
 	return *s.F_3__
 }
-
 func (s Status) KexWrapperError() Status {
 	if s.F_4__ == nil {
-		panic("unexepected nil case; should have been checked")
+		panic("unexpected nil case; should have been checked")
 	}
 	if s.Sc != StatusCode_KEX_WRAPPER_ERROR {
 		panic(fmt.Sprintf("unexpected switch value (%v) when KexWrapperError is called", s.Sc))
 	}
 	return *s.F_4__
 }
-
 func (s Status) AutocertFailedError() Status {
 	if s.F_4__ == nil {
-		panic("unexepected nil case; should have been checked")
+		panic("unexpected nil case; should have been checked")
 	}
 	if s.Sc != StatusCode_AUTOCERT_FAILED_ERROR {
 		panic(fmt.Sprintf("unexpected switch value (%v) when AutocertFailedError is called", s.Sc))
 	}
 	return *s.F_4__
 }
-
 func (s Status) Oauth2AuthError() Status {
 	if s.F_4__ == nil {
-		panic("unexepected nil case; should have been checked")
+		panic("unexpected nil case; should have been checked")
 	}
 	if s.Sc != StatusCode_OAUTH2_AUTH_ERROR {
 		panic(fmt.Sprintf("unexpected switch value (%v) when Oauth2AuthError is called", s.Sc))
 	}
 	return *s.F_4__
 }
-
 func (s Status) YubiLockedError() YubiKeyInfoHybrid {
 	if s.F_5__ == nil {
-		panic("unexepected nil case; should have been checked")
+		panic("unexpected nil case; should have been checked")
 	}
 	if s.Sc != StatusCode_YUBI_LOCKED_ERROR {
 		panic(fmt.Sprintf("unexpected switch value (%v) when YubiLockedError is called", s.Sc))
 	}
 	return *s.F_5__
 }
-
 func (s Status) HostPinError() HostPinError {
 	if s.F_6__ == nil {
-		panic("unexepected nil case; should have been checked")
+		panic("unexpected nil case; should have been checked")
 	}
 	if s.Sc != StatusCode_HOST_PIN_ERROR {
 		panic(fmt.Sprintf("unexpected switch value (%v) when HostPinError is called", s.Sc))
 	}
 	return *s.F_6__
 }
-
 func (s Status) SecretKeyStorageTypeError() SecretKeyStorageType {
 	if s.F_7__ == nil {
-		panic("unexepected nil case; should have been checked")
+		panic("unexpected nil case; should have been checked")
 	}
 	if s.Sc != StatusCode_SECRET_KEY_STORAGE_TYPE_ERROR {
 		panic(fmt.Sprintf("unexpected switch value (%v) when SecretKeyStorageTypeError is called", s.Sc))
 	}
 	return *s.F_7__
 }
-
 func (s Status) ChainLoaderError() ChainLoaderError {
 	if s.F_8__ == nil {
-		panic("unexepected nil case; should have been checked")
+		panic("unexpected nil case; should have been checked")
 	}
 	if s.Sc != StatusCode_CHAIN_LOADER_ERROR {
 		panic(fmt.Sprintf("unexpected switch value (%v) when ChainLoaderError is called", s.Sc))
 	}
 	return *s.F_8__
 }
-
 func (s Status) TeamPtkNotFoundError() SharedKeyNotFound {
 	if s.F_9__ == nil {
-		panic("unexepected nil case; should have been checked")
+		panic("unexpected nil case; should have been checked")
 	}
 	if s.Sc != StatusCode_TEAM_PTK_NOT_FOUND_ERROR {
 		panic(fmt.Sprintf("unexpected switch value (%v) when TeamPtkNotFoundError is called", s.Sc))
 	}
 	return *s.F_9__
 }
-
 func (s Status) KvPermError() KVPermError {
 	if s.F_10__ == nil {
-		panic("unexepected nil case; should have been checked")
+		panic("unexpected nil case; should have been checked")
 	}
 	if s.Sc != StatusCode_KV_PERM_ERROR {
 		panic(fmt.Sprintf("unexpected switch value (%v) when KvPermError is called", s.Sc))
 	}
 	return *s.F_10__
 }
-
 func (s Status) KvStaleCacheError() PathVersionVector {
 	if s.F_11__ == nil {
-		panic("unexepected nil case; should have been checked")
+		panic("unexpected nil case; should have been checked")
 	}
 	if s.Sc != StatusCode_KV_STALE_CACHE_ERROR {
 		panic(fmt.Sprintf("unexpected switch value (%v) when KvStaleCacheError is called", s.Sc))
 	}
 	return *s.F_11__
 }
-
 func (s Status) SessionNotFoundError() UISessionID {
 	if s.F_12__ == nil {
-		panic("unexepected nil case; should have been checked")
+		panic("unexpected nil case; should have been checked")
 	}
 	if s.Sc != StatusCode_SESSION_NOT_FOUND_ERROR {
 		panic(fmt.Sprintf("unexpected switch value (%v) when SessionNotFoundError is called", s.Sc))
 	}
 	return *s.F_12__
 }
-
 func (s Status) TeamCycleError() TeamCycleError {
 	if s.F_13__ == nil {
-		panic("unexepected nil case; should have been checked")
+		panic("unexpected nil case; should have been checked")
 	}
 	if s.Sc != StatusCode_TEAM_CYCLE_ERROR {
 		panic(fmt.Sprintf("unexpected switch value (%v) when TeamCycleError is called", s.Sc))
 	}
 	return *s.F_13__
 }
-
 func (s Status) KvTooBigError() TooBigError {
 	if s.F_14__ == nil {
-		panic("unexepected nil case; should have been checked")
+		panic("unexpected nil case; should have been checked")
 	}
 	if s.Sc != StatusCode_KV_TOO_BIG_ERROR {
 		panic(fmt.Sprintf("unexpected switch value (%v) when KvTooBigError is called", s.Sc))
 	}
 	return *s.F_14__
 }
-
 func (s Status) ConnectError() ConnectError {
 	if s.F_15__ == nil {
-		panic("unexepected nil case; should have been checked")
+		panic("unexpected nil case; should have been checked")
 	}
 	if s.Sc != StatusCode_CONNECT_ERROR {
 		panic(fmt.Sprintf("unexpected switch value (%v) when ConnectError is called", s.Sc))
 	}
 	return *s.F_15__
 }
-
 func (s Status) HttpError() HttpError {
 	if s.F_16__ == nil {
-		panic("unexepected nil case; should have been checked")
+		panic("unexpected nil case; should have been checked")
 	}
 	if s.Sc != StatusCode_HTTP_ERROR {
 		panic(fmt.Sprintf("unexpected switch value (%v) when HttpError is called", s.Sc))
 	}
 	return *s.F_16__
 }
-
 func (s Status) DnsError() DNSError {
 	if s.F_17__ == nil {
-		panic("unexepected nil case; should have been checked")
+		panic("unexpected nil case; should have been checked")
 	}
 	if s.Sc != StatusCode_DNS_ERROR {
 		panic(fmt.Sprintf("unexpected switch value (%v) when DnsError is called", s.Sc))
 	}
 	return *s.F_17__
 }
-
 func (s Status) SocketError() SocketError {
 	if s.F_18__ == nil {
-		panic("unexepected nil case; should have been checked")
+		panic("unexpected nil case; should have been checked")
 	}
 	if s.Sc != StatusCode_SOCKET_ERROR {
 		panic(fmt.Sprintf("unexpected switch value (%v) when SocketError is called", s.Sc))
 	}
 	return *s.F_18__
 }
-
 func (s Status) Oauth2TokenError() OAuth2TokenError {
 	if s.F_19__ == nil {
-		panic("unexepected nil case; should have been checked")
+		panic("unexpected nil case; should have been checked")
 	}
 	if s.Sc != StatusCode_OAUTH2_TOKEN_ERROR {
 		panic(fmt.Sprintf("unexpected switch value (%v) when Oauth2TokenError is called", s.Sc))
 	}
 	return *s.F_19__
 }
-
 func (s Status) Oauth2IdpError() OAuth2IdPError {
 	if s.F_20__ == nil {
-		panic("unexepected nil case; should have been checked")
+		panic("unexpected nil case; should have been checked")
 	}
 	if s.Sc != StatusCode_OAUTH2_IDP_ERROR {
 		panic(fmt.Sprintf("unexpected switch value (%v) when Oauth2IdpError is called", s.Sc))
 	}
 	return *s.F_20__
 }
-
 func (s Status) YubiAuthError() int64 {
 	if s.F_21__ == nil {
-		panic("unexepected nil case; should have been checked")
+		panic("unexpected nil case; should have been checked")
 	}
 	if s.Sc != StatusCode_YUBI_AUTH_ERROR {
 		panic(fmt.Sprintf("unexpected switch value (%v) when YubiAuthError is called", s.Sc))
 	}
 	return *s.F_21__
 }
-
 func (s Status) Default() string {
 	if s.F_0__ == nil {
-		panic("unexepected nil case; should have been checked")
+		panic("unexpected nil case; should have been checked")
 	}
 	return *s.F_0__
 }
-
 func NewStatusWithOk() Status {
 	return Status{
 		Sc: StatusCode_OK,
 	}
 }
-
 func NewStatusWithAuthError() Status {
 	return Status{
 		Sc: StatusCode_AUTH_ERROR,
 	}
 }
-
 func NewStatusWithTimeoutError() Status {
 	return Status{
 		Sc: StatusCode_TIMEOUT_ERROR,
 	}
 }
-
 func NewStatusWithReplayError() Status {
 	return Status{
 		Sc: StatusCode_REPLAY_ERROR,
 	}
 }
-
 func NewStatusWithBadPassphraseError() Status {
 	return Status{
 		Sc: StatusCode_BAD_PASSPHRASE_ERROR,
 	}
 }
-
 func NewStatusWithRateLimitError() Status {
 	return Status{
 		Sc: StatusCode_RATE_LIMIT_ERROR,
 	}
 }
-
 func NewStatusWithTxRetryError() Status {
 	return Status{
 		Sc: StatusCode_TX_RETRY_ERROR,
 	}
 }
-
 func NewStatusWithWrongUserError() Status {
 	return Status{
 		Sc: StatusCode_WRONG_USER_ERROR,
 	}
 }
-
 func NewStatusWithBadInviteCodeError() Status {
 	return Status{
 		Sc: StatusCode_BAD_INVITE_CODE_ERROR,
 	}
 }
-
 func NewStatusWithNotImplemented() Status {
 	return Status{
 		Sc: StatusCode_NOT_IMPLEMENTED,
 	}
 }
-
 func NewStatusWithUsernameInUseError() Status {
 	return Status{
 		Sc: StatusCode_USERNAME_IN_USE_ERROR,
 	}
 }
-
 func NewStatusWithMerkleNoRootError() Status {
 	return Status{
 		Sc: StatusCode_MERKLE_NO_ROOT_ERROR,
 	}
 }
-
 func NewStatusWithNoDefaultHostError() Status {
 	return Status{
 		Sc: StatusCode_NO_DEFAULT_HOST_ERROR,
 	}
 }
-
 func NewStatusWithKeyInUseError() Status {
 	return Status{
 		Sc: StatusCode_KEY_IN_USE_ERROR,
 	}
 }
-
 func NewStatusWithMerkleLeafNotFoundError() Status {
 	return Status{
 		Sc: StatusCode_MERKLE_LEAF_NOT_FOUND_ERROR,
 	}
 }
-
 func NewStatusWithUserNotFoundError() Status {
 	return Status{
 		Sc: StatusCode_USER_NOT_FOUND_ERROR,
 	}
 }
-
 func NewStatusWithRowNotFoundError() Status {
 	return Status{
 		Sc: StatusCode_ROW_NOT_FOUND_ERROR,
 	}
 }
-
 func NewStatusWithKexBadSecret() Status {
 	return Status{
 		Sc: StatusCode_KEX_BAD_SECRET,
 	}
 }
-
 func NewStatusWithPassphraseLockedError() Status {
 	return Status{
 		Sc: StatusCode_PASSPHRASE_LOCKED_ERROR,
 	}
 }
-
 func NewStatusWithNoActiveUserError() Status {
 	return Status{
 		Sc: StatusCode_NO_ACTIVE_USER_ERROR,
 	}
 }
-
 func NewStatusWithSigningKeyNotFullyProvisionedError() Status {
 	return Status{
 		Sc: StatusCode_SIGNING_KEY_NOT_FULLY_PROVISIONED_ERROR,
 	}
 }
-
 func NewStatusWithCanceledInputError() Status {
 	return Status{
 		Sc: StatusCode_CANCELED_INPUT_ERROR,
 	}
 }
-
 func NewStatusWithTestingOnlyError() Status {
 	return Status{
 		Sc: StatusCode_TESTING_ONLY_ERROR,
 	}
 }
-
 func NewStatusWithPassphraseNotFoundError() Status {
 	return Status{
 		Sc: StatusCode_PASSPHRASE_NOT_FOUND_ERROR,
 	}
 }
-
 func NewStatusWithRpcEof() Status {
 	return Status{
 		Sc: StatusCode_RPC_EOF,
 	}
 }
-
 func NewStatusWithTeamNotFoundError() Status {
 	return Status{
 		Sc: StatusCode_TEAM_NOT_FOUND_ERROR,
 	}
 }
-
 func NewStatusWithTeamNoSrcRoleError() Status {
 	return Status{
 		Sc: StatusCode_TEAM_NO_SRC_ROLE_ERROR,
 	}
 }
-
 func NewStatusWithNeedLoginError() Status {
 	return Status{
 		Sc: StatusCode_NEED_LOGIN_ERROR,
 	}
 }
-
 func NewStatusWithBadRangeError() Status {
 	return Status{
 		Sc: StatusCode_BAD_RANGE_ERROR,
 	}
 }
-
 func NewStatusWithHostidNotFoundError() Status {
 	return Status{
 		Sc: StatusCode_HOSTID_NOT_FOUND_ERROR,
 	}
 }
-
 func NewStatusWithKvUploadInProgressError() Status {
 	return Status{
 		Sc: StatusCode_KV_UPLOAD_IN_PROGRESS_ERROR,
 	}
 }
-
 func NewStatusWithKvExistsError() Status {
 	return Status{
 		Sc: StatusCode_KV_EXISTS_ERROR,
 	}
 }
-
 func NewStatusWithKvNeedFileError() Status {
 	return Status{
 		Sc: StatusCode_KV_NEED_FILE_ERROR,
 	}
 }
-
 func NewStatusWithKvNeedDirError() Status {
 	return Status{
 		Sc: StatusCode_KV_NEED_DIR_ERROR,
 	}
 }
-
 func NewStatusWithKvPathTooDeepError() Status {
 	return Status{
 		Sc: StatusCode_KV_PATH_TOO_DEEP_ERROR,
 	}
 }
-
 func NewStatusWithKvLockAlreadyHeldError() Status {
 	return Status{
 		Sc: StatusCode_KV_LOCK_ALREADY_HELD_ERROR,
 	}
 }
-
 func NewStatusWithKvLockTimeoutError() Status {
 	return Status{
 		Sc: StatusCode_KV_LOCK_TIMEOUT_ERROR,
 	}
 }
-
 func NewStatusWithKvRmdirNeedRecursiveError() Status {
 	return Status{
 		Sc: StatusCode_KV_RMDIR_NEED_RECURSIVE_ERROR,
 	}
 }
-
 func NewStatusWithContextCanceledError() Status {
 	return Status{
 		Sc: StatusCode_CONTEXT_CANCELED_ERROR,
 	}
 }
-
 func NewStatusWithNetworkConditionerError() Status {
 	return Status{
 		Sc: StatusCode_NETWORK_CONDITIONER_ERROR,
 	}
 }
-
 func NewStatusWithWebSessionNotFoundError() Status {
 	return Status{
 		Sc: StatusCode_WEB_SESSION_NOT_FOUND_ERROR,
 	}
 }
-
 func NewStatusWithNoActivePlanError() Status {
 	return Status{
 		Sc: StatusCode_NO_ACTIVE_PLAN_ERROR,
 	}
 }
-
 func NewStatusWithOverQuotaError() Status {
 	return Status{
 		Sc: StatusCode_OVER_QUOTA_ERROR,
 	}
 }
-
 func NewStatusWithPlanExistsError() Status {
 	return Status{
 		Sc: StatusCode_PLAN_EXISTS_ERROR,
 	}
 }
-
 func NewStatusWithExpiredError() Status {
 	return Status{
 		Sc: StatusCode_EXPIRED_ERROR,
 	}
 }
-
 func NewStatusWithStripeSessionExistsError() Status {
 	return Status{
 		Sc: StatusCode_STRIPE_SESSION_EXISTS_ERROR,
 	}
 }
-
 func NewStatusWithSsoIdpLockedError() Status {
 	return Status{
 		Sc: StatusCode_SSO_IDP_LOCKED_ERROR,
 	}
 }
-
 func NewStatusWithTeamInviteAlreadyAcceptedError() Status {
 	return Status{
 		Sc: StatusCode_TEAM_INVITE_ALREADY_ACCEPTED_ERROR,
 	}
 }
-
 func NewStatusWithDeviceAlreadyProvisionedError() Status {
 	return Status{
 		Sc: StatusCode_DEVICE_ALREADY_PROVISIONED_ERROR,
 	}
 }
-
 func NewStatusWithKvNotAvailableError() Status {
 	return Status{
 		Sc: StatusCode_KV_NOT_AVAILABLE_ERROR,
 	}
 }
-
 func NewStatusWithYubiDefaultManagementKeyError() Status {
 	return Status{
 		Sc: StatusCode_YUBI_DEFAULT_MANAGEMENT_KEY_ERROR,
 	}
 }
-
 func NewStatusWithYubiBadPinFormatError() Status {
 	return Status{
 		Sc: StatusCode_YUBI_BAD_PIN_FORMAT_ERROR,
 	}
 }
-
 func NewStatusWithYubiPinRequiredError() Status {
 	return Status{
 		Sc: StatusCode_YUBI_PIN_REQUIRED_ERROR,
 	}
 }
-
 func NewStatusWithYubiDefaultPinError() Status {
 	return Status{
 		Sc: StatusCode_YUBI_DEFAULT_PIN_ERROR,
 	}
 }
-
 func NewStatusWithTlsError(v string) Status {
 	return Status{
 		Sc:    StatusCode_TLS_ERROR,
 		F_1__: &v,
 	}
 }
-
 func NewStatusWithConfigError(v string) Status {
 	return Status{
 		Sc:    StatusCode_CONFIG_ERROR,
 		F_1__: &v,
 	}
 }
-
 func NewStatusWithDuplicateError(v string) Status {
 	return Status{
 		Sc:    StatusCode_DUPLICATE_ERROR,
 		F_1__: &v,
 	}
 }
-
 func NewStatusWithReservationError(v string) Status {
 	return Status{
 		Sc:    StatusCode_RESERVATION_ERROR,
 		F_1__: &v,
 	}
 }
-
 func NewStatusWithLinkError(v string) Status {
 	return Status{
 		Sc:    StatusCode_LINK_ERROR,
 		F_1__: &v,
 	}
 }
-
 func NewStatusWithValidationError(v string) Status {
 	return Status{
 		Sc:    StatusCode_VALIDATION_ERROR,
 		F_1__: &v,
 	}
 }
-
 func NewStatusWithVerifyError(v string) Status {
 	return Status{
 		Sc:    StatusCode_VERIFY_ERROR,
 		F_1__: &v,
 	}
 }
-
 func NewStatusWithX509Error(v string) Status {
 	return Status{
 		Sc:    StatusCode_X509_ERROR,
 		F_1__: &v,
 	}
 }
-
 func NewStatusWithPermissionError(v string) Status {
 	return Status{
 		Sc:    StatusCode_PERMISSION_ERROR,
 		F_1__: &v,
 	}
 }
-
 func NewStatusWithPrevError(v string) Status {
 	return Status{
 		Sc:    StatusCode_PREV_ERROR,
 		F_1__: &v,
 	}
 }
-
 func NewStatusWithBoxError(v string) Status {
 	return Status{
 		Sc:    StatusCode_BOX_ERROR,
 		F_1__: &v,
 	}
 }
-
 func NewStatusWithInsertError(v string) Status {
 	return Status{
 		Sc:    StatusCode_INSERT_ERROR,
 		F_1__: &v,
 	}
 }
-
 func NewStatusWithUpdateError(v string) Status {
 	return Status{
 		Sc:    StatusCode_UPDATE_ERROR,
 		F_1__: &v,
 	}
 }
-
 func NewStatusWithRevokeError(v string) Status {
 	return Status{
 		Sc:    StatusCode_REVOKE_ERROR,
 		F_1__: &v,
 	}
 }
-
 func NewStatusWithCommitmentError(v string) Status {
 	return Status{
 		Sc:    StatusCode_COMMITMENT_ERROR,
 		F_1__: &v,
 	}
 }
-
 func NewStatusWithYubiError(v string) Status {
 	return Status{
 		Sc:    StatusCode_YUBI_ERROR,
 		F_1__: &v,
 	}
 }
-
 func NewStatusWithHostchainError(v string) Status {
 	return Status{
 		Sc:    StatusCode_HOSTCHAIN_ERROR,
 		F_1__: &v,
 	}
 }
-
 func NewStatusWithGrantError(v string) Status {
 	return Status{
 		Sc:    StatusCode_GRANT_ERROR,
 		F_1__: &v,
 	}
 }
-
 func NewStatusWithNoChangeError(v string) Status {
 	return Status{
 		Sc:    StatusCode_NO_CHANGE_ERROR,
 		F_1__: &v,
 	}
 }
-
 func NewStatusWithBadArgsError(v string) Status {
 	return Status{
 		Sc:    StatusCode_BAD_ARGS_ERROR,
 		F_1__: &v,
 	}
 }
-
 func NewStatusWithKeyNotFoundError(v string) Status {
 	return Status{
 		Sc:    StatusCode_KEY_NOT_FOUND_ERROR,
 		F_1__: &v,
 	}
 }
-
 func NewStatusWithProtoDataError(v string) Status {
 	return Status{
 		Sc:    StatusCode_PROTO_DATA_ERROR,
 		F_1__: &v,
 	}
 }
-
 func NewStatusWithHostMismatchError(v string) Status {
 	return Status{
 		Sc:    StatusCode_HOST_MISMATCH_ERROR,
 		F_1__: &v,
 	}
 }
-
 func NewStatusWithBadFormatError(v string) Status {
 	return Status{
 		Sc:    StatusCode_BAD_FORMAT_ERROR,
 		F_1__: &v,
 	}
 }
-
 func NewStatusWithAmbiguousError(v string) Status {
 	return Status{
 		Sc:    StatusCode_AMBIGUOUS_ERROR,
 		F_1__: &v,
 	}
 }
-
 func NewStatusWithRoleError(v string) Status {
 	return Status{
 		Sc:    StatusCode_ROLE_ERROR,
 		F_1__: &v,
 	}
 }
-
 func NewStatusWithRevokeRaceError(v string) Status {
 	return Status{
 		Sc:    StatusCode_REVOKE_RACE_ERROR,
 		F_1__: &v,
 	}
 }
-
 func NewStatusWithMerkleVerifyError(v string) Status {
 	return Status{
 		Sc:    StatusCode_MERKLE_VERIFY_ERROR,
 		F_1__: &v,
 	}
 }
-
 func NewStatusWithTeamError(v string) Status {
 	return Status{
 		Sc:    StatusCode_TEAM_ERROR,
 		F_1__: &v,
 	}
 }
-
 func NewStatusWithTeamRaceError(v string) Status {
 	return Status{
 		Sc:    StatusCode_TEAM_RACE_ERROR,
 		F_1__: &v,
 	}
 }
-
 func NewStatusWithTeamBearerTokenStaleError(v string) Status {
 	return Status{
 		Sc:    StatusCode_TEAM_BEARER_TOKEN_STALE_ERROR,
 		F_1__: &v,
 	}
 }
-
 func NewStatusWithTeamCertError(v string) Status {
 	return Status{
 		Sc:    StatusCode_TEAM_CERT_ERROR,
 		F_1__: &v,
 	}
 }
-
 func NewStatusWithTeamRosterError(v string) Status {
 	return Status{
 		Sc:    StatusCode_TEAM_ROSTER_ERROR,
 		F_1__: &v,
 	}
 }
-
 func NewStatusWithTeamKeyError(v string) Status {
 	return Status{
 		Sc:    StatusCode_TEAM_KEY_ERROR,
 		F_1__: &v,
 	}
 }
-
 func NewStatusWithTeamIndexRangeError(v string) Status {
 	return Status{
 		Sc:    StatusCode_TEAM_INDEX_RANGE_ERROR,
 		F_1__: &v,
 	}
 }
-
 func NewStatusWithTeamRemovalKeyError(v string) Status {
 	return Status{
 		Sc:    StatusCode_TEAM_REMOVAL_KEY_ERROR,
 		F_1__: &v,
 	}
 }
-
 func NewStatusWithTeamExploreError(v string) Status {
 	return Status{
 		Sc:    StatusCode_TEAM_EXPLORE_ERROR,
 		F_1__: &v,
 	}
 }
-
 func NewStatusWithGenericNotFoundError(v string) Status {
 	return Status{
 		Sc:    StatusCode_GENERIC_NOT_FOUND_ERROR,
 		F_1__: &v,
 	}
 }
-
 func NewStatusWithKvUploadError(v string) Status {
 	return Status{
 		Sc:    StatusCode_KV_UPLOAD_ERROR,
 		F_1__: &v,
 	}
 }
-
 func NewStatusWithKvRaceError(v string) Status {
 	return Status{
 		Sc:    StatusCode_KV_RACE_ERROR,
 		F_1__: &v,
 	}
 }
-
 func NewStatusWithKvPathError(v string) Status {
 	return Status{
 		Sc:    StatusCode_KV_PATH_ERROR,
 		F_1__: &v,
 	}
 }
-
 func NewStatusWithKvMkdirError(v string) Status {
 	return Status{
 		Sc:    StatusCode_KV_MKDIR_ERROR,
 		F_1__: &v,
 	}
 }
-
 func NewStatusWithKvTypeError(v string) Status {
 	return Status{
 		Sc:    StatusCode_KV_TYPE_ERROR,
 		F_1__: &v,
 	}
 }
-
 func NewStatusWithKvNoentError(v string) Status {
 	return Status{
 		Sc:    StatusCode_KV_NOENT_ERROR,
 		F_1__: &v,
 	}
 }
-
 func NewStatusWithGitGenericError(v string) Status {
 	return Status{
 		Sc:    StatusCode_GIT_GENERIC_ERROR,
 		F_1__: &v,
 	}
 }
-
 func NewStatusWithGitBadPathError(v string) Status {
 	return Status{
 		Sc:    StatusCode_GIT_BAD_PATH_ERROR,
 		F_1__: &v,
 	}
 }
-
 func NewStatusWithUpgradeNeededError(v string) Status {
 	return Status{
 		Sc:    StatusCode_UPGRADE_NEEDED_ERROR,
 		F_1__: &v,
 	}
 }
-
 func NewStatusWithVersionNotSupportedError(v string) Status {
 	return Status{
 		Sc:    StatusCode_VERSION_NOT_SUPPORTED_ERROR,
 		F_1__: &v,
 	}
 }
-
 func NewStatusWithHostInUseError(v string) Status {
 	return Status{
 		Sc:    StatusCode_HOST_IN_USE_ERROR,
 		F_1__: &v,
 	}
 }
-
 func NewStatusWithOauth2Error(v string) Status {
 	return Status{
 		Sc:    StatusCode_OAUTH2_ERROR,
 		F_1__: &v,
 	}
 }
-
 func NewStatusWithYubiBusError(v string) Status {
 	return Status{
 		Sc:    StatusCode_YUBI_BUS_ERROR,
 		F_1__: &v,
 	}
 }
-
 func NewStatusWithKeychainError(v string) Status {
 	return Status{
 		Sc:    StatusCode_KEYCHAIN_ERROR,
 		F_1__: &v,
 	}
 }
-
 func NewStatusWithAgentConnectError(v string) Status {
 	return Status{
 		Sc:    StatusCode_AGENT_CONNECT_ERROR,
 		F_1__: &v,
 	}
 }
-
 func NewStatusWithProtoNotFoundError(v uint64) Status {
 	return Status{
 		Sc:    StatusCode_PROTO_NOT_FOUND_ERROR,
 		F_2__: &v,
 	}
 }
-
 func NewStatusWithMethodNotFoundError(v MethodV2) Status {
 	return Status{
 		Sc:    StatusCode_METHOD_NOT_FOUND_ERROR,
 		F_3__: &v,
 	}
 }
-
 func NewStatusWithKexWrapperError(v Status) Status {
 	return Status{
 		Sc:    StatusCode_KEX_WRAPPER_ERROR,
 		F_4__: &v,
 	}
 }
-
 func NewStatusWithAutocertFailedError(v Status) Status {
 	return Status{
 		Sc:    StatusCode_AUTOCERT_FAILED_ERROR,
 		F_4__: &v,
 	}
 }
-
 func NewStatusWithOauth2AuthError(v Status) Status {
 	return Status{
 		Sc:    StatusCode_OAUTH2_AUTH_ERROR,
 		F_4__: &v,
 	}
 }
-
 func NewStatusWithYubiLockedError(v YubiKeyInfoHybrid) Status {
 	return Status{
 		Sc:    StatusCode_YUBI_LOCKED_ERROR,
 		F_5__: &v,
 	}
 }
-
 func NewStatusWithHostPinError(v HostPinError) Status {
 	return Status{
 		Sc:    StatusCode_HOST_PIN_ERROR,
 		F_6__: &v,
 	}
 }
-
 func NewStatusWithSecretKeyStorageTypeError(v SecretKeyStorageType) Status {
 	return Status{
 		Sc:    StatusCode_SECRET_KEY_STORAGE_TYPE_ERROR,
 		F_7__: &v,
 	}
 }
-
 func NewStatusWithChainLoaderError(v ChainLoaderError) Status {
 	return Status{
 		Sc:    StatusCode_CHAIN_LOADER_ERROR,
 		F_8__: &v,
 	}
 }
-
 func NewStatusWithTeamPtkNotFoundError(v SharedKeyNotFound) Status {
 	return Status{
 		Sc:    StatusCode_TEAM_PTK_NOT_FOUND_ERROR,
 		F_9__: &v,
 	}
 }
-
 func NewStatusWithKvPermError(v KVPermError) Status {
 	return Status{
 		Sc:     StatusCode_KV_PERM_ERROR,
 		F_10__: &v,
 	}
 }
-
 func NewStatusWithKvStaleCacheError(v PathVersionVector) Status {
 	return Status{
 		Sc:     StatusCode_KV_STALE_CACHE_ERROR,
 		F_11__: &v,
 	}
 }
-
 func NewStatusWithSessionNotFoundError(v UISessionID) Status {
 	return Status{
 		Sc:     StatusCode_SESSION_NOT_FOUND_ERROR,
 		F_12__: &v,
 	}
 }
-
 func NewStatusWithTeamCycleError(v TeamCycleError) Status {
 	return Status{
 		Sc:     StatusCode_TEAM_CYCLE_ERROR,
 		F_13__: &v,
 	}
 }
-
 func NewStatusWithKvTooBigError(v TooBigError) Status {
 	return Status{
 		Sc:     StatusCode_KV_TOO_BIG_ERROR,
 		F_14__: &v,
 	}
 }
-
 func NewStatusWithConnectError(v ConnectError) Status {
 	return Status{
 		Sc:     StatusCode_CONNECT_ERROR,
 		F_15__: &v,
 	}
 }
-
 func NewStatusWithHttpError(v HttpError) Status {
 	return Status{
 		Sc:     StatusCode_HTTP_ERROR,
 		F_16__: &v,
 	}
 }
-
 func NewStatusWithDnsError(v DNSError) Status {
 	return Status{
 		Sc:     StatusCode_DNS_ERROR,
 		F_17__: &v,
 	}
 }
-
 func NewStatusWithSocketError(v SocketError) Status {
 	return Status{
 		Sc:     StatusCode_SOCKET_ERROR,
 		F_18__: &v,
 	}
 }
-
 func NewStatusWithOauth2TokenError(v OAuth2TokenError) Status {
 	return Status{
 		Sc:     StatusCode_OAUTH2_TOKEN_ERROR,
 		F_19__: &v,
 	}
 }
-
 func NewStatusWithOauth2IdpError(v OAuth2IdPError) Status {
 	return Status{
 		Sc:     StatusCode_OAUTH2_IDP_ERROR,
 		F_20__: &v,
 	}
 }
-
 func NewStatusWithYubiAuthError(v int64) Status {
 	return Status{
 		Sc:     StatusCode_YUBI_AUTH_ERROR,
 		F_21__: &v,
 	}
 }
-
 func NewStatusDefault(s StatusCode, v string) Status {
 	return Status{
 		Sc:    s,
 		F_0__: &v,
 	}
 }
-
 func (s StatusInternal__) Import() Status {
 	return Status{
 		Sc:    s.Sc,
@@ -3183,7 +2929,6 @@ func (s StatusInternal__) Import() Status {
 		F_0__:  s.Switch__.F_0__,
 	}
 }
-
 func (s Status) Export() *StatusInternal__ {
 	return &StatusInternal__{
 		Sc: s.Sc,
@@ -3303,7 +3048,6 @@ func (s Status) Export() *StatusInternal__ {
 		},
 	}
 }
-
 func (s *Status) Encode(enc rpc.Encoder) error {
 	return enc.Encode(s.Export())
 }

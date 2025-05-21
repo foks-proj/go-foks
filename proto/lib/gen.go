@@ -5,5 +5,5 @@
 
 package lib
 
-//go:generate ../../node_modules/.bin/snowpc -l go -p lib -d ../../proto-src/lib -D .
+//go:generate go tool github.com/foks-proj/go-snowpack-compiler/snowpc -l go -p lib -I ../../proto-src/lib -O . -v
 //go:generate go fmt .

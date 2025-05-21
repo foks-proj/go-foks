@@ -1,5 +1,5 @@
-// Auto-generated to Go types and interfaces using @foks-proj/snowpack-compiler 1.0.8 (git+https://github.com/foks-proj/node-snowpack-compiler.git)
-//  Input file: ../../proto-src/rem/probe.snowp
+// Auto-generated to Go types and interfaces using snowpc 0.0.4 (https://github.com/foks-proj/go-snowpack-compiler)
+//  Input file:../../proto-src/rem/probe.snowp
 
 package rem
 
@@ -17,7 +17,6 @@ type ProbeRes struct {
 	Zone       lib.SignedPublicZone
 	Hostchain  []lib.HostchainLinkOuter
 }
-
 type ProbeResInternal__ struct {
 	_struct    struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	MerkleRoot *lib.SignedMerkleRootInternal__
@@ -59,7 +58,6 @@ func (p ProbeResInternal__) Import() ProbeRes {
 		})(p.Hostchain),
 	}
 }
-
 func (p ProbeRes) Export() *ProbeResInternal__ {
 	return &ProbeResInternal__{
 		MerkleRoot: p.MerkleRoot.Export(),
@@ -76,7 +74,6 @@ func (p ProbeRes) Export() *ProbeResInternal__ {
 		})(p.Hostchain),
 	}
 }
-
 func (p *ProbeRes) Encode(enc rpc.Encoder) error {
 	return enc.Encode(p.Export())
 }
@@ -96,7 +93,6 @@ var ProbeResTypeUniqueID = rpc.TypeUniqueID(0xe5d58d6f85e92a64)
 func (p *ProbeRes) GetTypeUniqueID() rpc.TypeUniqueID {
 	return ProbeResTypeUniqueID
 }
-
 func (p *ProbeRes) Bytes() []byte { return nil }
 
 var ProbeProtocolID rpc.ProtocolUniqueID = rpc.ProtocolUniqueID(0xc5884ff6)
@@ -106,7 +102,6 @@ type ProbeArg struct {
 	HostchainLastSeqno lib.Seqno
 	HostID             *lib.HostID
 }
-
 type ProbeArgInternal__ struct {
 	_struct            struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Hostname           *lib.HostnameInternal__
@@ -142,7 +137,6 @@ func (p ProbeArgInternal__) Import() ProbeArg {
 		})(p.HostID),
 	}
 }
-
 func (p ProbeArg) Export() *ProbeArgInternal__ {
 	return &ProbeArgInternal__{
 		Hostname:           p.Hostname.Export(),
@@ -155,7 +149,6 @@ func (p ProbeArg) Export() *ProbeArgInternal__ {
 		})(p.HostID),
 	}
 }
-
 func (p *ProbeArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(p.Export())
 }
@@ -176,7 +169,6 @@ type ProbeInterface interface {
 	Probe(context.Context, ProbeArg) (ProbeRes, error)
 	ErrorWrapper() func(error) lib.Status
 	CheckArgHeader(ctx context.Context, h lib.Header) error
-
 	MakeResHeader() lib.Header
 }
 
@@ -203,7 +195,7 @@ func (p probeErrorUnwrapperAdapter) MakeArg() interface{} {
 func (p probeErrorUnwrapperAdapter) UnwrapError(raw interface{}) (appError error, dispatchError error) {
 	sTmp, ok := raw.(*lib.StatusInternal__)
 	if !ok {
-		return nil, errors.New("Error converting to internal type in UnwrapError")
+		return nil, errors.New("error converting to internal type in UnwrapError")
 	}
 	if sTmp == nil {
 		return nil, nil
@@ -241,7 +233,6 @@ func (c ProbeClient) Probe(ctx context.Context, arg ProbeArg) (res ProbeRes, err
 	res = tmp.Data.Import()
 	return
 }
-
 func ProbeProtocol(i ProbeInterface) rpc.ProtocolV2 {
 	return rpc.ProtocolV2{
 		Name: "Probe",

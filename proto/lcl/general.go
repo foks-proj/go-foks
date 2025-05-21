@@ -1,5 +1,5 @@
-// Auto-generated to Go types and interfaces using @foks-proj/snowpack-compiler 1.0.8 (git+https://github.com/foks-proj/node-snowpack-compiler.git)
-//  Input file: ../../proto-src/lcl/general.snowp
+// Auto-generated to Go types and interfaces using snowpc 0.0.4 (https://github.com/foks-proj/go-snowpack-compiler)
+//  Input file:../../proto-src/lcl/general.snowp
 
 package lcl
 
@@ -17,7 +17,6 @@ type HostStatusPair struct {
 	Host   lib.TCPAddr
 	Status lib.Status
 }
-
 type HostStatusPairInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Host    *lib.TCPAddrInternal__
@@ -40,14 +39,12 @@ func (h HostStatusPairInternal__) Import() HostStatusPair {
 		})(h.Status),
 	}
 }
-
 func (h HostStatusPair) Export() *HostStatusPairInternal__ {
 	return &HostStatusPairInternal__{
 		Host:   h.Host.Export(),
 		Status: h.Status.Export(),
 	}
 }
-
 func (h *HostStatusPair) Encode(enc rpc.Encoder) error {
 	return enc.Encode(h.Export())
 }
@@ -68,7 +65,6 @@ type GetDefaultServerRes struct {
 	BigTop HostStatusPair
 	Mgmt   *HostStatusPair
 }
-
 type GetDefaultServerResInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	BigTop  *HostStatusPairInternal__
@@ -97,7 +93,6 @@ func (g GetDefaultServerResInternal__) Import() GetDefaultServerRes {
 		})(g.Mgmt),
 	}
 }
-
 func (g GetDefaultServerRes) Export() *GetDefaultServerResInternal__ {
 	return &GetDefaultServerResInternal__{
 		BigTop: g.BigTop.Export(),
@@ -109,7 +104,6 @@ func (g GetDefaultServerRes) Export() *GetDefaultServerResInternal__ {
 		})(g.Mgmt),
 	}
 }
-
 func (g *GetDefaultServerRes) Encode(enc rpc.Encoder) error {
 	return enc.Encode(g.Export())
 }
@@ -130,7 +124,6 @@ type DeviceNagInfo struct {
 	DoNag      bool
 	NumDevices uint64
 }
-
 type DeviceNagInfoInternal__ struct {
 	_struct    struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	DoNag      *bool
@@ -153,14 +146,12 @@ func (d DeviceNagInfoInternal__) Import() DeviceNagInfo {
 		})(d.NumDevices),
 	}
 }
-
 func (d DeviceNagInfo) Export() *DeviceNagInfoInternal__ {
 	return &DeviceNagInfoInternal__{
 		DoNag:      &d.DoNag,
 		NumDevices: &d.NumDevices,
 	}
 }
-
 func (d *DeviceNagInfo) Encode(enc rpc.Encoder) error {
 	return enc.Encode(d.Export())
 }
@@ -181,7 +172,6 @@ type CliVersionPair struct {
 	Cli   lib.SemVer
 	Agent lib.SemVer
 }
-
 type CliVersionPairInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Cli     *lib.SemVerInternal__
@@ -204,14 +194,12 @@ func (c CliVersionPairInternal__) Import() CliVersionPair {
 		})(c.Agent),
 	}
 }
-
 func (c CliVersionPair) Export() *CliVersionPairInternal__ {
 	return &CliVersionPairInternal__{
 		Cli:   c.Cli.Export(),
 		Agent: c.Agent.Export(),
 	}
 }
-
 func (c *CliVersionPair) Encode(enc rpc.Encoder) error {
 	return enc.Encode(c.Export())
 }
@@ -232,7 +220,6 @@ type UpgradeNagInfo struct {
 	Agent  lib.SemVer
 	Server lib.ServerClientVersionInfo
 }
-
 type UpgradeNagInfoInternal__ struct {
 	_struct     struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Deprecated0 *struct{}
@@ -256,14 +243,12 @@ func (u UpgradeNagInfoInternal__) Import() UpgradeNagInfo {
 		})(u.Server),
 	}
 }
-
 func (u UpgradeNagInfo) Export() *UpgradeNagInfoInternal__ {
 	return &UpgradeNagInfoInternal__{
 		Agent:  u.Agent.Export(),
 		Server: u.Server.Export(),
 	}
 }
-
 func (u *UpgradeNagInfo) Encode(enc rpc.Encoder) error {
 	return enc.Encode(u.Export())
 }
@@ -297,7 +282,6 @@ var NagTypeMap = map[string]NagType{
 	"ClientVersionUpgradeAvailable": 3,
 	"ClientVersionClash":            4,
 }
-
 var NagTypeRevMap = map[NagType]string{
 	0: "None",
 	1: "TooFewDevices",
@@ -311,7 +295,6 @@ type NagTypeInternal__ NagType
 func (n NagTypeInternal__) Import() NagType {
 	return NagType(n)
 }
-
 func (n NagType) Export() *NagTypeInternal__ {
 	return ((*NagTypeInternal__)(&n))
 }
@@ -322,13 +305,11 @@ type UnifiedNag struct {
 	F_2__ *UpgradeNagInfo `json:"f2,omitempty"`
 	F_3__ *CliVersionPair `json:"f3,omitempty"`
 }
-
 type UnifiedNagInternal__ struct {
 	_struct  struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	T        NagType
 	Switch__ UnifiedNagInternalSwitch__
 }
-
 type UnifiedNagInternalSwitch__ struct {
 	_struct struct{}                  `codec:",omitempty"` //lint:ignore U1000 msgpack internal field
 	F_1__   *DeviceNagInfoInternal__  `codec:"1"`
@@ -353,75 +334,66 @@ func (u UnifiedNag) GetT() (ret NagType, err error) {
 	}
 	return u.T, nil
 }
-
 func (u UnifiedNag) Toofewdevices() DeviceNagInfo {
 	if u.F_1__ == nil {
-		panic("unexepected nil case; should have been checked")
+		panic("unexpected nil case; should have been checked")
 	}
 	if u.T != NagType_TooFewDevices {
 		panic(fmt.Sprintf("unexpected switch value (%v) when Toofewdevices is called", u.T))
 	}
 	return *u.F_1__
 }
-
 func (u UnifiedNag) Clientversioncritical() UpgradeNagInfo {
 	if u.F_2__ == nil {
-		panic("unexepected nil case; should have been checked")
+		panic("unexpected nil case; should have been checked")
 	}
 	if u.T != NagType_ClientVersionCritical {
 		panic(fmt.Sprintf("unexpected switch value (%v) when Clientversioncritical is called", u.T))
 	}
 	return *u.F_2__
 }
-
 func (u UnifiedNag) Clientversionupgradeavailable() UpgradeNagInfo {
 	if u.F_2__ == nil {
-		panic("unexepected nil case; should have been checked")
+		panic("unexpected nil case; should have been checked")
 	}
 	if u.T != NagType_ClientVersionUpgradeAvailable {
 		panic(fmt.Sprintf("unexpected switch value (%v) when Clientversionupgradeavailable is called", u.T))
 	}
 	return *u.F_2__
 }
-
 func (u UnifiedNag) Clientversionclash() CliVersionPair {
 	if u.F_3__ == nil {
-		panic("unexepected nil case; should have been checked")
+		panic("unexpected nil case; should have been checked")
 	}
 	if u.T != NagType_ClientVersionClash {
 		panic(fmt.Sprintf("unexpected switch value (%v) when Clientversionclash is called", u.T))
 	}
 	return *u.F_3__
 }
-
 func NewUnifiedNagWithToofewdevices(v DeviceNagInfo) UnifiedNag {
 	return UnifiedNag{
 		T:     NagType_TooFewDevices,
 		F_1__: &v,
 	}
 }
-
 func NewUnifiedNagWithClientversioncritical(v UpgradeNagInfo) UnifiedNag {
 	return UnifiedNag{
 		T:     NagType_ClientVersionCritical,
 		F_2__: &v,
 	}
 }
-
 func NewUnifiedNagWithClientversionupgradeavailable(v UpgradeNagInfo) UnifiedNag {
 	return UnifiedNag{
 		T:     NagType_ClientVersionUpgradeAvailable,
 		F_2__: &v,
 	}
 }
-
 func NewUnifiedNagWithClientversionclash(v CliVersionPair) UnifiedNag {
 	return UnifiedNag{
 		T:     NagType_ClientVersionClash,
 		F_3__: &v,
 	}
 }
-
 func (u UnifiedNagInternal__) Import() UnifiedNag {
 	return UnifiedNag{
 		T: u.T,
@@ -463,7 +435,6 @@ func (u UnifiedNagInternal__) Import() UnifiedNag {
 		})(u.Switch__.F_3__),
 	}
 }
-
 func (u UnifiedNag) Export() *UnifiedNagInternal__ {
 	return &UnifiedNagInternal__{
 		T: u.T,
@@ -489,7 +460,6 @@ func (u UnifiedNag) Export() *UnifiedNagInternal__ {
 		},
 	}
 }
-
 func (u *UnifiedNag) Encode(enc rpc.Encoder) error {
 	return enc.Encode(u.Export())
 }
@@ -509,7 +479,6 @@ func (u *UnifiedNag) Bytes() []byte { return nil }
 type UnifiedNagRes struct {
 	Nags []UnifiedNag
 }
-
 type UnifiedNagResInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Nags    *[](*UnifiedNagInternal__)
@@ -537,7 +506,6 @@ func (u UnifiedNagResInternal__) Import() UnifiedNagRes {
 		})(u.Nags),
 	}
 }
-
 func (u UnifiedNagRes) Export() *UnifiedNagResInternal__ {
 	return &UnifiedNagResInternal__{
 		Nags: (func(x []UnifiedNag) *[](*UnifiedNagInternal__) {
@@ -552,7 +520,6 @@ func (u UnifiedNagRes) Export() *UnifiedNagResInternal__ {
 		})(u.Nags),
 	}
 }
-
 func (u *UnifiedNagRes) Encode(enc rpc.Encoder) error {
 	return enc.Encode(u.Export())
 }
@@ -584,7 +551,6 @@ var RegServerTypeMap = map[string]RegServerType{
 	"Mgmt":    2,
 	"Custom":  3,
 }
-
 var RegServerTypeRevMap = map[RegServerType]string{
 	0: "None",
 	1: "Default",
@@ -597,7 +563,6 @@ type RegServerTypeInternal__ RegServerType
 func (r RegServerTypeInternal__) Import() RegServerType {
 	return RegServerType(r)
 }
-
 func (r RegServerType) Export() *RegServerTypeInternal__ {
 	return ((*RegServerTypeInternal__)(&r))
 }
@@ -607,7 +572,6 @@ var GeneralProtocolID rpc.ProtocolUniqueID = rpc.ProtocolUniqueID(0xf6cc941b)
 type ClientProbeArg struct {
 	Addr lib.TCPAddr
 }
-
 type ClientProbeArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Addr    *lib.TCPAddrInternal__
@@ -623,13 +587,11 @@ func (c ClientProbeArgInternal__) Import() ClientProbeArg {
 		})(c.Addr),
 	}
 }
-
 func (c ClientProbeArg) Export() *ClientProbeArgInternal__ {
 	return &ClientProbeArgInternal__{
 		Addr: c.Addr.Export(),
 	}
 }
-
 func (c *ClientProbeArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(c.Export())
 }
@@ -649,7 +611,6 @@ func (c *ClientProbeArg) Bytes() []byte { return nil }
 type NewSessionArg struct {
 	SessionType lib.UISessionType
 }
-
 type NewSessionArgInternal__ struct {
 	_struct     struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	SessionType *lib.UISessionTypeInternal__
@@ -665,13 +626,11 @@ func (n NewSessionArgInternal__) Import() NewSessionArg {
 		})(n.SessionType),
 	}
 }
-
 func (n NewSessionArg) Export() *NewSessionArgInternal__ {
 	return &NewSessionArgInternal__{
 		SessionType: n.SessionType.Export(),
 	}
 }
-
 func (n *NewSessionArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(n.Export())
 }
@@ -691,7 +650,6 @@ func (n *NewSessionArg) Bytes() []byte { return nil }
 type FinishSessionArg struct {
 	SessionId lib.UISessionID
 }
-
 type FinishSessionArgInternal__ struct {
 	_struct   struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	SessionId *lib.UISessionIDInternal__
@@ -707,13 +665,11 @@ func (f FinishSessionArgInternal__) Import() FinishSessionArg {
 		})(f.SessionId),
 	}
 }
-
 func (f FinishSessionArg) Export() *FinishSessionArgInternal__ {
 	return &FinishSessionArgInternal__{
 		SessionId: f.SessionId.Export(),
 	}
 }
-
 func (f *FinishSessionArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(f.Export())
 }
@@ -734,7 +690,6 @@ type GetDefaultServerArg struct {
 	SessionId lib.UISessionID
 	Timeout   lib.DurationMilli
 }
-
 type GetDefaultServerArgInternal__ struct {
 	_struct   struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	SessionId *lib.UISessionIDInternal__
@@ -757,14 +712,12 @@ func (g GetDefaultServerArgInternal__) Import() GetDefaultServerArg {
 		})(g.Timeout),
 	}
 }
-
 func (g GetDefaultServerArg) Export() *GetDefaultServerArgInternal__ {
 	return &GetDefaultServerArgInternal__{
 		SessionId: g.SessionId.Export(),
 		Timeout:   g.Timeout.Export(),
 	}
 }
-
 func (g *GetDefaultServerArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(g.Export())
 }
@@ -787,7 +740,6 @@ type PutServerArg struct {
 	Timeout   lib.DurationMilli
 	Typ       RegServerType
 }
-
 type PutServerArgInternal__ struct {
 	_struct   struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	SessionId *lib.UISessionIDInternal__
@@ -830,7 +782,6 @@ func (p PutServerArgInternal__) Import() PutServerArg {
 		})(p.Typ),
 	}
 }
-
 func (p PutServerArg) Export() *PutServerArgInternal__ {
 	return &PutServerArgInternal__{
 		SessionId: p.SessionId.Export(),
@@ -844,7 +795,6 @@ func (p PutServerArg) Export() *PutServerArgInternal__ {
 		Typ:     p.Typ.Export(),
 	}
 }
-
 func (p *PutServerArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(p.Export())
 }
@@ -863,7 +813,6 @@ func (p *PutServerArg) Bytes() []byte { return nil }
 
 type GetActiveUserArg struct {
 }
-
 type GetActiveUserArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 }
@@ -871,11 +820,9 @@ type GetActiveUserArgInternal__ struct {
 func (g GetActiveUserArgInternal__) Import() GetActiveUserArg {
 	return GetActiveUserArg{}
 }
-
 func (g GetActiveUserArg) Export() *GetActiveUserArgInternal__ {
 	return &GetActiveUserArgInternal__{}
 }
-
 func (g *GetActiveUserArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(g.Export())
 }
@@ -895,7 +842,6 @@ func (g *GetActiveUserArg) Bytes() []byte { return nil }
 type ClearDeviceNagArg struct {
 	Val bool
 }
-
 type ClearDeviceNagArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Val     *bool
@@ -911,13 +857,11 @@ func (c ClearDeviceNagArgInternal__) Import() ClearDeviceNagArg {
 		})(c.Val),
 	}
 }
-
 func (c ClearDeviceNagArg) Export() *ClearDeviceNagArgInternal__ {
 	return &ClearDeviceNagArgInternal__{
 		Val: &c.Val,
 	}
 }
-
 func (c *ClearDeviceNagArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(c.Export())
 }
@@ -938,7 +882,6 @@ type GetUnifiedNagsArg struct {
 	WithRateLimit bool
 	Cv            lib.ClientVersionExt
 }
-
 type GetUnifiedNagsArgInternal__ struct {
 	_struct       struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	WithRateLimit *bool
@@ -961,14 +904,12 @@ func (g GetUnifiedNagsArgInternal__) Import() GetUnifiedNagsArg {
 		})(g.Cv),
 	}
 }
-
 func (g GetUnifiedNagsArg) Export() *GetUnifiedNagsArgInternal__ {
 	return &GetUnifiedNagsArgInternal__{
 		WithRateLimit: &g.WithRateLimit,
 		Cv:            g.Cv.Export(),
 	}
 }
-
 func (g *GetUnifiedNagsArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(g.Export())
 }
@@ -989,7 +930,6 @@ type SnoozeUpgradeNagArg struct {
 	Val bool
 	Dur lib.DurationSecs
 }
-
 type SnoozeUpgradeNagArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Val     *bool
@@ -1012,14 +952,12 @@ func (s SnoozeUpgradeNagArgInternal__) Import() SnoozeUpgradeNagArg {
 		})(s.Dur),
 	}
 }
-
 func (s SnoozeUpgradeNagArg) Export() *SnoozeUpgradeNagArgInternal__ {
 	return &SnoozeUpgradeNagArgInternal__{
 		Val: &s.Val,
 		Dur: s.Dur.Export(),
 	}
 }
-
 func (s *SnoozeUpgradeNagArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(s.Export())
 }
@@ -1048,7 +986,6 @@ type GeneralInterface interface {
 	SnoozeUpgradeNag(context.Context, SnoozeUpgradeNagArg) error
 	ErrorWrapper() func(error) lib.Status
 	CheckArgHeader(ctx context.Context, h Header) error
-
 	MakeResHeader() Header
 }
 
@@ -1075,7 +1012,7 @@ func (g generalErrorUnwrapperAdapter) MakeArg() interface{} {
 func (g generalErrorUnwrapperAdapter) UnwrapError(raw interface{}) (appError error, dispatchError error) {
 	sTmp, ok := raw.(*lib.StatusInternal__)
 	if !ok {
-		return nil, errors.New("Error converting to internal type in UnwrapError")
+		return nil, errors.New("error converting to internal type in UnwrapError")
 	}
 	if sTmp == nil {
 		return nil, nil
@@ -1116,7 +1053,6 @@ func (c GeneralClient) Probe(ctx context.Context, addr lib.TCPAddr) (res lib.Pub
 	res = tmp.Data.Import()
 	return
 }
-
 func (c GeneralClient) NewSession(ctx context.Context, sessionType lib.UISessionType) (res lib.UISessionID, err error) {
 	arg := NewSessionArg{
 		SessionType: sessionType,
@@ -1141,7 +1077,6 @@ func (c GeneralClient) NewSession(ctx context.Context, sessionType lib.UISession
 	res = tmp.Data.Import()
 	return
 }
-
 func (c GeneralClient) FinishSession(ctx context.Context, sessionId lib.UISessionID) (err error) {
 	arg := FinishSessionArg{
 		SessionId: sessionId,
@@ -1165,7 +1100,6 @@ func (c GeneralClient) FinishSession(ctx context.Context, sessionId lib.UISessio
 	}
 	return
 }
-
 func (c GeneralClient) GetDefaultServer(ctx context.Context, arg GetDefaultServerArg) (res GetDefaultServerRes, err error) {
 	warg := &rpc.DataWrap[Header, *GetDefaultServerArgInternal__]{
 		Data: arg.Export(),
@@ -1187,7 +1121,6 @@ func (c GeneralClient) GetDefaultServer(ctx context.Context, arg GetDefaultServe
 	res = tmp.Data.Import()
 	return
 }
-
 func (c GeneralClient) PutServer(ctx context.Context, arg PutServerArg) (res lib.RegServerConfig, err error) {
 	warg := &rpc.DataWrap[Header, *PutServerArgInternal__]{
 		Data: arg.Export(),
@@ -1209,7 +1142,6 @@ func (c GeneralClient) PutServer(ctx context.Context, arg PutServerArg) (res lib
 	res = tmp.Data.Import()
 	return
 }
-
 func (c GeneralClient) GetActiveUser(ctx context.Context) (res lib.UserContext, err error) {
 	var arg GetActiveUserArg
 	warg := &rpc.DataWrap[Header, *GetActiveUserArgInternal__]{
@@ -1232,7 +1164,6 @@ func (c GeneralClient) GetActiveUser(ctx context.Context) (res lib.UserContext, 
 	res = tmp.Data.Import()
 	return
 }
-
 func (c GeneralClient) ClearDeviceNag(ctx context.Context, val bool) (err error) {
 	arg := ClearDeviceNagArg{
 		Val: val,
@@ -1256,7 +1187,6 @@ func (c GeneralClient) ClearDeviceNag(ctx context.Context, val bool) (err error)
 	}
 	return
 }
-
 func (c GeneralClient) GetUnifiedNags(ctx context.Context, arg GetUnifiedNagsArg) (res UnifiedNagRes, err error) {
 	warg := &rpc.DataWrap[Header, *GetUnifiedNagsArgInternal__]{
 		Data: arg.Export(),
@@ -1278,7 +1208,6 @@ func (c GeneralClient) GetUnifiedNags(ctx context.Context, arg GetUnifiedNagsArg
 	res = tmp.Data.Import()
 	return
 }
-
 func (c GeneralClient) SnoozeUpgradeNag(ctx context.Context, arg SnoozeUpgradeNagArg) (err error) {
 	warg := &rpc.DataWrap[Header, *SnoozeUpgradeNagArgInternal__]{
 		Data: arg.Export(),
@@ -1299,7 +1228,6 @@ func (c GeneralClient) SnoozeUpgradeNag(ctx context.Context, arg SnoozeUpgradeNa
 	}
 	return
 }
-
 func GeneralProtocol(i GeneralInterface) rpc.ProtocolV2 {
 	return rpc.ProtocolV2{
 		Name: "General",

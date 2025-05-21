@@ -1,5 +1,5 @@
-// Auto-generated to Go types and interfaces using @foks-proj/snowpack-compiler 1.0.8 (git+https://github.com/foks-proj/node-snowpack-compiler.git)
-//  Input file: ../../proto-src/lib/compat.snowp
+// Auto-generated to Go types and interfaces using snowpc 0.0.4 (https://github.com/foks-proj/go-snowpack-compiler)
+//  Input file:../../proto-src/lib/compat.snowp
 
 package lib
 
@@ -18,7 +18,6 @@ const (
 var HeaderVersionMap = map[string]HeaderVersion{
 	"V1": 1,
 }
-
 var HeaderVersionRevMap = map[HeaderVersion]string{
 	1: "V1",
 }
@@ -28,7 +27,6 @@ type HeaderVersionInternal__ HeaderVersion
 func (h HeaderVersionInternal__) Import() HeaderVersion {
 	return HeaderVersion(h)
 }
-
 func (h HeaderVersion) Export() *HeaderVersionInternal__ {
 	return ((*HeaderVersionInternal__)(&h))
 }
@@ -37,13 +35,11 @@ type Header struct {
 	V     HeaderVersion
 	F_1__ *HeaderV1 `json:"f1,omitempty"`
 }
-
 type HeaderInternal__ struct {
 	_struct  struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	V        HeaderVersion
 	Switch__ HeaderInternalSwitch__
 }
-
 type HeaderInternalSwitch__ struct {
 	_struct struct{}            `codec:",omitempty"` //lint:ignore U1000 msgpack internal field
 	F_1__   *HeaderV1Internal__ `codec:"1"`
@@ -58,24 +54,21 @@ func (h Header) GetV() (ret HeaderVersion, err error) {
 	}
 	return h.V, nil
 }
-
 func (h Header) V1() HeaderV1 {
 	if h.F_1__ == nil {
-		panic("unexepected nil case; should have been checked")
+		panic("unexpected nil case; should have been checked")
 	}
 	if h.V != HeaderVersion_V1 {
 		panic(fmt.Sprintf("unexpected switch value (%v) when V1 is called", h.V))
 	}
 	return *h.F_1__
 }
-
 func NewHeaderWithV1(v HeaderV1) Header {
 	return Header{
 		V:     HeaderVersion_V1,
 		F_1__: &v,
 	}
 }
-
 func (h HeaderInternal__) Import() Header {
 	return Header{
 		V: h.V,
@@ -93,7 +86,6 @@ func (h HeaderInternal__) Import() Header {
 		})(h.Switch__.F_1__),
 	}
 }
-
 func (h Header) Export() *HeaderInternal__ {
 	return &HeaderInternal__{
 		V: h.V,
@@ -107,7 +99,6 @@ func (h Header) Export() *HeaderInternal__ {
 		},
 	}
 }
-
 func (h *Header) Encode(enc rpc.Encoder) error {
 	return enc.Encode(h.Export())
 }
@@ -131,7 +122,6 @@ func (c CompatibilityVersion) Export() *CompatibilityVersionInternal__ {
 	tmp := ((uint64)(c))
 	return ((*CompatibilityVersionInternal__)(&tmp))
 }
-
 func (c CompatibilityVersionInternal__) Import() CompatibilityVersion {
 	tmp := (uint64)(c)
 	return CompatibilityVersion((func(x *uint64) (ret uint64) {
@@ -163,7 +153,6 @@ func (c CompatibilityVersion) Bytes() []byte {
 type HeaderV1 struct {
 	Vers CompatibilityVersion
 }
-
 type HeaderV1Internal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Vers    *CompatibilityVersionInternal__
@@ -179,13 +168,11 @@ func (h HeaderV1Internal__) Import() HeaderV1 {
 		})(h.Vers),
 	}
 }
-
 func (h HeaderV1) Export() *HeaderV1Internal__ {
 	return &HeaderV1Internal__{
 		Vers: h.Vers.Export(),
 	}
 }
-
 func (h *HeaderV1) Encode(enc rpc.Encoder) error {
 	return enc.Encode(h.Export())
 }
@@ -207,7 +194,6 @@ type SemVer struct {
 	Minor uint64
 	Patch uint64
 }
-
 type SemVerInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Major   *uint64
@@ -237,7 +223,6 @@ func (s SemVerInternal__) Import() SemVer {
 		})(s.Patch),
 	}
 }
-
 func (s SemVer) Export() *SemVerInternal__ {
 	return &SemVerInternal__{
 		Major: &s.Major,
@@ -245,7 +230,6 @@ func (s SemVer) Export() *SemVerInternal__ {
 		Patch: &s.Patch,
 	}
 }
-
 func (s *SemVer) Encode(enc rpc.Encoder) error {
 	return enc.Encode(s.Export())
 }
@@ -267,7 +251,6 @@ type ClientVersionExt struct {
 	LinkerVersion   string
 	LinkerPackaging string
 }
-
 type ClientVersionExtInternal__ struct {
 	_struct         struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Vers            *SemVerInternal__
@@ -297,7 +280,6 @@ func (c ClientVersionExtInternal__) Import() ClientVersionExt {
 		})(c.LinkerPackaging),
 	}
 }
-
 func (c ClientVersionExt) Export() *ClientVersionExtInternal__ {
 	return &ClientVersionExtInternal__{
 		Vers:            c.Vers.Export(),
@@ -305,7 +287,6 @@ func (c ClientVersionExt) Export() *ClientVersionExtInternal__ {
 		LinkerPackaging: &c.LinkerPackaging,
 	}
 }
-
 func (c *ClientVersionExt) Encode(enc rpc.Encoder) error {
 	return enc.Encode(c.Export())
 }
@@ -327,7 +308,6 @@ type ServerClientVersionInfo struct {
 	Newest *SemVer
 	Msg    string
 }
-
 type ServerClientVersionInfoInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Min     *SemVerInternal__
@@ -369,7 +349,6 @@ func (s ServerClientVersionInfoInternal__) Import() ServerClientVersionInfo {
 		})(s.Msg),
 	}
 }
-
 func (s ServerClientVersionInfo) Export() *ServerClientVersionInfoInternal__ {
 	return &ServerClientVersionInfoInternal__{
 		Min: (func(x *SemVer) *SemVerInternal__ {
@@ -387,7 +366,6 @@ func (s ServerClientVersionInfo) Export() *ServerClientVersionInfoInternal__ {
 		Msg: &s.Msg,
 	}
 }
-
 func (s *ServerClientVersionInfo) Encode(enc rpc.Encoder) error {
 	return enc.Encode(s.Export())
 }
@@ -409,7 +387,6 @@ type VersionBundle struct {
 	Agent  ClientVersionExt
 	Server ServerClientVersionInfo
 }
-
 type VersionBundleInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Cli     *ClientVersionExtInternal__
@@ -439,7 +416,6 @@ func (v VersionBundleInternal__) Import() VersionBundle {
 		})(v.Server),
 	}
 }
-
 func (v VersionBundle) Export() *VersionBundleInternal__ {
 	return &VersionBundleInternal__{
 		Cli:    v.Cli.Export(),
@@ -447,7 +423,6 @@ func (v VersionBundle) Export() *VersionBundleInternal__ {
 		Server: v.Server.Export(),
 	}
 }
-
 func (v *VersionBundle) Encode(enc rpc.Encoder) error {
 	return enc.Encode(v.Export())
 }

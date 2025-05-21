@@ -1,5 +1,5 @@
-// Auto-generated to Go types and interfaces using @foks-proj/snowpack-compiler 1.0.8 (git+https://github.com/foks-proj/node-snowpack-compiler.git)
-//  Input file: ../../proto-src/lib/merkle.snowp
+// Auto-generated to Go types and interfaces using snowpc 0.0.4 (https://github.com/foks-proj/go-snowpack-compiler)
+//  Input file:../../proto-src/lib/merkle.snowp
 
 package lib
 
@@ -22,7 +22,6 @@ var MerkleNodeTypeMap = map[string]MerkleNodeType{
 	"Leaf": 0,
 	"Node": 1,
 }
-
 var MerkleNodeTypeRevMap = map[MerkleNodeType]string{
 	0: "Leaf",
 	1: "Node",
@@ -33,7 +32,6 @@ type MerkleNodeTypeInternal__ MerkleNodeType
 func (m MerkleNodeTypeInternal__) Import() MerkleNodeType {
 	return MerkleNodeType(m)
 }
-
 func (m MerkleNodeType) Export() *MerkleNodeTypeInternal__ {
 	return ((*MerkleNodeTypeInternal__)(&m))
 }
@@ -45,7 +43,6 @@ func (m MerkleWorkID) Export() *MerkleWorkIDInternal__ {
 	tmp := (([]byte)(m))
 	return ((*MerkleWorkIDInternal__)(&tmp))
 }
-
 func (m MerkleWorkIDInternal__) Import() MerkleWorkID {
 	tmp := ([]byte)(m)
 	return MerkleWorkID((func(x *[]byte) (ret []byte) {
@@ -81,7 +78,6 @@ func (m MerkleEpno) Export() *MerkleEpnoInternal__ {
 	tmp := ((uint64)(m))
 	return ((*MerkleEpnoInternal__)(&tmp))
 }
-
 func (m MerkleEpnoInternal__) Import() MerkleEpno {
 	tmp := (uint64)(m)
 	return MerkleEpno((func(x *uint64) (ret uint64) {
@@ -117,7 +113,6 @@ func (m MerkleTreeRFOutput) Export() *MerkleTreeRFOutputInternal__ {
 	tmp := ((StdHash)(m))
 	return ((*MerkleTreeRFOutputInternal__)(tmp.Export()))
 }
-
 func (m MerkleTreeRFOutputInternal__) Import() MerkleTreeRFOutput {
 	tmp := (StdHashInternal__)(m)
 	return MerkleTreeRFOutput((func(x *StdHashInternal__) (ret StdHash) {
@@ -153,7 +148,6 @@ func (m MerkleNodeHash) Export() *MerkleNodeHashInternal__ {
 	tmp := ((StdHash)(m))
 	return ((*MerkleNodeHashInternal__)(tmp.Export()))
 }
-
 func (m MerkleNodeHashInternal__) Import() MerkleNodeHash {
 	tmp := (StdHashInternal__)(m)
 	return MerkleNodeHash((func(x *StdHashInternal__) (ret StdHash) {
@@ -189,7 +183,6 @@ func (m MerkleBackPointerHash) Export() *MerkleBackPointerHashInternal__ {
 	tmp := ((StdHash)(m))
 	return ((*MerkleBackPointerHashInternal__)(tmp.Export()))
 }
-
 func (m MerkleBackPointerHashInternal__) Import() MerkleBackPointerHash {
 	tmp := (StdHashInternal__)(m)
 	return MerkleBackPointerHash((func(x *StdHashInternal__) (ret StdHash) {
@@ -225,7 +218,6 @@ func (m MerkleRootHash) Export() *MerkleRootHashInternal__ {
 	tmp := ((StdHash)(m))
 	return ((*MerkleRootHashInternal__)(tmp.Export()))
 }
-
 func (m MerkleRootHashInternal__) Import() MerkleRootHash {
 	tmp := (StdHashInternal__)(m)
 	return MerkleRootHash((func(x *StdHashInternal__) (ret StdHash) {
@@ -271,7 +263,6 @@ var ChainTypeMap = map[string]ChainType{
 	"Team":           3,
 	"TeamMembership": 4,
 }
-
 var ChainTypeRevMap = map[ChainType]string{
 	0: "User",
 	1: "Name",
@@ -285,7 +276,6 @@ type ChainTypeInternal__ ChainType
 func (c ChainTypeInternal__) Import() ChainType {
 	return ChainType(c)
 }
-
 func (c ChainType) Export() *ChainTypeInternal__ {
 	return ((*ChainTypeInternal__)(&c))
 }
@@ -296,7 +286,6 @@ type MerkleTreeRFInput struct {
 	Seqno    Seqno
 	Location *TreeLocation
 }
-
 type MerkleTreeRFInputInternal__ struct {
 	_struct  struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Ct       *ChainTypeInternal__
@@ -339,7 +328,6 @@ func (m MerkleTreeRFInputInternal__) Import() MerkleTreeRFInput {
 		})(m.Location),
 	}
 }
-
 func (m MerkleTreeRFInput) Export() *MerkleTreeRFInputInternal__ {
 	return &MerkleTreeRFInputInternal__{
 		Ct:     m.Ct.Export(),
@@ -353,7 +341,6 @@ func (m MerkleTreeRFInput) Export() *MerkleTreeRFInputInternal__ {
 		})(m.Location),
 	}
 }
-
 func (m *MerkleTreeRFInput) Encode(enc rpc.Encoder) error {
 	return enc.Encode(m.Export())
 }
@@ -373,13 +360,11 @@ var MerkleTreeRFInputTypeUniqueID = rpc.TypeUniqueID(0xb0e268f388acc97a)
 func (m *MerkleTreeRFInput) GetTypeUniqueID() rpc.TypeUniqueID {
 	return MerkleTreeRFInputTypeUniqueID
 }
-
 func (m *MerkleTreeRFInput) Bytes() []byte { return nil }
 
 type MerkleNameInput struct {
 	Name Name
 }
-
 type MerkleNameInputInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Name    *NameInternal__
@@ -395,13 +380,11 @@ func (m MerkleNameInputInternal__) Import() MerkleNameInput {
 		})(m.Name),
 	}
 }
-
 func (m MerkleNameInput) Export() *MerkleNameInputInternal__ {
 	return &MerkleNameInputInternal__{
 		Name: m.Name.Export(),
 	}
 }
-
 func (m *MerkleNameInput) Encode(enc rpc.Encoder) error {
 	return enc.Encode(m.Export())
 }
@@ -421,13 +404,11 @@ var MerkleNameInputTypeUniqueID = rpc.TypeUniqueID(0x80ca15f6452ea908)
 func (m *MerkleNameInput) GetTypeUniqueID() rpc.TypeUniqueID {
 	return MerkleNameInputTypeUniqueID
 }
-
 func (m *MerkleNameInput) Bytes() []byte { return nil }
 
 type MerkleLeafUID struct {
 	Uid UID
 }
-
 type MerkleLeafUIDInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Uid     *UIDInternal__
@@ -443,13 +424,11 @@ func (m MerkleLeafUIDInternal__) Import() MerkleLeafUID {
 		})(m.Uid),
 	}
 }
-
 func (m MerkleLeafUID) Export() *MerkleLeafUIDInternal__ {
 	return &MerkleLeafUIDInternal__{
 		Uid: m.Uid.Export(),
 	}
 }
-
 func (m *MerkleLeafUID) Encode(enc rpc.Encoder) error {
 	return enc.Encode(m.Export())
 }
@@ -469,7 +448,6 @@ var MerkleLeafUIDTypeUniqueID = rpc.TypeUniqueID(0xa7d24a9f4fcadd6f)
 func (m *MerkleLeafUID) GetTypeUniqueID() rpc.TypeUniqueID {
 	return MerkleLeafUIDTypeUniqueID
 }
-
 func (m *MerkleLeafUID) Bytes() []byte { return nil }
 
 type MerkleInteriorNode struct {
@@ -479,7 +457,6 @@ type MerkleInteriorNode struct {
 	Left           MerkleNodeHash
 	Right          MerkleNodeHash
 }
-
 type MerkleInteriorNodeInternal__ struct {
 	_struct        struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	PrefixBitStart *uint64
@@ -523,7 +500,6 @@ func (m MerkleInteriorNodeInternal__) Import() MerkleInteriorNode {
 		})(m.Right),
 	}
 }
-
 func (m MerkleInteriorNode) Export() *MerkleInteriorNodeInternal__ {
 	return &MerkleInteriorNodeInternal__{
 		PrefixBitStart: &m.PrefixBitStart,
@@ -533,7 +509,6 @@ func (m MerkleInteriorNode) Export() *MerkleInteriorNodeInternal__ {
 		Right:          m.Right.Export(),
 	}
 }
-
 func (m *MerkleInteriorNode) Encode(enc rpc.Encoder) error {
 	return enc.Encode(m.Export())
 }
@@ -554,7 +529,6 @@ type MerkleLeaf struct {
 	Key   MerkleTreeRFOutput
 	Value StdHash
 }
-
 type MerkleLeafInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Key     *MerkleTreeRFOutputInternal__
@@ -577,14 +551,12 @@ func (m MerkleLeafInternal__) Import() MerkleLeaf {
 		})(m.Value),
 	}
 }
-
 func (m MerkleLeaf) Export() *MerkleLeafInternal__ {
 	return &MerkleLeafInternal__{
 		Key:   m.Key.Export(),
 		Value: m.Value.Export(),
 	}
 }
-
 func (m *MerkleLeaf) Encode(enc rpc.Encoder) error {
 	return enc.Encode(m.Export())
 }
@@ -606,13 +578,11 @@ type MerkleNode struct {
 	F_0__ *MerkleInteriorNode `json:"f0,omitempty"`
 	F_1__ *MerkleLeaf         `json:"f1,omitempty"`
 }
-
 type MerkleNodeInternal__ struct {
 	_struct  struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	T        MerkleNodeType
 	Switch__ MerkleNodeInternalSwitch__
 }
-
 type MerkleNodeInternalSwitch__ struct {
 	_struct struct{}                      `codec:",omitempty"` //lint:ignore U1000 msgpack internal field
 	F_0__   *MerkleInteriorNodeInternal__ `codec:"0"`
@@ -632,41 +602,36 @@ func (m MerkleNode) GetT() (ret MerkleNodeType, err error) {
 	}
 	return m.T, nil
 }
-
 func (m MerkleNode) Node() MerkleInteriorNode {
 	if m.F_0__ == nil {
-		panic("unexepected nil case; should have been checked")
+		panic("unexpected nil case; should have been checked")
 	}
 	if m.T != MerkleNodeType_Node {
 		panic(fmt.Sprintf("unexpected switch value (%v) when Node is called", m.T))
 	}
 	return *m.F_0__
 }
-
 func (m MerkleNode) Leaf() MerkleLeaf {
 	if m.F_1__ == nil {
-		panic("unexepected nil case; should have been checked")
+		panic("unexpected nil case; should have been checked")
 	}
 	if m.T != MerkleNodeType_Leaf {
 		panic(fmt.Sprintf("unexpected switch value (%v) when Leaf is called", m.T))
 	}
 	return *m.F_1__
 }
-
 func NewMerkleNodeWithNode(v MerkleInteriorNode) MerkleNode {
 	return MerkleNode{
 		T:     MerkleNodeType_Node,
 		F_0__: &v,
 	}
 }
-
 func NewMerkleNodeWithLeaf(v MerkleLeaf) MerkleNode {
 	return MerkleNode{
 		T:     MerkleNodeType_Leaf,
 		F_1__: &v,
 	}
 }
-
 func (m MerkleNodeInternal__) Import() MerkleNode {
 	return MerkleNode{
 		T: m.T,
@@ -696,7 +661,6 @@ func (m MerkleNodeInternal__) Import() MerkleNode {
 		})(m.Switch__.F_1__),
 	}
 }
-
 func (m MerkleNode) Export() *MerkleNodeInternal__ {
 	return &MerkleNodeInternal__{
 		T: m.T,
@@ -716,7 +680,6 @@ func (m MerkleNode) Export() *MerkleNodeInternal__ {
 		},
 	}
 }
-
 func (m *MerkleNode) Encode(enc rpc.Encoder) error {
 	return enc.Encode(m.Export())
 }
@@ -736,7 +699,6 @@ var MerkleNodeTypeUniqueID = rpc.TypeUniqueID(0xe941750dc5b96783)
 func (m *MerkleNode) GetTypeUniqueID() rpc.TypeUniqueID {
 	return MerkleNodeTypeUniqueID
 }
-
 func (m *MerkleNode) Bytes() []byte { return nil }
 
 type MerkleRootVersion int
@@ -748,7 +710,6 @@ const (
 var MerkleRootVersionMap = map[string]MerkleRootVersion{
 	"V1": 1,
 }
-
 var MerkleRootVersionRevMap = map[MerkleRootVersion]string{
 	1: "V1",
 }
@@ -758,7 +719,6 @@ type MerkleRootVersionInternal__ MerkleRootVersion
 func (m MerkleRootVersionInternal__) Import() MerkleRootVersion {
 	return MerkleRootVersion(m)
 }
-
 func (m MerkleRootVersion) Export() *MerkleRootVersionInternal__ {
 	return ((*MerkleRootVersionInternal__)(&m))
 }
@@ -767,7 +727,6 @@ type MerkleBackPointer struct {
 	Epno MerkleEpno
 	Hash MerkleRootHash
 }
-
 type MerkleBackPointerInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Epno    *MerkleEpnoInternal__
@@ -790,14 +749,12 @@ func (m MerkleBackPointerInternal__) Import() MerkleBackPointer {
 		})(m.Hash),
 	}
 }
-
 func (m MerkleBackPointer) Export() *MerkleBackPointerInternal__ {
 	return &MerkleBackPointerInternal__{
 		Epno: m.Epno.Export(),
 		Hash: m.Hash.Export(),
 	}
 }
-
 func (m *MerkleBackPointer) Encode(enc rpc.Encoder) error {
 	return enc.Encode(m.Export())
 }
@@ -830,7 +787,6 @@ func (m MerkleBackPointers) Export() *MerkleBackPointersInternal__ {
 		return &ret
 	})(tmp)))
 }
-
 func (m MerkleBackPointersInternal__) Import() MerkleBackPointers {
 	tmp := ([](*MerkleBackPointerInternal__))(m)
 	return MerkleBackPointers((func(x *[](*MerkleBackPointerInternal__)) (ret []MerkleBackPointer) {
@@ -872,7 +828,6 @@ var MerkleBackPointersTypeUniqueID = rpc.TypeUniqueID(0x8c7c4b855fba9000)
 func (m *MerkleBackPointers) GetTypeUniqueID() rpc.TypeUniqueID {
 	return MerkleBackPointersTypeUniqueID
 }
-
 func (m MerkleBackPointers) Bytes() []byte {
 	return nil
 }
@@ -884,7 +839,6 @@ type MerkleRootV1 struct {
 	RootNode     MerkleNodeHash
 	Hostchain    HostchainTail
 }
-
 type MerkleRootV1Internal__ struct {
 	_struct      struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Epno         *MerkleEpnoInternal__
@@ -928,7 +882,6 @@ func (m MerkleRootV1Internal__) Import() MerkleRootV1 {
 		})(m.Hostchain),
 	}
 }
-
 func (m MerkleRootV1) Export() *MerkleRootV1Internal__ {
 	return &MerkleRootV1Internal__{
 		Epno:         m.Epno.Export(),
@@ -938,7 +891,6 @@ func (m MerkleRootV1) Export() *MerkleRootV1Internal__ {
 		Hostchain:    m.Hostchain.Export(),
 	}
 }
-
 func (m *MerkleRootV1) Encode(enc rpc.Encoder) error {
 	return enc.Encode(m.Export())
 }
@@ -959,13 +911,11 @@ type MerkleRoot struct {
 	V     MerkleRootVersion
 	F_1__ *MerkleRootV1 `json:"f1,omitempty"`
 }
-
 type MerkleRootInternal__ struct {
 	_struct  struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	V        MerkleRootVersion
 	Switch__ MerkleRootInternalSwitch__
 }
-
 type MerkleRootInternalSwitch__ struct {
 	_struct struct{}                `codec:",omitempty"` //lint:ignore U1000 msgpack internal field
 	F_1__   *MerkleRootV1Internal__ `codec:"1"`
@@ -980,24 +930,21 @@ func (m MerkleRoot) GetV() (ret MerkleRootVersion, err error) {
 	}
 	return m.V, nil
 }
-
 func (m MerkleRoot) V1() MerkleRootV1 {
 	if m.F_1__ == nil {
-		panic("unexepected nil case; should have been checked")
+		panic("unexpected nil case; should have been checked")
 	}
 	if m.V != MerkleRootVersion_V1 {
 		panic(fmt.Sprintf("unexpected switch value (%v) when V1 is called", m.V))
 	}
 	return *m.F_1__
 }
-
 func NewMerkleRootWithV1(v MerkleRootV1) MerkleRoot {
 	return MerkleRoot{
 		V:     MerkleRootVersion_V1,
 		F_1__: &v,
 	}
 }
-
 func (m MerkleRootInternal__) Import() MerkleRoot {
 	return MerkleRoot{
 		V: m.V,
@@ -1015,7 +962,6 @@ func (m MerkleRootInternal__) Import() MerkleRoot {
 		})(m.Switch__.F_1__),
 	}
 }
-
 func (m MerkleRoot) Export() *MerkleRootInternal__ {
 	return &MerkleRootInternal__{
 		V: m.V,
@@ -1029,7 +975,6 @@ func (m MerkleRoot) Export() *MerkleRootInternal__ {
 		},
 	}
 }
-
 func (m *MerkleRoot) Encode(enc rpc.Encoder) error {
 	return enc.Encode(m.Export())
 }
@@ -1049,7 +994,6 @@ var MerkleRootTypeUniqueID = rpc.TypeUniqueID(0xa88fc49b6df3a111)
 func (m *MerkleRoot) GetTypeUniqueID() rpc.TypeUniqueID {
 	return MerkleRootTypeUniqueID
 }
-
 func (m *MerkleRoot) Bytes() []byte { return nil }
 
 type MerkleRootBlob []byte
@@ -1059,7 +1003,6 @@ func (m MerkleRootBlob) Export() *MerkleRootBlobInternal__ {
 	tmp := (([]byte)(m))
 	return ((*MerkleRootBlobInternal__)(&tmp))
 }
-
 func (m MerkleRootBlobInternal__) Import() MerkleRootBlob {
 	tmp := ([]byte)(m)
 	return MerkleRootBlob((func(x *[]byte) (ret []byte) {
@@ -1089,11 +1032,9 @@ var MerkleRootBlobTypeUniqueID = rpc.TypeUniqueID(0xa22f0c0921d4e651)
 func (m *MerkleRootBlob) GetTypeUniqueID() rpc.TypeUniqueID {
 	return MerkleRootBlobTypeUniqueID
 }
-
 func (m MerkleRootBlob) Bytes() []byte {
 	return (m)[:]
 }
-
 func (m *MerkleRootBlob) AllocAndDecode(f rpc.DecoderFactory) (*MerkleRoot, error) {
 	var ret MerkleRoot
 	src := f.NewDecoderBytes(&ret, m.Bytes())
@@ -1103,9 +1044,7 @@ func (m *MerkleRootBlob) AllocAndDecode(f rpc.DecoderFactory) (*MerkleRoot, erro
 	}
 	return &ret, nil
 }
-
 func (m *MerkleRootBlob) AssertNormalized() error { return nil }
-
 func (m *MerkleRoot) EncodeTyped(f rpc.EncoderFactory) (*MerkleRootBlob, error) {
 	var tmp []byte
 	enc := f.NewEncoderBytes(&tmp)
@@ -1116,16 +1055,14 @@ func (m *MerkleRoot) EncodeTyped(f rpc.EncoderFactory) (*MerkleRootBlob, error) 
 	ret := MerkleRootBlob(tmp)
 	return &ret, nil
 }
-
-func (m *MerkleRoot) ChildBlob(_b []byte) MerkleRootBlob {
-	return MerkleRootBlob(_b)
+func (m *MerkleRoot) ChildBlob(__b []byte) MerkleRootBlob {
+	return MerkleRootBlob(__b)
 }
 
 type SignedMerkleRoot struct {
 	Inner MerkleRootBlob
 	Sig   Signature
 }
-
 type SignedMerkleRootInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Inner   *MerkleRootBlobInternal__
@@ -1148,14 +1085,12 @@ func (s SignedMerkleRootInternal__) Import() SignedMerkleRoot {
 		})(s.Sig),
 	}
 }
-
 func (s SignedMerkleRoot) Export() *SignedMerkleRootInternal__ {
 	return &SignedMerkleRootInternal__{
 		Inner: s.Inner.Export(),
 		Sig:   s.Sig.Export(),
 	}
 }
-
 func (s *SignedMerkleRoot) Encode(enc rpc.Encoder) error {
 	return enc.Encode(s.Export())
 }
@@ -1176,7 +1111,6 @@ type MerkleSegment struct {
 	PrefixBitCount uint64
 	Prefix         []byte
 }
-
 type MerkleSegmentInternal__ struct {
 	_struct        struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	PrefixBitCount *uint64
@@ -1199,14 +1133,12 @@ func (m MerkleSegmentInternal__) Import() MerkleSegment {
 		})(m.Prefix),
 	}
 }
-
 func (m MerkleSegment) Export() *MerkleSegmentInternal__ {
 	return &MerkleSegmentInternal__{
 		PrefixBitCount: &m.PrefixBitCount,
 		Prefix:         &m.Prefix,
 	}
 }
-
 func (m *MerkleSegment) Encode(enc rpc.Encoder) error {
 	return enc.Encode(m.Export())
 }
@@ -1227,7 +1159,6 @@ type MerklePathToLeaf struct {
 	Leaf     StdHash
 	FoundKey *MerkleTreeRFOutput
 }
-
 type MerklePathToLeafInternal__ struct {
 	_struct  struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Leaf     *StdHashInternal__
@@ -1256,7 +1187,6 @@ func (m MerklePathToLeafInternal__) Import() MerklePathToLeaf {
 		})(m.FoundKey),
 	}
 }
-
 func (m MerklePathToLeaf) Export() *MerklePathToLeafInternal__ {
 	return &MerklePathToLeafInternal__{
 		Leaf: m.Leaf.Export(),
@@ -1268,7 +1198,6 @@ func (m MerklePathToLeaf) Export() *MerklePathToLeafInternal__ {
 		})(m.FoundKey),
 	}
 }
-
 func (m *MerklePathToLeaf) Encode(enc rpc.Encoder) error {
 	return enc.Encode(m.Export())
 }
@@ -1288,7 +1217,6 @@ func (m *MerklePathToLeaf) Bytes() []byte { return nil }
 type MerklePathIncomplete struct {
 	NodeAtPrefixMiss MerkleInteriorNode
 }
-
 type MerklePathIncompleteInternal__ struct {
 	_struct          struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	NodeAtPrefixMiss *MerkleInteriorNodeInternal__
@@ -1304,13 +1232,11 @@ func (m MerklePathIncompleteInternal__) Import() MerklePathIncomplete {
 		})(m.NodeAtPrefixMiss),
 	}
 }
-
 func (m MerklePathIncomplete) Export() *MerklePathIncompleteInternal__ {
 	return &MerklePathIncompleteInternal__{
 		NodeAtPrefixMiss: m.NodeAtPrefixMiss.Export(),
 	}
 }
-
 func (m *MerklePathIncomplete) Encode(enc rpc.Encoder) error {
 	return enc.Encode(m.Export())
 }
@@ -1332,13 +1258,11 @@ type MerklePathTerminal struct {
 	F_0__ *MerklePathIncomplete `json:"f0,omitempty"`
 	F_1__ *MerklePathToLeaf     `json:"f1,omitempty"`
 }
-
 type MerklePathTerminalInternal__ struct {
 	_struct  struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Leaf     bool
 	Switch__ MerklePathTerminalInternalSwitch__
 }
-
 type MerklePathTerminalInternalSwitch__ struct {
 	_struct struct{}                        `codec:",omitempty"` //lint:ignore U1000 msgpack internal field
 	F_0__   *MerklePathIncompleteInternal__ `codec:"0"`
@@ -1358,41 +1282,36 @@ func (m MerklePathTerminal) GetLeaf() (ret bool, err error) {
 	}
 	return m.Leaf, nil
 }
-
 func (m MerklePathTerminal) False() MerklePathIncomplete {
 	if m.F_0__ == nil {
-		panic("unexepected nil case; should have been checked")
+		panic("unexpected nil case; should have been checked")
 	}
 	if m.Leaf {
 		panic(fmt.Sprintf("unexpected switch value (%v) when False is called", m.Leaf))
 	}
 	return *m.F_0__
 }
-
 func (m MerklePathTerminal) True() MerklePathToLeaf {
 	if m.F_1__ == nil {
-		panic("unexepected nil case; should have been checked")
+		panic("unexpected nil case; should have been checked")
 	}
 	if !m.Leaf {
 		panic(fmt.Sprintf("unexpected switch value (%v) when True is called", m.Leaf))
 	}
 	return *m.F_1__
 }
-
 func NewMerklePathTerminalWithFalse(v MerklePathIncomplete) MerklePathTerminal {
 	return MerklePathTerminal{
 		Leaf:  false,
 		F_0__: &v,
 	}
 }
-
 func NewMerklePathTerminalWithTrue(v MerklePathToLeaf) MerklePathTerminal {
 	return MerklePathTerminal{
 		Leaf:  true,
 		F_1__: &v,
 	}
 }
-
 func (m MerklePathTerminalInternal__) Import() MerklePathTerminal {
 	return MerklePathTerminal{
 		Leaf: m.Leaf,
@@ -1422,7 +1341,6 @@ func (m MerklePathTerminalInternal__) Import() MerklePathTerminal {
 		})(m.Switch__.F_1__),
 	}
 }
-
 func (m MerklePathTerminal) Export() *MerklePathTerminalInternal__ {
 	return &MerklePathTerminalInternal__{
 		Leaf: m.Leaf,
@@ -1442,7 +1360,6 @@ func (m MerklePathTerminal) Export() *MerklePathTerminalInternal__ {
 		},
 	}
 }
-
 func (m *MerklePathTerminal) Encode(enc rpc.Encoder) error {
 	return enc.Encode(m.Export())
 }
@@ -1466,7 +1383,6 @@ func (m MerklePathCompressedBlob) Export() *MerklePathCompressedBlobInternal__ {
 	tmp := (([]byte)(m))
 	return ((*MerklePathCompressedBlobInternal__)(&tmp))
 }
-
 func (m MerklePathCompressedBlobInternal__) Import() MerklePathCompressedBlob {
 	tmp := ([]byte)(m)
 	return MerklePathCompressedBlob((func(x *[]byte) (ret []byte) {
@@ -1499,7 +1415,6 @@ type MerklePathCompressedPair struct {
 	Path     MerklePathCompressedBlob
 	Terminal MerklePathTerminal
 }
-
 type MerklePathCompressedPairInternal__ struct {
 	_struct  struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Path     *MerklePathCompressedBlobInternal__
@@ -1522,14 +1437,12 @@ func (m MerklePathCompressedPairInternal__) Import() MerklePathCompressedPair {
 		})(m.Terminal),
 	}
 }
-
 func (m MerklePathCompressedPair) Export() *MerklePathCompressedPairInternal__ {
 	return &MerklePathCompressedPairInternal__{
 		Path:     m.Path.Export(),
 		Terminal: m.Terminal.Export(),
 	}
 }
-
 func (m *MerklePathCompressedPair) Encode(enc rpc.Encoder) error {
 	return enc.Encode(m.Export())
 }
@@ -1551,7 +1464,6 @@ type MerklePathCompressed struct {
 	Path     MerklePathCompressedBlob
 	Terminal MerklePathTerminal
 }
-
 type MerklePathCompressedInternal__ struct {
 	_struct  struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Root     *MerkleRootInternal__
@@ -1581,7 +1493,6 @@ func (m MerklePathCompressedInternal__) Import() MerklePathCompressed {
 		})(m.Terminal),
 	}
 }
-
 func (m MerklePathCompressed) Export() *MerklePathCompressedInternal__ {
 	return &MerklePathCompressedInternal__{
 		Root:     m.Root.Export(),
@@ -1589,7 +1500,6 @@ func (m MerklePathCompressed) Export() *MerklePathCompressedInternal__ {
 		Terminal: m.Terminal.Export(),
 	}
 }
-
 func (m *MerklePathCompressed) Encode(enc rpc.Encoder) error {
 	return enc.Encode(m.Export())
 }
@@ -1610,7 +1520,6 @@ type MerklePathsCompressed struct {
 	Root  MerkleRoot
 	Paths []MerklePathCompressedPair
 }
-
 type MerklePathsCompressedInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Root    *MerkleRootInternal__
@@ -1645,7 +1554,6 @@ func (m MerklePathsCompressedInternal__) Import() MerklePathsCompressed {
 		})(m.Paths),
 	}
 }
-
 func (m MerklePathsCompressed) Export() *MerklePathsCompressedInternal__ {
 	return &MerklePathsCompressedInternal__{
 		Root: m.Root.Export(),
@@ -1661,7 +1569,6 @@ func (m MerklePathsCompressed) Export() *MerklePathsCompressedInternal__ {
 		})(m.Paths),
 	}
 }
-
 func (m *MerklePathsCompressed) Encode(enc rpc.Encoder) error {
 	return enc.Encode(m.Export())
 }
@@ -1682,7 +1589,6 @@ type MerkleUpdateBatch struct {
 	Epno   MerkleEpno
 	Leaves []MerkleLeaf
 }
-
 type MerkleUpdateBatchInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Epno    *MerkleEpnoInternal__
@@ -1717,7 +1623,6 @@ func (m MerkleUpdateBatchInternal__) Import() MerkleUpdateBatch {
 		})(m.Leaves),
 	}
 }
-
 func (m MerkleUpdateBatch) Export() *MerkleUpdateBatchInternal__ {
 	return &MerkleUpdateBatchInternal__{
 		Epno: m.Epno.Export(),
@@ -1733,7 +1638,6 @@ func (m MerkleUpdateBatch) Export() *MerkleUpdateBatchInternal__ {
 		})(m.Leaves),
 	}
 }
-
 func (m *MerkleUpdateBatch) Encode(enc rpc.Encoder) error {
 	return enc.Encode(m.Export())
 }
@@ -1754,7 +1658,6 @@ var MerkleBuilderProtocolID rpc.ProtocolUniqueID = rpc.ProtocolUniqueID(0x9a7121
 
 type MerkleBuilderPokeArg struct {
 }
-
 type MerkleBuilderPokeArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 }
@@ -1762,11 +1665,9 @@ type MerkleBuilderPokeArgInternal__ struct {
 func (m MerkleBuilderPokeArgInternal__) Import() MerkleBuilderPokeArg {
 	return MerkleBuilderPokeArg{}
 }
-
 func (m MerkleBuilderPokeArg) Export() *MerkleBuilderPokeArgInternal__ {
 	return &MerkleBuilderPokeArgInternal__{}
 }
-
 func (m *MerkleBuilderPokeArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(m.Export())
 }
@@ -1811,7 +1712,7 @@ func (m merkleBuilderErrorUnwrapperAdapter) MakeArg() interface{} {
 func (m merkleBuilderErrorUnwrapperAdapter) UnwrapError(raw interface{}) (appError error, dispatchError error) {
 	sTmp, ok := raw.(*StatusInternal__)
 	if !ok {
-		return nil, errors.New("Error converting to internal type in UnwrapError")
+		return nil, errors.New("error converting to internal type in UnwrapError")
 	}
 	if sTmp == nil {
 		return nil, nil
@@ -1835,7 +1736,6 @@ func (c MerkleBuilderClient) Poke(ctx context.Context) (err error) {
 	}
 	return
 }
-
 func MerkleBuilderProtocol(i MerkleBuilderInterface) rpc.ProtocolV2 {
 	return rpc.ProtocolV2{
 		Name: "MerkleBuilder",
@@ -1871,7 +1771,6 @@ var MerkleBatcherProtocolID rpc.ProtocolUniqueID = rpc.ProtocolUniqueID(0xdc826c
 
 type MerkleBatcherPokeArg struct {
 }
-
 type MerkleBatcherPokeArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 }
@@ -1879,11 +1778,9 @@ type MerkleBatcherPokeArgInternal__ struct {
 func (m MerkleBatcherPokeArgInternal__) Import() MerkleBatcherPokeArg {
 	return MerkleBatcherPokeArg{}
 }
-
 func (m MerkleBatcherPokeArg) Export() *MerkleBatcherPokeArgInternal__ {
 	return &MerkleBatcherPokeArgInternal__{}
 }
-
 func (m *MerkleBatcherPokeArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(m.Export())
 }
@@ -1928,7 +1825,7 @@ func (m merkleBatcherErrorUnwrapperAdapter) MakeArg() interface{} {
 func (m merkleBatcherErrorUnwrapperAdapter) UnwrapError(raw interface{}) (appError error, dispatchError error) {
 	sTmp, ok := raw.(*StatusInternal__)
 	if !ok {
-		return nil, errors.New("Error converting to internal type in UnwrapError")
+		return nil, errors.New("error converting to internal type in UnwrapError")
 	}
 	if sTmp == nil {
 		return nil, nil
@@ -1952,7 +1849,6 @@ func (c MerkleBatcherClient) Poke(ctx context.Context) (err error) {
 	}
 	return
 }
-
 func MerkleBatcherProtocol(i MerkleBatcherInterface) rpc.ProtocolV2 {
 	return rpc.ProtocolV2{
 		Name: "MerkleBatcher",
@@ -1988,7 +1884,6 @@ var MerkleSignerProtocolID rpc.ProtocolUniqueID = rpc.ProtocolUniqueID(0x8630fe8
 
 type MerkleSignerPokeArg struct {
 }
-
 type MerkleSignerPokeArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 }
@@ -1996,11 +1891,9 @@ type MerkleSignerPokeArgInternal__ struct {
 func (m MerkleSignerPokeArgInternal__) Import() MerkleSignerPokeArg {
 	return MerkleSignerPokeArg{}
 }
-
 func (m MerkleSignerPokeArg) Export() *MerkleSignerPokeArgInternal__ {
 	return &MerkleSignerPokeArgInternal__{}
 }
-
 func (m *MerkleSignerPokeArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(m.Export())
 }
@@ -2045,7 +1938,7 @@ func (m merkleSignerErrorUnwrapperAdapter) MakeArg() interface{} {
 func (m merkleSignerErrorUnwrapperAdapter) UnwrapError(raw interface{}) (appError error, dispatchError error) {
 	sTmp, ok := raw.(*StatusInternal__)
 	if !ok {
-		return nil, errors.New("Error converting to internal type in UnwrapError")
+		return nil, errors.New("error converting to internal type in UnwrapError")
 	}
 	if sTmp == nil {
 		return nil, nil
@@ -2069,7 +1962,6 @@ func (c MerkleSignerClient) Poke(ctx context.Context) (err error) {
 	}
 	return
 }
-
 func MerkleSignerProtocol(i MerkleSignerInterface) rpc.ProtocolV2 {
 	return rpc.ProtocolV2{
 		Name: "MerkleSigner",
@@ -2108,7 +2000,6 @@ func (m MerkleBatchNo) Export() *MerkleBatchNoInternal__ {
 	tmp := ((uint64)(m))
 	return ((*MerkleBatchNoInternal__)(&tmp))
 }
-
 func (m MerkleBatchNoInternal__) Import() MerkleBatchNo {
 	tmp := (uint64)(m)
 	return MerkleBatchNo((func(x *uint64) (ret uint64) {
@@ -2143,7 +2034,6 @@ type MerkleBatch struct {
 	Leaves    []MerkleLeaf
 	Hostchain *HostchainTail
 }
-
 type MerkleBatchInternal__ struct {
 	_struct   struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Batchno   *MerkleBatchNoInternal__
@@ -2198,7 +2088,6 @@ func (m MerkleBatchInternal__) Import() MerkleBatch {
 		})(m.Hostchain),
 	}
 }
-
 func (m MerkleBatch) Export() *MerkleBatchInternal__ {
 	return &MerkleBatchInternal__{
 		Batchno: m.Batchno.Export(),
@@ -2221,7 +2110,6 @@ func (m MerkleBatch) Export() *MerkleBatchInternal__ {
 		})(m.Hostchain),
 	}
 }
-
 func (m *MerkleBatch) Encode(enc rpc.Encoder) error {
 	return enc.Encode(m.Export())
 }
@@ -2241,7 +2129,6 @@ func (m *MerkleBatch) Bytes() []byte { return nil }
 type MerkleBatcherState struct {
 	Next MerkleBatchNo
 }
-
 type MerkleBatcherStateInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Next    *MerkleBatchNoInternal__
@@ -2257,13 +2144,11 @@ func (m MerkleBatcherStateInternal__) Import() MerkleBatcherState {
 		})(m.Next),
 	}
 }
-
 func (m MerkleBatcherState) Export() *MerkleBatcherStateInternal__ {
 	return &MerkleBatcherStateInternal__{
 		Next: m.Next.Export(),
 	}
 }
-
 func (m *MerkleBatcherState) Encode(enc rpc.Encoder) error {
 	return enc.Encode(m.Export())
 }
@@ -2295,7 +2180,6 @@ var UpdateTriggerTypeMap = map[string]UpdateTriggerType{
 	"Provision":  2,
 	"TeamChange": 3,
 }
-
 var UpdateTriggerTypeRevMap = map[UpdateTriggerType]string{
 	0: "None",
 	1: "Revoke",
@@ -2308,7 +2192,6 @@ type UpdateTriggerTypeInternal__ UpdateTriggerType
 func (u UpdateTriggerTypeInternal__) Import() UpdateTriggerType {
 	return UpdateTriggerType(u)
 }
-
 func (u UpdateTriggerType) Export() *UpdateTriggerTypeInternal__ {
 	return ((*UpdateTriggerTypeInternal__)(&u))
 }
@@ -2318,7 +2201,6 @@ type UpdateTriggerRevoke struct {
 	VerifyKeyID EntityID
 	Epno        MerkleEpno
 }
-
 type UpdateTriggerRevokeInternal__ struct {
 	_struct     struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	PartyID     *PartyIDInternal__
@@ -2348,7 +2230,6 @@ func (u UpdateTriggerRevokeInternal__) Import() UpdateTriggerRevoke {
 		})(u.Epno),
 	}
 }
-
 func (u UpdateTriggerRevoke) Export() *UpdateTriggerRevokeInternal__ {
 	return &UpdateTriggerRevokeInternal__{
 		PartyID:     u.PartyID.Export(),
@@ -2356,7 +2237,6 @@ func (u UpdateTriggerRevoke) Export() *UpdateTriggerRevokeInternal__ {
 		Epno:        u.Epno.Export(),
 	}
 }
-
 func (u *UpdateTriggerRevoke) Encode(enc rpc.Encoder) error {
 	return enc.Encode(u.Export())
 }
@@ -2379,7 +2259,6 @@ type UpdateTriggerTeamChange struct {
 	Changes []MemberRole
 	NewKeys []SharedKey
 }
-
 type UpdateTriggerTeamChangeInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Team    *TeamIDInternal__
@@ -2440,7 +2319,6 @@ func (u UpdateTriggerTeamChangeInternal__) Import() UpdateTriggerTeamChange {
 		})(u.NewKeys),
 	}
 }
-
 func (u UpdateTriggerTeamChange) Export() *UpdateTriggerTeamChangeInternal__ {
 	return &UpdateTriggerTeamChangeInternal__{
 		Team:  u.Team.Export(),
@@ -2467,7 +2345,6 @@ func (u UpdateTriggerTeamChange) Export() *UpdateTriggerTeamChangeInternal__ {
 		})(u.NewKeys),
 	}
 }
-
 func (u *UpdateTriggerTeamChange) Encode(enc rpc.Encoder) error {
 	return enc.Encode(u.Export())
 }
@@ -2487,7 +2364,6 @@ func (u *UpdateTriggerTeamChange) Bytes() []byte { return nil }
 type UpdateTriggerProvision struct {
 	Eid EntityID
 }
-
 type UpdateTriggerProvisionInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Eid     *EntityIDInternal__
@@ -2503,13 +2379,11 @@ func (u UpdateTriggerProvisionInternal__) Import() UpdateTriggerProvision {
 		})(u.Eid),
 	}
 }
-
 func (u UpdateTriggerProvision) Export() *UpdateTriggerProvisionInternal__ {
 	return &UpdateTriggerProvisionInternal__{
 		Eid: u.Eid.Export(),
 	}
 }
-
 func (u *UpdateTriggerProvision) Encode(enc rpc.Encoder) error {
 	return enc.Encode(u.Export())
 }
@@ -2532,13 +2406,11 @@ type UpdateTrigger struct {
 	F_2__ *UpdateTriggerProvision  `json:"f2,omitempty"`
 	F_3__ *UpdateTriggerTeamChange `json:"f3,omitempty"`
 }
-
 type UpdateTriggerInternal__ struct {
 	_struct  struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	T        UpdateTriggerType
 	Switch__ UpdateTriggerInternalSwitch__
 }
-
 type UpdateTriggerInternalSwitch__ struct {
 	_struct struct{}                           `codec:",omitempty"` //lint:ignore U1000 msgpack internal field
 	F_1__   *UpdateTriggerRevokeInternal__     `codec:"1"`
@@ -2565,64 +2437,56 @@ func (u UpdateTrigger) GetT() (ret UpdateTriggerType, err error) {
 	}
 	return u.T, nil
 }
-
 func (u UpdateTrigger) Revoke() UpdateTriggerRevoke {
 	if u.F_1__ == nil {
-		panic("unexepected nil case; should have been checked")
+		panic("unexpected nil case; should have been checked")
 	}
 	if u.T != UpdateTriggerType_Revoke {
 		panic(fmt.Sprintf("unexpected switch value (%v) when Revoke is called", u.T))
 	}
 	return *u.F_1__
 }
-
 func (u UpdateTrigger) Provision() UpdateTriggerProvision {
 	if u.F_2__ == nil {
-		panic("unexepected nil case; should have been checked")
+		panic("unexpected nil case; should have been checked")
 	}
 	if u.T != UpdateTriggerType_Provision {
 		panic(fmt.Sprintf("unexpected switch value (%v) when Provision is called", u.T))
 	}
 	return *u.F_2__
 }
-
 func (u UpdateTrigger) Teamchange() UpdateTriggerTeamChange {
 	if u.F_3__ == nil {
-		panic("unexepected nil case; should have been checked")
+		panic("unexpected nil case; should have been checked")
 	}
 	if u.T != UpdateTriggerType_TeamChange {
 		panic(fmt.Sprintf("unexpected switch value (%v) when Teamchange is called", u.T))
 	}
 	return *u.F_3__
 }
-
 func NewUpdateTriggerWithRevoke(v UpdateTriggerRevoke) UpdateTrigger {
 	return UpdateTrigger{
 		T:     UpdateTriggerType_Revoke,
 		F_1__: &v,
 	}
 }
-
 func NewUpdateTriggerWithProvision(v UpdateTriggerProvision) UpdateTrigger {
 	return UpdateTrigger{
 		T:     UpdateTriggerType_Provision,
 		F_2__: &v,
 	}
 }
-
 func NewUpdateTriggerWithTeamchange(v UpdateTriggerTeamChange) UpdateTrigger {
 	return UpdateTrigger{
 		T:     UpdateTriggerType_TeamChange,
 		F_3__: &v,
 	}
 }
-
 func NewUpdateTriggerDefault(s UpdateTriggerType) UpdateTrigger {
 	return UpdateTrigger{
 		T: s,
 	}
 }
-
 func (u UpdateTriggerInternal__) Import() UpdateTrigger {
 	return UpdateTrigger{
 		T: u.T,
@@ -2664,7 +2528,6 @@ func (u UpdateTriggerInternal__) Import() UpdateTrigger {
 		})(u.Switch__.F_3__),
 	}
 }
-
 func (u UpdateTrigger) Export() *UpdateTriggerInternal__ {
 	return &UpdateTriggerInternal__{
 		T: u.T,
@@ -2690,7 +2553,6 @@ func (u UpdateTrigger) Export() *UpdateTriggerInternal__ {
 		},
 	}
 }
-
 func (u *UpdateTrigger) Encode(enc rpc.Encoder) error {
 	return enc.Encode(u.Export())
 }

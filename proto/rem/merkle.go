@@ -1,5 +1,5 @@
-// Auto-generated to Go types and interfaces using @foks-proj/snowpack-compiler 1.0.8 (git+https://github.com/foks-proj/node-snowpack-compiler.git)
-//  Input file: ../../proto-src/rem/merkle.snowp
+// Auto-generated to Go types and interfaces using snowpc 0.0.4 (https://github.com/foks-proj/go-snowpack-compiler)
+//  Input file:../../proto-src/rem/merkle.snowp
 
 package rem
 
@@ -16,7 +16,6 @@ type GetHistoricalRootsRes struct {
 	Roots  []lib.MerkleRoot
 	Hashes []lib.MerkleRootHash
 }
-
 type GetHistoricalRootsResInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Roots   *[](*lib.MerkleRootInternal__)
@@ -63,7 +62,6 @@ func (g GetHistoricalRootsResInternal__) Import() GetHistoricalRootsRes {
 		})(g.Hashes),
 	}
 }
-
 func (g GetHistoricalRootsRes) Export() *GetHistoricalRootsResInternal__ {
 	return &GetHistoricalRootsResInternal__{
 		Roots: (func(x []lib.MerkleRoot) *[](*lib.MerkleRootInternal__) {
@@ -88,7 +86,6 @@ func (g GetHistoricalRootsRes) Export() *GetHistoricalRootsResInternal__ {
 		})(g.Hashes),
 	}
 }
-
 func (g *GetHistoricalRootsRes) Encode(enc rpc.Encoder) error {
 	return enc.Encode(g.Export())
 }
@@ -109,7 +106,6 @@ type MerkleExistsRes struct {
 	Epno   lib.MerkleEpno
 	Signed bool
 }
-
 type MerkleExistsResInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Epno    *lib.MerkleEpnoInternal__
@@ -132,14 +128,12 @@ func (m MerkleExistsResInternal__) Import() MerkleExistsRes {
 		})(m.Signed),
 	}
 }
-
 func (m MerkleExistsRes) Export() *MerkleExistsResInternal__ {
 	return &MerkleExistsResInternal__{
 		Epno:   m.Epno.Export(),
 		Signed: &m.Signed,
 	}
 }
-
 func (m *MerkleExistsRes) Encode(enc rpc.Encoder) error {
 	return enc.Encode(m.Export())
 }
@@ -164,7 +158,6 @@ type MerkleLookupArg struct {
 	Signed bool
 	Root   *lib.MerkleEpno
 }
-
 type MerkleLookupArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	HostID  *lib.HostIDInternal__
@@ -213,7 +206,6 @@ func (m MerkleLookupArgInternal__) Import() MerkleLookupArg {
 		})(m.Root),
 	}
 }
-
 func (m MerkleLookupArg) Export() *MerkleLookupArgInternal__ {
 	return &MerkleLookupArgInternal__{
 		HostID: (func(x *lib.HostID) *lib.HostIDInternal__ {
@@ -232,7 +224,6 @@ func (m MerkleLookupArg) Export() *MerkleLookupArgInternal__ {
 		})(m.Root),
 	}
 }
-
 func (m *MerkleLookupArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(m.Export())
 }
@@ -254,7 +245,6 @@ type GetHistoricalRootsArg struct {
 	Full   []lib.MerkleEpno
 	Hashes []lib.MerkleEpno
 }
-
 type GetHistoricalRootsArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	HostID  *lib.HostIDInternal__
@@ -314,7 +304,6 @@ func (g GetHistoricalRootsArgInternal__) Import() GetHistoricalRootsArg {
 		})(g.Hashes),
 	}
 }
-
 func (g GetHistoricalRootsArg) Export() *GetHistoricalRootsArgInternal__ {
 	return &GetHistoricalRootsArgInternal__{
 		HostID: (func(x *lib.HostID) *lib.HostIDInternal__ {
@@ -345,7 +334,6 @@ func (g GetHistoricalRootsArg) Export() *GetHistoricalRootsArgInternal__ {
 		})(g.Hashes),
 	}
 }
-
 func (g *GetHistoricalRootsArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(g.Export())
 }
@@ -365,7 +353,6 @@ func (g *GetHistoricalRootsArg) Bytes() []byte { return nil }
 type GetCurrentRootArg struct {
 	HostID *lib.HostID
 }
-
 type GetCurrentRootArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	HostID  *lib.HostIDInternal__
@@ -387,7 +374,6 @@ func (g GetCurrentRootArgInternal__) Import() GetCurrentRootArg {
 		})(g.HostID),
 	}
 }
-
 func (g GetCurrentRootArg) Export() *GetCurrentRootArgInternal__ {
 	return &GetCurrentRootArgInternal__{
 		HostID: (func(x *lib.HostID) *lib.HostIDInternal__ {
@@ -398,7 +384,6 @@ func (g GetCurrentRootArg) Export() *GetCurrentRootArgInternal__ {
 		})(g.HostID),
 	}
 }
-
 func (g *GetCurrentRootArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(g.Export())
 }
@@ -418,7 +403,6 @@ func (g *GetCurrentRootArg) Bytes() []byte { return nil }
 type GetCurrentRootHashArg struct {
 	HostID *lib.HostID
 }
-
 type GetCurrentRootHashArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	HostID  *lib.HostIDInternal__
@@ -440,7 +424,6 @@ func (g GetCurrentRootHashArgInternal__) Import() GetCurrentRootHashArg {
 		})(g.HostID),
 	}
 }
-
 func (g GetCurrentRootHashArg) Export() *GetCurrentRootHashArgInternal__ {
 	return &GetCurrentRootHashArgInternal__{
 		HostID: (func(x *lib.HostID) *lib.HostIDInternal__ {
@@ -451,7 +434,6 @@ func (g GetCurrentRootHashArg) Export() *GetCurrentRootHashArgInternal__ {
 		})(g.HostID),
 	}
 }
-
 func (g *GetCurrentRootHashArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(g.Export())
 }
@@ -472,7 +454,6 @@ type CheckKeyExistsArg struct {
 	HostID *lib.HostID
 	Key    lib.MerkleTreeRFOutput
 }
-
 type CheckKeyExistsArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	HostID  *lib.HostIDInternal__
@@ -501,7 +482,6 @@ func (c CheckKeyExistsArgInternal__) Import() CheckKeyExistsArg {
 		})(c.Key),
 	}
 }
-
 func (c CheckKeyExistsArg) Export() *CheckKeyExistsArgInternal__ {
 	return &CheckKeyExistsArgInternal__{
 		HostID: (func(x *lib.HostID) *lib.HostIDInternal__ {
@@ -513,7 +493,6 @@ func (c CheckKeyExistsArg) Export() *CheckKeyExistsArgInternal__ {
 		Key: c.Key.Export(),
 	}
 }
-
 func (c *CheckKeyExistsArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(c.Export())
 }
@@ -533,7 +512,6 @@ func (c *CheckKeyExistsArg) Bytes() []byte { return nil }
 type GetCurrentRootSignedArg struct {
 	HostID *lib.HostID
 }
-
 type GetCurrentRootSignedArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	HostID  *lib.HostIDInternal__
@@ -555,7 +533,6 @@ func (g GetCurrentRootSignedArgInternal__) Import() GetCurrentRootSignedArg {
 		})(g.HostID),
 	}
 }
-
 func (g GetCurrentRootSignedArg) Export() *GetCurrentRootSignedArgInternal__ {
 	return &GetCurrentRootSignedArgInternal__{
 		HostID: (func(x *lib.HostID) *lib.HostIDInternal__ {
@@ -566,7 +543,6 @@ func (g GetCurrentRootSignedArg) Export() *GetCurrentRootSignedArgInternal__ {
 		})(g.HostID),
 	}
 }
-
 func (g *GetCurrentRootSignedArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(g.Export())
 }
@@ -589,7 +565,6 @@ type MerkleMLookupArg struct {
 	Signed bool
 	Root   *lib.MerkleEpno
 }
-
 type MerkleMLookupArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	HostID  *lib.HostIDInternal__
@@ -650,7 +625,6 @@ func (m MerkleMLookupArgInternal__) Import() MerkleMLookupArg {
 		})(m.Root),
 	}
 }
-
 func (m MerkleMLookupArg) Export() *MerkleMLookupArgInternal__ {
 	return &MerkleMLookupArgInternal__{
 		HostID: (func(x *lib.HostID) *lib.HostIDInternal__ {
@@ -678,7 +652,6 @@ func (m MerkleMLookupArg) Export() *MerkleMLookupArgInternal__ {
 		})(m.Root),
 	}
 }
-
 func (m *MerkleMLookupArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(m.Export())
 }
@@ -698,7 +671,6 @@ func (m *MerkleMLookupArg) Bytes() []byte { return nil }
 type GetCurrentRootSignedEpnoArg struct {
 	HostID *lib.HostID
 }
-
 type GetCurrentRootSignedEpnoArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	HostID  *lib.HostIDInternal__
@@ -720,7 +692,6 @@ func (g GetCurrentRootSignedEpnoArgInternal__) Import() GetCurrentRootSignedEpno
 		})(g.HostID),
 	}
 }
-
 func (g GetCurrentRootSignedEpnoArg) Export() *GetCurrentRootSignedEpnoArgInternal__ {
 	return &GetCurrentRootSignedEpnoArgInternal__{
 		HostID: (func(x *lib.HostID) *lib.HostIDInternal__ {
@@ -731,7 +702,6 @@ func (g GetCurrentRootSignedEpnoArg) Export() *GetCurrentRootSignedEpnoArgIntern
 		})(g.HostID),
 	}
 }
-
 func (g *GetCurrentRootSignedEpnoArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(g.Export())
 }
@@ -751,7 +721,6 @@ func (g *GetCurrentRootSignedEpnoArg) Bytes() []byte { return nil }
 type MerkleSelectVHostArg struct {
 	Host lib.HostID
 }
-
 type MerkleSelectVHostArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Host    *lib.HostIDInternal__
@@ -767,13 +736,11 @@ func (m MerkleSelectVHostArgInternal__) Import() MerkleSelectVHostArg {
 		})(m.Host),
 	}
 }
-
 func (m MerkleSelectVHostArg) Export() *MerkleSelectVHostArgInternal__ {
 	return &MerkleSelectVHostArgInternal__{
 		Host: m.Host.Export(),
 	}
 }
-
 func (m *MerkleSelectVHostArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(m.Export())
 }
@@ -794,7 +761,6 @@ type ConfirmRootArg struct {
 	HostID lib.HostID
 	Root   lib.TreeRoot
 }
-
 type ConfirmRootArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	HostID  *lib.HostIDInternal__
@@ -817,14 +783,12 @@ func (c ConfirmRootArgInternal__) Import() ConfirmRootArg {
 		})(c.Root),
 	}
 }
-
 func (c ConfirmRootArg) Export() *ConfirmRootArgInternal__ {
 	return &ConfirmRootArgInternal__{
 		HostID: c.HostID.Export(),
 		Root:   c.Root.Export(),
 	}
 }
-
 func (c *ConfirmRootArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(c.Export())
 }
@@ -854,7 +818,6 @@ type MerkleQueryInterface interface {
 	ConfirmRoot(context.Context, ConfirmRootArg) error
 	ErrorWrapper() func(error) lib.Status
 	CheckArgHeader(ctx context.Context, h lib.Header) error
-
 	MakeResHeader() lib.Header
 }
 
@@ -881,7 +844,7 @@ func (m merkleQueryErrorUnwrapperAdapter) MakeArg() interface{} {
 func (m merkleQueryErrorUnwrapperAdapter) UnwrapError(raw interface{}) (appError error, dispatchError error) {
 	sTmp, ok := raw.(*lib.StatusInternal__)
 	if !ok {
-		return nil, errors.New("Error converting to internal type in UnwrapError")
+		return nil, errors.New("error converting to internal type in UnwrapError")
 	}
 	if sTmp == nil {
 		return nil, nil
@@ -919,7 +882,6 @@ func (c MerkleQueryClient) Lookup(ctx context.Context, arg MerkleLookupArg) (res
 	res = tmp.Data.Import()
 	return
 }
-
 func (c MerkleQueryClient) GetHistoricalRoots(ctx context.Context, arg GetHistoricalRootsArg) (res GetHistoricalRootsRes, err error) {
 	warg := &rpc.DataWrap[lib.Header, *GetHistoricalRootsArgInternal__]{
 		Data: arg.Export(),
@@ -941,7 +903,6 @@ func (c MerkleQueryClient) GetHistoricalRoots(ctx context.Context, arg GetHistor
 	res = tmp.Data.Import()
 	return
 }
-
 func (c MerkleQueryClient) GetCurrentRoot(ctx context.Context, hostID *lib.HostID) (res lib.MerkleRoot, err error) {
 	arg := GetCurrentRootArg{
 		HostID: hostID,
@@ -966,7 +927,6 @@ func (c MerkleQueryClient) GetCurrentRoot(ctx context.Context, hostID *lib.HostI
 	res = tmp.Data.Import()
 	return
 }
-
 func (c MerkleQueryClient) GetCurrentRootHash(ctx context.Context, hostID *lib.HostID) (res lib.TreeRoot, err error) {
 	arg := GetCurrentRootHashArg{
 		HostID: hostID,
@@ -991,7 +951,6 @@ func (c MerkleQueryClient) GetCurrentRootHash(ctx context.Context, hostID *lib.H
 	res = tmp.Data.Import()
 	return
 }
-
 func (c MerkleQueryClient) CheckKeyExists(ctx context.Context, arg CheckKeyExistsArg) (res MerkleExistsRes, err error) {
 	warg := &rpc.DataWrap[lib.Header, *CheckKeyExistsArgInternal__]{
 		Data: arg.Export(),
@@ -1013,7 +972,6 @@ func (c MerkleQueryClient) CheckKeyExists(ctx context.Context, arg CheckKeyExist
 	res = tmp.Data.Import()
 	return
 }
-
 func (c MerkleQueryClient) GetCurrentRootSigned(ctx context.Context, hostID *lib.HostID) (res lib.SignedMerkleRoot, err error) {
 	arg := GetCurrentRootSignedArg{
 		HostID: hostID,
@@ -1038,7 +996,6 @@ func (c MerkleQueryClient) GetCurrentRootSigned(ctx context.Context, hostID *lib
 	res = tmp.Data.Import()
 	return
 }
-
 func (c MerkleQueryClient) MLookup(ctx context.Context, arg MerkleMLookupArg) (res lib.MerklePathsCompressed, err error) {
 	warg := &rpc.DataWrap[lib.Header, *MerkleMLookupArgInternal__]{
 		Data: arg.Export(),
@@ -1060,7 +1017,6 @@ func (c MerkleQueryClient) MLookup(ctx context.Context, arg MerkleMLookupArg) (r
 	res = tmp.Data.Import()
 	return
 }
-
 func (c MerkleQueryClient) GetCurrentRootSignedEpno(ctx context.Context, hostID *lib.HostID) (res lib.MerkleEpno, err error) {
 	arg := GetCurrentRootSignedEpnoArg{
 		HostID: hostID,
@@ -1085,7 +1041,6 @@ func (c MerkleQueryClient) GetCurrentRootSignedEpno(ctx context.Context, hostID 
 	res = tmp.Data.Import()
 	return
 }
-
 func (c MerkleQueryClient) SelectVHost(ctx context.Context, host lib.HostID) (err error) {
 	arg := MerkleSelectVHostArg{
 		Host: host,
@@ -1109,7 +1064,6 @@ func (c MerkleQueryClient) SelectVHost(ctx context.Context, host lib.HostID) (er
 	}
 	return
 }
-
 func (c MerkleQueryClient) ConfirmRoot(ctx context.Context, arg ConfirmRootArg) (err error) {
 	warg := &rpc.DataWrap[lib.Header, *ConfirmRootArgInternal__]{
 		Data: arg.Export(),
@@ -1130,7 +1084,6 @@ func (c MerkleQueryClient) ConfirmRoot(ctx context.Context, arg ConfirmRootArg) 
 	}
 	return
 }
-
 func MerkleQueryProtocol(i MerkleQueryInterface) rpc.ProtocolV2 {
 	return rpc.ProtocolV2{
 		Name: "MerkleQuery",

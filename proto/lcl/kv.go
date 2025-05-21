@@ -1,5 +1,5 @@
-// Auto-generated to Go types and interfaces using @foks-proj/snowpack-compiler 1.0.8 (git+https://github.com/foks-proj/node-snowpack-compiler.git)
-//  Input file: ../../proto-src/lcl/kv.snowp
+// Auto-generated to Go types and interfaces using snowpc 0.0.4 (https://github.com/foks-proj/go-snowpack-compiler)
+//  Input file:../../proto-src/lcl/kv.snowp
 
 package lcl
 
@@ -20,7 +20,6 @@ func (s SmallFileData) Export() *SmallFileDataInternal__ {
 	tmp := (([]byte)(s))
 	return ((*SmallFileDataInternal__)(&tmp))
 }
-
 func (s SmallFileDataInternal__) Import() SmallFileData {
 	tmp := ([]byte)(s)
 	return SmallFileData((func(x *[]byte) (ret []byte) {
@@ -50,7 +49,6 @@ var SmallFileDataTypeUniqueID = rpc.TypeUniqueID(0xc4107596b8b79aa5)
 func (s *SmallFileData) GetTypeUniqueID() rpc.TypeUniqueID {
 	return SmallFileDataTypeUniqueID
 }
-
 func (s SmallFileData) Bytes() []byte {
 	return (s)[:]
 }
@@ -60,13 +58,11 @@ type SmallFileBoxPayload struct {
 	F_0__ *SmallFileData `json:"f0,omitempty"`
 	F_1__ *lib.KVPath    `json:"f1,omitempty"`
 }
-
 type SmallFileBoxPayloadInternal__ struct {
 	_struct  struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	T        lib.KVNodeType
 	Switch__ SmallFileBoxPayloadInternalSwitch__
 }
-
 type SmallFileBoxPayloadInternalSwitch__ struct {
 	_struct struct{}                 `codec:",omitempty"` //lint:ignore U1000 msgpack internal field
 	F_0__   *SmallFileDataInternal__ `codec:"0"`
@@ -86,41 +82,36 @@ func (s SmallFileBoxPayload) GetT() (ret lib.KVNodeType, err error) {
 	}
 	return s.T, nil
 }
-
 func (s SmallFileBoxPayload) Smallfile() SmallFileData {
 	if s.F_0__ == nil {
-		panic("unexepected nil case; should have been checked")
+		panic("unexpected nil case; should have been checked")
 	}
 	if s.T != lib.KVNodeType_SmallFile {
 		panic(fmt.Sprintf("unexpected switch value (%v) when Smallfile is called", s.T))
 	}
 	return *s.F_0__
 }
-
 func (s SmallFileBoxPayload) Symlink() lib.KVPath {
 	if s.F_1__ == nil {
-		panic("unexepected nil case; should have been checked")
+		panic("unexpected nil case; should have been checked")
 	}
 	if s.T != lib.KVNodeType_Symlink {
 		panic(fmt.Sprintf("unexpected switch value (%v) when Symlink is called", s.T))
 	}
 	return *s.F_1__
 }
-
 func NewSmallFileBoxPayloadWithSmallfile(v SmallFileData) SmallFileBoxPayload {
 	return SmallFileBoxPayload{
 		T:     lib.KVNodeType_SmallFile,
 		F_0__: &v,
 	}
 }
-
 func NewSmallFileBoxPayloadWithSymlink(v lib.KVPath) SmallFileBoxPayload {
 	return SmallFileBoxPayload{
 		T:     lib.KVNodeType_Symlink,
 		F_1__: &v,
 	}
 }
-
 func (s SmallFileBoxPayloadInternal__) Import() SmallFileBoxPayload {
 	return SmallFileBoxPayload{
 		T: s.T,
@@ -150,7 +141,6 @@ func (s SmallFileBoxPayloadInternal__) Import() SmallFileBoxPayload {
 		})(s.Switch__.F_1__),
 	}
 }
-
 func (s SmallFileBoxPayload) Export() *SmallFileBoxPayloadInternal__ {
 	return &SmallFileBoxPayloadInternal__{
 		T: s.T,
@@ -170,7 +160,6 @@ func (s SmallFileBoxPayload) Export() *SmallFileBoxPayloadInternal__ {
 		},
 	}
 }
-
 func (s *SmallFileBoxPayload) Encode(enc rpc.Encoder) error {
 	return enc.Encode(s.Export())
 }
@@ -190,7 +179,6 @@ var SmallFileBoxPayloadTypeUniqueID = rpc.TypeUniqueID(0xaeec688f3145fddf)
 func (s *SmallFileBoxPayload) GetTypeUniqueID() rpc.TypeUniqueID {
 	return SmallFileBoxPayloadTypeUniqueID
 }
-
 func (s *SmallFileBoxPayload) Bytes() []byte { return nil }
 
 type KVDirentNamePayload struct {
@@ -198,7 +186,6 @@ type KVDirentNamePayload struct {
 	DirVersion lib.KVVersion
 	Name       lib.KVPathComponent
 }
-
 type KVDirentNamePayloadInternal__ struct {
 	_struct    struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	ParentDir  *lib.DirIDInternal__
@@ -228,7 +215,6 @@ func (k KVDirentNamePayloadInternal__) Import() KVDirentNamePayload {
 		})(k.Name),
 	}
 }
-
 func (k KVDirentNamePayload) Export() *KVDirentNamePayloadInternal__ {
 	return &KVDirentNamePayloadInternal__{
 		ParentDir:  k.ParentDir.Export(),
@@ -236,7 +222,6 @@ func (k KVDirentNamePayload) Export() *KVDirentNamePayloadInternal__ {
 		Name:       k.Name.Export(),
 	}
 }
-
 func (k *KVDirentNamePayload) Encode(enc rpc.Encoder) error {
 	return enc.Encode(k.Export())
 }
@@ -256,7 +241,6 @@ var KVDirentNamePayloadTypeUniqueID = rpc.TypeUniqueID(0xb9c1587fa732c2c9)
 func (k *KVDirentNamePayload) GetTypeUniqueID() rpc.TypeUniqueID {
 	return KVDirentNamePayloadTypeUniqueID
 }
-
 func (k *KVDirentNamePayload) Bytes() []byte { return nil }
 
 type FileKeyBoxPayload struct {
@@ -264,7 +248,6 @@ type FileKeyBoxPayload struct {
 	Vers lib.KVVersion
 	Seed lib.FileKeySeed
 }
-
 type FileKeyBoxPayloadInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Id      *lib.FileIDInternal__
@@ -294,7 +277,6 @@ func (f FileKeyBoxPayloadInternal__) Import() FileKeyBoxPayload {
 		})(f.Seed),
 	}
 }
-
 func (f FileKeyBoxPayload) Export() *FileKeyBoxPayloadInternal__ {
 	return &FileKeyBoxPayloadInternal__{
 		Id:   f.Id.Export(),
@@ -302,7 +284,6 @@ func (f FileKeyBoxPayload) Export() *FileKeyBoxPayloadInternal__ {
 		Seed: f.Seed.Export(),
 	}
 }
-
 func (f *FileKeyBoxPayload) Encode(enc rpc.Encoder) error {
 	return enc.Encode(f.Export())
 }
@@ -322,7 +303,6 @@ var FileKeyBoxPayloadTypeUniqueID = rpc.TypeUniqueID(0x9211ae1e17213884)
 func (f *FileKeyBoxPayload) GetTypeUniqueID() rpc.TypeUniqueID {
 	return FileKeyBoxPayloadTypeUniqueID
 }
-
 func (f *FileKeyBoxPayload) Bytes() []byte { return nil }
 
 type KVConfig struct {
@@ -337,7 +317,6 @@ type KVConfig struct {
 	MtimeLower     *lib.TimeMicro
 	Recursive      bool
 }
-
 type KVConfigInternal__ struct {
 	_struct        struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	ActingAs       *lib.FQTeamParsedInternal__
@@ -434,7 +413,6 @@ func (k KVConfigInternal__) Import() KVConfig {
 		})(k.Recursive),
 	}
 }
-
 func (k KVConfig) Export() *KVConfigInternal__ {
 	return &KVConfigInternal__{
 		ActingAs: (func(x *lib.FQTeamParsed) *lib.FQTeamParsedInternal__ {
@@ -464,7 +442,6 @@ func (k KVConfig) Export() *KVConfigInternal__ {
 		Recursive: &k.Recursive,
 	}
 }
-
 func (k *KVConfig) Encode(enc rpc.Encoder) error {
 	return enc.Encode(k.Export())
 }
@@ -485,7 +462,6 @@ type GetFileChunkRes struct {
 	Chunk lib.ChunkPlaintext
 	Final bool
 }
-
 type GetFileChunkResInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Chunk   *lib.ChunkPlaintextInternal__
@@ -508,14 +484,12 @@ func (g GetFileChunkResInternal__) Import() GetFileChunkRes {
 		})(g.Final),
 	}
 }
-
 func (g GetFileChunkRes) Export() *GetFileChunkResInternal__ {
 	return &GetFileChunkResInternal__{
 		Chunk: g.Chunk.Export(),
 		Final: &g.Final,
 	}
 }
-
 func (g *GetFileChunkRes) Encode(enc rpc.Encoder) error {
 	return enc.Encode(g.Export())
 }
@@ -537,7 +511,6 @@ type GetFileRes struct {
 	De    lib.KVDirent
 	Id    *lib.FileID
 }
-
 type GetFileResInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Chunk   *GetFileChunkResInternal__
@@ -573,7 +546,6 @@ func (g GetFileResInternal__) Import() GetFileRes {
 		})(g.Id),
 	}
 }
-
 func (g GetFileRes) Export() *GetFileResInternal__ {
 	return &GetFileResInternal__{
 		Chunk: g.Chunk.Export(),
@@ -586,7 +558,6 @@ func (g GetFileRes) Export() *GetFileResInternal__ {
 		})(g.Id),
 	}
 }
-
 func (g *GetFileRes) Encode(enc rpc.Encoder) error {
 	return enc.Encode(g.Export())
 }
@@ -606,7 +577,6 @@ func (g *GetFileRes) Bytes() []byte { return nil }
 type KVStatFile struct {
 	Size lib.Size
 }
-
 type KVStatFileInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Size    *lib.SizeInternal__
@@ -622,13 +592,11 @@ func (k KVStatFileInternal__) Import() KVStatFile {
 		})(k.Size),
 	}
 }
-
 func (k KVStatFile) Export() *KVStatFileInternal__ {
 	return &KVStatFileInternal__{
 		Size: k.Size.Export(),
 	}
 }
-
 func (k *KVStatFile) Encode(enc rpc.Encoder) error {
 	return enc.Encode(k.Export())
 }
@@ -648,7 +616,6 @@ func (k *KVStatFile) Bytes() []byte { return nil }
 type KVStatSymlink struct {
 	Target lib.KVPath
 }
-
 type KVStatSymlinkInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Target  *lib.KVPathInternal__
@@ -664,13 +631,11 @@ func (k KVStatSymlinkInternal__) Import() KVStatSymlink {
 		})(k.Target),
 	}
 }
-
 func (k KVStatSymlink) Export() *KVStatSymlinkInternal__ {
 	return &KVStatSymlinkInternal__{
 		Target: k.Target.Export(),
 	}
 }
-
 func (k *KVStatSymlink) Encode(enc rpc.Encoder) error {
 	return enc.Encode(k.Export())
 }
@@ -690,7 +655,6 @@ func (k *KVStatSymlink) Bytes() []byte { return nil }
 type KVStatDir struct {
 	Vers lib.KVVersion
 }
-
 type KVStatDirInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Vers    *lib.KVVersionInternal__
@@ -706,13 +670,11 @@ func (k KVStatDirInternal__) Import() KVStatDir {
 		})(k.Vers),
 	}
 }
-
 func (k KVStatDir) Export() *KVStatDirInternal__ {
 	return &KVStatDirInternal__{
 		Vers: k.Vers.Export(),
 	}
 }
-
 func (k *KVStatDir) Encode(enc rpc.Encoder) error {
 	return enc.Encode(k.Export())
 }
@@ -735,13 +697,11 @@ type KVStatVar struct {
 	F_2__ *KVStatFile    `json:"f2,omitempty"`
 	F_4__ *KVStatSymlink `json:"f4,omitempty"`
 }
-
 type KVStatVarInternal__ struct {
 	_struct  struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	T        lib.KVNodeType
 	Switch__ KVStatVarInternalSwitch__
 }
-
 type KVStatVarInternalSwitch__ struct {
 	_struct struct{}                 `codec:",omitempty"` //lint:ignore U1000 msgpack internal field
 	F_1__   *KVStatDirInternal__     `codec:"1"`
@@ -766,75 +726,66 @@ func (k KVStatVar) GetT() (ret lib.KVNodeType, err error) {
 	}
 	return k.T, nil
 }
-
 func (k KVStatVar) Dir() KVStatDir {
 	if k.F_1__ == nil {
-		panic("unexepected nil case; should have been checked")
+		panic("unexpected nil case; should have been checked")
 	}
 	if k.T != lib.KVNodeType_Dir {
 		panic(fmt.Sprintf("unexpected switch value (%v) when Dir is called", k.T))
 	}
 	return *k.F_1__
 }
-
 func (k KVStatVar) Smallfile() KVStatFile {
 	if k.F_2__ == nil {
-		panic("unexepected nil case; should have been checked")
+		panic("unexpected nil case; should have been checked")
 	}
 	if k.T != lib.KVNodeType_SmallFile {
 		panic(fmt.Sprintf("unexpected switch value (%v) when Smallfile is called", k.T))
 	}
 	return *k.F_2__
 }
-
 func (k KVStatVar) File() KVStatFile {
 	if k.F_2__ == nil {
-		panic("unexepected nil case; should have been checked")
+		panic("unexpected nil case; should have been checked")
 	}
 	if k.T != lib.KVNodeType_File {
 		panic(fmt.Sprintf("unexpected switch value (%v) when File is called", k.T))
 	}
 	return *k.F_2__
 }
-
 func (k KVStatVar) Symlink() KVStatSymlink {
 	if k.F_4__ == nil {
-		panic("unexepected nil case; should have been checked")
+		panic("unexpected nil case; should have been checked")
 	}
 	if k.T != lib.KVNodeType_Symlink {
 		panic(fmt.Sprintf("unexpected switch value (%v) when Symlink is called", k.T))
 	}
 	return *k.F_4__
 }
-
 func NewKVStatVarWithDir(v KVStatDir) KVStatVar {
 	return KVStatVar{
 		T:     lib.KVNodeType_Dir,
 		F_1__: &v,
 	}
 }
-
 func NewKVStatVarWithSmallfile(v KVStatFile) KVStatVar {
 	return KVStatVar{
 		T:     lib.KVNodeType_SmallFile,
 		F_2__: &v,
 	}
 }
-
 func NewKVStatVarWithFile(v KVStatFile) KVStatVar {
 	return KVStatVar{
 		T:     lib.KVNodeType_File,
 		F_2__: &v,
 	}
 }
-
 func NewKVStatVarWithSymlink(v KVStatSymlink) KVStatVar {
 	return KVStatVar{
 		T:     lib.KVNodeType_Symlink,
 		F_4__: &v,
 	}
 }
-
 func (k KVStatVarInternal__) Import() KVStatVar {
 	return KVStatVar{
 		T: k.T,
@@ -876,7 +827,6 @@ func (k KVStatVarInternal__) Import() KVStatVar {
 		})(k.Switch__.F_4__),
 	}
 }
-
 func (k KVStatVar) Export() *KVStatVarInternal__ {
 	return &KVStatVarInternal__{
 		T: k.T,
@@ -902,7 +852,6 @@ func (k KVStatVar) Export() *KVStatVarInternal__ {
 		},
 	}
 }
-
 func (k *KVStatVar) Encode(enc rpc.Encoder) error {
 	return enc.Encode(k.Export())
 }
@@ -925,7 +874,6 @@ type KVStat struct {
 	Read  lib.RoleAndGen
 	Write lib.Role
 }
-
 type KVStatInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	De      *lib.KVDirentInternal__
@@ -968,7 +916,6 @@ func (k KVStatInternal__) Import() KVStat {
 		})(k.Write),
 	}
 }
-
 func (k KVStat) Export() *KVStatInternal__ {
 	return &KVStatInternal__{
 		De: (func(x *lib.KVDirent) *lib.KVDirentInternal__ {
@@ -982,7 +929,6 @@ func (k KVStat) Export() *KVStatInternal__ {
 		Write: k.Write.Export(),
 	}
 }
-
 func (k *KVStat) Encode(enc rpc.Encoder) error {
 	return enc.Encode(k.Export())
 }
@@ -1003,7 +949,6 @@ type KVListNext struct {
 	Id  lib.DirID
 	Nxt lib.KVListPagination
 }
-
 type KVListNextInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Id      *lib.DirIDInternal__
@@ -1026,14 +971,12 @@ func (k KVListNextInternal__) Import() KVListNext {
 		})(k.Nxt),
 	}
 }
-
 func (k KVListNext) Export() *KVListNextInternal__ {
 	return &KVListNextInternal__{
 		Id:  k.Id.Export(),
 		Nxt: k.Nxt.Export(),
 	}
 }
-
 func (k *KVListNext) Encode(enc rpc.Encoder) error {
 	return enc.Encode(k.Export())
 }
@@ -1055,7 +998,6 @@ type CliKVListRes struct {
 	Nxt    *KVListNext
 	Parent lib.KVPath
 }
-
 type CliKVListResInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Ents    *[](*KVListEntryInternal__)
@@ -1103,7 +1045,6 @@ func (c CliKVListResInternal__) Import() CliKVListRes {
 		})(c.Parent),
 	}
 }
-
 func (c CliKVListRes) Export() *CliKVListResInternal__ {
 	return &CliKVListResInternal__{
 		Ents: (func(x []KVListEntry) *[](*KVListEntryInternal__) {
@@ -1125,7 +1066,6 @@ func (c CliKVListRes) Export() *CliKVListResInternal__ {
 		Parent: c.Parent.Export(),
 	}
 }
-
 func (c *CliKVListRes) Encode(enc rpc.Encoder) error {
 	return enc.Encode(c.Export())
 }
@@ -1150,7 +1090,6 @@ type KVListEntry struct {
 	Mtime lib.TimeMicro
 	Ctime lib.TimeMicro
 }
-
 type KVListEntryInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	De      *lib.DirentIDInternal__
@@ -1201,7 +1140,6 @@ func (k KVListEntryInternal__) Import() KVListEntry {
 		})(k.Ctime),
 	}
 }
-
 func (k KVListEntry) Export() *KVListEntryInternal__ {
 	return &KVListEntryInternal__{
 		De:    k.De.Export(),
@@ -1212,7 +1150,6 @@ func (k KVListEntry) Export() *KVListEntryInternal__ {
 		Ctime: k.Ctime.Export(),
 	}
 }
-
 func (k *KVListEntry) Encode(enc rpc.Encoder) error {
 	return enc.Encode(k.Export())
 }
@@ -1234,7 +1171,6 @@ type ChunkNoncePayload struct {
 	Offset lib.Offset
 	Final  bool
 }
-
 type ChunkNoncePayloadInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Id      *lib.FileIDInternal__
@@ -1264,7 +1200,6 @@ func (c ChunkNoncePayloadInternal__) Import() ChunkNoncePayload {
 		})(c.Final),
 	}
 }
-
 func (c ChunkNoncePayload) Export() *ChunkNoncePayloadInternal__ {
 	return &ChunkNoncePayloadInternal__{
 		Id:     c.Id.Export(),
@@ -1272,7 +1207,6 @@ func (c ChunkNoncePayload) Export() *ChunkNoncePayloadInternal__ {
 		Final:  &c.Final,
 	}
 }
-
 func (c *ChunkNoncePayload) Encode(enc rpc.Encoder) error {
 	return enc.Encode(c.Export())
 }
@@ -1292,7 +1226,6 @@ var ChunkNoncePayloadTypeUniqueID = rpc.TypeUniqueID(0xadba174b7e8dcc08)
 func (c *ChunkNoncePayload) GetTypeUniqueID() rpc.TypeUniqueID {
 	return ChunkNoncePayloadTypeUniqueID
 }
-
 func (c *ChunkNoncePayload) Bytes() []byte { return nil }
 
 var KVProtocolID rpc.ProtocolUniqueID = rpc.ProtocolUniqueID(0xddf3c319)
@@ -1301,7 +1234,6 @@ type ClientKVMkdirArg struct {
 	Cfg  KVConfig
 	Path lib.KVPath
 }
-
 type ClientKVMkdirArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Cfg     *KVConfigInternal__
@@ -1324,14 +1256,12 @@ func (c ClientKVMkdirArgInternal__) Import() ClientKVMkdirArg {
 		})(c.Path),
 	}
 }
-
 func (c ClientKVMkdirArg) Export() *ClientKVMkdirArgInternal__ {
 	return &ClientKVMkdirArgInternal__{
 		Cfg:  c.Cfg.Export(),
 		Path: c.Path.Export(),
 	}
 }
-
 func (c *ClientKVMkdirArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(c.Export())
 }
@@ -1354,7 +1284,6 @@ type ClientKVPutFirstArg struct {
 	Chunk lib.ChunkPlaintext
 	Final bool
 }
-
 type ClientKVPutFirstArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Cfg     *KVConfigInternal__
@@ -1391,7 +1320,6 @@ func (c ClientKVPutFirstArgInternal__) Import() ClientKVPutFirstArg {
 		})(c.Final),
 	}
 }
-
 func (c ClientKVPutFirstArg) Export() *ClientKVPutFirstArgInternal__ {
 	return &ClientKVPutFirstArgInternal__{
 		Cfg:   c.Cfg.Export(),
@@ -1400,7 +1328,6 @@ func (c ClientKVPutFirstArg) Export() *ClientKVPutFirstArgInternal__ {
 		Final: &c.Final,
 	}
 }
-
 func (c *ClientKVPutFirstArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(c.Export())
 }
@@ -1424,7 +1351,6 @@ type ClientKVPutChunkArg struct {
 	Offset lib.Offset
 	Final  bool
 }
-
 type ClientKVPutChunkArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Cfg     *KVConfigInternal__
@@ -1468,7 +1394,6 @@ func (c ClientKVPutChunkArgInternal__) Import() ClientKVPutChunkArg {
 		})(c.Final),
 	}
 }
-
 func (c ClientKVPutChunkArg) Export() *ClientKVPutChunkArgInternal__ {
 	return &ClientKVPutChunkArgInternal__{
 		Cfg:    c.Cfg.Export(),
@@ -1478,7 +1403,6 @@ func (c ClientKVPutChunkArg) Export() *ClientKVPutChunkArgInternal__ {
 		Final:  &c.Final,
 	}
 }
-
 func (c *ClientKVPutChunkArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(c.Export())
 }
@@ -1499,7 +1423,6 @@ type ClientKVGetFileArg struct {
 	Cfg  KVConfig
 	Path lib.KVPath
 }
-
 type ClientKVGetFileArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Cfg     *KVConfigInternal__
@@ -1522,14 +1445,12 @@ func (c ClientKVGetFileArgInternal__) Import() ClientKVGetFileArg {
 		})(c.Path),
 	}
 }
-
 func (c ClientKVGetFileArg) Export() *ClientKVGetFileArgInternal__ {
 	return &ClientKVGetFileArgInternal__{
 		Cfg:  c.Cfg.Export(),
 		Path: c.Path.Export(),
 	}
 }
-
 func (c *ClientKVGetFileArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(c.Export())
 }
@@ -1551,7 +1472,6 @@ type ClientKVGetFileChunkArg struct {
 	Id     lib.FileID
 	Offset lib.Offset
 }
-
 type ClientKVGetFileChunkArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Cfg     *KVConfigInternal__
@@ -1581,7 +1501,6 @@ func (c ClientKVGetFileChunkArgInternal__) Import() ClientKVGetFileChunkArg {
 		})(c.Offset),
 	}
 }
-
 func (c ClientKVGetFileChunkArg) Export() *ClientKVGetFileChunkArgInternal__ {
 	return &ClientKVGetFileChunkArgInternal__{
 		Cfg:    c.Cfg.Export(),
@@ -1589,7 +1508,6 @@ func (c ClientKVGetFileChunkArg) Export() *ClientKVGetFileChunkArgInternal__ {
 		Offset: c.Offset.Export(),
 	}
 }
-
 func (c *ClientKVGetFileChunkArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(c.Export())
 }
@@ -1611,7 +1529,6 @@ type ClientKVSymlinkArg struct {
 	Path   lib.KVPath
 	Target lib.KVPath
 }
-
 type ClientKVSymlinkArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Cfg     *KVConfigInternal__
@@ -1641,7 +1558,6 @@ func (c ClientKVSymlinkArgInternal__) Import() ClientKVSymlinkArg {
 		})(c.Target),
 	}
 }
-
 func (c ClientKVSymlinkArg) Export() *ClientKVSymlinkArgInternal__ {
 	return &ClientKVSymlinkArgInternal__{
 		Cfg:    c.Cfg.Export(),
@@ -1649,7 +1565,6 @@ func (c ClientKVSymlinkArg) Export() *ClientKVSymlinkArgInternal__ {
 		Target: c.Target.Export(),
 	}
 }
-
 func (c *ClientKVSymlinkArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(c.Export())
 }
@@ -1670,7 +1585,6 @@ type ClientKVReadlinkArg struct {
 	Cfg  KVConfig
 	Path lib.KVPath
 }
-
 type ClientKVReadlinkArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Cfg     *KVConfigInternal__
@@ -1693,14 +1607,12 @@ func (c ClientKVReadlinkArgInternal__) Import() ClientKVReadlinkArg {
 		})(c.Path),
 	}
 }
-
 func (c ClientKVReadlinkArg) Export() *ClientKVReadlinkArgInternal__ {
 	return &ClientKVReadlinkArgInternal__{
 		Cfg:  c.Cfg.Export(),
 		Path: c.Path.Export(),
 	}
 }
-
 func (c *ClientKVReadlinkArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(c.Export())
 }
@@ -1722,7 +1634,6 @@ type ClientKVMvArg struct {
 	Src lib.KVPath
 	Dst lib.KVPath
 }
-
 type ClientKVMvArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Cfg     *KVConfigInternal__
@@ -1752,7 +1663,6 @@ func (c ClientKVMvArgInternal__) Import() ClientKVMvArg {
 		})(c.Dst),
 	}
 }
-
 func (c ClientKVMvArg) Export() *ClientKVMvArgInternal__ {
 	return &ClientKVMvArgInternal__{
 		Cfg: c.Cfg.Export(),
@@ -1760,7 +1670,6 @@ func (c ClientKVMvArg) Export() *ClientKVMvArgInternal__ {
 		Dst: c.Dst.Export(),
 	}
 }
-
 func (c *ClientKVMvArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(c.Export())
 }
@@ -1781,7 +1690,6 @@ type ClientKVStatArg struct {
 	Cfg  KVConfig
 	Path lib.KVPath
 }
-
 type ClientKVStatArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Cfg     *KVConfigInternal__
@@ -1804,14 +1712,12 @@ func (c ClientKVStatArgInternal__) Import() ClientKVStatArg {
 		})(c.Path),
 	}
 }
-
 func (c ClientKVStatArg) Export() *ClientKVStatArgInternal__ {
 	return &ClientKVStatArgInternal__{
 		Cfg:  c.Cfg.Export(),
 		Path: c.Path.Export(),
 	}
 }
-
 func (c *ClientKVStatArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(c.Export())
 }
@@ -1832,7 +1738,6 @@ type ClientKVUnlinkArg struct {
 	Cfg  KVConfig
 	Path lib.KVPath
 }
-
 type ClientKVUnlinkArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Cfg     *KVConfigInternal__
@@ -1855,14 +1760,12 @@ func (c ClientKVUnlinkArgInternal__) Import() ClientKVUnlinkArg {
 		})(c.Path),
 	}
 }
-
 func (c ClientKVUnlinkArg) Export() *ClientKVUnlinkArgInternal__ {
 	return &ClientKVUnlinkArgInternal__{
 		Cfg:  c.Cfg.Export(),
 		Path: c.Path.Export(),
 	}
 }
-
 func (c *ClientKVUnlinkArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(c.Export())
 }
@@ -1886,7 +1789,6 @@ type ClientKVListArg struct {
 	DirID *lib.DirID
 	Num   uint64
 }
-
 type ClientKVListArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Cfg     *KVConfigInternal__
@@ -1936,7 +1838,6 @@ func (c ClientKVListArgInternal__) Import() ClientKVListArg {
 		})(c.Num),
 	}
 }
-
 func (c ClientKVListArg) Export() *ClientKVListArgInternal__ {
 	return &ClientKVListArgInternal__{
 		Cfg:  c.Cfg.Export(),
@@ -1951,7 +1852,6 @@ func (c ClientKVListArg) Export() *ClientKVListArgInternal__ {
 		Num: &c.Num,
 	}
 }
-
 func (c *ClientKVListArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(c.Export())
 }
@@ -1972,7 +1872,6 @@ type ClientKVRmArg struct {
 	Cfg  KVConfig
 	Path lib.KVPath
 }
-
 type ClientKVRmArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Cfg     *KVConfigInternal__
@@ -1995,14 +1894,12 @@ func (c ClientKVRmArgInternal__) Import() ClientKVRmArg {
 		})(c.Path),
 	}
 }
-
 func (c ClientKVRmArg) Export() *ClientKVRmArgInternal__ {
 	return &ClientKVRmArgInternal__{
 		Cfg:  c.Cfg.Export(),
 		Path: c.Path.Export(),
 	}
 }
-
 func (c *ClientKVRmArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(c.Export())
 }
@@ -2022,7 +1919,6 @@ func (c *ClientKVRmArg) Bytes() []byte { return nil }
 type ClientKVUsageArg struct {
 	Cfg KVConfig
 }
-
 type ClientKVUsageArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Cfg     *KVConfigInternal__
@@ -2038,13 +1934,11 @@ func (c ClientKVUsageArgInternal__) Import() ClientKVUsageArg {
 		})(c.Cfg),
 	}
 }
-
 func (c ClientKVUsageArg) Export() *ClientKVUsageArgInternal__ {
 	return &ClientKVUsageArgInternal__{
 		Cfg: c.Cfg.Export(),
 	}
 }
-
 func (c *ClientKVUsageArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(c.Export())
 }
@@ -2077,7 +1971,6 @@ type KVInterface interface {
 	ClientKVUsage(context.Context, KVConfig) (lib.KVUsage, error)
 	ErrorWrapper() func(error) lib.Status
 	CheckArgHeader(ctx context.Context, h Header) error
-
 	MakeResHeader() Header
 }
 
@@ -2104,7 +1997,7 @@ func (k kVErrorUnwrapperAdapter) MakeArg() interface{} {
 func (k kVErrorUnwrapperAdapter) UnwrapError(raw interface{}) (appError error, dispatchError error) {
 	sTmp, ok := raw.(*lib.StatusInternal__)
 	if !ok {
-		return nil, errors.New("Error converting to internal type in UnwrapError")
+		return nil, errors.New("error converting to internal type in UnwrapError")
 	}
 	if sTmp == nil {
 		return nil, nil
@@ -2142,7 +2035,6 @@ func (c KVClient) ClientKVMkdir(ctx context.Context, arg ClientKVMkdirArg) (res 
 	res = tmp.Data.Import()
 	return
 }
-
 func (c KVClient) ClientKVPutFirst(ctx context.Context, arg ClientKVPutFirstArg) (res lib.KVNodeID, err error) {
 	warg := &rpc.DataWrap[Header, *ClientKVPutFirstArgInternal__]{
 		Data: arg.Export(),
@@ -2164,7 +2056,6 @@ func (c KVClient) ClientKVPutFirst(ctx context.Context, arg ClientKVPutFirstArg)
 	res = tmp.Data.Import()
 	return
 }
-
 func (c KVClient) ClientKVPutChunk(ctx context.Context, arg ClientKVPutChunkArg) (err error) {
 	warg := &rpc.DataWrap[Header, *ClientKVPutChunkArgInternal__]{
 		Data: arg.Export(),
@@ -2185,7 +2076,6 @@ func (c KVClient) ClientKVPutChunk(ctx context.Context, arg ClientKVPutChunkArg)
 	}
 	return
 }
-
 func (c KVClient) ClientKVGetFile(ctx context.Context, arg ClientKVGetFileArg) (res GetFileRes, err error) {
 	warg := &rpc.DataWrap[Header, *ClientKVGetFileArgInternal__]{
 		Data: arg.Export(),
@@ -2207,7 +2097,6 @@ func (c KVClient) ClientKVGetFile(ctx context.Context, arg ClientKVGetFileArg) (
 	res = tmp.Data.Import()
 	return
 }
-
 func (c KVClient) ClientKVGetFileChunk(ctx context.Context, arg ClientKVGetFileChunkArg) (res GetFileChunkRes, err error) {
 	warg := &rpc.DataWrap[Header, *ClientKVGetFileChunkArgInternal__]{
 		Data: arg.Export(),
@@ -2229,7 +2118,6 @@ func (c KVClient) ClientKVGetFileChunk(ctx context.Context, arg ClientKVGetFileC
 	res = tmp.Data.Import()
 	return
 }
-
 func (c KVClient) ClientKVSymlink(ctx context.Context, arg ClientKVSymlinkArg) (res lib.KVNodeID, err error) {
 	warg := &rpc.DataWrap[Header, *ClientKVSymlinkArgInternal__]{
 		Data: arg.Export(),
@@ -2251,7 +2139,6 @@ func (c KVClient) ClientKVSymlink(ctx context.Context, arg ClientKVSymlinkArg) (
 	res = tmp.Data.Import()
 	return
 }
-
 func (c KVClient) ClientKVReadlink(ctx context.Context, arg ClientKVReadlinkArg) (res lib.KVPath, err error) {
 	warg := &rpc.DataWrap[Header, *ClientKVReadlinkArgInternal__]{
 		Data: arg.Export(),
@@ -2273,7 +2160,6 @@ func (c KVClient) ClientKVReadlink(ctx context.Context, arg ClientKVReadlinkArg)
 	res = tmp.Data.Import()
 	return
 }
-
 func (c KVClient) ClientKVMv(ctx context.Context, arg ClientKVMvArg) (err error) {
 	warg := &rpc.DataWrap[Header, *ClientKVMvArgInternal__]{
 		Data: arg.Export(),
@@ -2294,7 +2180,6 @@ func (c KVClient) ClientKVMv(ctx context.Context, arg ClientKVMvArg) (err error)
 	}
 	return
 }
-
 func (c KVClient) ClientKVStat(ctx context.Context, arg ClientKVStatArg) (res KVStat, err error) {
 	warg := &rpc.DataWrap[Header, *ClientKVStatArgInternal__]{
 		Data: arg.Export(),
@@ -2316,7 +2201,6 @@ func (c KVClient) ClientKVStat(ctx context.Context, arg ClientKVStatArg) (res KV
 	res = tmp.Data.Import()
 	return
 }
-
 func (c KVClient) ClientKVUnlink(ctx context.Context, arg ClientKVUnlinkArg) (err error) {
 	warg := &rpc.DataWrap[Header, *ClientKVUnlinkArgInternal__]{
 		Data: arg.Export(),
@@ -2337,7 +2221,6 @@ func (c KVClient) ClientKVUnlink(ctx context.Context, arg ClientKVUnlinkArg) (er
 	}
 	return
 }
-
 func (c KVClient) ClientKVList(ctx context.Context, arg ClientKVListArg) (res CliKVListRes, err error) {
 	warg := &rpc.DataWrap[Header, *ClientKVListArgInternal__]{
 		Data: arg.Export(),
@@ -2359,7 +2242,6 @@ func (c KVClient) ClientKVList(ctx context.Context, arg ClientKVListArg) (res Cl
 	res = tmp.Data.Import()
 	return
 }
-
 func (c KVClient) ClientKVRm(ctx context.Context, arg ClientKVRmArg) (err error) {
 	warg := &rpc.DataWrap[Header, *ClientKVRmArgInternal__]{
 		Data: arg.Export(),
@@ -2380,7 +2262,6 @@ func (c KVClient) ClientKVRm(ctx context.Context, arg ClientKVRmArg) (err error)
 	}
 	return
 }
-
 func (c KVClient) ClientKVUsage(ctx context.Context, cfg KVConfig) (res lib.KVUsage, err error) {
 	arg := ClientKVUsageArg{
 		Cfg: cfg,
@@ -2405,7 +2286,6 @@ func (c KVClient) ClientKVUsage(ctx context.Context, cfg KVConfig) (res lib.KVUs
 	res = tmp.Data.Import()
 	return
 }
-
 func KVProtocol(i KVInterface) rpc.ProtocolV2 {
 	return rpc.ProtocolV2{
 		Name: "KV",

@@ -1,5 +1,5 @@
-// Auto-generated to Go types and interfaces using @foks-proj/snowpack-compiler 1.0.8 (git+https://github.com/foks-proj/node-snowpack-compiler.git)
-//  Input file: ../../proto-src/infra/test.snowp
+// Auto-generated to Go types and interfaces using snowpc 0.0.4 (https://github.com/foks-proj/go-snowpack-compiler)
+//  Input file:../../proto-src/infra/test.snowp
 
 package infra
 
@@ -19,7 +19,6 @@ type TestQueueServiceArg struct {
 	LaneId  QueueLaneID
 	Msg     []byte
 }
-
 type TestQueueServiceArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	QueueId *QueueIDInternal__
@@ -49,7 +48,6 @@ func (t TestQueueServiceArgInternal__) Import() TestQueueServiceArg {
 		})(t.Msg),
 	}
 }
-
 func (t TestQueueServiceArg) Export() *TestQueueServiceArgInternal__ {
 	return &TestQueueServiceArgInternal__{
 		QueueId: t.QueueId.Export(),
@@ -57,7 +55,6 @@ func (t TestQueueServiceArg) Export() *TestQueueServiceArgInternal__ {
 		Msg:     &t.Msg,
 	}
 }
-
 func (t *TestQueueServiceArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(t.Export())
 }
@@ -102,7 +99,7 @@ func (t testServicesErrorUnwrapperAdapter) MakeArg() interface{} {
 func (t testServicesErrorUnwrapperAdapter) UnwrapError(raw interface{}) (appError error, dispatchError error) {
 	sTmp, ok := raw.(*lib.StatusInternal__)
 	if !ok {
-		return nil, errors.New("Error converting to internal type in UnwrapError")
+		return nil, errors.New("error converting to internal type in UnwrapError")
 	}
 	if sTmp == nil {
 		return nil, nil
@@ -127,7 +124,6 @@ func (c TestServicesClient) TestQueueService(ctx context.Context, arg TestQueueS
 	res = tmp
 	return
 }
-
 func TestServicesProtocol(i TestServicesInterface) rpc.ProtocolV2 {
 	return rpc.ProtocolV2{
 		Name: "TestServices",

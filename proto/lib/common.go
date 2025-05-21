@@ -1,5 +1,5 @@
-// Auto-generated to Go types and interfaces using @foks-proj/snowpack-compiler 1.0.8 (git+https://github.com/foks-proj/node-snowpack-compiler.git)
-//  Input file: ../../proto-src/lib/common.snowp
+// Auto-generated to Go types and interfaces using snowpc 0.0.4 (https://github.com/foks-proj/go-snowpack-compiler)
+//  Input file:../../proto-src/lib/common.snowp
 
 package lib
 
@@ -16,7 +16,6 @@ func (e EntityID) Export() *EntityIDInternal__ {
 	tmp := (([]byte)(e))
 	return ((*EntityIDInternal__)(&tmp))
 }
-
 func (e EntityIDInternal__) Import() EntityID {
 	tmp := ([]byte)(e)
 	return EntityID((func(x *[]byte) (ret []byte) {
@@ -52,7 +51,6 @@ func (e EntityID33) Export() *EntityID33Internal__ {
 	tmp := (([33]byte)(e))
 	return ((*EntityID33Internal__)(&tmp))
 }
-
 func (e EntityID33Internal__) Import() EntityID33 {
 	tmp := ([33]byte)(e)
 	return EntityID33((func(x *[33]byte) (ret [33]byte) {
@@ -88,7 +86,6 @@ func (e EntityID34) Export() *EntityID34Internal__ {
 	tmp := (([34]byte)(e))
 	return ((*EntityID34Internal__)(&tmp))
 }
-
 func (e EntityID34Internal__) Import() EntityID34 {
 	tmp := ([34]byte)(e)
 	return EntityID34((func(x *[34]byte) (ret [34]byte) {
@@ -124,7 +121,6 @@ func (u UID) Export() *UIDInternal__ {
 	tmp := ((EntityID33)(u))
 	return ((*UIDInternal__)(tmp.Export()))
 }
-
 func (u UIDInternal__) Import() UID {
 	tmp := (EntityID33Internal__)(u)
 	return UID((func(x *EntityID33Internal__) (ret EntityID33) {
@@ -160,7 +156,6 @@ func (t TeamID) Export() *TeamIDInternal__ {
 	tmp := ((EntityID33)(t))
 	return ((*TeamIDInternal__)(tmp.Export()))
 }
-
 func (t TeamIDInternal__) Import() TeamID {
 	tmp := (EntityID33Internal__)(t)
 	return TeamID((func(x *EntityID33Internal__) (ret EntityID33) {
@@ -196,7 +191,6 @@ func (d DeviceID) Export() *DeviceIDInternal__ {
 	tmp := ((EntityID)(d))
 	return ((*DeviceIDInternal__)(tmp.Export()))
 }
-
 func (d DeviceIDInternal__) Import() DeviceID {
 	tmp := (EntityIDInternal__)(d)
 	return DeviceID((func(x *EntityIDInternal__) (ret EntityID) {
@@ -232,7 +226,6 @@ func (x X509CertID) Export() *X509CertIDInternal__ {
 	tmp := ((EntityID)(x))
 	return ((*X509CertIDInternal__)(tmp.Export()))
 }
-
 func (x X509CertIDInternal__) Import() X509CertID {
 	tmp := (EntityIDInternal__)(x)
 	return X509CertID((func(x *EntityIDInternal__) (ret EntityID) {
@@ -268,7 +261,6 @@ func (l LocationVRFID) Export() *LocationVRFIDInternal__ {
 	tmp := ((EntityID)(l))
 	return ((*LocationVRFIDInternal__)(tmp.Export()))
 }
-
 func (l LocationVRFIDInternal__) Import() LocationVRFID {
 	tmp := (EntityIDInternal__)(l)
 	return LocationVRFID((func(x *EntityIDInternal__) (ret EntityID) {
@@ -304,7 +296,6 @@ func (s ServiceID) Export() *ServiceIDInternal__ {
 	tmp := ((EntityID)(s))
 	return ((*ServiceIDInternal__)(tmp.Export()))
 }
-
 func (s ServiceIDInternal__) Import() ServiceID {
 	tmp := (EntityIDInternal__)(s)
 	return ServiceID((func(x *EntityIDInternal__) (ret EntityID) {
@@ -340,7 +331,6 @@ func (y YubiID) Export() *YubiIDInternal__ {
 	tmp := ((EntityID)(y))
 	return ((*YubiIDInternal__)(tmp.Export()))
 }
-
 func (y YubiIDInternal__) Import() YubiID {
 	tmp := (EntityIDInternal__)(y)
 	return YubiID((func(x *EntityIDInternal__) (ret EntityID) {
@@ -376,7 +366,6 @@ func (n NameEntityID) Export() *NameEntityIDInternal__ {
 	tmp := ((EntityID33)(n))
 	return ((*NameEntityIDInternal__)(tmp.Export()))
 }
-
 func (n NameEntityIDInternal__) Import() NameEntityID {
 	tmp := (EntityID33Internal__)(n)
 	return NameEntityID((func(x *EntityID33Internal__) (ret EntityID33) {
@@ -412,7 +401,6 @@ func (h HostMerkleSignerID) Export() *HostMerkleSignerIDInternal__ {
 	tmp := ((EntityID)(h))
 	return ((*HostMerkleSignerIDInternal__)(tmp.Export()))
 }
-
 func (h HostMerkleSignerIDInternal__) Import() HostMerkleSignerID {
 	tmp := (EntityIDInternal__)(h)
 	return HostMerkleSignerID((func(x *EntityIDInternal__) (ret EntityID) {
@@ -448,7 +436,6 @@ func (h HostTLSCAID) Export() *HostTLSCAIDInternal__ {
 	tmp := ((EntityID33)(h))
 	return ((*HostTLSCAIDInternal__)(tmp.Export()))
 }
-
 func (h HostTLSCAIDInternal__) Import() HostTLSCAID {
 	tmp := (EntityID33Internal__)(h)
 	return HostTLSCAID((func(x *EntityID33Internal__) (ret EntityID33) {
@@ -484,7 +471,6 @@ func (h HostMetadataSignerID) Export() *HostMetadataSignerIDInternal__ {
 	tmp := ((EntityID)(h))
 	return ((*HostMetadataSignerIDInternal__)(tmp.Export()))
 }
-
 func (h HostMetadataSignerIDInternal__) Import() HostMetadataSignerID {
 	tmp := (EntityIDInternal__)(h)
 	return HostMetadataSignerID((func(x *EntityIDInternal__) (ret EntityID) {
@@ -520,7 +506,6 @@ func (s SubkeyID) Export() *SubkeyIDInternal__ {
 	tmp := ((EntityID)(s))
 	return ((*SubkeyIDInternal__)(tmp.Export()))
 }
-
 func (s SubkeyIDInternal__) Import() SubkeyID {
 	tmp := (EntityIDInternal__)(s)
 	return SubkeyID((func(x *EntityIDInternal__) (ret EntityID) {
@@ -556,7 +541,6 @@ func (p PUKVerifyID) Export() *PUKVerifyIDInternal__ {
 	tmp := ((EntityID)(p))
 	return ((*PUKVerifyIDInternal__)(tmp.Export()))
 }
-
 func (p PUKVerifyIDInternal__) Import() PUKVerifyID {
 	tmp := (EntityIDInternal__)(p)
 	return PUKVerifyID((func(x *EntityIDInternal__) (ret EntityID) {
@@ -592,7 +576,6 @@ func (p PTKVerifyID) Export() *PTKVerifyIDInternal__ {
 	tmp := ((EntityID)(p))
 	return ((*PTKVerifyIDInternal__)(tmp.Export()))
 }
-
 func (p PTKVerifyIDInternal__) Import() PTKVerifyID {
 	tmp := (EntityIDInternal__)(p)
 	return PTKVerifyID((func(x *EntityIDInternal__) (ret EntityID) {
@@ -628,7 +611,6 @@ func (b BackupKeyID) Export() *BackupKeyIDInternal__ {
 	tmp := ((EntityID)(b))
 	return ((*BackupKeyIDInternal__)(tmp.Export()))
 }
-
 func (b BackupKeyIDInternal__) Import() BackupKeyID {
 	tmp := (EntityIDInternal__)(b)
 	return BackupKeyID((func(x *EntityIDInternal__) (ret EntityID) {
@@ -664,7 +646,6 @@ func (p PassphraseKeyID) Export() *PassphraseKeyIDInternal__ {
 	tmp := ((EntityID)(p))
 	return ((*PassphraseKeyIDInternal__)(tmp.Export()))
 }
-
 func (p PassphraseKeyIDInternal__) Import() PassphraseKeyID {
 	tmp := (EntityIDInternal__)(p)
 	return PassphraseKeyID((func(x *EntityIDInternal__) (ret EntityID) {
@@ -700,7 +681,6 @@ func (p PKIXCertID) Export() *PKIXCertIDInternal__ {
 	tmp := ((EntityID)(p))
 	return ((*PKIXCertIDInternal__)(tmp.Export()))
 }
-
 func (p PKIXCertIDInternal__) Import() PKIXCertID {
 	tmp := (EntityIDInternal__)(p)
 	return PKIXCertID((func(x *EntityIDInternal__) (ret EntityID) {
@@ -736,7 +716,6 @@ func (h HostID) Export() *HostIDInternal__ {
 	tmp := ((EntityID33)(h))
 	return ((*HostIDInternal__)(tmp.Export()))
 }
-
 func (h HostIDInternal__) Import() HostID {
 	tmp := (EntityID33Internal__)(h)
 	return HostID((func(x *EntityID33Internal__) (ret EntityID33) {
@@ -766,7 +745,6 @@ var HostIDTypeUniqueID = rpc.TypeUniqueID(0xa2f3bf71638e062d)
 func (h *HostID) GetTypeUniqueID() rpc.TypeUniqueID {
 	return HostIDTypeUniqueID
 }
-
 func (h HostID) Bytes() []byte {
 	return ((EntityID33)(h)).Bytes()
 }
@@ -778,7 +756,6 @@ func (f FixedEntityID) Export() *FixedEntityIDInternal__ {
 	tmp := ((EntityID34)(f))
 	return ((*FixedEntityIDInternal__)(tmp.Export()))
 }
-
 func (f FixedEntityIDInternal__) Import() FixedEntityID {
 	tmp := (EntityID34Internal__)(f)
 	return FixedEntityID((func(x *EntityID34Internal__) (ret EntityID34) {
@@ -814,7 +791,6 @@ func (p PartyID) Export() *PartyIDInternal__ {
 	tmp := ((EntityID)(p))
 	return ((*PartyIDInternal__)(tmp.Export()))
 }
-
 func (p PartyIDInternal__) Import() PartyID {
 	tmp := (EntityIDInternal__)(p)
 	return PartyID((func(x *EntityIDInternal__) (ret EntityID) {
@@ -850,7 +826,6 @@ func (f FixedPartyID) Export() *FixedPartyIDInternal__ {
 	tmp := ((EntityID33)(f))
 	return ((*FixedPartyIDInternal__)(tmp.Export()))
 }
-
 func (f FixedPartyIDInternal__) Import() FixedPartyID {
 	tmp := (EntityID33Internal__)(f)
 	return FixedPartyID((func(x *EntityID33Internal__) (ret EntityID33) {
@@ -886,7 +861,6 @@ func (e EntityIDString) Export() *EntityIDStringInternal__ {
 	tmp := ((string)(e))
 	return ((*EntityIDStringInternal__)(&tmp))
 }
-
 func (e EntityIDStringInternal__) Import() EntityIDString {
 	tmp := (string)(e)
 	return EntityIDString((func(x *string) (ret string) {
@@ -958,7 +932,6 @@ var EntityTypeMap = map[string]EntityType{
 	"PassphraseKey":      17,
 	"PKIXCert":           18,
 }
-
 var EntityTypeRevMap = map[EntityType]string{
 	1:  "User",
 	2:  "Host",
@@ -985,7 +958,6 @@ type EntityTypeInternal__ EntityType
 func (e EntityTypeInternal__) Import() EntityType {
 	return EntityType(e)
 }
-
 func (e EntityType) Export() *EntityTypeInternal__ {
 	return ((*EntityTypeInternal__)(&e))
 }
@@ -1001,7 +973,6 @@ var DHTypeMap = map[string]DHType{
 	"Curve25519": 1,
 	"P256":       2,
 }
-
 var DHTypeRevMap = map[DHType]string{
 	1: "Curve25519",
 	2: "P256",
@@ -1012,7 +983,6 @@ type DHTypeInternal__ DHType
 func (d DHTypeInternal__) Import() DHType {
 	return DHType(d)
 }
-
 func (d DHType) Export() *DHTypeInternal__ {
 	return ((*DHTypeInternal__)(&d))
 }
@@ -1024,7 +994,6 @@ func (d DHSharedKey) Export() *DHSharedKeyInternal__ {
 	tmp := (([]byte)(d))
 	return ((*DHSharedKeyInternal__)(&tmp))
 }
-
 func (d DHSharedKeyInternal__) Import() DHSharedKey {
 	tmp := ([]byte)(d)
 	return DHSharedKey((func(x *[]byte) (ret []byte) {
@@ -1058,13 +1027,11 @@ type DHPublicKey struct {
 	F_0__ *Curve25519PublicKey      `json:"f0,omitempty"`
 	F_1__ *ECDSACompressedPublicKey `json:"f1,omitempty"`
 }
-
 type DHPublicKeyInternal__ struct {
 	_struct  struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	T        DHType
 	Switch__ DHPublicKeyInternalSwitch__
 }
-
 type DHPublicKeyInternalSwitch__ struct {
 	_struct struct{}                            `codec:",omitempty"` //lint:ignore U1000 msgpack internal field
 	F_0__   *Curve25519PublicKeyInternal__      `codec:"0"`
@@ -1084,41 +1051,36 @@ func (d DHPublicKey) GetT() (ret DHType, err error) {
 	}
 	return d.T, nil
 }
-
 func (d DHPublicKey) Curve25519() Curve25519PublicKey {
 	if d.F_0__ == nil {
-		panic("unexepected nil case; should have been checked")
+		panic("unexpected nil case; should have been checked")
 	}
 	if d.T != DHType_Curve25519 {
 		panic(fmt.Sprintf("unexpected switch value (%v) when Curve25519 is called", d.T))
 	}
 	return *d.F_0__
 }
-
 func (d DHPublicKey) P256() ECDSACompressedPublicKey {
 	if d.F_1__ == nil {
-		panic("unexepected nil case; should have been checked")
+		panic("unexpected nil case; should have been checked")
 	}
 	if d.T != DHType_P256 {
 		panic(fmt.Sprintf("unexpected switch value (%v) when P256 is called", d.T))
 	}
 	return *d.F_1__
 }
-
 func NewDHPublicKeyWithCurve25519(v Curve25519PublicKey) DHPublicKey {
 	return DHPublicKey{
 		T:     DHType_Curve25519,
 		F_0__: &v,
 	}
 }
-
 func NewDHPublicKeyWithP256(v ECDSACompressedPublicKey) DHPublicKey {
 	return DHPublicKey{
 		T:     DHType_P256,
 		F_1__: &v,
 	}
 }
-
 func (d DHPublicKeyInternal__) Import() DHPublicKey {
 	return DHPublicKey{
 		T: d.T,
@@ -1148,7 +1110,6 @@ func (d DHPublicKeyInternal__) Import() DHPublicKey {
 		})(d.Switch__.F_1__),
 	}
 }
-
 func (d DHPublicKey) Export() *DHPublicKeyInternal__ {
 	return &DHPublicKeyInternal__{
 		T: d.T,
@@ -1168,7 +1129,6 @@ func (d DHPublicKey) Export() *DHPublicKeyInternal__ {
 		},
 	}
 }
-
 func (d *DHPublicKey) Encode(enc rpc.Encoder) error {
 	return enc.Encode(d.Export())
 }
@@ -1192,7 +1152,6 @@ func (i ID16) Export() *ID16Internal__ {
 	tmp := (([17]byte)(i))
 	return ((*ID16Internal__)(&tmp))
 }
-
 func (i ID16Internal__) Import() ID16 {
 	tmp := ([17]byte)(i)
 	return ID16((func(x *[17]byte) (ret [17]byte) {
@@ -1228,7 +1187,6 @@ func (p PlanID) Export() *PlanIDInternal__ {
 	tmp := (([17]byte)(p))
 	return ((*PlanIDInternal__)(&tmp))
 }
-
 func (p PlanIDInternal__) Import() PlanID {
 	tmp := ([17]byte)(p)
 	return PlanID((func(x *[17]byte) (ret [17]byte) {
@@ -1264,7 +1222,6 @@ func (p PriceID) Export() *PriceIDInternal__ {
 	tmp := (([17]byte)(p))
 	return ((*PriceIDInternal__)(&tmp))
 }
-
 func (p PriceIDInternal__) Import() PriceID {
 	tmp := ([17]byte)(p)
 	return PriceID((func(x *[17]byte) (ret [17]byte) {
@@ -1300,7 +1257,6 @@ func (c CancelID) Export() *CancelIDInternal__ {
 	tmp := (([17]byte)(c))
 	return ((*CancelIDInternal__)(&tmp))
 }
-
 func (c CancelIDInternal__) Import() CancelID {
 	tmp := ([17]byte)(c)
 	return CancelID((func(x *[17]byte) (ret [17]byte) {
@@ -1336,7 +1292,6 @@ func (v VHostID) Export() *VHostIDInternal__ {
 	tmp := (([17]byte)(v))
 	return ((*VHostIDInternal__)(&tmp))
 }
-
 func (v VHostIDInternal__) Import() VHostID {
 	tmp := ([17]byte)(v)
 	return VHostID((func(x *[17]byte) (ret [17]byte) {
@@ -1372,7 +1327,6 @@ func (t TeamRSVP) Export() *TeamRSVPInternal__ {
 	tmp := (([17]byte)(t))
 	return ((*TeamRSVPInternal__)(&tmp))
 }
-
 func (t TeamRSVPInternal__) Import() TeamRSVP {
 	tmp := ([17]byte)(t)
 	return TeamRSVP((func(x *[17]byte) (ret [17]byte) {
@@ -1408,7 +1362,6 @@ func (t TeamRSVPLocal) Export() *TeamRSVPLocalInternal__ {
 	tmp := (([17]byte)(t))
 	return ((*TeamRSVPLocalInternal__)(&tmp))
 }
-
 func (t TeamRSVPLocalInternal__) Import() TeamRSVPLocal {
 	tmp := ([17]byte)(t)
 	return TeamRSVPLocal((func(x *[17]byte) (ret [17]byte) {
@@ -1444,7 +1397,6 @@ func (t TeamRSVPRemote) Export() *TeamRSVPRemoteInternal__ {
 	tmp := (([17]byte)(t))
 	return ((*TeamRSVPRemoteInternal__)(&tmp))
 }
-
 func (t TeamRSVPRemoteInternal__) Import() TeamRSVPRemote {
 	tmp := ([17]byte)(t)
 	return TeamRSVPRemote((func(x *[17]byte) (ret [17]byte) {
@@ -1480,7 +1432,6 @@ func (l LocalInstanceID) Export() *LocalInstanceIDInternal__ {
 	tmp := (([17]byte)(l))
 	return ((*LocalInstanceIDInternal__)(&tmp))
 }
-
 func (l LocalInstanceIDInternal__) Import() LocalInstanceID {
 	tmp := ([17]byte)(l)
 	return LocalInstanceID((func(x *[17]byte) (ret [17]byte) {
@@ -1516,7 +1467,6 @@ func (p PermissionToken) Export() *PermissionTokenInternal__ {
 	tmp := (([17]byte)(p))
 	return ((*PermissionTokenInternal__)(&tmp))
 }
-
 func (p PermissionTokenInternal__) Import() PermissionToken {
 	tmp := ([17]byte)(p)
 	return PermissionToken((func(x *[17]byte) (ret [17]byte) {
@@ -1552,7 +1502,6 @@ func (r ReservationToken) Export() *ReservationTokenInternal__ {
 	tmp := (([17]byte)(r))
 	return ((*ReservationTokenInternal__)(&tmp))
 }
-
 func (r ReservationTokenInternal__) Import() ReservationToken {
 	tmp := ([17]byte)(r)
 	return ReservationToken((func(x *[17]byte) (ret [17]byte) {
@@ -1588,7 +1537,6 @@ func (a AutocertID) Export() *AutocertIDInternal__ {
 	tmp := (([17]byte)(a))
 	return ((*AutocertIDInternal__)(&tmp))
 }
-
 func (a AutocertIDInternal__) Import() AutocertID {
 	tmp := ([17]byte)(a)
 	return AutocertID((func(x *[17]byte) (ret [17]byte) {
@@ -1624,7 +1572,6 @@ func (o OAuth2SessionID) Export() *OAuth2SessionIDInternal__ {
 	tmp := (([17]byte)(o))
 	return ((*OAuth2SessionIDInternal__)(&tmp))
 }
-
 func (o OAuth2SessionIDInternal__) Import() OAuth2SessionID {
 	tmp := ([17]byte)(o)
 	return OAuth2SessionID((func(x *[17]byte) (ret [17]byte) {
@@ -1660,7 +1607,6 @@ func (s SSOConfigID) Export() *SSOConfigIDInternal__ {
 	tmp := (([17]byte)(s))
 	return ((*SSOConfigIDInternal__)(&tmp))
 }
-
 func (s SSOConfigIDInternal__) Import() SSOConfigID {
 	tmp := ([17]byte)(s)
 	return SSOConfigID((func(x *[17]byte) (ret [17]byte) {
@@ -1696,7 +1642,6 @@ func (c CKSKeyID) Export() *CKSKeyIDInternal__ {
 	tmp := (([17]byte)(c))
 	return ((*CKSKeyIDInternal__)(&tmp))
 }
-
 func (c CKSKeyIDInternal__) Import() CKSKeyID {
 	tmp := ([17]byte)(c)
 	return CKSKeyID((func(x *[17]byte) (ret [17]byte) {
@@ -1760,7 +1705,6 @@ var ID16TypeMap = map[string]ID16Type{
 	"CKSKey":           49,
 	"MaxEntityType":    48,
 }
-
 var ID16TypeRevMap = map[ID16Type]string{
 	61: "Plan",
 	60: "Cancel",
@@ -1783,7 +1727,6 @@ type ID16TypeInternal__ ID16Type
 func (i ID16TypeInternal__) Import() ID16Type {
 	return ID16Type(i)
 }
-
 func (i ID16Type) Export() *ID16TypeInternal__ {
 	return ((*ID16TypeInternal__)(&i))
 }
@@ -1795,7 +1738,6 @@ func (i ID16String) Export() *ID16StringInternal__ {
 	tmp := ((string)(i))
 	return ((*ID16StringInternal__)(&tmp))
 }
-
 func (i ID16StringInternal__) Import() ID16String {
 	tmp := (string)(i)
 	return ID16String((func(x *string) (ret string) {
@@ -1831,7 +1773,6 @@ func (t TeamRSVPString) Export() *TeamRSVPStringInternal__ {
 	tmp := ((string)(t))
 	return ((*TeamRSVPStringInternal__)(&tmp))
 }
-
 func (t TeamRSVPStringInternal__) Import() TeamRSVPString {
 	tmp := (string)(t)
 	return TeamRSVPString((func(x *string) (ret string) {
@@ -1867,7 +1808,6 @@ func (o OAuth2SessionIDString) Export() *OAuth2SessionIDStringInternal__ {
 	tmp := ((string)(o))
 	return ((*OAuth2SessionIDStringInternal__)(&tmp))
 }
-
 func (o OAuth2SessionIDStringInternal__) Import() OAuth2SessionIDString {
 	tmp := (string)(o)
 	return OAuth2SessionIDString((func(x *string) (ret string) {
@@ -1903,7 +1843,6 @@ func (t Time) Export() *TimeInternal__ {
 	tmp := ((uint64)(t))
 	return ((*TimeInternal__)(&tmp))
 }
-
 func (t TimeInternal__) Import() Time {
 	tmp := (uint64)(t)
 	return Time((func(x *uint64) (ret uint64) {
@@ -1939,7 +1878,6 @@ func (t TimeMicro) Export() *TimeMicroInternal__ {
 	tmp := ((uint64)(t))
 	return ((*TimeMicroInternal__)(&tmp))
 }
-
 func (t TimeMicroInternal__) Import() TimeMicro {
 	tmp := (uint64)(t)
 	return TimeMicro((func(x *uint64) (ret uint64) {
@@ -1975,7 +1913,6 @@ func (d DurationSecs) Export() *DurationSecsInternal__ {
 	tmp := ((int64)(d))
 	return ((*DurationSecsInternal__)(&tmp))
 }
-
 func (d DurationSecsInternal__) Import() DurationSecs {
 	tmp := (int64)(d)
 	return DurationSecs((func(x *int64) (ret int64) {
@@ -2011,7 +1948,6 @@ func (d DurationMilli) Export() *DurationMilliInternal__ {
 	tmp := ((uint64)(d))
 	return ((*DurationMilliInternal__)(&tmp))
 }
-
 func (d DurationMilliInternal__) Import() DurationMilli {
 	tmp := (uint64)(d)
 	return DurationMilli((func(x *uint64) (ret uint64) {
@@ -2044,7 +1980,6 @@ type FQUser struct {
 	Uid    UID
 	HostID HostID
 }
-
 type FQUserInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Uid     *UIDInternal__
@@ -2067,14 +2002,12 @@ func (f FQUserInternal__) Import() FQUser {
 		})(f.HostID),
 	}
 }
-
 func (f FQUser) Export() *FQUserInternal__ {
 	return &FQUserInternal__{
 		Uid:    f.Uid.Export(),
 		HostID: f.HostID.Export(),
 	}
 }
-
 func (f *FQUser) Encode(enc rpc.Encoder) error {
 	return enc.Encode(f.Export())
 }
@@ -2094,14 +2027,12 @@ var FQUserTypeUniqueID = rpc.TypeUniqueID(0x98c90258bf748a2f)
 func (f *FQUser) GetTypeUniqueID() rpc.TypeUniqueID {
 	return FQUserTypeUniqueID
 }
-
 func (f *FQUser) Bytes() []byte { return nil }
 
 type FQUserAndRole struct {
 	Fqu  FQUser
 	Role Role
 }
-
 type FQUserAndRoleInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Fqu     *FQUserInternal__
@@ -2124,14 +2055,12 @@ func (f FQUserAndRoleInternal__) Import() FQUserAndRole {
 		})(f.Role),
 	}
 }
-
 func (f FQUserAndRole) Export() *FQUserAndRoleInternal__ {
 	return &FQUserAndRoleInternal__{
 		Fqu:  f.Fqu.Export(),
 		Role: f.Role.Export(),
 	}
 }
-
 func (f *FQUserAndRole) Encode(enc rpc.Encoder) error {
 	return enc.Encode(f.Export())
 }
@@ -2151,7 +2080,6 @@ var FQUserAndRoleTypeUniqueID = rpc.TypeUniqueID(0xe411cca2d702d96b)
 func (f *FQUserAndRole) GetTypeUniqueID() rpc.TypeUniqueID {
 	return FQUserAndRoleTypeUniqueID
 }
-
 func (f *FQUserAndRole) Bytes() []byte { return nil }
 
 type FQUserAndRoleString string
@@ -2161,7 +2089,6 @@ func (f FQUserAndRoleString) Export() *FQUserAndRoleStringInternal__ {
 	tmp := ((string)(f))
 	return ((*FQUserAndRoleStringInternal__)(&tmp))
 }
-
 func (f FQUserAndRoleStringInternal__) Import() FQUserAndRoleString {
 	tmp := (string)(f)
 	return FQUserAndRoleString((func(x *string) (ret string) {
@@ -2194,7 +2121,6 @@ type SubjectKeyID struct {
 	Fqu     FQUser
 	KeyType EntityType
 }
-
 type SubjectKeyIDInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Fqu     *FQUserInternal__
@@ -2217,14 +2143,12 @@ func (s SubjectKeyIDInternal__) Import() SubjectKeyID {
 		})(s.KeyType),
 	}
 }
-
 func (s SubjectKeyID) Export() *SubjectKeyIDInternal__ {
 	return &SubjectKeyIDInternal__{
 		Fqu:     s.Fqu.Export(),
 		KeyType: s.KeyType.Export(),
 	}
 }
-
 func (s *SubjectKeyID) Encode(enc rpc.Encoder) error {
 	return enc.Encode(s.Export())
 }
@@ -2248,7 +2172,6 @@ func (e Ed25519PublicKey) Export() *Ed25519PublicKeyInternal__ {
 	tmp := (([32]byte)(e))
 	return ((*Ed25519PublicKeyInternal__)(&tmp))
 }
-
 func (e Ed25519PublicKeyInternal__) Import() Ed25519PublicKey {
 	tmp := ([32]byte)(e)
 	return Ed25519PublicKey((func(x *[32]byte) (ret [32]byte) {
@@ -2284,7 +2207,6 @@ func (e Ed25519Signature) Export() *Ed25519SignatureInternal__ {
 	tmp := (([64]byte)(e))
 	return ((*Ed25519SignatureInternal__)(&tmp))
 }
-
 func (e Ed25519SignatureInternal__) Import() Ed25519Signature {
 	tmp := ([64]byte)(e)
 	return Ed25519Signature((func(x *[64]byte) (ret [64]byte) {
@@ -2320,7 +2242,6 @@ func (c Curve25519PublicKey) Export() *Curve25519PublicKeyInternal__ {
 	tmp := (([32]byte)(c))
 	return ((*Curve25519PublicKeyInternal__)(&tmp))
 }
-
 func (c Curve25519PublicKeyInternal__) Import() Curve25519PublicKey {
 	tmp := ([32]byte)(c)
 	return Curve25519PublicKey((func(x *[32]byte) (ret [32]byte) {
@@ -2356,7 +2277,6 @@ func (e ECDSACompressedPublicKey) Export() *ECDSACompressedPublicKeyInternal__ {
 	tmp := (([]byte)(e))
 	return ((*ECDSACompressedPublicKeyInternal__)(&tmp))
 }
-
 func (e ECDSACompressedPublicKeyInternal__) Import() ECDSACompressedPublicKey {
 	tmp := ([]byte)(e)
 	return ECDSACompressedPublicKey((func(x *[]byte) (ret []byte) {
@@ -2386,7 +2306,6 @@ var ECDSACompressedPublicKeyTypeUniqueID = rpc.TypeUniqueID(0xf3bcedcbd7b6754e)
 func (e *ECDSACompressedPublicKey) GetTypeUniqueID() rpc.TypeUniqueID {
 	return ECDSACompressedPublicKeyTypeUniqueID
 }
-
 func (e ECDSACompressedPublicKey) Bytes() []byte {
 	return (e)[:]
 }
@@ -2398,7 +2317,6 @@ func (e Ed25519SecretKey) Export() *Ed25519SecretKeyInternal__ {
 	tmp := (([32]byte)(e))
 	return ((*Ed25519SecretKeyInternal__)(&tmp))
 }
-
 func (e Ed25519SecretKeyInternal__) Import() Ed25519SecretKey {
 	tmp := ([32]byte)(e)
 	return Ed25519SecretKey((func(x *[32]byte) (ret [32]byte) {
@@ -2434,7 +2352,6 @@ func (s SecretBoxKey) Export() *SecretBoxKeyInternal__ {
 	tmp := (([32]byte)(s))
 	return ((*SecretBoxKeyInternal__)(&tmp))
 }
-
 func (s SecretBoxKeyInternal__) Import() SecretBoxKey {
 	tmp := ([32]byte)(s)
 	return SecretBoxKey((func(x *[32]byte) (ret [32]byte) {
@@ -2470,7 +2387,6 @@ func (c Curve25519SecretKey) Export() *Curve25519SecretKeyInternal__ {
 	tmp := (([32]byte)(c))
 	return ((*Curve25519SecretKeyInternal__)(&tmp))
 }
-
 func (c Curve25519SecretKeyInternal__) Import() Curve25519SecretKey {
 	tmp := ([32]byte)(c)
 	return Curve25519SecretKey((func(x *[32]byte) (ret [32]byte) {
@@ -2506,7 +2422,6 @@ func (e ECDSASignature) Export() *ECDSASignatureInternal__ {
 	tmp := (([]byte)(e))
 	return ((*ECDSASignatureInternal__)(&tmp))
 }
-
 func (e ECDSASignatureInternal__) Import() ECDSASignature {
 	tmp := ([]byte)(e)
 	return ECDSASignature((func(x *[]byte) (ret []byte) {
@@ -2542,7 +2457,6 @@ func (h HMACKey) Export() *HMACKeyInternal__ {
 	tmp := (([32]byte)(h))
 	return ((*HMACKeyInternal__)(&tmp))
 }
-
 func (h HMACKeyInternal__) Import() HMACKey {
 	tmp := ([32]byte)(h)
 	return HMACKey((func(x *[32]byte) (ret [32]byte) {
@@ -2578,7 +2492,6 @@ func (t TreeLocation) Export() *TreeLocationInternal__ {
 	tmp := (([32]byte)(t))
 	return ((*TreeLocationInternal__)(&tmp))
 }
-
 func (t TreeLocationInternal__) Import() TreeLocation {
 	tmp := ([32]byte)(t)
 	return TreeLocation((func(x *[32]byte) (ret [32]byte) {
@@ -2608,7 +2521,6 @@ var TreeLocationTypeUniqueID = rpc.TypeUniqueID(0xaeffd88b6cd267d9)
 func (t *TreeLocation) GetTypeUniqueID() rpc.TypeUniqueID {
 	return TreeLocationTypeUniqueID
 }
-
 func (t TreeLocation) Bytes() []byte {
 	return (t)[:]
 }
@@ -2620,7 +2532,6 @@ func (t TreeLocationCommitment) Export() *TreeLocationCommitmentInternal__ {
 	tmp := ((StdHash)(t))
 	return ((*TreeLocationCommitmentInternal__)(tmp.Export()))
 }
-
 func (t TreeLocationCommitmentInternal__) Import() TreeLocationCommitment {
 	tmp := (StdHashInternal__)(t)
 	return TreeLocationCommitment((func(x *StdHashInternal__) (ret StdHash) {
@@ -2650,7 +2561,6 @@ var TreeLocationCommitmentTypeUniqueID = rpc.TypeUniqueID(0xfbb95b5b0b49d6e3)
 func (t *TreeLocationCommitment) GetTypeUniqueID() rpc.TypeUniqueID {
 	return TreeLocationCommitmentTypeUniqueID
 }
-
 func (t TreeLocationCommitment) Bytes() []byte {
 	return ((StdHash)(t)).Bytes()
 }
@@ -2662,7 +2572,6 @@ func (l LinkHash) Export() *LinkHashInternal__ {
 	tmp := ((StdHash)(l))
 	return ((*LinkHashInternal__)(tmp.Export()))
 }
-
 func (l LinkHashInternal__) Import() LinkHash {
 	tmp := (StdHashInternal__)(l)
 	return LinkHash((func(x *StdHashInternal__) (ret StdHash) {
@@ -2698,7 +2607,6 @@ func (p Passphrase) Export() *PassphraseInternal__ {
 	tmp := ((string)(p))
 	return ((*PassphraseInternal__)(&tmp))
 }
-
 func (p PassphraseInternal__) Import() Passphrase {
 	tmp := (string)(p)
 	return Passphrase((func(x *string) (ret string) {
@@ -2734,7 +2642,6 @@ func (k KemSharedKey) Export() *KemSharedKeyInternal__ {
 	tmp := (([]byte)(k))
 	return ((*KemSharedKeyInternal__)(&tmp))
 }
-
 func (k KemSharedKeyInternal__) Import() KemSharedKey {
 	tmp := ([]byte)(k)
 	return KemSharedKey((func(x *[]byte) (ret []byte) {
@@ -2770,7 +2677,6 @@ func (k KemDecapKey) Export() *KemDecapKeyInternal__ {
 	tmp := (([]byte)(k))
 	return ((*KemDecapKeyInternal__)(&tmp))
 }
-
 func (k KemDecapKeyInternal__) Import() KemDecapKey {
 	tmp := ([]byte)(k)
 	return KemDecapKey((func(x *[]byte) (ret []byte) {
@@ -2806,7 +2712,6 @@ func (k KemCiphertext) Export() *KemCiphertextInternal__ {
 	tmp := (([]byte)(k))
 	return ((*KemCiphertextInternal__)(&tmp))
 }
-
 func (k KemCiphertextInternal__) Import() KemCiphertext {
 	tmp := ([]byte)(k)
 	return KemCiphertext((func(x *[]byte) (ret []byte) {
@@ -2842,7 +2747,6 @@ func (k KemSeed) Export() *KemSeedInternal__ {
 	tmp := (([]byte)(k))
 	return ((*KemSeedInternal__)(&tmp))
 }
-
 func (k KemSeedInternal__) Import() KemSeed {
 	tmp := ([]byte)(k)
 	return KemSeed((func(x *[]byte) (ret []byte) {
@@ -2878,7 +2782,6 @@ func (m MlkemSeed) Export() *MlkemSeedInternal__ {
 	tmp := (([64]byte)(m))
 	return ((*MlkemSeedInternal__)(&tmp))
 }
-
 func (m MlkemSeedInternal__) Import() MlkemSeed {
 	tmp := ([64]byte)(m)
 	return MlkemSeed((func(x *[64]byte) (ret [64]byte) {
@@ -2918,7 +2821,6 @@ var KEMTypeMap = map[string]KEMType{
 	"None":     0,
 	"Mlkem768": 1,
 }
-
 var KEMTypeRevMap = map[KEMType]string{
 	0: "None",
 	1: "Mlkem768",
@@ -2929,7 +2831,6 @@ type KEMTypeInternal__ KEMType
 func (k KEMTypeInternal__) Import() KEMType {
 	return KEMType(k)
 }
-
 func (k KEMType) Export() *KEMTypeInternal__ {
 	return ((*KEMTypeInternal__)(&k))
 }
@@ -2938,13 +2839,11 @@ type KemEncapKey struct {
 	T     KEMType
 	F_1__ *[]byte `json:"f1,omitempty"`
 }
-
 type KemEncapKeyInternal__ struct {
 	_struct  struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	T        KEMType
 	Switch__ KemEncapKeyInternalSwitch__
 }
-
 type KemEncapKeyInternalSwitch__ struct {
 	_struct struct{} `codec:",omitempty"` //lint:ignore U1000 msgpack internal field
 	F_1__   *[]byte  `codec:"1"`
@@ -2959,31 +2858,27 @@ func (k KemEncapKey) GetT() (ret KEMType, err error) {
 	}
 	return k.T, nil
 }
-
 func (k KemEncapKey) Mlkem768() []byte {
 	if k.F_1__ == nil {
-		panic("unexepected nil case; should have been checked")
+		panic("unexpected nil case; should have been checked")
 	}
 	if k.T != KEMType_Mlkem768 {
 		panic(fmt.Sprintf("unexpected switch value (%v) when Mlkem768 is called", k.T))
 	}
 	return *k.F_1__
 }
-
 func NewKemEncapKeyWithMlkem768(v []byte) KemEncapKey {
 	return KemEncapKey{
 		T:     KEMType_Mlkem768,
 		F_1__: &v,
 	}
 }
-
 func (k KemEncapKeyInternal__) Import() KemEncapKey {
 	return KemEncapKey{
 		T:     k.T,
 		F_1__: k.Switch__.F_1__,
 	}
 }
-
 func (k KemEncapKey) Export() *KemEncapKeyInternal__ {
 	return &KemEncapKeyInternal__{
 		T: k.T,
@@ -2992,7 +2887,6 @@ func (k KemEncapKey) Export() *KemEncapKeyInternal__ {
 		},
 	}
 }
-
 func (k *KemEncapKey) Encode(enc rpc.Encoder) error {
 	return enc.Encode(k.Export())
 }
@@ -3016,7 +2910,6 @@ func (s StdHash) Export() *StdHashInternal__ {
 	tmp := (([32]byte)(s))
 	return ((*StdHashInternal__)(&tmp))
 }
-
 func (s StdHashInternal__) Import() StdHash {
 	tmp := ([32]byte)(s)
 	return StdHash((func(x *[32]byte) (ret [32]byte) {
@@ -3052,7 +2945,6 @@ func (r RandomCommitmentKey) Export() *RandomCommitmentKeyInternal__ {
 	tmp := (([16]byte)(r))
 	return ((*RandomCommitmentKeyInternal__)(&tmp))
 }
-
 func (r RandomCommitmentKeyInternal__) Import() RandomCommitmentKey {
 	tmp := ([16]byte)(r)
 	return RandomCommitmentKey((func(x *[16]byte) (ret [16]byte) {
@@ -3088,7 +2980,6 @@ func (h HMAC) Export() *HMACInternal__ {
 	tmp := (([32]byte)(h))
 	return ((*HMACInternal__)(&tmp))
 }
-
 func (h HMACInternal__) Import() HMAC {
 	tmp := ([32]byte)(h)
 	return HMAC((func(x *[32]byte) (ret [32]byte) {
@@ -3124,7 +3015,6 @@ func (n NaclCiphertext) Export() *NaclCiphertextInternal__ {
 	tmp := (([]byte)(n))
 	return ((*NaclCiphertextInternal__)(&tmp))
 }
-
 func (n NaclCiphertextInternal__) Import() NaclCiphertext {
 	tmp := ([]byte)(n)
 	return NaclCiphertext((func(x *[]byte) (ret []byte) {
@@ -3160,7 +3050,6 @@ func (n NaclNonce) Export() *NaclNonceInternal__ {
 	tmp := (([16]byte)(n))
 	return ((*NaclNonceInternal__)(&tmp))
 }
-
 func (n NaclNonceInternal__) Import() NaclNonce {
 	tmp := ([16]byte)(n)
 	return NaclNonce((func(x *[16]byte) (ret [16]byte) {
@@ -3202,7 +3091,6 @@ var BoxTypeMap = map[string]BoxType{
 	"YUBI":   1,
 	"HYBRID": 2,
 }
-
 var BoxTypeRevMap = map[BoxType]string{
 	0: "NACL",
 	1: "YUBI",
@@ -3214,7 +3102,6 @@ type BoxTypeInternal__ BoxType
 func (b BoxTypeInternal__) Import() BoxType {
 	return BoxType(b)
 }
-
 func (b BoxType) Export() *BoxTypeInternal__ {
 	return ((*BoxTypeInternal__)(&b))
 }
@@ -3223,7 +3110,6 @@ type NaclSecretBox struct {
 	Nonce      NaclNonce
 	Ciphertext NaclCiphertext
 }
-
 type NaclSecretBoxInternal__ struct {
 	_struct    struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Nonce      *NaclNonceInternal__
@@ -3246,14 +3132,12 @@ func (n NaclSecretBoxInternal__) Import() NaclSecretBox {
 		})(n.Ciphertext),
 	}
 }
-
 func (n NaclSecretBox) Export() *NaclSecretBoxInternal__ {
 	return &NaclSecretBoxInternal__{
 		Nonce:      n.Nonce.Export(),
 		Ciphertext: n.Ciphertext.Export(),
 	}
 }
-
 func (n *NaclSecretBox) Encode(enc rpc.Encoder) error {
 	return enc.Encode(n.Export())
 }
@@ -3274,13 +3158,11 @@ type SecretBox struct {
 	T     BoxType
 	F_0__ *NaclSecretBox `json:"f0,omitempty"`
 }
-
 type SecretBoxInternal__ struct {
 	_struct  struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	T        BoxType
 	Switch__ SecretBoxInternalSwitch__
 }
-
 type SecretBoxInternalSwitch__ struct {
 	_struct struct{}                 `codec:",omitempty"` //lint:ignore U1000 msgpack internal field
 	F_0__   *NaclSecretBoxInternal__ `codec:"0"`
@@ -3295,24 +3177,21 @@ func (s SecretBox) GetT() (ret BoxType, err error) {
 	}
 	return s.T, nil
 }
-
 func (s SecretBox) Nacl() NaclSecretBox {
 	if s.F_0__ == nil {
-		panic("unexepected nil case; should have been checked")
+		panic("unexpected nil case; should have been checked")
 	}
 	if s.T != BoxType_NACL {
 		panic(fmt.Sprintf("unexpected switch value (%v) when Nacl is called", s.T))
 	}
 	return *s.F_0__
 }
-
 func NewSecretBoxWithNacl(v NaclSecretBox) SecretBox {
 	return SecretBox{
 		T:     BoxType_NACL,
 		F_0__: &v,
 	}
 }
-
 func (s SecretBoxInternal__) Import() SecretBox {
 	return SecretBox{
 		T: s.T,
@@ -3330,7 +3209,6 @@ func (s SecretBoxInternal__) Import() SecretBox {
 		})(s.Switch__.F_0__),
 	}
 }
-
 func (s SecretBox) Export() *SecretBoxInternal__ {
 	return &SecretBoxInternal__{
 		T: s.T,
@@ -3344,7 +3222,6 @@ func (s SecretBox) Export() *SecretBoxInternal__ {
 		},
 	}
 }
-
 func (s *SecretBox) Encode(enc rpc.Encoder) error {
 	return enc.Encode(s.Export())
 }
@@ -3366,7 +3243,6 @@ type NaclBox struct {
 	Nonce      *NaclNonce
 	Ciphertext NaclCiphertext
 }
-
 type NaclBoxInternal__ struct {
 	_struct    struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Pk         *Curve25519PublicKeyInternal__
@@ -3408,7 +3284,6 @@ func (n NaclBoxInternal__) Import() NaclBox {
 		})(n.Ciphertext),
 	}
 }
-
 func (n NaclBox) Export() *NaclBoxInternal__ {
 	return &NaclBoxInternal__{
 		Pk: (func(x *Curve25519PublicKey) *Curve25519PublicKeyInternal__ {
@@ -3426,7 +3301,6 @@ func (n NaclBox) Export() *NaclBoxInternal__ {
 		Ciphertext: n.Ciphertext.Export(),
 	}
 }
-
 func (n *NaclBox) Encode(enc rpc.Encoder) error {
 	return enc.Encode(n.Export())
 }
@@ -3449,13 +3323,11 @@ type Box struct {
 	F_1__ *YubiBox   `json:"f1,omitempty"`
 	F_2__ *BoxHybrid `json:"f2,omitempty"`
 }
-
 type BoxInternal__ struct {
 	_struct  struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	T        BoxType
 	Switch__ BoxInternalSwitch__
 }
-
 type BoxInternalSwitch__ struct {
 	_struct struct{}             `codec:",omitempty"` //lint:ignore U1000 msgpack internal field
 	F_0__   *NaclBoxInternal__   `codec:"0"`
@@ -3480,58 +3352,51 @@ func (b Box) GetT() (ret BoxType, err error) {
 	}
 	return b.T, nil
 }
-
 func (b Box) Nacl() NaclBox {
 	if b.F_0__ == nil {
-		panic("unexepected nil case; should have been checked")
+		panic("unexpected nil case; should have been checked")
 	}
 	if b.T != BoxType_NACL {
 		panic(fmt.Sprintf("unexpected switch value (%v) when Nacl is called", b.T))
 	}
 	return *b.F_0__
 }
-
 func (b Box) Yubi() YubiBox {
 	if b.F_1__ == nil {
-		panic("unexepected nil case; should have been checked")
+		panic("unexpected nil case; should have been checked")
 	}
 	if b.T != BoxType_YUBI {
 		panic(fmt.Sprintf("unexpected switch value (%v) when Yubi is called", b.T))
 	}
 	return *b.F_1__
 }
-
 func (b Box) Hybrid() BoxHybrid {
 	if b.F_2__ == nil {
-		panic("unexepected nil case; should have been checked")
+		panic("unexpected nil case; should have been checked")
 	}
 	if b.T != BoxType_HYBRID {
 		panic(fmt.Sprintf("unexpected switch value (%v) when Hybrid is called", b.T))
 	}
 	return *b.F_2__
 }
-
 func NewBoxWithNacl(v NaclBox) Box {
 	return Box{
 		T:     BoxType_NACL,
 		F_0__: &v,
 	}
 }
-
 func NewBoxWithYubi(v YubiBox) Box {
 	return Box{
 		T:     BoxType_YUBI,
 		F_1__: &v,
 	}
 }
-
 func NewBoxWithHybrid(v BoxHybrid) Box {
 	return Box{
 		T:     BoxType_HYBRID,
 		F_2__: &v,
 	}
 }
-
 func (b BoxInternal__) Import() Box {
 	return Box{
 		T: b.T,
@@ -3573,7 +3438,6 @@ func (b BoxInternal__) Import() Box {
 		})(b.Switch__.F_2__),
 	}
 }
-
 func (b Box) Export() *BoxInternal__ {
 	return &BoxInternal__{
 		T: b.T,
@@ -3599,7 +3463,6 @@ func (b Box) Export() *BoxInternal__ {
 		},
 	}
 }
-
 func (b *Box) Encode(enc rpc.Encoder) error {
 	return enc.Encode(b.Export())
 }
@@ -3619,7 +3482,6 @@ var BoxTypeUniqueID = rpc.TypeUniqueID(0xb83ffa8f8cfd2ee3)
 func (b *Box) GetTypeUniqueID() rpc.TypeUniqueID {
 	return BoxTypeUniqueID
 }
-
 func (b *Box) Bytes() []byte { return nil }
 
 type SignatureType int
@@ -3633,7 +3495,6 @@ var SignatureTypeMap = map[string]SignatureType{
 	"EDDSA": 0,
 	"ECDSA": 1,
 }
-
 var SignatureTypeRevMap = map[SignatureType]string{
 	0: "EDDSA",
 	1: "ECDSA",
@@ -3644,7 +3505,6 @@ type SignatureTypeInternal__ SignatureType
 func (s SignatureTypeInternal__) Import() SignatureType {
 	return SignatureType(s)
 }
-
 func (s SignatureType) Export() *SignatureTypeInternal__ {
 	return ((*SignatureTypeInternal__)(&s))
 }
@@ -3654,13 +3514,11 @@ type Signature struct {
 	F_0__ *Ed25519Signature `json:"f0,omitempty"`
 	F_1__ *ECDSASignature   `json:"f1,omitempty"`
 }
-
 type SignatureInternal__ struct {
 	_struct  struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	T        SignatureType
 	Switch__ SignatureInternalSwitch__
 }
-
 type SignatureInternalSwitch__ struct {
 	_struct struct{}                    `codec:",omitempty"` //lint:ignore U1000 msgpack internal field
 	F_0__   *Ed25519SignatureInternal__ `codec:"0"`
@@ -3680,41 +3538,36 @@ func (s Signature) GetT() (ret SignatureType, err error) {
 	}
 	return s.T, nil
 }
-
 func (s Signature) Eddsa() Ed25519Signature {
 	if s.F_0__ == nil {
-		panic("unexepected nil case; should have been checked")
+		panic("unexpected nil case; should have been checked")
 	}
 	if s.T != SignatureType_EDDSA {
 		panic(fmt.Sprintf("unexpected switch value (%v) when Eddsa is called", s.T))
 	}
 	return *s.F_0__
 }
-
 func (s Signature) Ecdsa() ECDSASignature {
 	if s.F_1__ == nil {
-		panic("unexepected nil case; should have been checked")
+		panic("unexpected nil case; should have been checked")
 	}
 	if s.T != SignatureType_ECDSA {
 		panic(fmt.Sprintf("unexpected switch value (%v) when Ecdsa is called", s.T))
 	}
 	return *s.F_1__
 }
-
 func NewSignatureWithEddsa(v Ed25519Signature) Signature {
 	return Signature{
 		T:     SignatureType_EDDSA,
 		F_0__: &v,
 	}
 }
-
 func NewSignatureWithEcdsa(v ECDSASignature) Signature {
 	return Signature{
 		T:     SignatureType_ECDSA,
 		F_1__: &v,
 	}
 }
-
 func (s SignatureInternal__) Import() Signature {
 	return Signature{
 		T: s.T,
@@ -3744,7 +3597,6 @@ func (s SignatureInternal__) Import() Signature {
 		})(s.Switch__.F_1__),
 	}
 }
-
 func (s Signature) Export() *SignatureInternal__ {
 	return &SignatureInternal__{
 		T: s.T,
@@ -3764,7 +3616,6 @@ func (s Signature) Export() *SignatureInternal__ {
 		},
 	}
 }
-
 func (s *Signature) Encode(enc rpc.Encoder) error {
 	return enc.Encode(s.Export())
 }
@@ -3786,7 +3637,6 @@ type TempDHKeySigTemplate struct {
 	TempDHKey TempDHKey
 	Signer    FQEntity
 }
-
 type TempDHKeySigTemplateInternal__ struct {
 	_struct   struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	BoxSetId  *BoxSetIDInternal__
@@ -3816,7 +3666,6 @@ func (t TempDHKeySigTemplateInternal__) Import() TempDHKeySigTemplate {
 		})(t.Signer),
 	}
 }
-
 func (t TempDHKeySigTemplate) Export() *TempDHKeySigTemplateInternal__ {
 	return &TempDHKeySigTemplateInternal__{
 		BoxSetId:  t.BoxSetId.Export(),
@@ -3824,7 +3673,6 @@ func (t TempDHKeySigTemplate) Export() *TempDHKeySigTemplateInternal__ {
 		Signer:    t.Signer.Export(),
 	}
 }
-
 func (t *TempDHKeySigTemplate) Encode(enc rpc.Encoder) error {
 	return enc.Encode(t.Export())
 }
@@ -3844,14 +3692,12 @@ var TempDHKeySigTemplateTypeUniqueID = rpc.TypeUniqueID(0xd51b5d990285023e)
 func (t *TempDHKeySigTemplate) GetTypeUniqueID() rpc.TypeUniqueID {
 	return TempDHKeySigTemplateTypeUniqueID
 }
-
 func (t *TempDHKeySigTemplate) Bytes() []byte { return nil }
 
 type TempDHKey struct {
 	Key  DHPublicKey
 	Time Time
 }
-
 type TempDHKeyInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Key     *DHPublicKeyInternal__
@@ -3874,14 +3720,12 @@ func (t TempDHKeyInternal__) Import() TempDHKey {
 		})(t.Time),
 	}
 }
-
 func (t TempDHKey) Export() *TempDHKeyInternal__ {
 	return &TempDHKeyInternal__{
 		Key:  t.Key.Export(),
 		Time: t.Time.Export(),
 	}
 }
-
 func (t *TempDHKey) Encode(enc rpc.Encoder) error {
 	return enc.Encode(t.Export())
 }
@@ -3902,7 +3746,6 @@ type TempDHKeySigned struct {
 	TempDHKey TempDHKey
 	Sig       Signature
 }
-
 type TempDHKeySignedInternal__ struct {
 	_struct   struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	TempDHKey *TempDHKeyInternal__
@@ -3925,14 +3768,12 @@ func (t TempDHKeySignedInternal__) Import() TempDHKeySigned {
 		})(t.Sig),
 	}
 }
-
 func (t TempDHKeySigned) Export() *TempDHKeySignedInternal__ {
 	return &TempDHKeySignedInternal__{
 		TempDHKey: t.TempDHKey.Export(),
 		Sig:       t.Sig.Export(),
 	}
 }
-
 func (t *TempDHKeySigned) Encode(enc rpc.Encoder) error {
 	return enc.Encode(t.Export())
 }
@@ -3956,7 +3797,6 @@ func (b BoxSetID) Export() *BoxSetIDInternal__ {
 	tmp := (([16]byte)(b))
 	return ((*BoxSetIDInternal__)(&tmp))
 }
-
 func (b BoxSetIDInternal__) Import() BoxSetID {
 	tmp := ([16]byte)(b)
 	return BoxSetID((func(x *[16]byte) (ret [16]byte) {
@@ -3990,7 +3830,6 @@ type SignedBoxSet struct {
 	Boxes           []Box
 	TempDHKeySigned *TempDHKeySigned
 }
-
 type SignedBoxSetInternal__ struct {
 	_struct         struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Id              *BoxSetIDInternal__
@@ -4038,7 +3877,6 @@ func (s SignedBoxSetInternal__) Import() SignedBoxSet {
 		})(s.TempDHKeySigned),
 	}
 }
-
 func (s SignedBoxSet) Export() *SignedBoxSetInternal__ {
 	return &SignedBoxSetInternal__{
 		Id: s.Id.Export(),
@@ -4060,7 +3898,6 @@ func (s SignedBoxSet) Export() *SignedBoxSetInternal__ {
 		})(s.TempDHKeySigned),
 	}
 }
-
 func (s *SignedBoxSet) Encode(enc rpc.Encoder) error {
 	return enc.Encode(s.Export())
 }
@@ -4081,7 +3918,6 @@ type YubiBox struct {
 	Pk        *ECDSACompressedPublicKey
 	SecretBox SecretBox
 }
-
 type YubiBoxInternal__ struct {
 	_struct   struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Pk        *ECDSACompressedPublicKeyInternal__
@@ -4110,7 +3946,6 @@ func (y YubiBoxInternal__) Import() YubiBox {
 		})(y.SecretBox),
 	}
 }
-
 func (y YubiBox) Export() *YubiBoxInternal__ {
 	return &YubiBoxInternal__{
 		Pk: (func(x *ECDSACompressedPublicKey) *ECDSACompressedPublicKeyInternal__ {
@@ -4122,7 +3957,6 @@ func (y YubiBox) Export() *YubiBoxInternal__ {
 		SecretBox: y.SecretBox.Export(),
 	}
 }
-
 func (y *YubiBox) Encode(enc rpc.Encoder) error {
 	return enc.Encode(y.Export())
 }
@@ -4143,7 +3977,6 @@ type KeySuite struct {
 	Entity EntityID
 	Hepk   HEPK
 }
-
 type KeySuiteInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Entity  *EntityIDInternal__
@@ -4166,14 +3999,12 @@ func (k KeySuiteInternal__) Import() KeySuite {
 		})(k.Hepk),
 	}
 }
-
 func (k KeySuite) Export() *KeySuiteInternal__ {
 	return &KeySuiteInternal__{
 		Entity: k.Entity.Export(),
 		Hepk:   k.Hepk.Export(),
 	}
 }
-
 func (k *KeySuite) Encode(enc rpc.Encoder) error {
 	return enc.Encode(k.Export())
 }
@@ -4197,7 +4028,6 @@ func (h Hostname) Export() *HostnameInternal__ {
 	tmp := ((string)(h))
 	return ((*HostnameInternal__)(&tmp))
 }
-
 func (h HostnameInternal__) Import() Hostname {
 	tmp := (string)(h)
 	return Hostname((func(x *string) (ret string) {
@@ -4233,7 +4063,6 @@ func (b BindAddr) Export() *BindAddrInternal__ {
 	tmp := ((string)(b))
 	return ((*BindAddrInternal__)(&tmp))
 }
-
 func (b BindAddrInternal__) Import() BindAddr {
 	tmp := (string)(b)
 	return BindAddr((func(x *string) (ret string) {
@@ -4269,7 +4098,6 @@ func (t TCPAddr) Export() *TCPAddrInternal__ {
 	tmp := ((string)(t))
 	return ((*TCPAddrInternal__)(&tmp))
 }
-
 func (t TCPAddrInternal__) Import() TCPAddr {
 	tmp := (string)(t)
 	return TCPAddr((func(x *string) (ret string) {
@@ -4305,7 +4133,6 @@ func (p Port) Export() *PortInternal__ {
 	tmp := ((uint64)(p))
 	return ((*PortInternal__)(&tmp))
 }
-
 func (p PortInternal__) Import() Port {
 	tmp := (uint64)(p)
 	return Port((func(x *uint64) (ret uint64) {
@@ -4341,7 +4168,6 @@ func (z ZoneID) Export() *ZoneIDInternal__ {
 	tmp := ((string)(z))
 	return ((*ZoneIDInternal__)(&tmp))
 }
-
 func (z ZoneIDInternal__) Import() ZoneID {
 	tmp := (string)(z)
 	return ZoneID((func(x *string) (ret string) {
@@ -4379,7 +4205,6 @@ const (
 var ShortIDTypeMap = map[string]ShortIDType{
 	"WaitList": 1,
 }
-
 var ShortIDTypeRevMap = map[ShortIDType]string{
 	1: "WaitList",
 }
@@ -4389,7 +4214,6 @@ type ShortIDTypeInternal__ ShortIDType
 func (s ShortIDTypeInternal__) Import() ShortIDType {
 	return ShortIDType(s)
 }
-
 func (s ShortIDType) Export() *ShortIDTypeInternal__ {
 	return ((*ShortIDTypeInternal__)(&s))
 }
@@ -4401,7 +4225,6 @@ func (s ShortID) Export() *ShortIDInternal__ {
 	tmp := (([13]byte)(s))
 	return ((*ShortIDInternal__)(&tmp))
 }
-
 func (s ShortIDInternal__) Import() ShortID {
 	tmp := ([13]byte)(s)
 	return ShortID((func(x *[13]byte) (ret [13]byte) {
@@ -4437,7 +4260,6 @@ func (w WaitListID) Export() *WaitListIDInternal__ {
 	tmp := ((ShortID)(w))
 	return ((*WaitListIDInternal__)(tmp.Export()))
 }
-
 func (w WaitListIDInternal__) Import() WaitListID {
 	tmp := (ShortIDInternal__)(w)
 	return WaitListID((func(x *ShortIDInternal__) (ret ShortID) {
@@ -4507,7 +4329,6 @@ var ServerTypeMap = map[string]ServerType{
 	"Web":           64,
 	"Test":          101,
 }
-
 var ServerTypeRevMap = map[ServerType]string{
 	0:   "None",
 	1:   "Reg",
@@ -4533,7 +4354,6 @@ type ServerTypeInternal__ ServerType
 func (s ServerTypeInternal__) Import() ServerType {
 	return ServerType(s)
 }
-
 func (s ServerType) Export() *ServerTypeInternal__ {
 	return ((*ServerTypeInternal__)(&s))
 }
@@ -4545,7 +4365,6 @@ func (f FQUserString) Export() *FQUserStringInternal__ {
 	tmp := ((string)(f))
 	return ((*FQUserStringInternal__)(&tmp))
 }
-
 func (f FQUserStringInternal__) Import() FQUserString {
 	tmp := (string)(f)
 	return FQUserString((func(x *string) (ret string) {
@@ -4581,7 +4400,6 @@ func (f FQTeamString) Export() *FQTeamStringInternal__ {
 	tmp := ((string)(f))
 	return ((*FQTeamStringInternal__)(&tmp))
 }
-
 func (f FQTeamStringInternal__) Import() FQTeamString {
 	tmp := (string)(f)
 	return FQTeamString((func(x *string) (ret string) {
@@ -4617,7 +4435,6 @@ func (f FQPartyString) Export() *FQPartyStringInternal__ {
 	tmp := ((string)(f))
 	return ((*FQPartyStringInternal__)(&tmp))
 }
-
 func (f FQPartyStringInternal__) Import() FQPartyString {
 	tmp := (string)(f)
 	return FQPartyString((func(x *string) (ret string) {
@@ -4653,7 +4470,6 @@ func (h HostString) Export() *HostStringInternal__ {
 	tmp := ((string)(h))
 	return ((*HostStringInternal__)(&tmp))
 }
-
 func (h HostStringInternal__) Import() HostString {
 	tmp := (string)(h)
 	return HostString((func(x *string) (ret string) {
@@ -4689,7 +4505,6 @@ func (u UserString) Export() *UserStringInternal__ {
 	tmp := ((string)(u))
 	return ((*UserStringInternal__)(&tmp))
 }
-
 func (u UserStringInternal__) Import() UserString {
 	tmp := (string)(u)
 	return UserString((func(x *string) (ret string) {
@@ -4725,7 +4540,6 @@ func (t TeamString) Export() *TeamStringInternal__ {
 	tmp := ((string)(t))
 	return ((*TeamStringInternal__)(&tmp))
 }
-
 func (t TeamStringInternal__) Import() TeamString {
 	tmp := (string)(t)
 	return TeamString((func(x *string) (ret string) {
@@ -4761,7 +4575,6 @@ func (p PartyString) Export() *PartyStringInternal__ {
 	tmp := ((string)(p))
 	return ((*PartyStringInternal__)(&tmp))
 }
-
 func (p PartyStringInternal__) Import() PartyString {
 	tmp := (string)(p)
 	return PartyString((func(x *string) (ret string) {
@@ -4797,7 +4610,6 @@ func (r RoleString) Export() *RoleStringInternal__ {
 	tmp := ((string)(r))
 	return ((*RoleStringInternal__)(&tmp))
 }
-
 func (r RoleStringInternal__) Import() RoleString {
 	tmp := (string)(r)
 	return RoleString((func(x *string) (ret string) {
@@ -4831,13 +4643,11 @@ type ParsedTeam struct {
 	F_0__ *TeamID   `json:"f0,omitempty"`
 	F_1__ *NameUtf8 `json:"f1,omitempty"`
 }
-
 type ParsedTeamInternal__ struct {
 	_struct  struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	S        bool
 	Switch__ ParsedTeamInternalSwitch__
 }
-
 type ParsedTeamInternalSwitch__ struct {
 	_struct struct{}            `codec:",omitempty"` //lint:ignore U1000 msgpack internal field
 	F_0__   *TeamIDInternal__   `codec:"0"`
@@ -4857,41 +4667,36 @@ func (p ParsedTeam) GetS() (ret bool, err error) {
 	}
 	return p.S, nil
 }
-
 func (p ParsedTeam) False() TeamID {
 	if p.F_0__ == nil {
-		panic("unexepected nil case; should have been checked")
+		panic("unexpected nil case; should have been checked")
 	}
 	if p.S {
 		panic(fmt.Sprintf("unexpected switch value (%v) when False is called", p.S))
 	}
 	return *p.F_0__
 }
-
 func (p ParsedTeam) True() NameUtf8 {
 	if p.F_1__ == nil {
-		panic("unexepected nil case; should have been checked")
+		panic("unexpected nil case; should have been checked")
 	}
 	if !p.S {
 		panic(fmt.Sprintf("unexpected switch value (%v) when True is called", p.S))
 	}
 	return *p.F_1__
 }
-
 func NewParsedTeamWithFalse(v TeamID) ParsedTeam {
 	return ParsedTeam{
 		S:     false,
 		F_0__: &v,
 	}
 }
-
 func NewParsedTeamWithTrue(v NameUtf8) ParsedTeam {
 	return ParsedTeam{
 		S:     true,
 		F_1__: &v,
 	}
 }
-
 func (p ParsedTeamInternal__) Import() ParsedTeam {
 	return ParsedTeam{
 		S: p.S,
@@ -4921,7 +4726,6 @@ func (p ParsedTeamInternal__) Import() ParsedTeam {
 		})(p.Switch__.F_1__),
 	}
 }
-
 func (p ParsedTeam) Export() *ParsedTeamInternal__ {
 	return &ParsedTeamInternal__{
 		S: p.S,
@@ -4941,7 +4745,6 @@ func (p ParsedTeam) Export() *ParsedTeamInternal__ {
 		},
 	}
 }
-
 func (p *ParsedTeam) Encode(enc rpc.Encoder) error {
 	return enc.Encode(p.Export())
 }
@@ -4962,7 +4765,6 @@ type PartyName struct {
 	Name   NameUtf8
 	IsTeam bool
 }
-
 type PartyNameInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Name    *NameUtf8Internal__
@@ -4985,14 +4787,12 @@ func (p PartyNameInternal__) Import() PartyName {
 		})(p.IsTeam),
 	}
 }
-
 func (p PartyName) Export() *PartyNameInternal__ {
 	return &PartyNameInternal__{
 		Name:   p.Name.Export(),
 		IsTeam: &p.IsTeam,
 	}
 }
-
 func (p *PartyName) Encode(enc rpc.Encoder) error {
 	return enc.Encode(p.Export())
 }
@@ -5020,7 +4820,6 @@ var PartyTypeMap = map[string]PartyType{
 	"User": 0,
 	"Team": 1,
 }
-
 var PartyTypeRevMap = map[PartyType]string{
 	0: "User",
 	1: "Team",
@@ -5031,7 +4830,6 @@ type PartyTypeInternal__ PartyType
 func (p PartyTypeInternal__) Import() PartyType {
 	return PartyType(p)
 }
-
 func (p PartyType) Export() *PartyTypeInternal__ {
 	return ((*PartyTypeInternal__)(&p))
 }
@@ -5041,13 +4839,11 @@ type ParsedParty struct {
 	F_0__ *PartyID   `json:"f0,omitempty"`
 	F_1__ *PartyName `json:"f1,omitempty"`
 }
-
 type ParsedPartyInternal__ struct {
 	_struct  struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	S        bool
 	Switch__ ParsedPartyInternalSwitch__
 }
-
 type ParsedPartyInternalSwitch__ struct {
 	_struct struct{}             `codec:",omitempty"` //lint:ignore U1000 msgpack internal field
 	F_0__   *PartyIDInternal__   `codec:"0"`
@@ -5067,41 +4863,36 @@ func (p ParsedParty) GetS() (ret bool, err error) {
 	}
 	return p.S, nil
 }
-
 func (p ParsedParty) False() PartyID {
 	if p.F_0__ == nil {
-		panic("unexepected nil case; should have been checked")
+		panic("unexpected nil case; should have been checked")
 	}
 	if p.S {
 		panic(fmt.Sprintf("unexpected switch value (%v) when False is called", p.S))
 	}
 	return *p.F_0__
 }
-
 func (p ParsedParty) True() PartyName {
 	if p.F_1__ == nil {
-		panic("unexepected nil case; should have been checked")
+		panic("unexpected nil case; should have been checked")
 	}
 	if !p.S {
 		panic(fmt.Sprintf("unexpected switch value (%v) when True is called", p.S))
 	}
 	return *p.F_1__
 }
-
 func NewParsedPartyWithFalse(v PartyID) ParsedParty {
 	return ParsedParty{
 		S:     false,
 		F_0__: &v,
 	}
 }
-
 func NewParsedPartyWithTrue(v PartyName) ParsedParty {
 	return ParsedParty{
 		S:     true,
 		F_1__: &v,
 	}
 }
-
 func (p ParsedPartyInternal__) Import() ParsedParty {
 	return ParsedParty{
 		S: p.S,
@@ -5131,7 +4922,6 @@ func (p ParsedPartyInternal__) Import() ParsedParty {
 		})(p.Switch__.F_1__),
 	}
 }
-
 func (p ParsedParty) Export() *ParsedPartyInternal__ {
 	return &ParsedPartyInternal__{
 		S: p.S,
@@ -5151,7 +4941,6 @@ func (p ParsedParty) Export() *ParsedPartyInternal__ {
 		},
 	}
 }
-
 func (p *ParsedParty) Encode(enc rpc.Encoder) error {
 	return enc.Encode(p.Export())
 }
@@ -5173,13 +4962,11 @@ type ParsedUser struct {
 	F_0__ *UID      `json:"f0,omitempty"`
 	F_1__ *NameUtf8 `json:"f1,omitempty"`
 }
-
 type ParsedUserInternal__ struct {
 	_struct  struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	S        bool
 	Switch__ ParsedUserInternalSwitch__
 }
-
 type ParsedUserInternalSwitch__ struct {
 	_struct struct{}            `codec:",omitempty"` //lint:ignore U1000 msgpack internal field
 	F_0__   *UIDInternal__      `codec:"0"`
@@ -5199,41 +4986,36 @@ func (p ParsedUser) GetS() (ret bool, err error) {
 	}
 	return p.S, nil
 }
-
 func (p ParsedUser) False() UID {
 	if p.F_0__ == nil {
-		panic("unexepected nil case; should have been checked")
+		panic("unexpected nil case; should have been checked")
 	}
 	if p.S {
 		panic(fmt.Sprintf("unexpected switch value (%v) when False is called", p.S))
 	}
 	return *p.F_0__
 }
-
 func (p ParsedUser) True() NameUtf8 {
 	if p.F_1__ == nil {
-		panic("unexepected nil case; should have been checked")
+		panic("unexpected nil case; should have been checked")
 	}
 	if !p.S {
 		panic(fmt.Sprintf("unexpected switch value (%v) when True is called", p.S))
 	}
 	return *p.F_1__
 }
-
 func NewParsedUserWithFalse(v UID) ParsedUser {
 	return ParsedUser{
 		S:     false,
 		F_0__: &v,
 	}
 }
-
 func NewParsedUserWithTrue(v NameUtf8) ParsedUser {
 	return ParsedUser{
 		S:     true,
 		F_1__: &v,
 	}
 }
-
 func (p ParsedUserInternal__) Import() ParsedUser {
 	return ParsedUser{
 		S: p.S,
@@ -5263,7 +5045,6 @@ func (p ParsedUserInternal__) Import() ParsedUser {
 		})(p.Switch__.F_1__),
 	}
 }
-
 func (p ParsedUser) Export() *ParsedUserInternal__ {
 	return &ParsedUserInternal__{
 		S: p.S,
@@ -5283,7 +5064,6 @@ func (p ParsedUser) Export() *ParsedUserInternal__ {
 		},
 	}
 }
-
 func (p *ParsedUser) Encode(enc rpc.Encoder) error {
 	return enc.Encode(p.Export())
 }
@@ -5305,13 +5085,11 @@ type ParsedHostname struct {
 	F_0__ *HostID  `json:"f0,omitempty"`
 	F_1__ *TCPAddr `json:"f1,omitempty"`
 }
-
 type ParsedHostnameInternal__ struct {
 	_struct  struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	S        bool
 	Switch__ ParsedHostnameInternalSwitch__
 }
-
 type ParsedHostnameInternalSwitch__ struct {
 	_struct struct{}           `codec:",omitempty"` //lint:ignore U1000 msgpack internal field
 	F_0__   *HostIDInternal__  `codec:"0"`
@@ -5331,41 +5109,36 @@ func (p ParsedHostname) GetS() (ret bool, err error) {
 	}
 	return p.S, nil
 }
-
 func (p ParsedHostname) False() HostID {
 	if p.F_0__ == nil {
-		panic("unexepected nil case; should have been checked")
+		panic("unexpected nil case; should have been checked")
 	}
 	if p.S {
 		panic(fmt.Sprintf("unexpected switch value (%v) when False is called", p.S))
 	}
 	return *p.F_0__
 }
-
 func (p ParsedHostname) True() TCPAddr {
 	if p.F_1__ == nil {
-		panic("unexepected nil case; should have been checked")
+		panic("unexpected nil case; should have been checked")
 	}
 	if !p.S {
 		panic(fmt.Sprintf("unexpected switch value (%v) when True is called", p.S))
 	}
 	return *p.F_1__
 }
-
 func NewParsedHostnameWithFalse(v HostID) ParsedHostname {
 	return ParsedHostname{
 		S:     false,
 		F_0__: &v,
 	}
 }
-
 func NewParsedHostnameWithTrue(v TCPAddr) ParsedHostname {
 	return ParsedHostname{
 		S:     true,
 		F_1__: &v,
 	}
 }
-
 func (p ParsedHostnameInternal__) Import() ParsedHostname {
 	return ParsedHostname{
 		S: p.S,
@@ -5395,7 +5168,6 @@ func (p ParsedHostnameInternal__) Import() ParsedHostname {
 		})(p.Switch__.F_1__),
 	}
 }
-
 func (p ParsedHostname) Export() *ParsedHostnameInternal__ {
 	return &ParsedHostnameInternal__{
 		S: p.S,
@@ -5415,7 +5187,6 @@ func (p ParsedHostname) Export() *ParsedHostnameInternal__ {
 		},
 	}
 }
-
 func (p *ParsedHostname) Encode(enc rpc.Encoder) error {
 	return enc.Encode(p.Export())
 }
@@ -5436,7 +5207,6 @@ type FQUserParsed struct {
 	User ParsedUser
 	Host *ParsedHostname
 }
-
 type FQUserParsedInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	User    *ParsedUserInternal__
@@ -5465,7 +5235,6 @@ func (f FQUserParsedInternal__) Import() FQUserParsed {
 		})(f.Host),
 	}
 }
-
 func (f FQUserParsed) Export() *FQUserParsedInternal__ {
 	return &FQUserParsedInternal__{
 		User: f.User.Export(),
@@ -5477,7 +5246,6 @@ func (f FQUserParsed) Export() *FQUserParsedInternal__ {
 		})(f.Host),
 	}
 }
-
 func (f *FQUserParsed) Encode(enc rpc.Encoder) error {
 	return enc.Encode(f.Export())
 }
@@ -5498,7 +5266,6 @@ type FQTeamParsed struct {
 	Team ParsedTeam
 	Host *ParsedHostname
 }
-
 type FQTeamParsedInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Team    *ParsedTeamInternal__
@@ -5527,7 +5294,6 @@ func (f FQTeamParsedInternal__) Import() FQTeamParsed {
 		})(f.Host),
 	}
 }
-
 func (f FQTeamParsed) Export() *FQTeamParsedInternal__ {
 	return &FQTeamParsedInternal__{
 		Team: f.Team.Export(),
@@ -5539,7 +5305,6 @@ func (f FQTeamParsed) Export() *FQTeamParsedInternal__ {
 		})(f.Host),
 	}
 }
-
 func (f *FQTeamParsed) Encode(enc rpc.Encoder) error {
 	return enc.Encode(f.Export())
 }
@@ -5559,14 +5324,12 @@ var FQTeamParsedTypeUniqueID = rpc.TypeUniqueID(0xc3e7f63d5c536710)
 func (f *FQTeamParsed) GetTypeUniqueID() rpc.TypeUniqueID {
 	return FQTeamParsedTypeUniqueID
 }
-
 func (f *FQTeamParsed) Bytes() []byte { return nil }
 
 type FQPartyParsed struct {
 	Party ParsedParty
 	Host  *ParsedHostname
 }
-
 type FQPartyParsedInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Party   *ParsedPartyInternal__
@@ -5595,7 +5358,6 @@ func (f FQPartyParsedInternal__) Import() FQPartyParsed {
 		})(f.Host),
 	}
 }
-
 func (f FQPartyParsed) Export() *FQPartyParsedInternal__ {
 	return &FQPartyParsedInternal__{
 		Party: f.Party.Export(),
@@ -5607,7 +5369,6 @@ func (f FQPartyParsed) Export() *FQPartyParsedInternal__ {
 		})(f.Host),
 	}
 }
-
 func (f *FQPartyParsed) Encode(enc rpc.Encoder) error {
 	return enc.Encode(f.Export())
 }
@@ -5628,7 +5389,6 @@ type HEPKv1 struct {
 	Classical DHPublicKey
 	Pqkem     KemEncapKey
 }
-
 type HEPKv1Internal__ struct {
 	_struct   struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Classical *DHPublicKeyInternal__
@@ -5651,14 +5411,12 @@ func (h HEPKv1Internal__) Import() HEPKv1 {
 		})(h.Pqkem),
 	}
 }
-
 func (h HEPKv1) Export() *HEPKv1Internal__ {
 	return &HEPKv1Internal__{
 		Classical: h.Classical.Export(),
 		Pqkem:     h.Pqkem.Export(),
 	}
 }
-
 func (h *HEPKv1) Encode(enc rpc.Encoder) error {
 	return enc.Encode(h.Export())
 }
@@ -5678,7 +5436,6 @@ var HEPKv1TypeUniqueID = rpc.TypeUniqueID(0x9c267d45631bb8c1)
 func (h *HEPKv1) GetTypeUniqueID() rpc.TypeUniqueID {
 	return HEPKv1TypeUniqueID
 }
-
 func (h *HEPKv1) Bytes() []byte { return nil }
 
 type HEPKVersion int
@@ -5692,7 +5449,6 @@ var HEPKVersionMap = map[string]HEPKVersion{
 	"None": 0,
 	"V1":   1,
 }
-
 var HEPKVersionRevMap = map[HEPKVersion]string{
 	0: "None",
 	1: "V1",
@@ -5703,7 +5459,6 @@ type HEPKVersionInternal__ HEPKVersion
 func (h HEPKVersionInternal__) Import() HEPKVersion {
 	return HEPKVersion(h)
 }
-
 func (h HEPKVersion) Export() *HEPKVersionInternal__ {
 	return ((*HEPKVersionInternal__)(&h))
 }
@@ -5712,13 +5467,11 @@ type HEPK struct {
 	V     HEPKVersion
 	F_1__ *HEPKv1 `json:"f1,omitempty"`
 }
-
 type HEPKInternal__ struct {
 	_struct  struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	V        HEPKVersion
 	Switch__ HEPKInternalSwitch__
 }
-
 type HEPKInternalSwitch__ struct {
 	_struct struct{}          `codec:",omitempty"` //lint:ignore U1000 msgpack internal field
 	F_1__   *HEPKv1Internal__ `codec:"1"`
@@ -5733,24 +5486,21 @@ func (h HEPK) GetV() (ret HEPKVersion, err error) {
 	}
 	return h.V, nil
 }
-
 func (h HEPK) V1() HEPKv1 {
 	if h.F_1__ == nil {
-		panic("unexepected nil case; should have been checked")
+		panic("unexpected nil case; should have been checked")
 	}
 	if h.V != HEPKVersion_V1 {
 		panic(fmt.Sprintf("unexpected switch value (%v) when V1 is called", h.V))
 	}
 	return *h.F_1__
 }
-
 func NewHEPKWithV1(v HEPKv1) HEPK {
 	return HEPK{
 		V:     HEPKVersion_V1,
 		F_1__: &v,
 	}
 }
-
 func (h HEPKInternal__) Import() HEPK {
 	return HEPK{
 		V: h.V,
@@ -5768,7 +5518,6 @@ func (h HEPKInternal__) Import() HEPK {
 		})(h.Switch__.F_1__),
 	}
 }
-
 func (h HEPK) Export() *HEPKInternal__ {
 	return &HEPKInternal__{
 		V: h.V,
@@ -5782,7 +5531,6 @@ func (h HEPK) Export() *HEPKInternal__ {
 		},
 	}
 }
-
 func (h *HEPK) Encode(enc rpc.Encoder) error {
 	return enc.Encode(h.Export())
 }
@@ -5802,13 +5550,11 @@ var HEPKTypeUniqueID = rpc.TypeUniqueID(0x9c581beed36c7e0c)
 func (h *HEPK) GetTypeUniqueID() rpc.TypeUniqueID {
 	return HEPKTypeUniqueID
 }
-
 func (h *HEPK) Bytes() []byte { return nil }
 
 type HEPKSet struct {
 	V []HEPK
 }
-
 type HEPKSetInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	V       *[](*HEPKInternal__)
@@ -5836,7 +5582,6 @@ func (h HEPKSetInternal__) Import() HEPKSet {
 		})(h.V),
 	}
 }
-
 func (h HEPKSet) Export() *HEPKSetInternal__ {
 	return &HEPKSetInternal__{
 		V: (func(x []HEPK) *[](*HEPKInternal__) {
@@ -5851,7 +5596,6 @@ func (h HEPKSet) Export() *HEPKSetInternal__ {
 		})(h.V),
 	}
 }
-
 func (h *HEPKSet) Encode(enc rpc.Encoder) error {
 	return enc.Encode(h.Export())
 }
@@ -5875,7 +5619,6 @@ func (h HEPKFingerprint) Export() *HEPKFingerprintInternal__ {
 	tmp := ((StdHash)(h))
 	return ((*HEPKFingerprintInternal__)(tmp.Export()))
 }
-
 func (h HEPKFingerprintInternal__) Import() HEPKFingerprint {
 	tmp := (StdHashInternal__)(h)
 	return HEPKFingerprint((func(x *StdHashInternal__) (ret StdHash) {
@@ -5915,7 +5658,6 @@ var CryptosystemTypeMap = map[string]CryptosystemType{
 	"Classical": 0,
 	"PQKEM":     1,
 }
-
 var CryptosystemTypeRevMap = map[CryptosystemType]string{
 	0: "Classical",
 	1: "PQKEM",
@@ -5926,7 +5668,6 @@ type CryptosystemTypeInternal__ CryptosystemType
 func (c CryptosystemTypeInternal__) Import() CryptosystemType {
 	return CryptosystemType(c)
 }
-
 func (c CryptosystemType) Export() *CryptosystemTypeInternal__ {
 	return ((*CryptosystemTypeInternal__)(&c))
 }
@@ -5938,7 +5679,6 @@ type HybridSecretKeySHA3Payload struct {
 	Rcvr        HEPK
 	Sndr        DHPublicKey
 }
-
 type HybridSecretKeySHA3PayloadInternal__ struct {
 	_struct     struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Version     *BoxHybridVersionInternal__
@@ -5982,7 +5722,6 @@ func (h HybridSecretKeySHA3PayloadInternal__) Import() HybridSecretKeySHA3Payloa
 		})(h.Sndr),
 	}
 }
-
 func (h HybridSecretKeySHA3Payload) Export() *HybridSecretKeySHA3PayloadInternal__ {
 	return &HybridSecretKeySHA3PayloadInternal__{
 		Version:     h.Version.Export(),
@@ -5992,7 +5731,6 @@ func (h HybridSecretKeySHA3Payload) Export() *HybridSecretKeySHA3PayloadInternal
 		Sndr:        h.Sndr.Export(),
 	}
 }
-
 func (h *HybridSecretKeySHA3Payload) Encode(enc rpc.Encoder) error {
 	return enc.Encode(h.Export())
 }
@@ -6012,7 +5750,6 @@ var HybridSecretKeySHA3PayloadTypeUniqueID = rpc.TypeUniqueID(0x8a9e327647262289
 func (h *HybridSecretKeySHA3Payload) GetTypeUniqueID() rpc.TypeUniqueID {
 	return HybridSecretKeySHA3PayloadTypeUniqueID
 }
-
 func (h *HybridSecretKeySHA3Payload) Bytes() []byte { return nil }
 
 type BoxHybridVersion int
@@ -6024,7 +5761,6 @@ const (
 var BoxHybridVersionMap = map[string]BoxHybridVersion{
 	"V1": 1,
 }
-
 var BoxHybridVersionRevMap = map[BoxHybridVersion]string{
 	1: "V1",
 }
@@ -6034,7 +5770,6 @@ type BoxHybridVersionInternal__ BoxHybridVersion
 func (b BoxHybridVersionInternal__) Import() BoxHybridVersion {
 	return BoxHybridVersion(b)
 }
-
 func (b BoxHybridVersion) Export() *BoxHybridVersionInternal__ {
 	return ((*BoxHybridVersionInternal__)(&b))
 }
@@ -6043,13 +5778,11 @@ type BoxHybrid struct {
 	V     BoxHybridVersion
 	F_1__ *BoxHybridV1 `json:"f1,omitempty"`
 }
-
 type BoxHybridInternal__ struct {
 	_struct  struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	V        BoxHybridVersion
 	Switch__ BoxHybridInternalSwitch__
 }
-
 type BoxHybridInternalSwitch__ struct {
 	_struct struct{}               `codec:",omitempty"` //lint:ignore U1000 msgpack internal field
 	F_1__   *BoxHybridV1Internal__ `codec:"1"`
@@ -6064,24 +5797,21 @@ func (b BoxHybrid) GetV() (ret BoxHybridVersion, err error) {
 	}
 	return b.V, nil
 }
-
 func (b BoxHybrid) V1() BoxHybridV1 {
 	if b.F_1__ == nil {
-		panic("unexepected nil case; should have been checked")
+		panic("unexpected nil case; should have been checked")
 	}
 	if b.V != BoxHybridVersion_V1 {
 		panic(fmt.Sprintf("unexpected switch value (%v) when V1 is called", b.V))
 	}
 	return *b.F_1__
 }
-
 func NewBoxHybridWithV1(v BoxHybridV1) BoxHybrid {
 	return BoxHybrid{
 		V:     BoxHybridVersion_V1,
 		F_1__: &v,
 	}
 }
-
 func (b BoxHybridInternal__) Import() BoxHybrid {
 	return BoxHybrid{
 		V: b.V,
@@ -6099,7 +5829,6 @@ func (b BoxHybridInternal__) Import() BoxHybrid {
 		})(b.Switch__.F_1__),
 	}
 }
-
 func (b BoxHybrid) Export() *BoxHybridInternal__ {
 	return &BoxHybridInternal__{
 		V: b.V,
@@ -6113,7 +5842,6 @@ func (b BoxHybrid) Export() *BoxHybridInternal__ {
 		},
 	}
 }
-
 func (b *BoxHybrid) Encode(enc rpc.Encoder) error {
 	return enc.Encode(b.Export())
 }
@@ -6136,7 +5864,6 @@ type BoxHybridV1 struct {
 	Sender   *DHPublicKey
 	Sbox     SecretBox
 }
-
 type BoxHybridV1Internal__ struct {
 	_struct  struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	KemCtext *KemCiphertextInternal__
@@ -6179,7 +5906,6 @@ func (b BoxHybridV1Internal__) Import() BoxHybridV1 {
 		})(b.Sbox),
 	}
 }
-
 func (b BoxHybridV1) Export() *BoxHybridV1Internal__ {
 	return &BoxHybridV1Internal__{
 		KemCtext: b.KemCtext.Export(),
@@ -6193,7 +5919,6 @@ func (b BoxHybridV1) Export() *BoxHybridV1Internal__ {
 		Sbox: b.Sbox.Export(),
 	}
 }
-
 func (b *BoxHybridV1) Encode(enc rpc.Encoder) error {
 	return enc.Encode(b.Export())
 }
@@ -6217,7 +5942,6 @@ func (b BackupSeed) Export() *BackupSeedInternal__ {
 	tmp := (([26]byte)(b))
 	return ((*BackupSeedInternal__)(&tmp))
 }
-
 func (b BackupSeedInternal__) Import() BackupSeed {
 	tmp := ([26]byte)(b)
 	return BackupSeed((func(x *[26]byte) (ret [26]byte) {
@@ -6247,7 +5971,6 @@ var BackupSeedTypeUniqueID = rpc.TypeUniqueID(0xf4c4fe8dff61a6dc)
 func (b *BackupSeed) GetTypeUniqueID() rpc.TypeUniqueID {
 	return BackupSeedTypeUniqueID
 }
-
 func (b BackupSeed) Bytes() []byte {
 	return (b)[:]
 }
@@ -6261,7 +5984,6 @@ const (
 var BackupKeyVersionMap = map[string]BackupKeyVersion{
 	"V1": 1,
 }
-
 var BackupKeyVersionRevMap = map[BackupKeyVersion]string{
 	1: "V1",
 }
@@ -6271,7 +5993,6 @@ type BackupKeyVersionInternal__ BackupKeyVersion
 func (b BackupKeyVersionInternal__) Import() BackupKeyVersion {
 	return BackupKeyVersion(b)
 }
-
 func (b BackupKeyVersion) Export() *BackupKeyVersionInternal__ {
 	return ((*BackupKeyVersionInternal__)(&b))
 }
@@ -6281,7 +6002,6 @@ type Rational struct {
 	Base     []byte
 	Exp      int64
 }
-
 type RationalInternal__ struct {
 	_struct  struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Infinity *bool
@@ -6311,7 +6031,6 @@ func (r RationalInternal__) Import() Rational {
 		})(r.Exp),
 	}
 }
-
 func (r Rational) Export() *RationalInternal__ {
 	return &RationalInternal__{
 		Infinity: &r.Infinity,
@@ -6319,7 +6038,6 @@ func (r Rational) Export() *RationalInternal__ {
 		Exp:      &r.Exp,
 	}
 }
-
 func (r *Rational) Encode(enc rpc.Encoder) error {
 	return enc.Encode(r.Export())
 }
@@ -6340,7 +6058,6 @@ type RationalRange struct {
 	Low  Rational
 	High Rational
 }
-
 type RationalRangeInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Low     *RationalInternal__
@@ -6363,14 +6080,12 @@ func (r RationalRangeInternal__) Import() RationalRange {
 		})(r.High),
 	}
 }
-
 func (r RationalRange) Export() *RationalRangeInternal__ {
 	return &RationalRangeInternal__{
 		Low:  r.Low.Export(),
 		High: r.High.Export(),
 	}
 }
-
 func (r *RationalRange) Encode(enc rpc.Encoder) error {
 	return enc.Encode(r.Export())
 }
@@ -6394,7 +6109,6 @@ func (n Name) Export() *NameInternal__ {
 	tmp := ((string)(n))
 	return ((*NameInternal__)(&tmp))
 }
-
 func (n NameInternal__) Import() Name {
 	tmp := (string)(n)
 	return Name((func(x *string) (ret string) {
@@ -6427,7 +6141,6 @@ type NameHashPreimage struct {
 	Name   Name
 	HostId HostID
 }
-
 type NameHashPreimageInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Name    *NameInternal__
@@ -6450,14 +6163,12 @@ func (n NameHashPreimageInternal__) Import() NameHashPreimage {
 		})(n.HostId),
 	}
 }
-
 func (n NameHashPreimage) Export() *NameHashPreimageInternal__ {
 	return &NameHashPreimageInternal__{
 		Name:   n.Name.Export(),
 		HostId: n.HostId.Export(),
 	}
 }
-
 func (n *NameHashPreimage) Encode(enc rpc.Encoder) error {
 	return enc.Encode(n.Export())
 }
@@ -6477,7 +6188,6 @@ var NameHashPreimageTypeUniqueID = rpc.TypeUniqueID(0xf8556f054c4e036b)
 func (n *NameHashPreimage) GetTypeUniqueID() rpc.TypeUniqueID {
 	return NameHashPreimageTypeUniqueID
 }
-
 func (n *NameHashPreimage) Bytes() []byte { return nil }
 
 type HostBuildStage int
@@ -6499,7 +6209,6 @@ var HostBuildStageMap = map[string]HostBuildStage{
 	"Stage2a":  4,
 	"Stage2b":  5,
 }
-
 var HostBuildStageRevMap = map[HostBuildStage]string{
 	0: "None",
 	1: "Complete",
@@ -6514,7 +6223,6 @@ type HostBuildStageInternal__ HostBuildStage
 func (h HostBuildStageInternal__) Import() HostBuildStage {
 	return HostBuildStage(h)
 }
-
 func (h HostBuildStage) Export() *HostBuildStageInternal__ {
 	return ((*HostBuildStageInternal__)(&h))
 }
@@ -6534,7 +6242,6 @@ var AutocertStateMap = map[string]AutocertState{
 	"Failing": 2,
 	"Failed":  3,
 }
-
 var AutocertStateRevMap = map[AutocertState]string{
 	0: "None",
 	1: "OK",
@@ -6547,7 +6254,6 @@ type AutocertStateInternal__ AutocertState
 func (a AutocertStateInternal__) Import() AutocertState {
 	return AutocertState(a)
 }
-
 func (a AutocertState) Export() *AutocertStateInternal__ {
 	return ((*AutocertStateInternal__)(&a))
 }
@@ -6556,7 +6262,6 @@ type RSAPub struct {
 	N []byte
 	E uint64
 }
-
 type RSAPubInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	N       *[]byte
@@ -6579,14 +6284,12 @@ func (r RSAPubInternal__) Import() RSAPub {
 		})(r.E),
 	}
 }
-
 func (r RSAPub) Export() *RSAPubInternal__ {
 	return &RSAPubInternal__{
 		N: &r.N,
 		E: &r.E,
 	}
 }
-
 func (r *RSAPub) Encode(enc rpc.Encoder) error {
 	return enc.Encode(r.Export())
 }
@@ -6606,7 +6309,6 @@ var RSAPubTypeUniqueID = rpc.TypeUniqueID(0xce5b107c6468c230)
 func (r *RSAPub) GetTypeUniqueID() rpc.TypeUniqueID {
 	return RSAPubTypeUniqueID
 }
-
 func (r *RSAPub) Bytes() []byte { return nil }
 
 type CKSEncKey [32]byte
@@ -6616,7 +6318,6 @@ func (c CKSEncKey) Export() *CKSEncKeyInternal__ {
 	tmp := (([32]byte)(c))
 	return ((*CKSEncKeyInternal__)(&tmp))
 }
-
 func (c CKSEncKeyInternal__) Import() CKSEncKey {
 	tmp := ([32]byte)(c)
 	return CKSEncKey((func(x *[32]byte) (ret [32]byte) {
@@ -6646,7 +6347,6 @@ var CKSEncKeyTypeUniqueID = rpc.TypeUniqueID(0x84958839de919b43)
 func (c *CKSEncKey) GetTypeUniqueID() rpc.TypeUniqueID {
 	return CKSEncKeyTypeUniqueID
 }
-
 func (c CKSEncKey) Bytes() []byte {
 	return (c)[:]
 }
@@ -6658,7 +6358,6 @@ func (c CKSEncKeyString) Export() *CKSEncKeyStringInternal__ {
 	tmp := ((string)(c))
 	return ((*CKSEncKeyStringInternal__)(&tmp))
 }
-
 func (c CKSEncKeyStringInternal__) Import() CKSEncKeyString {
 	tmp := (string)(c)
 	return CKSEncKeyString((func(x *string) (ret string) {
@@ -6691,7 +6390,6 @@ type CKSBox struct {
 	Key CKSKeyID
 	Box SecretBox
 }
-
 type CKSBoxInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Key     *CKSKeyIDInternal__
@@ -6714,14 +6412,12 @@ func (c CKSBoxInternal__) Import() CKSBox {
 		})(c.Box),
 	}
 }
-
 func (c CKSBox) Export() *CKSBoxInternal__ {
 	return &CKSBoxInternal__{
 		Key: c.Key.Export(),
 		Box: c.Box.Export(),
 	}
 }
-
 func (c *CKSBox) Encode(enc rpc.Encoder) error {
 	return enc.Encode(c.Export())
 }
@@ -6745,7 +6441,6 @@ func (c CKSKeyData) Export() *CKSKeyDataInternal__ {
 	tmp := (([]byte)(c))
 	return ((*CKSKeyDataInternal__)(&tmp))
 }
-
 func (c CKSKeyDataInternal__) Import() CKSKeyData {
 	tmp := ([]byte)(c)
 	return CKSKeyData((func(x *[]byte) (ret []byte) {
@@ -6775,7 +6470,6 @@ var CKSKeyDataTypeUniqueID = rpc.TypeUniqueID(0xddc1bec2d4dfc433)
 func (c *CKSKeyData) GetTypeUniqueID() rpc.TypeUniqueID {
 	return CKSKeyDataTypeUniqueID
 }
-
 func (c CKSKeyData) Bytes() []byte {
 	return (c)[:]
 }
@@ -6783,7 +6477,6 @@ func (c CKSKeyData) Bytes() []byte {
 type CKSCertChain struct {
 	Certs [][]byte
 }
-
 type CKSCertChainInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Certs   *[]([]byte)
@@ -6808,7 +6501,6 @@ func (c CKSCertChainInternal__) Import() CKSCertChain {
 		})(c.Certs),
 	}
 }
-
 func (c CKSCertChain) Export() *CKSCertChainInternal__ {
 	return &CKSCertChainInternal__{
 		Certs: (func(x [][]byte) *[]([]byte) {
@@ -6821,7 +6513,6 @@ func (c CKSCertChain) Export() *CKSCertChainInternal__ {
 		})(c.Certs),
 	}
 }
-
 func (c *CKSCertChain) Encode(enc rpc.Encoder) error {
 	return enc.Encode(c.Export())
 }
@@ -6841,7 +6532,6 @@ var CKSCertChainTypeUniqueID = rpc.TypeUniqueID(0xe87182df53b5e710)
 func (c *CKSCertChain) GetTypeUniqueID() rpc.TypeUniqueID {
 	return CKSCertChainTypeUniqueID
 }
-
 func (c *CKSCertChain) Bytes() []byte { return nil }
 
 type CKSAssetType int
@@ -6869,7 +6559,6 @@ var CKSAssetTypeMap = map[string]CKSAssetType{
 	"RootPKIBeaconX509Cert":     7,
 	"BackendX509Cert":           8,
 }
-
 var CKSAssetTypeRevMap = map[CKSAssetType]string{
 	0: "None",
 	1: "InternalClientCA",
@@ -6887,7 +6576,6 @@ type CKSAssetTypeInternal__ CKSAssetType
 func (c CKSAssetTypeInternal__) Import() CKSAssetType {
 	return CKSAssetType(c)
 }
-
 func (c CKSAssetType) Export() *CKSAssetTypeInternal__ {
 	return ((*CKSAssetTypeInternal__)(&c))
 }
@@ -6903,7 +6591,6 @@ var CKSCertKeyTypeMap = map[string]CKSCertKeyType{
 	"Ed25519": 1,
 	"X509":    2,
 }
-
 var CKSCertKeyTypeRevMap = map[CKSCertKeyType]string{
 	1: "Ed25519",
 	2: "X509",
@@ -6914,7 +6601,6 @@ type CKSCertKeyTypeInternal__ CKSCertKeyType
 func (c CKSCertKeyTypeInternal__) Import() CKSCertKeyType {
 	return CKSCertKeyType(c)
 }
-
 func (c CKSCertKeyType) Export() *CKSCertKeyTypeInternal__ {
 	return ((*CKSCertKeyTypeInternal__)(&c))
 }
@@ -6924,13 +6610,11 @@ type CKSCertKey struct {
 	F_1__ *Ed25519SecretKey `json:"f1,omitempty"`
 	F_2__ *[]byte           `json:"f2,omitempty"`
 }
-
 type CKSCertKeyInternal__ struct {
 	_struct  struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	T        CKSCertKeyType
 	Switch__ CKSCertKeyInternalSwitch__
 }
-
 type CKSCertKeyInternalSwitch__ struct {
 	_struct struct{}                    `codec:",omitempty"` //lint:ignore U1000 msgpack internal field
 	F_1__   *Ed25519SecretKeyInternal__ `codec:"1"`
@@ -6950,41 +6634,36 @@ func (c CKSCertKey) GetT() (ret CKSCertKeyType, err error) {
 	}
 	return c.T, nil
 }
-
 func (c CKSCertKey) Ed25519() Ed25519SecretKey {
 	if c.F_1__ == nil {
-		panic("unexepected nil case; should have been checked")
+		panic("unexpected nil case; should have been checked")
 	}
 	if c.T != CKSCertKeyType_Ed25519 {
 		panic(fmt.Sprintf("unexpected switch value (%v) when Ed25519 is called", c.T))
 	}
 	return *c.F_1__
 }
-
 func (c CKSCertKey) X509() []byte {
 	if c.F_2__ == nil {
-		panic("unexepected nil case; should have been checked")
+		panic("unexpected nil case; should have been checked")
 	}
 	if c.T != CKSCertKeyType_X509 {
 		panic(fmt.Sprintf("unexpected switch value (%v) when X509 is called", c.T))
 	}
 	return *c.F_2__
 }
-
 func NewCKSCertKeyWithEd25519(v Ed25519SecretKey) CKSCertKey {
 	return CKSCertKey{
 		T:     CKSCertKeyType_Ed25519,
 		F_1__: &v,
 	}
 }
-
 func NewCKSCertKeyWithX509(v []byte) CKSCertKey {
 	return CKSCertKey{
 		T:     CKSCertKeyType_X509,
 		F_2__: &v,
 	}
 }
-
 func (c CKSCertKeyInternal__) Import() CKSCertKey {
 	return CKSCertKey{
 		T: c.T,
@@ -7003,7 +6682,6 @@ func (c CKSCertKeyInternal__) Import() CKSCertKey {
 		F_2__: c.Switch__.F_2__,
 	}
 }
-
 func (c CKSCertKey) Export() *CKSCertKeyInternal__ {
 	return &CKSCertKeyInternal__{
 		T: c.T,
@@ -7018,7 +6696,6 @@ func (c CKSCertKey) Export() *CKSCertKeyInternal__ {
 		},
 	}
 }
-
 func (c *CKSCertKey) Encode(enc rpc.Encoder) error {
 	return enc.Encode(c.Export())
 }
@@ -7038,7 +6715,6 @@ var CKSCertKeyTypeUniqueID = rpc.TypeUniqueID(0xe114c9d651c01a53)
 func (c *CKSCertKey) GetTypeUniqueID() rpc.TypeUniqueID {
 	return CKSCertKeyTypeUniqueID
 }
-
 func (c *CKSCertKey) Bytes() []byte { return nil }
 
 type PKIXKeyBytes []byte
@@ -7048,7 +6724,6 @@ func (p PKIXKeyBytes) Export() *PKIXKeyBytesInternal__ {
 	tmp := (([]byte)(p))
 	return ((*PKIXKeyBytesInternal__)(&tmp))
 }
-
 func (p PKIXKeyBytesInternal__) Import() PKIXKeyBytes {
 	tmp := ([]byte)(p)
 	return PKIXKeyBytes((func(x *[]byte) (ret []byte) {
@@ -7078,7 +6753,6 @@ var PKIXKeyBytesTypeUniqueID = rpc.TypeUniqueID(0x9a88488af5e5adfa)
 func (p *PKIXKeyBytes) GetTypeUniqueID() rpc.TypeUniqueID {
 	return PKIXKeyBytesTypeUniqueID
 }
-
 func (p PKIXKeyBytes) Bytes() []byte {
 	return (p)[:]
 }
@@ -7090,7 +6764,6 @@ func (g Generation) Export() *GenerationInternal__ {
 	tmp := ((uint64)(g))
 	return ((*GenerationInternal__)(&tmp))
 }
-
 func (g GenerationInternal__) Import() Generation {
 	tmp := (uint64)(g)
 	return Generation((func(x *uint64) (ret uint64) {
@@ -7126,7 +6799,6 @@ func (s Seqno) Export() *SeqnoInternal__ {
 	tmp := ((uint64)(s))
 	return ((*SeqnoInternal__)(&tmp))
 }
-
 func (s SeqnoInternal__) Import() Seqno {
 	tmp := (uint64)(s)
 	return Seqno((func(x *uint64) (ret uint64) {
@@ -7162,7 +6834,6 @@ func (s SecretSeed32) Export() *SecretSeed32Internal__ {
 	tmp := (([32]byte)(s))
 	return ((*SecretSeed32Internal__)(&tmp))
 }
-
 func (s SecretSeed32Internal__) Import() SecretSeed32 {
 	tmp := ([32]byte)(s)
 	return SecretSeed32((func(x *[32]byte) (ret [32]byte) {
@@ -7200,7 +6871,6 @@ const (
 var UserSettingsTypeMap = map[string]UserSettingsType{
 	"Passphrase": 0,
 }
-
 var UserSettingsTypeRevMap = map[UserSettingsType]string{
 	0: "Passphrase",
 }
@@ -7210,7 +6880,6 @@ type UserSettingsTypeInternal__ UserSettingsType
 func (u UserSettingsTypeInternal__) Import() UserSettingsType {
 	return UserSettingsType(u)
 }
-
 func (u UserSettingsType) Export() *UserSettingsTypeInternal__ {
 	return ((*UserSettingsTypeInternal__)(&u))
 }
@@ -7220,7 +6889,6 @@ type PassphraseInfo struct {
 	Salt *PassphraseSalt
 	Sv   StretchVersion
 }
-
 type PassphraseInfoInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Gen     *PassphraseGenerationInternal__
@@ -7256,7 +6924,6 @@ func (p PassphraseInfoInternal__) Import() PassphraseInfo {
 		})(p.Sv),
 	}
 }
-
 func (p PassphraseInfo) Export() *PassphraseInfoInternal__ {
 	return &PassphraseInfoInternal__{
 		Gen: p.Gen.Export(),
@@ -7269,7 +6936,6 @@ func (p PassphraseInfo) Export() *PassphraseInfoInternal__ {
 		Sv: p.Sv.Export(),
 	}
 }
-
 func (p *PassphraseInfo) Encode(enc rpc.Encoder) error {
 	return enc.Encode(p.Export())
 }
@@ -7293,7 +6959,6 @@ func (p PassphraseGeneration) Export() *PassphraseGenerationInternal__ {
 	tmp := ((uint64)(p))
 	return ((*PassphraseGenerationInternal__)(&tmp))
 }
-
 func (p PassphraseGenerationInternal__) Import() PassphraseGeneration {
 	tmp := (uint64)(p)
 	return PassphraseGeneration((func(x *uint64) (ret uint64) {
@@ -7333,7 +6998,6 @@ var StretchVersionMap = map[string]StretchVersion{
 	"TEST": 0,
 	"V1":   1,
 }
-
 var StretchVersionRevMap = map[StretchVersion]string{
 	0: "TEST",
 	1: "V1",
@@ -7344,7 +7008,6 @@ type StretchVersionInternal__ StretchVersion
 func (s StretchVersionInternal__) Import() StretchVersion {
 	return StretchVersion(s)
 }
-
 func (s StretchVersion) Export() *StretchVersionInternal__ {
 	return ((*StretchVersionInternal__)(&s))
 }
@@ -7356,7 +7019,6 @@ func (p PassphraseSalt) Export() *PassphraseSaltInternal__ {
 	tmp := (([16]byte)(p))
 	return ((*PassphraseSaltInternal__)(&tmp))
 }
-
 func (p PassphraseSaltInternal__) Import() PassphraseSalt {
 	tmp := ([16]byte)(p)
 	return PassphraseSalt((func(x *[16]byte) (ret [16]byte) {
@@ -7402,7 +7064,6 @@ var SecretKeyStorageTypeMap = map[string]SecretKeyStorageType{
 	"ENC_NOISE_FILE":     3,
 	"ENC_KEYCHAIN":       4,
 }
-
 var SecretKeyStorageTypeRevMap = map[SecretKeyStorageType]string{
 	0: "PLAINTEXT",
 	1: "ENC_PASSPHRASE",
@@ -7416,7 +7077,6 @@ type SecretKeyStorageTypeInternal__ SecretKeyStorageType
 func (s SecretKeyStorageTypeInternal__) Import() SecretKeyStorageType {
 	return SecretKeyStorageType(s)
 }
-
 func (s SecretKeyStorageType) Export() *SecretKeyStorageTypeInternal__ {
 	return ((*SecretKeyStorageTypeInternal__)(&s))
 }
@@ -7428,7 +7088,6 @@ func (u URLString) Export() *URLStringInternal__ {
 	tmp := ((string)(u))
 	return ((*URLStringInternal__)(&tmp))
 }
-
 func (u URLStringInternal__) Import() URLString {
 	tmp := (string)(u)
 	return URLString((func(x *string) (ret string) {
@@ -7464,7 +7123,6 @@ func (h HMACKeyID) Export() *HMACKeyIDInternal__ {
 	tmp := (([16]byte)(h))
 	return ((*HMACKeyIDInternal__)(&tmp))
 }
-
 func (h HMACKeyIDInternal__) Import() HMACKeyID {
 	tmp := ([16]byte)(h)
 	return HMACKeyID((func(x *[16]byte) (ret [16]byte) {
@@ -7500,7 +7158,6 @@ func (r Random16) Export() *Random16Internal__ {
 	tmp := (([16]byte)(r))
 	return ((*Random16Internal__)(&tmp))
 }
-
 func (r Random16Internal__) Import() Random16 {
 	tmp := ([16]byte)(r)
 	return Random16((func(x *[16]byte) (ret [16]byte) {
@@ -7534,7 +7191,6 @@ type Date struct {
 	Month uint64
 	Day   uint64
 }
-
 type DateInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Year    *uint64
@@ -7564,7 +7220,6 @@ func (d DateInternal__) Import() Date {
 		})(d.Day),
 	}
 }
-
 func (d Date) Export() *DateInternal__ {
 	return &DateInternal__{
 		Year:  &d.Year,
@@ -7572,7 +7227,6 @@ func (d Date) Export() *DateInternal__ {
 		Day:   &d.Day,
 	}
 }
-
 func (d *Date) Encode(enc rpc.Encoder) error {
 	return enc.Encode(d.Export())
 }
@@ -7596,7 +7250,6 @@ func (d DbKey) Export() *DbKeyInternal__ {
 	tmp := (([]byte)(d))
 	return ((*DbKeyInternal__)(&tmp))
 }
-
 func (d DbKeyInternal__) Import() DbKey {
 	tmp := ([]byte)(d)
 	return DbKey((func(x *[]byte) (ret []byte) {

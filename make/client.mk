@@ -99,13 +99,8 @@ release-all: deb rpm darwin-zip
 ##-----------------------------------------------------------------------
 ##
 
-.stamps/npm-install:
-	npm i
-	mkdir -p .stamps
-	date > .stamps/npm-install
-
 .PHONY: proto
-proto: .stamps/npm-install
+proto: 
 	(cd proto-src && go run ../tools/snowp-checker)
 	go generate ./...
 

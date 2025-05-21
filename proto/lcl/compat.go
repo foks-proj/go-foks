@@ -1,5 +1,5 @@
-// Auto-generated to Go types and interfaces using @foks-proj/snowpack-compiler 1.0.8 (git+https://github.com/foks-proj/node-snowpack-compiler.git)
-//  Input file: ../../proto-src/lcl/compat.snowp
+// Auto-generated to Go types and interfaces using snowpc 0.0.4 (https://github.com/foks-proj/go-snowpack-compiler)
+//  Input file:../../proto-src/lcl/compat.snowp
 
 package lcl
 
@@ -20,7 +20,6 @@ const (
 var HeaderVersionMap = map[string]HeaderVersion{
 	"V1": 1,
 }
-
 var HeaderVersionRevMap = map[HeaderVersion]string{
 	1: "V1",
 }
@@ -30,7 +29,6 @@ type HeaderVersionInternal__ HeaderVersion
 func (h HeaderVersionInternal__) Import() HeaderVersion {
 	return HeaderVersion(h)
 }
-
 func (h HeaderVersion) Export() *HeaderVersionInternal__ {
 	return ((*HeaderVersionInternal__)(&h))
 }
@@ -39,13 +37,11 @@ type Header struct {
 	V     HeaderVersion
 	F_1__ *HeaderV1 `json:"f1,omitempty"`
 }
-
 type HeaderInternal__ struct {
 	_struct  struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	V        HeaderVersion
 	Switch__ HeaderInternalSwitch__
 }
-
 type HeaderInternalSwitch__ struct {
 	_struct struct{}            `codec:",omitempty"` //lint:ignore U1000 msgpack internal field
 	F_1__   *HeaderV1Internal__ `codec:"1"`
@@ -60,24 +56,21 @@ func (h Header) GetV() (ret HeaderVersion, err error) {
 	}
 	return h.V, nil
 }
-
 func (h Header) V1() HeaderV1 {
 	if h.F_1__ == nil {
-		panic("unexepected nil case; should have been checked")
+		panic("unexpected nil case; should have been checked")
 	}
 	if h.V != HeaderVersion_V1 {
 		panic(fmt.Sprintf("unexpected switch value (%v) when V1 is called", h.V))
 	}
 	return *h.F_1__
 }
-
 func NewHeaderWithV1(v HeaderV1) Header {
 	return Header{
 		V:     HeaderVersion_V1,
 		F_1__: &v,
 	}
 }
-
 func (h HeaderInternal__) Import() Header {
 	return Header{
 		V: h.V,
@@ -95,7 +88,6 @@ func (h HeaderInternal__) Import() Header {
 		})(h.Switch__.F_1__),
 	}
 }
-
 func (h Header) Export() *HeaderInternal__ {
 	return &HeaderInternal__{
 		V: h.V,
@@ -109,7 +101,6 @@ func (h Header) Export() *HeaderInternal__ {
 		},
 	}
 }
-
 func (h *Header) Encode(enc rpc.Encoder) error {
 	return enc.Encode(h.Export())
 }
@@ -129,7 +120,6 @@ func (h *Header) Bytes() []byte { return nil }
 type HeaderV1 struct {
 	Semver lib.SemVer
 }
-
 type HeaderV1Internal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Semver  *lib.SemVerInternal__
@@ -145,13 +135,11 @@ func (h HeaderV1Internal__) Import() HeaderV1 {
 		})(h.Semver),
 	}
 }
-
 func (h HeaderV1) Export() *HeaderV1Internal__ {
 	return &HeaderV1Internal__{
 		Semver: h.Semver.Export(),
 	}
 }
-
 func (h *HeaderV1) Encode(enc rpc.Encoder) error {
 	return enc.Encode(h.Export())
 }

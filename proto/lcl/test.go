@@ -1,5 +1,5 @@
-// Auto-generated to Go types and interfaces using @foks-proj/snowpack-compiler 1.0.8 (git+https://github.com/foks-proj/node-snowpack-compiler.git)
-//  Input file: ../../proto-src/lcl/test.snowp
+// Auto-generated to Go types and interfaces using snowpc 0.0.4 (https://github.com/foks-proj/go-snowpack-compiler)
+//  Input file:../../proto-src/lcl/test.snowp
 
 package lcl
 
@@ -26,7 +26,6 @@ var NetworkConditionsTypeMap = map[string]NetworkConditionsType{
 	"Catastrophic": 1,
 	"Cloudy":       2,
 }
-
 var NetworkConditionsTypeRevMap = map[NetworkConditionsType]string{
 	0: "Clear",
 	1: "Catastrophic",
@@ -38,7 +37,6 @@ type NetworkConditionsTypeInternal__ NetworkConditionsType
 func (n NetworkConditionsTypeInternal__) Import() NetworkConditionsType {
 	return NetworkConditionsType(n)
 }
-
 func (n NetworkConditionsType) Export() *NetworkConditionsTypeInternal__ {
 	return ((*NetworkConditionsTypeInternal__)(&n))
 }
@@ -47,13 +45,11 @@ type NetworkConditions struct {
 	T     NetworkConditionsType
 	F_2__ *uint64 `json:"f2,omitempty"`
 }
-
 type NetworkConditionsInternal__ struct {
 	_struct  struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	T        NetworkConditionsType
 	Switch__ NetworkConditionsInternalSwitch__
 }
-
 type NetworkConditionsInternalSwitch__ struct {
 	_struct struct{} `codec:",omitempty"` //lint:ignore U1000 msgpack internal field
 	F_2__   *uint64  `codec:"2"`
@@ -70,37 +66,32 @@ func (n NetworkConditions) GetT() (ret NetworkConditionsType, err error) {
 	}
 	return n.T, nil
 }
-
 func (n NetworkConditions) Cloudy() uint64 {
 	if n.F_2__ == nil {
-		panic("unexepected nil case; should have been checked")
+		panic("unexpected nil case; should have been checked")
 	}
 	if n.T != NetworkConditionsType_Cloudy {
 		panic(fmt.Sprintf("unexpected switch value (%v) when Cloudy is called", n.T))
 	}
 	return *n.F_2__
 }
-
 func NewNetworkConditionsDefault(s NetworkConditionsType) NetworkConditions {
 	return NetworkConditions{
 		T: s,
 	}
 }
-
 func NewNetworkConditionsWithCloudy(v uint64) NetworkConditions {
 	return NetworkConditions{
 		T:     NetworkConditionsType_Cloudy,
 		F_2__: &v,
 	}
 }
-
 func (n NetworkConditionsInternal__) Import() NetworkConditions {
 	return NetworkConditions{
 		T:     n.T,
 		F_2__: n.Switch__.F_2__,
 	}
 }
-
 func (n NetworkConditions) Export() *NetworkConditionsInternal__ {
 	return &NetworkConditionsInternal__{
 		T: n.T,
@@ -109,7 +100,6 @@ func (n NetworkConditions) Export() *NetworkConditionsInternal__ {
 		},
 	}
 }
-
 func (n *NetworkConditions) Encode(enc rpc.Encoder) error {
 	return enc.Encode(n.Export())
 }
@@ -130,7 +120,6 @@ var TestProtocolID rpc.ProtocolUniqueID = rpc.ProtocolUniqueID(0x8a326fcf)
 
 type DeleteMacOSKeychainItemArg struct {
 }
-
 type DeleteMacOSKeychainItemArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 }
@@ -138,11 +127,9 @@ type DeleteMacOSKeychainItemArgInternal__ struct {
 func (d DeleteMacOSKeychainItemArgInternal__) Import() DeleteMacOSKeychainItemArg {
 	return DeleteMacOSKeychainItemArg{}
 }
-
 func (d DeleteMacOSKeychainItemArg) Export() *DeleteMacOSKeychainItemArgInternal__ {
 	return &DeleteMacOSKeychainItemArgInternal__{}
 }
-
 func (d *DeleteMacOSKeychainItemArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(d.Export())
 }
@@ -161,7 +148,6 @@ func (d *DeleteMacOSKeychainItemArg) Bytes() []byte { return nil }
 
 type GetNoiseFileArg struct {
 }
-
 type GetNoiseFileArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 }
@@ -169,11 +155,9 @@ type GetNoiseFileArgInternal__ struct {
 func (g GetNoiseFileArgInternal__) Import() GetNoiseFileArg {
 	return GetNoiseFileArg{}
 }
-
 func (g GetNoiseFileArg) Export() *GetNoiseFileArgInternal__ {
 	return &GetNoiseFileArgInternal__{}
 }
-
 func (g *GetNoiseFileArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(g.Export())
 }
@@ -192,7 +176,6 @@ func (g *GetNoiseFileArg) Bytes() []byte { return nil }
 
 type ClearUserStateArg struct {
 }
-
 type ClearUserStateArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 }
@@ -200,11 +183,9 @@ type ClearUserStateArgInternal__ struct {
 func (c ClearUserStateArgInternal__) Import() ClearUserStateArg {
 	return ClearUserStateArg{}
 }
-
 func (c ClearUserStateArg) Export() *ClearUserStateArgInternal__ {
 	return &ClearUserStateArgInternal__{}
 }
-
 func (c *ClearUserStateArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(c.Export())
 }
@@ -223,7 +204,6 @@ func (c *ClearUserStateArg) Bytes() []byte { return nil }
 
 type TestTriggerBgUserJobArg struct {
 }
-
 type TestTriggerBgUserJobArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 }
@@ -231,11 +211,9 @@ type TestTriggerBgUserJobArgInternal__ struct {
 func (t TestTriggerBgUserJobArgInternal__) Import() TestTriggerBgUserJobArg {
 	return TestTriggerBgUserJobArg{}
 }
-
 func (t TestTriggerBgUserJobArg) Export() *TestTriggerBgUserJobArgInternal__ {
 	return &TestTriggerBgUserJobArgInternal__{}
 }
-
 func (t *TestTriggerBgUserJobArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(t.Export())
 }
@@ -254,7 +232,6 @@ func (t *TestTriggerBgUserJobArg) Bytes() []byte { return nil }
 
 type LoadSecretStoreArg struct {
 }
-
 type LoadSecretStoreArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 }
@@ -262,11 +239,9 @@ type LoadSecretStoreArgInternal__ struct {
 func (l LoadSecretStoreArgInternal__) Import() LoadSecretStoreArg {
 	return LoadSecretStoreArg{}
 }
-
 func (l LoadSecretStoreArg) Export() *LoadSecretStoreArgInternal__ {
 	return &LoadSecretStoreArgInternal__{}
 }
-
 func (l *LoadSecretStoreArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(l.Export())
 }
@@ -287,7 +262,6 @@ type SetFakeTeamIndexRangeArg struct {
 	Team lib.FQTeam
 	Tir  lib.RationalRange
 }
-
 type SetFakeTeamIndexRangeArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Team    *lib.FQTeamInternal__
@@ -310,14 +284,12 @@ func (s SetFakeTeamIndexRangeArgInternal__) Import() SetFakeTeamIndexRangeArg {
 		})(s.Tir),
 	}
 }
-
 func (s SetFakeTeamIndexRangeArg) Export() *SetFakeTeamIndexRangeArgInternal__ {
 	return &SetFakeTeamIndexRangeArgInternal__{
 		Team: s.Team.Export(),
 		Tir:  s.Tir.Export(),
 	}
 }
-
 func (s *SetFakeTeamIndexRangeArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(s.Export())
 }
@@ -337,7 +309,6 @@ func (s *SetFakeTeamIndexRangeArg) Bytes() []byte { return nil }
 type SetNetworkConditionsArg struct {
 	Nc NetworkConditions
 }
-
 type SetNetworkConditionsArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Nc      *NetworkConditionsInternal__
@@ -353,13 +324,11 @@ func (s SetNetworkConditionsArgInternal__) Import() SetNetworkConditionsArg {
 		})(s.Nc),
 	}
 }
-
 func (s SetNetworkConditionsArg) Export() *SetNetworkConditionsArgInternal__ {
 	return &SetNetworkConditionsArgInternal__{
 		Nc: s.Nc.Export(),
 	}
 }
-
 func (s *SetNetworkConditionsArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(s.Export())
 }
@@ -378,7 +347,6 @@ func (s *SetNetworkConditionsArg) Bytes() []byte { return nil }
 
 type GetUnlockedSKMWKArg struct {
 }
-
 type GetUnlockedSKMWKArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 }
@@ -386,11 +354,9 @@ type GetUnlockedSKMWKArgInternal__ struct {
 func (g GetUnlockedSKMWKArgInternal__) Import() GetUnlockedSKMWKArg {
 	return GetUnlockedSKMWKArg{}
 }
-
 func (g GetUnlockedSKMWKArg) Export() *GetUnlockedSKMWKArgInternal__ {
 	return &GetUnlockedSKMWKArgInternal__{}
 }
-
 func (g *GetUnlockedSKMWKArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(g.Export())
 }
@@ -418,7 +384,6 @@ type TestInterface interface {
 	GetUnlockedSKMWK(context.Context) (UnlockedSKMWK, error)
 	ErrorWrapper() func(error) lib.Status
 	CheckArgHeader(ctx context.Context, h Header) error
-
 	MakeResHeader() Header
 }
 
@@ -445,7 +410,7 @@ func (t testErrorUnwrapperAdapter) MakeArg() interface{} {
 func (t testErrorUnwrapperAdapter) UnwrapError(raw interface{}) (appError error, dispatchError error) {
 	sTmp, ok := raw.(*lib.StatusInternal__)
 	if !ok {
-		return nil, errors.New("Error converting to internal type in UnwrapError")
+		return nil, errors.New("error converting to internal type in UnwrapError")
 	}
 	if sTmp == nil {
 		return nil, nil
@@ -483,7 +448,6 @@ func (c TestClient) DeleteMacOSKeychainItem(ctx context.Context) (err error) {
 	}
 	return
 }
-
 func (c TestClient) GetNoiseFile(ctx context.Context) (res string, err error) {
 	var arg GetNoiseFileArg
 	warg := &rpc.DataWrap[Header, *GetNoiseFileArgInternal__]{
@@ -506,7 +470,6 @@ func (c TestClient) GetNoiseFile(ctx context.Context) (res string, err error) {
 	res = tmp.Data
 	return
 }
-
 func (c TestClient) ClearUserState(ctx context.Context) (err error) {
 	var arg ClearUserStateArg
 	warg := &rpc.DataWrap[Header, *ClearUserStateArgInternal__]{
@@ -528,7 +491,6 @@ func (c TestClient) ClearUserState(ctx context.Context) (err error) {
 	}
 	return
 }
-
 func (c TestClient) TestTriggerBgUserJob(ctx context.Context) (err error) {
 	var arg TestTriggerBgUserJobArg
 	warg := &rpc.DataWrap[Header, *TestTriggerBgUserJobArgInternal__]{
@@ -550,7 +512,6 @@ func (c TestClient) TestTriggerBgUserJob(ctx context.Context) (err error) {
 	}
 	return
 }
-
 func (c TestClient) LoadSecretStore(ctx context.Context) (res SecretStore, err error) {
 	var arg LoadSecretStoreArg
 	warg := &rpc.DataWrap[Header, *LoadSecretStoreArgInternal__]{
@@ -573,7 +534,6 @@ func (c TestClient) LoadSecretStore(ctx context.Context) (res SecretStore, err e
 	res = tmp.Data.Import()
 	return
 }
-
 func (c TestClient) SetFakeTeamIndexRange(ctx context.Context, arg SetFakeTeamIndexRangeArg) (err error) {
 	warg := &rpc.DataWrap[Header, *SetFakeTeamIndexRangeArgInternal__]{
 		Data: arg.Export(),
@@ -594,7 +554,6 @@ func (c TestClient) SetFakeTeamIndexRange(ctx context.Context, arg SetFakeTeamIn
 	}
 	return
 }
-
 func (c TestClient) SetNetworkConditions(ctx context.Context, nc NetworkConditions) (err error) {
 	arg := SetNetworkConditionsArg{
 		Nc: nc,
@@ -618,7 +577,6 @@ func (c TestClient) SetNetworkConditions(ctx context.Context, nc NetworkConditio
 	}
 	return
 }
-
 func (c TestClient) GetUnlockedSKMWK(ctx context.Context) (res UnlockedSKMWK, err error) {
 	var arg GetUnlockedSKMWKArg
 	warg := &rpc.DataWrap[Header, *GetUnlockedSKMWKArgInternal__]{
@@ -641,7 +599,6 @@ func (c TestClient) GetUnlockedSKMWK(ctx context.Context) (res UnlockedSKMWK, er
 	res = tmp.Data.Import()
 	return
 }
-
 func TestProtocol(i TestInterface) rpc.ProtocolV2 {
 	return rpc.ProtocolV2{
 		Name: "Test",
@@ -878,7 +835,6 @@ var TestLibsProtocolID rpc.ProtocolUniqueID = rpc.ProtocolUniqueID(0xb9330a29)
 type FastArg struct {
 	X int64
 }
-
 type FastArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	X       *int64
@@ -894,13 +850,11 @@ func (f FastArgInternal__) Import() FastArg {
 		})(f.X),
 	}
 }
-
 func (f FastArg) Export() *FastArgInternal__ {
 	return &FastArgInternal__{
 		X: &f.X,
 	}
 }
-
 func (f *FastArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(f.Export())
 }
@@ -921,7 +875,6 @@ type SlowArg struct {
 	X    int64
 	Wait lib.DurationMilli
 }
-
 type SlowArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	X       *int64
@@ -944,14 +897,12 @@ func (s SlowArgInternal__) Import() SlowArg {
 		})(s.Wait),
 	}
 }
-
 func (s SlowArg) Export() *SlowArgInternal__ {
 	return &SlowArgInternal__{
 		X:    &s.X,
 		Wait: s.Wait.Export(),
 	}
 }
-
 func (s *SlowArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(s.Export())
 }
@@ -970,7 +921,6 @@ func (s *SlowArg) Bytes() []byte { return nil }
 
 type DisconnectArg struct {
 }
-
 type DisconnectArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 }
@@ -978,11 +928,9 @@ type DisconnectArgInternal__ struct {
 func (d DisconnectArgInternal__) Import() DisconnectArg {
 	return DisconnectArg{}
 }
-
 func (d DisconnectArg) Export() *DisconnectArgInternal__ {
 	return &DisconnectArgInternal__{}
 }
-
 func (d *DisconnectArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(d.Export())
 }
@@ -1029,7 +977,7 @@ func (t testLibsErrorUnwrapperAdapter) MakeArg() interface{} {
 func (t testLibsErrorUnwrapperAdapter) UnwrapError(raw interface{}) (appError error, dispatchError error) {
 	sTmp, ok := raw.(*lib.StatusInternal__)
 	if !ok {
-		return nil, errors.New("Error converting to internal type in UnwrapError")
+		return nil, errors.New("error converting to internal type in UnwrapError")
 	}
 	if sTmp == nil {
 		return nil, nil
@@ -1057,7 +1005,6 @@ func (c TestLibsClient) Fast(ctx context.Context, x int64) (res int64, err error
 	res = tmp
 	return
 }
-
 func (c TestLibsClient) Slow(ctx context.Context, arg SlowArg) (res int64, err error) {
 	warg := arg.Export()
 	var tmp int64
@@ -1068,7 +1015,6 @@ func (c TestLibsClient) Slow(ctx context.Context, arg SlowArg) (res int64, err e
 	res = tmp
 	return
 }
-
 func (c TestLibsClient) Disconnect(ctx context.Context) (err error) {
 	var arg DisconnectArg
 	warg := arg.Export()
@@ -1078,7 +1024,6 @@ func (c TestLibsClient) Disconnect(ctx context.Context) (err error) {
 	}
 	return
 }
-
 func TestLibsProtocol(i TestLibsInterface) rpc.ProtocolV2 {
 	return rpc.ProtocolV2{
 		Name: "TestLibs",

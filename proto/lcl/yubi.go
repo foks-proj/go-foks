@@ -1,5 +1,5 @@
-// Auto-generated to Go types and interfaces using @foks-proj/snowpack-compiler 1.0.8 (git+https://github.com/foks-proj/node-snowpack-compiler.git)
-//  Input file: ../../proto-src/lcl/yubi.snowp
+// Auto-generated to Go types and interfaces using snowpc 0.0.4 (https://github.com/foks-proj/go-snowpack-compiler)
+//  Input file:../../proto-src/lcl/yubi.snowp
 
 package lcl
 
@@ -16,7 +16,6 @@ type SetOrGetManagementKeyRes struct {
 	WasMade bool
 	Key     lib.YubiManagementKey
 }
-
 type SetOrGetManagementKeyResInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	WasMade *bool
@@ -39,14 +38,12 @@ func (s SetOrGetManagementKeyResInternal__) Import() SetOrGetManagementKeyRes {
 		})(s.Key),
 	}
 }
-
 func (s SetOrGetManagementKeyRes) Export() *SetOrGetManagementKeyResInternal__ {
 	return &SetOrGetManagementKeyResInternal__{
 		WasMade: &s.WasMade,
 		Key:     s.Key.Export(),
 	}
 }
-
 func (s *SetOrGetManagementKeyRes) Encode(enc rpc.Encoder) error {
 	return enc.Encode(s.Export())
 }
@@ -67,7 +64,6 @@ var YubiProtocolID rpc.ProtocolUniqueID = rpc.ProtocolUniqueID(0xd6c6ce5e)
 
 type YubiUnlockArg struct {
 }
-
 type YubiUnlockArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 }
@@ -75,11 +71,9 @@ type YubiUnlockArgInternal__ struct {
 func (y YubiUnlockArgInternal__) Import() YubiUnlockArg {
 	return YubiUnlockArg{}
 }
-
 func (y YubiUnlockArg) Export() *YubiUnlockArgInternal__ {
 	return &YubiUnlockArgInternal__{}
 }
-
 func (y *YubiUnlockArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(y.Export())
 }
@@ -98,7 +92,6 @@ func (y *YubiUnlockArg) Bytes() []byte { return nil }
 
 type YubiListAllCardsArg struct {
 }
-
 type YubiListAllCardsArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 }
@@ -106,11 +99,9 @@ type YubiListAllCardsArgInternal__ struct {
 func (y YubiListAllCardsArgInternal__) Import() YubiListAllCardsArg {
 	return YubiListAllCardsArg{}
 }
-
 func (y YubiListAllCardsArg) Export() *YubiListAllCardsArgInternal__ {
 	return &YubiListAllCardsArgInternal__{}
 }
-
 func (y *YubiListAllCardsArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(y.Export())
 }
@@ -130,7 +121,6 @@ func (y *YubiListAllCardsArg) Bytes() []byte { return nil }
 type YubiListAllSlotsArg struct {
 	Serial lib.YubiSerial
 }
-
 type YubiListAllSlotsArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Serial  *lib.YubiSerialInternal__
@@ -146,13 +136,11 @@ func (y YubiListAllSlotsArgInternal__) Import() YubiListAllSlotsArg {
 		})(y.Serial),
 	}
 }
-
 func (y YubiListAllSlotsArg) Export() *YubiListAllSlotsArgInternal__ {
 	return &YubiListAllSlotsArgInternal__{
 		Serial: y.Serial.Export(),
 	}
 }
-
 func (y *YubiListAllSlotsArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(y.Export())
 }
@@ -172,7 +160,6 @@ func (y *YubiListAllSlotsArg) Bytes() []byte { return nil }
 type YubiMapSlotToUserArg struct {
 	Ssh lib.YubiSerialSlotHost
 }
-
 type YubiMapSlotToUserArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Ssh     *lib.YubiSerialSlotHostInternal__
@@ -188,13 +175,11 @@ func (y YubiMapSlotToUserArgInternal__) Import() YubiMapSlotToUserArg {
 		})(y.Ssh),
 	}
 }
-
 func (y YubiMapSlotToUserArg) Export() *YubiMapSlotToUserArgInternal__ {
 	return &YubiMapSlotToUserArgInternal__{
 		Ssh: y.Ssh.Export(),
 	}
 }
-
 func (y *YubiMapSlotToUserArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(y.Export())
 }
@@ -214,7 +199,6 @@ func (y *YubiMapSlotToUserArg) Bytes() []byte { return nil }
 type YubiProvisionArg struct {
 	Ssh lib.YubiSerialSlotHost
 }
-
 type YubiProvisionArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Ssh     *lib.YubiSerialSlotHostInternal__
@@ -230,13 +214,11 @@ func (y YubiProvisionArgInternal__) Import() YubiProvisionArg {
 		})(y.Ssh),
 	}
 }
-
 func (y YubiProvisionArg) Export() *YubiProvisionArgInternal__ {
 	return &YubiProvisionArgInternal__{
 		Ssh: y.Ssh.Export(),
 	}
 }
-
 func (y *YubiProvisionArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(y.Export())
 }
@@ -261,7 +243,6 @@ type YubiNewArg struct {
 	Pin         lib.YubiPIN
 	LockWithPin bool
 }
-
 type YubiNewArgInternal__ struct {
 	_struct     struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Ss          *lib.YubiSerialSlotInternal__
@@ -312,7 +293,6 @@ func (y YubiNewArgInternal__) Import() YubiNewArg {
 		})(y.LockWithPin),
 	}
 }
-
 func (y YubiNewArg) Export() *YubiNewArgInternal__ {
 	return &YubiNewArgInternal__{
 		Ss:          y.Ss.Export(),
@@ -323,7 +303,6 @@ func (y YubiNewArg) Export() *YubiNewArgInternal__ {
 		LockWithPin: &y.LockWithPin,
 	}
 }
-
 func (y *YubiNewArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(y.Export())
 }
@@ -343,7 +322,6 @@ func (y *YubiNewArg) Bytes() []byte { return nil }
 type ListAllLocalYubiDevicesArg struct {
 	SessionId lib.UISessionID
 }
-
 type ListAllLocalYubiDevicesArgInternal__ struct {
 	_struct   struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	SessionId *lib.UISessionIDInternal__
@@ -359,13 +337,11 @@ func (l ListAllLocalYubiDevicesArgInternal__) Import() ListAllLocalYubiDevicesAr
 		})(l.SessionId),
 	}
 }
-
 func (l ListAllLocalYubiDevicesArg) Export() *ListAllLocalYubiDevicesArgInternal__ {
 	return &ListAllLocalYubiDevicesArgInternal__{
 		SessionId: l.SessionId.Export(),
 	}
 }
-
 func (l *ListAllLocalYubiDevicesArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(l.Export())
 }
@@ -386,7 +362,6 @@ type UseYubiArg struct {
 	SessionId lib.UISessionID
 	Idx       uint64
 }
-
 type UseYubiArgInternal__ struct {
 	_struct   struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	SessionId *lib.UISessionIDInternal__
@@ -409,14 +384,12 @@ func (u UseYubiArgInternal__) Import() UseYubiArg {
 		})(u.Idx),
 	}
 }
-
 func (u UseYubiArg) Export() *UseYubiArgInternal__ {
 	return &UseYubiArgInternal__{
 		SessionId: u.SessionId.Export(),
 		Idx:       &u.Idx,
 	}
 }
-
 func (u *UseYubiArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(u.Export())
 }
@@ -438,7 +411,6 @@ type ValidateCurrentPINArg struct {
 	Pin       lib.YubiPIN
 	DoUnlock  bool
 }
-
 type ValidateCurrentPINArgInternal__ struct {
 	_struct   struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	SessionId *lib.UISessionIDInternal__
@@ -468,7 +440,6 @@ func (v ValidateCurrentPINArgInternal__) Import() ValidateCurrentPINArg {
 		})(v.DoUnlock),
 	}
 }
-
 func (v ValidateCurrentPINArg) Export() *ValidateCurrentPINArgInternal__ {
 	return &ValidateCurrentPINArgInternal__{
 		SessionId: v.SessionId.Export(),
@@ -476,7 +447,6 @@ func (v ValidateCurrentPINArg) Export() *ValidateCurrentPINArgInternal__ {
 		DoUnlock:  &v.DoUnlock,
 	}
 }
-
 func (v *ValidateCurrentPINArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(v.Export())
 }
@@ -497,7 +467,6 @@ type SetPINArg struct {
 	SessionId lib.UISessionID
 	Pin       lib.YubiPIN
 }
-
 type SetPINArgInternal__ struct {
 	_struct   struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	SessionId *lib.UISessionIDInternal__
@@ -520,14 +489,12 @@ func (s SetPINArgInternal__) Import() SetPINArg {
 		})(s.Pin),
 	}
 }
-
 func (s SetPINArg) Export() *SetPINArgInternal__ {
 	return &SetPINArgInternal__{
 		SessionId: s.SessionId.Export(),
 		Pin:       s.Pin.Export(),
 	}
 }
-
 func (s *SetPINArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(s.Export())
 }
@@ -548,7 +515,6 @@ type ValidateCurrentPUKArg struct {
 	SessionId lib.UISessionID
 	Puk       lib.YubiPUK
 }
-
 type ValidateCurrentPUKArgInternal__ struct {
 	_struct   struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	SessionId *lib.UISessionIDInternal__
@@ -571,14 +537,12 @@ func (v ValidateCurrentPUKArgInternal__) Import() ValidateCurrentPUKArg {
 		})(v.Puk),
 	}
 }
-
 func (v ValidateCurrentPUKArg) Export() *ValidateCurrentPUKArgInternal__ {
 	return &ValidateCurrentPUKArgInternal__{
 		SessionId: v.SessionId.Export(),
 		Puk:       v.Puk.Export(),
 	}
 }
-
 func (v *ValidateCurrentPUKArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(v.Export())
 }
@@ -599,7 +563,6 @@ type SetPUKArg struct {
 	SessionId lib.UISessionID
 	New       lib.YubiPUK
 }
-
 type SetPUKArgInternal__ struct {
 	_struct   struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	SessionId *lib.UISessionIDInternal__
@@ -622,14 +585,12 @@ func (s SetPUKArgInternal__) Import() SetPUKArg {
 		})(s.New),
 	}
 }
-
 func (s SetPUKArg) Export() *SetPUKArgInternal__ {
 	return &SetPUKArgInternal__{
 		SessionId: s.SessionId.Export(),
 		New:       s.New.Export(),
 	}
 }
-
 func (s *SetPUKArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(s.Export())
 }
@@ -649,7 +610,6 @@ func (s *SetPUKArg) Bytes() []byte { return nil }
 type SetOrGetManagementKeyArg struct {
 	SessionId lib.UISessionID
 }
-
 type SetOrGetManagementKeyArgInternal__ struct {
 	_struct   struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	SessionId *lib.UISessionIDInternal__
@@ -665,13 +625,11 @@ func (s SetOrGetManagementKeyArgInternal__) Import() SetOrGetManagementKeyArg {
 		})(s.SessionId),
 	}
 }
-
 func (s SetOrGetManagementKeyArg) Export() *SetOrGetManagementKeyArgInternal__ {
 	return &SetOrGetManagementKeyArgInternal__{
 		SessionId: s.SessionId.Export(),
 	}
 }
-
 func (s *SetOrGetManagementKeyArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(s.Export())
 }
@@ -692,7 +650,6 @@ type InputPINArg struct {
 	SessionId lib.UISessionID
 	Pin       lib.YubiPIN
 }
-
 type InputPINArgInternal__ struct {
 	_struct   struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	SessionId *lib.UISessionIDInternal__
@@ -715,14 +672,12 @@ func (i InputPINArgInternal__) Import() InputPINArg {
 		})(i.Pin),
 	}
 }
-
 func (i InputPINArg) Export() *InputPINArgInternal__ {
 	return &InputPINArgInternal__{
 		SessionId: i.SessionId.Export(),
 		Pin:       i.Pin.Export(),
 	}
 }
-
 func (i *InputPINArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(i.Export())
 }
@@ -742,7 +697,6 @@ func (i *InputPINArg) Bytes() []byte { return nil }
 type ManagementKeyStateArg struct {
 	SessionId lib.UISessionID
 }
-
 type ManagementKeyStateArgInternal__ struct {
 	_struct   struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	SessionId *lib.UISessionIDInternal__
@@ -758,13 +712,11 @@ func (m ManagementKeyStateArgInternal__) Import() ManagementKeyStateArg {
 		})(m.SessionId),
 	}
 }
-
 func (m ManagementKeyStateArg) Export() *ManagementKeyStateArgInternal__ {
 	return &ManagementKeyStateArgInternal__{
 		SessionId: m.SessionId.Export(),
 	}
 }
-
 func (m *ManagementKeyStateArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(m.Export())
 }
@@ -784,7 +736,6 @@ func (m *ManagementKeyStateArg) Bytes() []byte { return nil }
 type ProtectKeyWithPINArg struct {
 	SessionId lib.UISessionID
 }
-
 type ProtectKeyWithPINArgInternal__ struct {
 	_struct   struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	SessionId *lib.UISessionIDInternal__
@@ -800,13 +751,11 @@ func (p ProtectKeyWithPINArgInternal__) Import() ProtectKeyWithPINArg {
 		})(p.SessionId),
 	}
 }
-
 func (p ProtectKeyWithPINArg) Export() *ProtectKeyWithPINArgInternal__ {
 	return &ProtectKeyWithPINArgInternal__{
 		SessionId: p.SessionId.Export(),
 	}
 }
-
 func (p *ProtectKeyWithPINArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(p.Export())
 }
@@ -829,7 +778,6 @@ type RecoverManagementKeyArg struct {
 	Puk    lib.YubiPUK
 	Mk     *lib.YubiManagementKey
 }
-
 type RecoverManagementKeyArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Serial  *lib.YubiSerialInternal__
@@ -872,7 +820,6 @@ func (r RecoverManagementKeyArgInternal__) Import() RecoverManagementKeyArg {
 		})(r.Mk),
 	}
 }
-
 func (r RecoverManagementKeyArg) Export() *RecoverManagementKeyArgInternal__ {
 	return &RecoverManagementKeyArgInternal__{
 		Serial: r.Serial.Export(),
@@ -886,7 +833,6 @@ func (r RecoverManagementKeyArg) Export() *RecoverManagementKeyArgInternal__ {
 		})(r.Mk),
 	}
 }
-
 func (r *RecoverManagementKeyArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(r.Export())
 }
@@ -923,7 +869,6 @@ type YubiInterface interface {
 	RecoverManagementKey(context.Context, RecoverManagementKeyArg) error
 	ErrorWrapper() func(error) lib.Status
 	CheckArgHeader(ctx context.Context, h Header) error
-
 	MakeResHeader() Header
 }
 
@@ -950,7 +895,7 @@ func (y yubiErrorUnwrapperAdapter) MakeArg() interface{} {
 func (y yubiErrorUnwrapperAdapter) UnwrapError(raw interface{}) (appError error, dispatchError error) {
 	sTmp, ok := raw.(*lib.StatusInternal__)
 	if !ok {
-		return nil, errors.New("Error converting to internal type in UnwrapError")
+		return nil, errors.New("error converting to internal type in UnwrapError")
 	}
 	if sTmp == nil {
 		return nil, nil
@@ -988,7 +933,6 @@ func (c YubiClient) YubiUnlock(ctx context.Context) (err error) {
 	}
 	return
 }
-
 func (c YubiClient) YubiListAllCards(ctx context.Context) (res []lib.YubiCardID, err error) {
 	var arg YubiListAllCardsArg
 	warg := &rpc.DataWrap[Header, *YubiListAllCardsArgInternal__]{
@@ -1028,7 +972,6 @@ func (c YubiClient) YubiListAllCards(ctx context.Context) (res []lib.YubiCardID,
 	})(&tmp.Data)
 	return
 }
-
 func (c YubiClient) YubiListAllSlots(ctx context.Context, serial lib.YubiSerial) (res ListYubiSlotsRes, err error) {
 	arg := YubiListAllSlotsArg{
 		Serial: serial,
@@ -1053,7 +996,6 @@ func (c YubiClient) YubiListAllSlots(ctx context.Context, serial lib.YubiSerial)
 	res = tmp.Data.Import()
 	return
 }
-
 func (c YubiClient) YubiMapSlotToUser(ctx context.Context, ssh lib.YubiSerialSlotHost) (res lib.LookupUserRes, err error) {
 	arg := YubiMapSlotToUserArg{
 		Ssh: ssh,
@@ -1078,7 +1020,6 @@ func (c YubiClient) YubiMapSlotToUser(ctx context.Context, ssh lib.YubiSerialSlo
 	res = tmp.Data.Import()
 	return
 }
-
 func (c YubiClient) YubiProvision(ctx context.Context, ssh lib.YubiSerialSlotHost) (err error) {
 	arg := YubiProvisionArg{
 		Ssh: ssh,
@@ -1102,7 +1043,6 @@ func (c YubiClient) YubiProvision(ctx context.Context, ssh lib.YubiSerialSlotHos
 	}
 	return
 }
-
 func (c YubiClient) YubiNew(ctx context.Context, arg YubiNewArg) (err error) {
 	warg := &rpc.DataWrap[Header, *YubiNewArgInternal__]{
 		Data: arg.Export(),
@@ -1123,7 +1063,6 @@ func (c YubiClient) YubiNew(ctx context.Context, arg YubiNewArg) (err error) {
 	}
 	return
 }
-
 func (c YubiClient) ListAllLocalYubiDevices(ctx context.Context, sessionId lib.UISessionID) (res []lib.YubiCardID, err error) {
 	arg := ListAllLocalYubiDevicesArg{
 		SessionId: sessionId,
@@ -1165,7 +1104,6 @@ func (c YubiClient) ListAllLocalYubiDevices(ctx context.Context, sessionId lib.U
 	})(&tmp.Data)
 	return
 }
-
 func (c YubiClient) UseYubi(ctx context.Context, arg UseYubiArg) (err error) {
 	warg := &rpc.DataWrap[Header, *UseYubiArgInternal__]{
 		Data: arg.Export(),
@@ -1186,7 +1124,6 @@ func (c YubiClient) UseYubi(ctx context.Context, arg UseYubiArg) (err error) {
 	}
 	return
 }
-
 func (c YubiClient) ValidateCurrentPIN(ctx context.Context, arg ValidateCurrentPINArg) (err error) {
 	warg := &rpc.DataWrap[Header, *ValidateCurrentPINArgInternal__]{
 		Data: arg.Export(),
@@ -1207,7 +1144,6 @@ func (c YubiClient) ValidateCurrentPIN(ctx context.Context, arg ValidateCurrentP
 	}
 	return
 }
-
 func (c YubiClient) SetPIN(ctx context.Context, arg SetPINArg) (err error) {
 	warg := &rpc.DataWrap[Header, *SetPINArgInternal__]{
 		Data: arg.Export(),
@@ -1228,7 +1164,6 @@ func (c YubiClient) SetPIN(ctx context.Context, arg SetPINArg) (err error) {
 	}
 	return
 }
-
 func (c YubiClient) ValidateCurrentPUK(ctx context.Context, arg ValidateCurrentPUKArg) (err error) {
 	warg := &rpc.DataWrap[Header, *ValidateCurrentPUKArgInternal__]{
 		Data: arg.Export(),
@@ -1249,7 +1184,6 @@ func (c YubiClient) ValidateCurrentPUK(ctx context.Context, arg ValidateCurrentP
 	}
 	return
 }
-
 func (c YubiClient) SetPUK(ctx context.Context, arg SetPUKArg) (err error) {
 	warg := &rpc.DataWrap[Header, *SetPUKArgInternal__]{
 		Data: arg.Export(),
@@ -1270,7 +1204,6 @@ func (c YubiClient) SetPUK(ctx context.Context, arg SetPUKArg) (err error) {
 	}
 	return
 }
-
 func (c YubiClient) SetOrGetManagementKey(ctx context.Context, sessionId lib.UISessionID) (res SetOrGetManagementKeyRes, err error) {
 	arg := SetOrGetManagementKeyArg{
 		SessionId: sessionId,
@@ -1295,7 +1228,6 @@ func (c YubiClient) SetOrGetManagementKey(ctx context.Context, sessionId lib.UIS
 	res = tmp.Data.Import()
 	return
 }
-
 func (c YubiClient) InputPIN(ctx context.Context, arg InputPINArg) (res lib.ManagementKeyState, err error) {
 	warg := &rpc.DataWrap[Header, *InputPINArgInternal__]{
 		Data: arg.Export(),
@@ -1317,7 +1249,6 @@ func (c YubiClient) InputPIN(ctx context.Context, arg InputPINArg) (res lib.Mana
 	res = tmp.Data.Import()
 	return
 }
-
 func (c YubiClient) ManagementKeyState(ctx context.Context, sessionId lib.UISessionID) (res lib.ManagementKeyState, err error) {
 	arg := ManagementKeyStateArg{
 		SessionId: sessionId,
@@ -1342,7 +1273,6 @@ func (c YubiClient) ManagementKeyState(ctx context.Context, sessionId lib.UISess
 	res = tmp.Data.Import()
 	return
 }
-
 func (c YubiClient) ProtectKeyWithPIN(ctx context.Context, sessionId lib.UISessionID) (err error) {
 	arg := ProtectKeyWithPINArg{
 		SessionId: sessionId,
@@ -1366,7 +1296,6 @@ func (c YubiClient) ProtectKeyWithPIN(ctx context.Context, sessionId lib.UISessi
 	}
 	return
 }
-
 func (c YubiClient) RecoverManagementKey(ctx context.Context, arg RecoverManagementKeyArg) (err error) {
 	warg := &rpc.DataWrap[Header, *RecoverManagementKeyArgInternal__]{
 		Data: arg.Export(),
@@ -1387,7 +1316,6 @@ func (c YubiClient) RecoverManagementKey(ctx context.Context, arg RecoverManagem
 	}
 	return
 }
-
 func YubiProtocol(i YubiInterface) rpc.ProtocolV2 {
 	return rpc.ProtocolV2{
 		Name: "Yubi",

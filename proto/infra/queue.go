@@ -1,5 +1,5 @@
-// Auto-generated to Go types and interfaces using @foks-proj/snowpack-compiler 1.0.8 (git+https://github.com/foks-proj/node-snowpack-compiler.git)
-//  Input file: ../../proto-src/infra/queue.snowp
+// Auto-generated to Go types and interfaces using snowpc 0.0.4 (https://github.com/foks-proj/go-snowpack-compiler)
+//  Input file:../../proto-src/infra/queue.snowp
 
 package infra
 
@@ -23,7 +23,6 @@ var QueueIDMap = map[string]QueueID{
 	"Kex":    1,
 	"OAuth2": 2,
 }
-
 var QueueIDRevMap = map[QueueID]string{
 	1: "Kex",
 	2: "OAuth2",
@@ -34,7 +33,6 @@ type QueueIDInternal__ QueueID
 func (q QueueIDInternal__) Import() QueueID {
 	return QueueID(q)
 }
-
 func (q QueueID) Export() *QueueIDInternal__ {
 	return ((*QueueIDInternal__)(&q))
 }
@@ -46,7 +44,6 @@ func (q QueueLaneID) Export() *QueueLaneIDInternal__ {
 	tmp := (([18]byte)(q))
 	return ((*QueueLaneIDInternal__)(&tmp))
 }
-
 func (q QueueLaneIDInternal__) Import() QueueLaneID {
 	tmp := ([18]byte)(q)
 	return QueueLaneID((func(x *[18]byte) (ret [18]byte) {
@@ -82,7 +79,6 @@ type EnqueueArg struct {
 	LaneId  QueueLaneID
 	Msg     []byte
 }
-
 type EnqueueArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	QueueId *QueueIDInternal__
@@ -112,7 +108,6 @@ func (e EnqueueArgInternal__) Import() EnqueueArg {
 		})(e.Msg),
 	}
 }
-
 func (e EnqueueArg) Export() *EnqueueArgInternal__ {
 	return &EnqueueArgInternal__{
 		QueueId: e.QueueId.Export(),
@@ -120,7 +115,6 @@ func (e EnqueueArg) Export() *EnqueueArgInternal__ {
 		Msg:     &e.Msg,
 	}
 }
-
 func (e *EnqueueArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(e.Export())
 }
@@ -142,7 +136,6 @@ type DequeueArg struct {
 	LaneId  QueueLaneID
 	Wait    lib.DurationMilli
 }
-
 type DequeueArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	QueueId *QueueIDInternal__
@@ -172,7 +165,6 @@ func (d DequeueArgInternal__) Import() DequeueArg {
 		})(d.Wait),
 	}
 }
-
 func (d DequeueArg) Export() *DequeueArgInternal__ {
 	return &DequeueArgInternal__{
 		QueueId: d.QueueId.Export(),
@@ -180,7 +172,6 @@ func (d DequeueArg) Export() *DequeueArgInternal__ {
 		Wait:    d.Wait.Export(),
 	}
 }
-
 func (d *DequeueArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(d.Export())
 }
@@ -226,7 +217,7 @@ func (q queueErrorUnwrapperAdapter) MakeArg() interface{} {
 func (q queueErrorUnwrapperAdapter) UnwrapError(raw interface{}) (appError error, dispatchError error) {
 	sTmp, ok := raw.(*lib.StatusInternal__)
 	if !ok {
-		return nil, errors.New("Error converting to internal type in UnwrapError")
+		return nil, errors.New("error converting to internal type in UnwrapError")
 	}
 	if sTmp == nil {
 		return nil, nil
@@ -249,7 +240,6 @@ func (c QueueClient) Enqueue(ctx context.Context, arg EnqueueArg) (err error) {
 	}
 	return
 }
-
 func (c QueueClient) Dequeue(ctx context.Context, arg DequeueArg) (res []byte, err error) {
 	warg := arg.Export()
 	var tmp []byte
@@ -260,7 +250,6 @@ func (c QueueClient) Dequeue(ctx context.Context, arg DequeueArg) (res []byte, e
 	res = tmp
 	return
 }
-
 func QueueProtocol(i QueueInterface) rpc.ProtocolV2 {
 	return rpc.ProtocolV2{
 		Name: "queue",

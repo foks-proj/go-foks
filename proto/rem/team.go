@@ -1,5 +1,5 @@
-// Auto-generated to Go types and interfaces using @foks-proj/snowpack-compiler 1.0.8 (git+https://github.com/foks-proj/node-snowpack-compiler.git)
-//  Input file: ../../proto-src/rem/team.snowp
+// Auto-generated to Go types and interfaces using snowpc 0.0.4 (https://github.com/foks-proj/go-snowpack-compiler)
+//  Input file:../../proto-src/rem/team.snowp
 
 package rem
 
@@ -20,7 +20,6 @@ func (t TeamVOBearerToken) Export() *TeamVOBearerTokenInternal__ {
 	tmp := (([16]byte)(t))
 	return ((*TeamVOBearerTokenInternal__)(&tmp))
 }
-
 func (t TeamVOBearerTokenInternal__) Import() TeamVOBearerToken {
 	tmp := ([16]byte)(t)
 	return TeamVOBearerToken((func(x *[16]byte) (ret [16]byte) {
@@ -56,7 +55,6 @@ func (t TeamBearerToken) Export() *TeamBearerTokenInternal__ {
 	tmp := (([16]byte)(t))
 	return ((*TeamBearerTokenInternal__)(&tmp))
 }
-
 func (t TeamBearerTokenInternal__) Import() TeamBearerToken {
 	tmp := ([16]byte)(t)
 	return TeamBearerToken((func(x *[16]byte) (ret [16]byte) {
@@ -90,7 +88,6 @@ type SharedKeySig struct {
 	Gen  lib.Generation
 	Role lib.Role
 }
-
 type SharedKeySigInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Sig     *lib.SignatureInternal__
@@ -120,7 +117,6 @@ func (s SharedKeySigInternal__) Import() SharedKeySig {
 		})(s.Role),
 	}
 }
-
 func (s SharedKeySig) Export() *SharedKeySigInternal__ {
 	return &SharedKeySigInternal__{
 		Sig:  s.Sig.Export(),
@@ -128,7 +124,6 @@ func (s SharedKeySig) Export() *SharedKeySigInternal__ {
 		Role: s.Role.Export(),
 	}
 }
-
 func (s *SharedKeySig) Encode(enc rpc.Encoder) error {
 	return enc.Encode(s.Export())
 }
@@ -151,7 +146,6 @@ type TeamVOBearerTokenReq struct {
 	SrcRole lib.Role
 	Gen     lib.Generation
 }
-
 type TeamVOBearerTokenReqInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Team    *lib.FQTeamIDOrNameInternal__
@@ -188,7 +182,6 @@ func (t TeamVOBearerTokenReqInternal__) Import() TeamVOBearerTokenReq {
 		})(t.Gen),
 	}
 }
-
 func (t TeamVOBearerTokenReq) Export() *TeamVOBearerTokenReqInternal__ {
 	return &TeamVOBearerTokenReqInternal__{
 		Team:    t.Team.Export(),
@@ -197,7 +190,6 @@ func (t TeamVOBearerTokenReq) Export() *TeamVOBearerTokenReqInternal__ {
 		Gen:     t.Gen.Export(),
 	}
 }
-
 func (t *TeamVOBearerTokenReq) Encode(enc rpc.Encoder) error {
 	return enc.Encode(t.Export())
 }
@@ -220,7 +212,6 @@ type TeamVOBearerTokenChallengePayload struct {
 	Tok TeamVOBearerToken
 	Id  lib.HMACKeyID
 }
-
 type TeamVOBearerTokenChallengePayloadInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Req     *TeamVOBearerTokenReqInternal__
@@ -257,7 +248,6 @@ func (t TeamVOBearerTokenChallengePayloadInternal__) Import() TeamVOBearerTokenC
 		})(t.Id),
 	}
 }
-
 func (t TeamVOBearerTokenChallengePayload) Export() *TeamVOBearerTokenChallengePayloadInternal__ {
 	return &TeamVOBearerTokenChallengePayloadInternal__{
 		Req: t.Req.Export(),
@@ -266,7 +256,6 @@ func (t TeamVOBearerTokenChallengePayload) Export() *TeamVOBearerTokenChallengeP
 		Id:  t.Id.Export(),
 	}
 }
-
 func (t *TeamVOBearerTokenChallengePayload) Encode(enc rpc.Encoder) error {
 	return enc.Encode(t.Export())
 }
@@ -286,14 +275,12 @@ var TeamVOBearerTokenChallengePayloadTypeUniqueID = rpc.TypeUniqueID(0x81180183e
 func (t *TeamVOBearerTokenChallengePayload) GetTypeUniqueID() rpc.TypeUniqueID {
 	return TeamVOBearerTokenChallengePayloadTypeUniqueID
 }
-
 func (t *TeamVOBearerTokenChallengePayload) Bytes() []byte { return nil }
 
 type TeamVOBearerTokenChallenge struct {
 	Payload TeamVOBearerTokenChallengePayload
 	Mac     lib.HMAC
 }
-
 type TeamVOBearerTokenChallengeInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Payload *TeamVOBearerTokenChallengePayloadInternal__
@@ -316,14 +303,12 @@ func (t TeamVOBearerTokenChallengeInternal__) Import() TeamVOBearerTokenChalleng
 		})(t.Mac),
 	}
 }
-
 func (t TeamVOBearerTokenChallenge) Export() *TeamVOBearerTokenChallengeInternal__ {
 	return &TeamVOBearerTokenChallengeInternal__{
 		Payload: t.Payload.Export(),
 		Mac:     t.Mac.Export(),
 	}
 }
-
 func (t *TeamVOBearerTokenChallenge) Encode(enc rpc.Encoder) error {
 	return enc.Encode(t.Export())
 }
@@ -343,14 +328,12 @@ var TeamVOBearerTokenChallengeTypeUniqueID = rpc.TypeUniqueID(0x96861830ffa96bff
 func (t *TeamVOBearerTokenChallenge) GetTypeUniqueID() rpc.TypeUniqueID {
 	return TeamVOBearerTokenChallengeTypeUniqueID
 }
-
 func (t *TeamVOBearerTokenChallenge) Bytes() []byte { return nil }
 
 type ActivatedVOBearerToken struct {
 	Tok TeamVOBearerToken
 	Id  lib.TeamID
 }
-
 type ActivatedVOBearerTokenInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Tok     *TeamVOBearerTokenInternal__
@@ -373,14 +356,12 @@ func (a ActivatedVOBearerTokenInternal__) Import() ActivatedVOBearerToken {
 		})(a.Id),
 	}
 }
-
 func (a ActivatedVOBearerToken) Export() *ActivatedVOBearerTokenInternal__ {
 	return &ActivatedVOBearerTokenInternal__{
 		Tok: a.Tok.Export(),
 		Id:  a.Id.Export(),
 	}
 }
-
 func (a *ActivatedVOBearerToken) Encode(enc rpc.Encoder) error {
 	return enc.Encode(a.Export())
 }
@@ -403,13 +384,11 @@ type TokenVariant struct {
 	F_1__ *lib.PermissionToken `json:"f1,omitempty"`
 	F_2__ *TeamVOBearerToken   `json:"f2,omitempty"`
 }
-
 type TokenVariantInternal__ struct {
 	_struct  struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	T        TokenType
 	Switch__ TokenVariantInternalSwitch__
 }
-
 type TokenVariantInternalSwitch__ struct {
 	_struct struct{}                       `codec:",omitempty"` //lint:ignore U1000 msgpack internal field
 	F_0__   *TeamVOBearerTokenInternal__   `codec:"0"`
@@ -436,64 +415,56 @@ func (t TokenVariant) GetT() (ret TokenType, err error) {
 	}
 	return t.T, nil
 }
-
 func (t TokenVariant) Teamvobearer() TeamVOBearerToken {
 	if t.F_0__ == nil {
-		panic("unexepected nil case; should have been checked")
+		panic("unexpected nil case; should have been checked")
 	}
 	if t.T != TokenType_TeamVOBearer {
 		panic(fmt.Sprintf("unexpected switch value (%v) when Teamvobearer is called", t.T))
 	}
 	return *t.F_0__
 }
-
 func (t TokenVariant) Permission() lib.PermissionToken {
 	if t.F_1__ == nil {
-		panic("unexepected nil case; should have been checked")
+		panic("unexpected nil case; should have been checked")
 	}
 	if t.T != TokenType_Permission {
 		panic(fmt.Sprintf("unexpected switch value (%v) when Permission is called", t.T))
 	}
 	return *t.F_1__
 }
-
 func (t TokenVariant) Localparentteam() TeamVOBearerToken {
 	if t.F_2__ == nil {
-		panic("unexepected nil case; should have been checked")
+		panic("unexpected nil case; should have been checked")
 	}
 	if t.T != TokenType_LocalParentTeam {
 		panic(fmt.Sprintf("unexpected switch value (%v) when Localparentteam is called", t.T))
 	}
 	return *t.F_2__
 }
-
 func NewTokenVariantWithTeamvobearer(v TeamVOBearerToken) TokenVariant {
 	return TokenVariant{
 		T:     TokenType_TeamVOBearer,
 		F_0__: &v,
 	}
 }
-
 func NewTokenVariantWithPermission(v lib.PermissionToken) TokenVariant {
 	return TokenVariant{
 		T:     TokenType_Permission,
 		F_1__: &v,
 	}
 }
-
 func NewTokenVariantWithLocalparentteam(v TeamVOBearerToken) TokenVariant {
 	return TokenVariant{
 		T:     TokenType_LocalParentTeam,
 		F_2__: &v,
 	}
 }
-
 func NewTokenVariantDefault(s TokenType) TokenVariant {
 	return TokenVariant{
 		T: s,
 	}
 }
-
 func (t TokenVariantInternal__) Import() TokenVariant {
 	return TokenVariant{
 		T: t.T,
@@ -535,7 +506,6 @@ func (t TokenVariantInternal__) Import() TokenVariant {
 		})(t.Switch__.F_2__),
 	}
 }
-
 func (t TokenVariant) Export() *TokenVariantInternal__ {
 	return &TokenVariantInternal__{
 		T: t.T,
@@ -561,7 +531,6 @@ func (t TokenVariant) Export() *TokenVariantInternal__ {
 		},
 	}
 }
-
 func (t *TokenVariant) Encode(enc rpc.Encoder) error {
 	return enc.Encode(t.Export())
 }
@@ -585,7 +554,6 @@ func (t TeamRemovalKey) Export() *TeamRemovalKeyInternal__ {
 	tmp := (([32]byte)(t))
 	return ((*TeamRemovalKeyInternal__)(&tmp))
 }
-
 func (t TeamRemovalKeyInternal__) Import() TeamRemovalKey {
 	tmp := ([32]byte)(t)
 	return TeamRemovalKey((func(x *[32]byte) (ret [32]byte) {
@@ -615,7 +583,6 @@ var TeamRemovalKeyTypeUniqueID = rpc.TypeUniqueID(0xb058740fe7e9fdb5)
 func (t *TeamRemovalKey) GetTypeUniqueID() rpc.TypeUniqueID {
 	return TeamRemovalKeyTypeUniqueID
 }
-
 func (t TeamRemovalKey) Bytes() []byte {
 	return (t)[:]
 }
@@ -624,7 +591,6 @@ type TeamRemovalKeyBoxPayload struct {
 	Key TeamRemovalKey
 	Md  TeamRemovalKeyMetadata
 }
-
 type TeamRemovalKeyBoxPayloadInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Key     *TeamRemovalKeyInternal__
@@ -647,14 +613,12 @@ func (t TeamRemovalKeyBoxPayloadInternal__) Import() TeamRemovalKeyBoxPayload {
 		})(t.Md),
 	}
 }
-
 func (t TeamRemovalKeyBoxPayload) Export() *TeamRemovalKeyBoxPayloadInternal__ {
 	return &TeamRemovalKeyBoxPayloadInternal__{
 		Key: t.Key.Export(),
 		Md:  t.Md.Export(),
 	}
 }
-
 func (t *TeamRemovalKeyBoxPayload) Encode(enc rpc.Encoder) error {
 	return enc.Encode(t.Export())
 }
@@ -674,7 +638,6 @@ var TeamRemovalKeyBoxPayloadTypeUniqueID = rpc.TypeUniqueID(0xeeae1230be48267f)
 func (t *TeamRemovalKeyBoxPayload) GetTypeUniqueID() rpc.TypeUniqueID {
 	return TeamRemovalKeyBoxPayloadTypeUniqueID
 }
-
 func (t *TeamRemovalKeyBoxPayload) Bytes() []byte { return nil }
 
 type TeamRemovalKeyMetadata struct {
@@ -683,7 +646,6 @@ type TeamRemovalKeyMetadata struct {
 	SrcRole lib.Role
 	Dst     lib.RoleAndSeqno
 }
-
 type TeamRemovalKeyMetadataInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Tm      *lib.FQTeamInternal__
@@ -720,7 +682,6 @@ func (t TeamRemovalKeyMetadataInternal__) Import() TeamRemovalKeyMetadata {
 		})(t.Dst),
 	}
 }
-
 func (t TeamRemovalKeyMetadata) Export() *TeamRemovalKeyMetadataInternal__ {
 	return &TeamRemovalKeyMetadataInternal__{
 		Tm:      t.Tm.Export(),
@@ -729,7 +690,6 @@ func (t TeamRemovalKeyMetadata) Export() *TeamRemovalKeyMetadataInternal__ {
 		Dst:     t.Dst.Export(),
 	}
 }
-
 func (t *TeamRemovalKeyMetadata) Encode(enc rpc.Encoder) error {
 	return enc.Encode(t.Export())
 }
@@ -754,7 +714,6 @@ type TeamRemovalMACPayload struct {
 	Root    lib.TreeRoot
 	Tm      lib.Time
 }
-
 type TeamRemovalMACPayloadInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Team    *lib.FQTeamInternal__
@@ -805,7 +764,6 @@ func (t TeamRemovalMACPayloadInternal__) Import() TeamRemovalMACPayload {
 		})(t.Tm),
 	}
 }
-
 func (t TeamRemovalMACPayload) Export() *TeamRemovalMACPayloadInternal__ {
 	return &TeamRemovalMACPayloadInternal__{
 		Team:    t.Team.Export(),
@@ -816,7 +774,6 @@ func (t TeamRemovalMACPayload) Export() *TeamRemovalMACPayloadInternal__ {
 		Tm:      t.Tm.Export(),
 	}
 }
-
 func (t *TeamRemovalMACPayload) Encode(enc rpc.Encoder) error {
 	return enc.Encode(t.Export())
 }
@@ -836,7 +793,6 @@ var TeamRemovalMACPayloadTypeUniqueID = rpc.TypeUniqueID(0x8d006be42c05ec34)
 func (t *TeamRemovalMACPayload) GetTypeUniqueID() rpc.TypeUniqueID {
 	return TeamRemovalMACPayloadTypeUniqueID
 }
-
 func (t *TeamRemovalMACPayload) Bytes() []byte { return nil }
 
 type TeamRemovalBoxData struct {
@@ -845,7 +801,6 @@ type TeamRemovalBoxData struct {
 	Member lib.TeamRemovalKeyBox
 	Md     TeamRemovalKeyMetadata
 }
-
 type TeamRemovalBoxDataInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Comm    *lib.KeyCommitmentInternal__
@@ -882,7 +837,6 @@ func (t TeamRemovalBoxDataInternal__) Import() TeamRemovalBoxData {
 		})(t.Md),
 	}
 }
-
 func (t TeamRemovalBoxData) Export() *TeamRemovalBoxDataInternal__ {
 	return &TeamRemovalBoxDataInternal__{
 		Comm:   t.Comm.Export(),
@@ -891,7 +845,6 @@ func (t TeamRemovalBoxData) Export() *TeamRemovalBoxDataInternal__ {
 		Md:     t.Md.Export(),
 	}
 }
-
 func (t *TeamRemovalBoxData) Encode(enc rpc.Encoder) error {
 	return enc.Encode(t.Export())
 }
@@ -912,7 +865,6 @@ type TeamRemoval struct {
 	Mac     lib.HMAC
 	Payload TeamRemovalMACPayload
 }
-
 type TeamRemovalInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Mac     *lib.HMACInternal__
@@ -935,14 +887,12 @@ func (t TeamRemovalInternal__) Import() TeamRemoval {
 		})(t.Payload),
 	}
 }
-
 func (t TeamRemoval) Export() *TeamRemovalInternal__ {
 	return &TeamRemovalInternal__{
 		Mac:     t.Mac.Export(),
 		Payload: t.Payload.Export(),
 	}
 }
-
 func (t *TeamRemoval) Encode(enc rpc.Encoder) error {
 	return enc.Encode(t.Export())
 }
@@ -971,7 +921,6 @@ type TeamChain struct {
 	RemoteViewTokens []lib.TeamRemoteMemberViewTokenInner
 	Hepks            lib.HEPKSet
 }
-
 type TeamChainInternal__ struct {
 	_struct          struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Links            *[](*lib.LinkOuterInternal__)
@@ -1116,7 +1065,6 @@ func (t TeamChainInternal__) Import() TeamChain {
 		})(t.Hepks),
 	}
 }
-
 func (t TeamChain) Export() *TeamChainInternal__ {
 	return &TeamChainInternal__{
 		Links: (func(x []lib.LinkOuter) *[](*lib.LinkOuterInternal__) {
@@ -1181,7 +1129,6 @@ func (t TeamChain) Export() *TeamChainInternal__ {
 		Hepks: t.Hepks.Export(),
 	}
 }
-
 func (t *TeamChain) Encode(enc rpc.Encoder) error {
 	return enc.Encode(t.Export())
 }
@@ -1201,7 +1148,6 @@ func (t *TeamChain) Bytes() []byte { return nil }
 type TeamRemoteViewTokenSet struct {
 	Tokens []lib.TeamRemoteMemberViewTokenInner
 }
-
 type TeamRemoteViewTokenSetInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Tokens  *[](*lib.TeamRemoteMemberViewTokenInnerInternal__)
@@ -1229,7 +1175,6 @@ func (t TeamRemoteViewTokenSetInternal__) Import() TeamRemoteViewTokenSet {
 		})(t.Tokens),
 	}
 }
-
 func (t TeamRemoteViewTokenSet) Export() *TeamRemoteViewTokenSetInternal__ {
 	return &TeamRemoteViewTokenSetInternal__{
 		Tokens: (func(x []lib.TeamRemoteMemberViewTokenInner) *[](*lib.TeamRemoteMemberViewTokenInnerInternal__) {
@@ -1244,7 +1189,6 @@ func (t TeamRemoteViewTokenSet) Export() *TeamRemoteViewTokenSetInternal__ {
 		})(t.Tokens),
 	}
 }
-
 func (t *TeamRemoteViewTokenSet) Encode(enc rpc.Encoder) error {
 	return enc.Encode(t.Export())
 }
@@ -1276,7 +1220,6 @@ var TokenTypeMap = map[string]TokenType{
 	"Permission":      2,
 	"LocalParentTeam": 3,
 }
-
 var TokenTypeRevMap = map[TokenType]string{
 	0: "None",
 	1: "TeamVOBearer",
@@ -1289,7 +1232,6 @@ type TokenTypeInternal__ TokenType
 func (t TokenTypeInternal__) Import() TokenType {
 	return TokenType(t)
 }
-
 func (t TokenType) Export() *TokenTypeInternal__ {
 	return ((*TokenTypeInternal__)(&t))
 }
@@ -1298,7 +1240,6 @@ type TeamRemovalAndKeyBox struct {
 	KeyBox  lib.TeamRemovalKeyBox
 	Removal TeamRemoval
 }
-
 type TeamRemovalAndKeyBoxInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	KeyBox  *lib.TeamRemovalKeyBoxInternal__
@@ -1321,14 +1262,12 @@ func (t TeamRemovalAndKeyBoxInternal__) Import() TeamRemovalAndKeyBox {
 		})(t.Removal),
 	}
 }
-
 func (t TeamRemovalAndKeyBox) Export() *TeamRemovalAndKeyBoxInternal__ {
 	return &TeamRemovalAndKeyBoxInternal__{
 		KeyBox:  t.KeyBox.Export(),
 		Removal: t.Removal.Export(),
 	}
 }
-
 func (t *TeamRemovalAndKeyBox) Encode(enc rpc.Encoder) error {
 	return enc.Encode(t.Export())
 }
@@ -1349,7 +1288,6 @@ type TeamRemovalAndComm struct {
 	Rm   TeamRemoval
 	Comm lib.KeyCommitment
 }
-
 type TeamRemovalAndCommInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Rm      *TeamRemovalInternal__
@@ -1372,14 +1310,12 @@ func (t TeamRemovalAndCommInternal__) Import() TeamRemovalAndComm {
 		})(t.Comm),
 	}
 }
-
 func (t TeamRemovalAndComm) Export() *TeamRemovalAndCommInternal__ {
 	return &TeamRemovalAndCommInternal__{
 		Rm:   t.Rm.Export(),
 		Comm: t.Comm.Export(),
 	}
 }
-
 func (t *TeamRemovalAndComm) Encode(enc rpc.Encoder) error {
 	return enc.Encode(t.Export())
 }
@@ -1405,7 +1341,6 @@ type OffchainBoxData struct {
 	Hepks                  lib.HEPKSet
 	NewKeyOnRotate         lib.EntityID
 }
-
 type OffchainBoxDataInternal__ struct {
 	_struct                struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	PtkBoxes               *lib.SharedKeyBoxSetInternal__
@@ -1511,7 +1446,6 @@ func (o OffchainBoxDataInternal__) Import() OffchainBoxData {
 		})(o.NewKeyOnRotate),
 	}
 }
-
 func (o OffchainBoxData) Export() *OffchainBoxDataInternal__ {
 	return &OffchainBoxDataInternal__{
 		PtkBoxes: o.PtkBoxes.Export(),
@@ -1559,7 +1493,6 @@ func (o OffchainBoxData) Export() *OffchainBoxDataInternal__ {
 		NewKeyOnRotate: o.NewKeyOnRotate.Export(),
 	}
 }
-
 func (o *OffchainBoxData) Encode(enc rpc.Encoder) error {
 	return enc.Encode(o.Export())
 }
@@ -1581,7 +1514,6 @@ var TeamLoaderProtocolID rpc.ProtocolUniqueID = rpc.ProtocolUniqueID(0xf9128579)
 type GetTeamVOBearerTokenChallengeArg struct {
 	Req TeamVOBearerTokenReq
 }
-
 type GetTeamVOBearerTokenChallengeArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Req     *TeamVOBearerTokenReqInternal__
@@ -1597,13 +1529,11 @@ func (g GetTeamVOBearerTokenChallengeArgInternal__) Import() GetTeamVOBearerToke
 		})(g.Req),
 	}
 }
-
 func (g GetTeamVOBearerTokenChallengeArg) Export() *GetTeamVOBearerTokenChallengeArgInternal__ {
 	return &GetTeamVOBearerTokenChallengeArgInternal__{
 		Req: g.Req.Export(),
 	}
 }
-
 func (g *GetTeamVOBearerTokenChallengeArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(g.Export())
 }
@@ -1624,7 +1554,6 @@ type ActivateTeamVOBearerTokenArg struct {
 	Ch  TeamVOBearerTokenChallenge
 	Sig lib.Signature
 }
-
 type ActivateTeamVOBearerTokenArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Ch      *TeamVOBearerTokenChallengeInternal__
@@ -1647,14 +1576,12 @@ func (a ActivateTeamVOBearerTokenArgInternal__) Import() ActivateTeamVOBearerTok
 		})(a.Sig),
 	}
 }
-
 func (a ActivateTeamVOBearerTokenArg) Export() *ActivateTeamVOBearerTokenArgInternal__ {
 	return &ActivateTeamVOBearerTokenArgInternal__{
 		Ch:  a.Ch.Export(),
 		Sig: a.Sig.Export(),
 	}
 }
-
 func (a *ActivateTeamVOBearerTokenArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(a.Export())
 }
@@ -1675,7 +1602,6 @@ type CheckTeamVOBearerTokenArg struct {
 	Host lib.HostID
 	Tok  TeamVOBearerToken
 }
-
 type CheckTeamVOBearerTokenArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Host    *lib.HostIDInternal__
@@ -1698,14 +1624,12 @@ func (c CheckTeamVOBearerTokenArgInternal__) Import() CheckTeamVOBearerTokenArg 
 		})(c.Tok),
 	}
 }
-
 func (c CheckTeamVOBearerTokenArg) Export() *CheckTeamVOBearerTokenArgInternal__ {
 	return &CheckTeamVOBearerTokenArgInternal__{
 		Host: c.Host.Export(),
 		Tok:  c.Tok.Export(),
 	}
 }
-
 func (c *CheckTeamVOBearerTokenArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(c.Export())
 }
@@ -1731,7 +1655,6 @@ type LoadTeamChainArg struct {
 	LoadRemovalKey       bool
 	LoadRemoteViewTokens bool
 }
-
 type LoadTeamChainArgInternal__ struct {
 	_struct              struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Team                 *lib.FQTeamInternal__
@@ -1807,7 +1730,6 @@ func (l LoadTeamChainArgInternal__) Import() LoadTeamChainArg {
 		})(l.LoadRemoteViewTokens),
 	}
 }
-
 func (l LoadTeamChainArg) Export() *LoadTeamChainArgInternal__ {
 	return &LoadTeamChainArgInternal__{
 		Team:  l.Team.Export(),
@@ -1833,7 +1755,6 @@ func (l LoadTeamChainArg) Export() *LoadTeamChainArgInternal__ {
 		LoadRemoteViewTokens: &l.LoadRemoteViewTokens,
 	}
 }
-
 func (l *LoadTeamChainArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(l.Export())
 }
@@ -1855,7 +1776,6 @@ type LoadTeamMembershipChainArg struct {
 	Tok   TeamVOBearerToken
 	Start lib.Seqno
 }
-
 type LoadTeamMembershipChainArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Team    *lib.FQTeamInternal__
@@ -1885,7 +1805,6 @@ func (l LoadTeamMembershipChainArgInternal__) Import() LoadTeamMembershipChainAr
 		})(l.Start),
 	}
 }
-
 func (l LoadTeamMembershipChainArg) Export() *LoadTeamMembershipChainArgInternal__ {
 	return &LoadTeamMembershipChainArgInternal__{
 		Team:  l.Team.Export(),
@@ -1893,7 +1812,6 @@ func (l LoadTeamMembershipChainArg) Export() *LoadTeamMembershipChainArgInternal
 		Start: l.Start.Export(),
 	}
 }
-
 func (l *LoadTeamMembershipChainArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(l.Export())
 }
@@ -1914,7 +1832,6 @@ type LoadRemovalForMemberArg struct {
 	Team lib.FQTeam
 	Comm lib.KeyCommitment
 }
-
 type LoadRemovalForMemberArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Team    *lib.FQTeamInternal__
@@ -1937,14 +1854,12 @@ func (l LoadRemovalForMemberArgInternal__) Import() LoadRemovalForMemberArg {
 		})(l.Comm),
 	}
 }
-
 func (l LoadRemovalForMemberArg) Export() *LoadRemovalForMemberArgInternal__ {
 	return &LoadRemovalForMemberArgInternal__{
 		Team: l.Team.Export(),
 		Comm: l.Comm.Export(),
 	}
 }
-
 func (l *LoadRemovalForMemberArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(l.Export())
 }
@@ -1966,7 +1881,6 @@ type LoadTeamRemoteViewTokensArg struct {
 	Tok     TeamVOBearerToken
 	Members []lib.FQParty
 }
-
 type LoadTeamRemoteViewTokensArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Team    *lib.FQTeamInternal__
@@ -2008,7 +1922,6 @@ func (l LoadTeamRemoteViewTokensArgInternal__) Import() LoadTeamRemoteViewTokens
 		})(l.Members),
 	}
 }
-
 func (l LoadTeamRemoteViewTokensArg) Export() *LoadTeamRemoteViewTokensArgInternal__ {
 	return &LoadTeamRemoteViewTokensArgInternal__{
 		Team: l.Team.Export(),
@@ -2025,7 +1938,6 @@ func (l LoadTeamRemoteViewTokensArg) Export() *LoadTeamRemoteViewTokensArgIntern
 		})(l.Members),
 	}
 }
-
 func (l *LoadTeamRemoteViewTokensArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(l.Export())
 }
@@ -2076,7 +1988,7 @@ func (t teamLoaderErrorUnwrapperAdapter) MakeArg() interface{} {
 func (t teamLoaderErrorUnwrapperAdapter) UnwrapError(raw interface{}) (appError error, dispatchError error) {
 	sTmp, ok := raw.(*lib.StatusInternal__)
 	if !ok {
-		return nil, errors.New("Error converting to internal type in UnwrapError")
+		return nil, errors.New("error converting to internal type in UnwrapError")
 	}
 	if sTmp == nil {
 		return nil, nil
@@ -2104,7 +2016,6 @@ func (c TeamLoaderClient) GetTeamVOBearerTokenChallenge(ctx context.Context, req
 	res = tmp.Import()
 	return
 }
-
 func (c TeamLoaderClient) ActivateTeamVOBearerToken(ctx context.Context, arg ActivateTeamVOBearerTokenArg) (res ActivatedVOBearerToken, err error) {
 	warg := arg.Export()
 	var tmp ActivatedVOBearerTokenInternal__
@@ -2115,7 +2026,6 @@ func (c TeamLoaderClient) ActivateTeamVOBearerToken(ctx context.Context, arg Act
 	res = tmp.Import()
 	return
 }
-
 func (c TeamLoaderClient) CheckTeamVOBearerToken(ctx context.Context, arg CheckTeamVOBearerTokenArg) (res lib.TeamID, err error) {
 	warg := arg.Export()
 	var tmp lib.TeamIDInternal__
@@ -2126,7 +2036,6 @@ func (c TeamLoaderClient) CheckTeamVOBearerToken(ctx context.Context, arg CheckT
 	res = tmp.Import()
 	return
 }
-
 func (c TeamLoaderClient) LoadTeamChain(ctx context.Context, arg LoadTeamChainArg) (res TeamChain, err error) {
 	warg := arg.Export()
 	var tmp TeamChainInternal__
@@ -2137,7 +2046,6 @@ func (c TeamLoaderClient) LoadTeamChain(ctx context.Context, arg LoadTeamChainAr
 	res = tmp.Import()
 	return
 }
-
 func (c TeamLoaderClient) LoadTeamMembershipChain(ctx context.Context, arg LoadTeamMembershipChainArg) (res GenericChain, err error) {
 	warg := arg.Export()
 	var tmp GenericChainInternal__
@@ -2148,7 +2056,6 @@ func (c TeamLoaderClient) LoadTeamMembershipChain(ctx context.Context, arg LoadT
 	res = tmp.Import()
 	return
 }
-
 func (c TeamLoaderClient) LoadRemovalForMember(ctx context.Context, arg LoadRemovalForMemberArg) (res TeamRemovalAndKeyBox, err error) {
 	warg := arg.Export()
 	var tmp TeamRemovalAndKeyBoxInternal__
@@ -2159,7 +2066,6 @@ func (c TeamLoaderClient) LoadRemovalForMember(ctx context.Context, arg LoadRemo
 	res = tmp.Import()
 	return
 }
-
 func (c TeamLoaderClient) LoadTeamRemoteViewTokens(ctx context.Context, arg LoadTeamRemoteViewTokensArg) (res TeamRemoteViewTokenSet, err error) {
 	warg := arg.Export()
 	var tmp TeamRemoteViewTokenSetInternal__
@@ -2170,7 +2076,6 @@ func (c TeamLoaderClient) LoadTeamRemoteViewTokens(ctx context.Context, arg Load
 	res = tmp.Import()
 	return
 }
-
 func TeamLoaderProtocol(i TeamLoaderInterface) rpc.ProtocolV2 {
 	return rpc.ProtocolV2{
 		Name: "TeamLoader",
@@ -2336,7 +2241,6 @@ type AcceptInviteLocalArg struct {
 	Tok                *TeamBearerToken
 	TeamMembershipLink *PostGenericLinkArg
 }
-
 type AcceptInviteLocalArgInternal__ struct {
 	_struct            struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	I                  *lib.TeamInviteInternal__
@@ -2385,7 +2289,6 @@ func (a AcceptInviteLocalArgInternal__) Import() AcceptInviteLocalArg {
 		})(a.TeamMembershipLink),
 	}
 }
-
 func (a AcceptInviteLocalArg) Export() *AcceptInviteLocalArgInternal__ {
 	return &AcceptInviteLocalArgInternal__{
 		I:       a.I.Export(),
@@ -2404,7 +2307,6 @@ func (a AcceptInviteLocalArg) Export() *AcceptInviteLocalArgInternal__ {
 		})(a.TeamMembershipLink),
 	}
 }
-
 func (a *AcceptInviteLocalArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(a.Export())
 }
@@ -2425,7 +2327,6 @@ type GrantRemoteViewPermissionForTeamArg struct {
 	P   GrantRemoteViewPermissionPayload
 	Sig SharedKeySig
 }
-
 type GrantRemoteViewPermissionForTeamArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	P       *GrantRemoteViewPermissionPayloadInternal__
@@ -2448,14 +2349,12 @@ func (g GrantRemoteViewPermissionForTeamArgInternal__) Import() GrantRemoteViewP
 		})(g.Sig),
 	}
 }
-
 func (g GrantRemoteViewPermissionForTeamArg) Export() *GrantRemoteViewPermissionForTeamArgInternal__ {
 	return &GrantRemoteViewPermissionForTeamArgInternal__{
 		P:   g.P.Export(),
 		Sig: g.Sig.Export(),
 	}
 }
-
 func (g *GrantRemoteViewPermissionForTeamArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(g.Export())
 }
@@ -2476,7 +2375,6 @@ type GrantLocalViewPermissionForTeamArg struct {
 	P   GrantLocalViewPermissionPayload
 	Sig SharedKeySig
 }
-
 type GrantLocalViewPermissionForTeamArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	P       *GrantLocalViewPermissionPayloadInternal__
@@ -2499,14 +2397,12 @@ func (g GrantLocalViewPermissionForTeamArgInternal__) Import() GrantLocalViewPer
 		})(g.Sig),
 	}
 }
-
 func (g GrantLocalViewPermissionForTeamArg) Export() *GrantLocalViewPermissionForTeamArgInternal__ {
 	return &GrantLocalViewPermissionForTeamArgInternal__{
 		P:   g.P.Export(),
 		Sig: g.Sig.Export(),
 	}
 }
-
 func (g *GrantLocalViewPermissionForTeamArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(g.Export())
 }
@@ -2553,7 +2449,7 @@ func (t teamMemberErrorUnwrapperAdapter) MakeArg() interface{} {
 func (t teamMemberErrorUnwrapperAdapter) UnwrapError(raw interface{}) (appError error, dispatchError error) {
 	sTmp, ok := raw.(*lib.StatusInternal__)
 	if !ok {
-		return nil, errors.New("Error converting to internal type in UnwrapError")
+		return nil, errors.New("error converting to internal type in UnwrapError")
 	}
 	if sTmp == nil {
 		return nil, nil
@@ -2578,7 +2474,6 @@ func (c TeamMemberClient) AcceptInviteLocal(ctx context.Context, arg AcceptInvit
 	res = tmp.Import()
 	return
 }
-
 func (c TeamMemberClient) GrantRemoteViewPermissionForTeam(ctx context.Context, arg GrantRemoteViewPermissionForTeamArg) (res lib.PermissionToken, err error) {
 	warg := arg.Export()
 	var tmp lib.PermissionTokenInternal__
@@ -2589,7 +2484,6 @@ func (c TeamMemberClient) GrantRemoteViewPermissionForTeam(ctx context.Context, 
 	res = tmp.Import()
 	return
 }
-
 func (c TeamMemberClient) GrantLocalViewPermissionForTeam(ctx context.Context, arg GrantLocalViewPermissionForTeamArg) (res lib.PermissionToken, err error) {
 	warg := arg.Export()
 	var tmp lib.PermissionTokenInternal__
@@ -2600,7 +2494,6 @@ func (c TeamMemberClient) GrantLocalViewPermissionForTeam(ctx context.Context, a
 	res = tmp.Import()
 	return
 }
-
 func TeamMemberProtocol(i TeamMemberInterface) rpc.ProtocolV2 {
 	return rpc.ProtocolV2{
 		Name: "TeamMember",
@@ -2678,7 +2571,6 @@ type LocalPartyRole struct {
 	Party lib.PartyID
 	Role  lib.Role
 }
-
 type LocalPartyRoleInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Party   *lib.PartyIDInternal__
@@ -2701,14 +2593,12 @@ func (l LocalPartyRoleInternal__) Import() LocalPartyRole {
 		})(l.Role),
 	}
 }
-
 func (l LocalPartyRole) Export() *LocalPartyRoleInternal__ {
 	return &LocalPartyRoleInternal__{
 		Party: l.Party.Export(),
 		Role:  l.Role.Export(),
 	}
 }
-
 func (l *LocalPartyRole) Encode(enc rpc.Encoder) error {
 	return enc.Encode(l.Export())
 }
@@ -2728,7 +2618,6 @@ func (l *LocalPartyRole) Bytes() []byte { return nil }
 type EditTeamRes struct {
 	LocalInvitees []LocalPartyRole
 }
-
 type EditTeamResInternal__ struct {
 	_struct       struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	LocalInvitees *[](*LocalPartyRoleInternal__)
@@ -2756,7 +2645,6 @@ func (e EditTeamResInternal__) Import() EditTeamRes {
 		})(e.LocalInvitees),
 	}
 }
-
 func (e EditTeamRes) Export() *EditTeamResInternal__ {
 	return &EditTeamResInternal__{
 		LocalInvitees: (func(x []LocalPartyRole) *[](*LocalPartyRoleInternal__) {
@@ -2771,7 +2659,6 @@ func (e EditTeamRes) Export() *EditTeamResInternal__ {
 		})(e.LocalInvitees),
 	}
 }
-
 func (e *EditTeamRes) Encode(enc rpc.Encoder) error {
 	return enc.Encode(e.Export())
 }
@@ -2796,7 +2683,6 @@ type TeamBearerTokenChallengePayload struct {
 	Tok  TeamBearerToken
 	Tm   lib.Time
 }
-
 type TeamBearerTokenChallengePayloadInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	User    *lib.FQUserInternal__
@@ -2847,7 +2733,6 @@ func (t TeamBearerTokenChallengePayloadInternal__) Import() TeamBearerTokenChall
 		})(t.Tm),
 	}
 }
-
 func (t TeamBearerTokenChallengePayload) Export() *TeamBearerTokenChallengePayloadInternal__ {
 	return &TeamBearerTokenChallengePayloadInternal__{
 		User: t.User.Export(),
@@ -2858,7 +2743,6 @@ func (t TeamBearerTokenChallengePayload) Export() *TeamBearerTokenChallengePaylo
 		Tm:   t.Tm.Export(),
 	}
 }
-
 func (t *TeamBearerTokenChallengePayload) Encode(enc rpc.Encoder) error {
 	return enc.Encode(t.Export())
 }
@@ -2878,7 +2762,6 @@ var TeamBearerTokenChallengePayloadTypeUniqueID = rpc.TypeUniqueID(0xa85de1ca0ab
 func (t *TeamBearerTokenChallengePayload) GetTypeUniqueID() rpc.TypeUniqueID {
 	return TeamBearerTokenChallengePayloadTypeUniqueID
 }
-
 func (t *TeamBearerTokenChallengePayload) Bytes() []byte { return nil }
 
 type TeamBearerTokenChallengeBlob []byte
@@ -2888,7 +2771,6 @@ func (t TeamBearerTokenChallengeBlob) Export() *TeamBearerTokenChallengeBlobInte
 	tmp := (([]byte)(t))
 	return ((*TeamBearerTokenChallengeBlobInternal__)(&tmp))
 }
-
 func (t TeamBearerTokenChallengeBlobInternal__) Import() TeamBearerTokenChallengeBlob {
 	tmp := ([]byte)(t)
 	return TeamBearerTokenChallengeBlob((func(x *[]byte) (ret []byte) {
@@ -2918,11 +2800,9 @@ var TeamBearerTokenChallengeBlobTypeUniqueID = rpc.TypeUniqueID(0xcd0d4cbadda50e
 func (t *TeamBearerTokenChallengeBlob) GetTypeUniqueID() rpc.TypeUniqueID {
 	return TeamBearerTokenChallengeBlobTypeUniqueID
 }
-
 func (t TeamBearerTokenChallengeBlob) Bytes() []byte {
 	return (t)[:]
 }
-
 func (t *TeamBearerTokenChallengeBlob) AllocAndDecode(f rpc.DecoderFactory) (*TeamBearerTokenChallengePayload, error) {
 	var ret TeamBearerTokenChallengePayload
 	src := f.NewDecoderBytes(&ret, t.Bytes())
@@ -2932,9 +2812,7 @@ func (t *TeamBearerTokenChallengeBlob) AllocAndDecode(f rpc.DecoderFactory) (*Te
 	}
 	return &ret, nil
 }
-
 func (t *TeamBearerTokenChallengeBlob) AssertNormalized() error { return nil }
-
 func (t *TeamBearerTokenChallengePayload) EncodeTyped(f rpc.EncoderFactory) (*TeamBearerTokenChallengeBlob, error) {
 	var tmp []byte
 	enc := f.NewEncoderBytes(&tmp)
@@ -2945,9 +2823,8 @@ func (t *TeamBearerTokenChallengePayload) EncodeTyped(f rpc.EncoderFactory) (*Te
 	ret := TeamBearerTokenChallengeBlob(tmp)
 	return &ret, nil
 }
-
-func (t *TeamBearerTokenChallengePayload) ChildBlob(_b []byte) TeamBearerTokenChallengeBlob {
-	return TeamBearerTokenChallengeBlob(_b)
+func (t *TeamBearerTokenChallengePayload) ChildBlob(__b []byte) TeamBearerTokenChallengeBlob {
+	return TeamBearerTokenChallengeBlob(__b)
 }
 
 type TeamCertV1Payload struct {
@@ -2957,7 +2834,6 @@ type TeamCertV1Payload struct {
 	Hepk lib.HEPK
 	Name lib.NameUtf8
 }
-
 type TeamCertV1PayloadInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Team    *lib.FQTeamInternal__
@@ -3001,7 +2877,6 @@ func (t TeamCertV1PayloadInternal__) Import() TeamCertV1Payload {
 		})(t.Name),
 	}
 }
-
 func (t TeamCertV1Payload) Export() *TeamCertV1PayloadInternal__ {
 	return &TeamCertV1PayloadInternal__{
 		Team: t.Team.Export(),
@@ -3011,7 +2886,6 @@ func (t TeamCertV1Payload) Export() *TeamCertV1PayloadInternal__ {
 		Name: t.Name.Export(),
 	}
 }
-
 func (t *TeamCertV1Payload) Encode(enc rpc.Encoder) error {
 	return enc.Encode(t.Export())
 }
@@ -3031,7 +2905,6 @@ var TeamCertV1PayloadTypeUniqueID = rpc.TypeUniqueID(0xf88913d42ea72d2a)
 func (t *TeamCertV1Payload) GetTypeUniqueID() rpc.TypeUniqueID {
 	return TeamCertV1PayloadTypeUniqueID
 }
-
 func (t *TeamCertV1Payload) Bytes() []byte { return nil }
 
 type TeamCertVersion int
@@ -3043,7 +2916,6 @@ const (
 var TeamCertVersionMap = map[string]TeamCertVersion{
 	"V1": 1,
 }
-
 var TeamCertVersionRevMap = map[TeamCertVersion]string{
 	1: "V1",
 }
@@ -3053,7 +2925,6 @@ type TeamCertVersionInternal__ TeamCertVersion
 func (t TeamCertVersionInternal__) Import() TeamCertVersion {
 	return TeamCertVersion(t)
 }
-
 func (t TeamCertVersion) Export() *TeamCertVersionInternal__ {
 	return ((*TeamCertVersionInternal__)(&t))
 }
@@ -3065,7 +2936,6 @@ func (t TeamCertV1Blob) Export() *TeamCertV1BlobInternal__ {
 	tmp := (([]byte)(t))
 	return ((*TeamCertV1BlobInternal__)(&tmp))
 }
-
 func (t TeamCertV1BlobInternal__) Import() TeamCertV1Blob {
 	tmp := ([]byte)(t)
 	return TeamCertV1Blob((func(x *[]byte) (ret []byte) {
@@ -3095,11 +2965,9 @@ var TeamCertV1BlobTypeUniqueID = rpc.TypeUniqueID(0xa8382502cf0873b4)
 func (t *TeamCertV1Blob) GetTypeUniqueID() rpc.TypeUniqueID {
 	return TeamCertV1BlobTypeUniqueID
 }
-
 func (t TeamCertV1Blob) Bytes() []byte {
 	return (t)[:]
 }
-
 func (t *TeamCertV1Blob) AllocAndDecode(f rpc.DecoderFactory) (*TeamCertV1Payload, error) {
 	var ret TeamCertV1Payload
 	src := f.NewDecoderBytes(&ret, t.Bytes())
@@ -3109,9 +2977,7 @@ func (t *TeamCertV1Blob) AllocAndDecode(f rpc.DecoderFactory) (*TeamCertV1Payloa
 	}
 	return &ret, nil
 }
-
 func (t *TeamCertV1Blob) AssertNormalized() error { return nil }
-
 func (t *TeamCertV1Payload) EncodeTyped(f rpc.EncoderFactory) (*TeamCertV1Blob, error) {
 	var tmp []byte
 	enc := f.NewEncoderBytes(&tmp)
@@ -3122,16 +2988,14 @@ func (t *TeamCertV1Payload) EncodeTyped(f rpc.EncoderFactory) (*TeamCertV1Blob, 
 	ret := TeamCertV1Blob(tmp)
 	return &ret, nil
 }
-
-func (t *TeamCertV1Payload) ChildBlob(_b []byte) TeamCertV1Blob {
-	return TeamCertV1Blob(_b)
+func (t *TeamCertV1Payload) ChildBlob(__b []byte) TeamCertV1Blob {
+	return TeamCertV1Blob(__b)
 }
 
 type TeamCertV1Signed struct {
 	Payload    TeamCertV1Blob
 	Signatures []lib.Signature
 }
-
 type TeamCertV1SignedInternal__ struct {
 	_struct    struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Payload    *TeamCertV1BlobInternal__
@@ -3166,7 +3030,6 @@ func (t TeamCertV1SignedInternal__) Import() TeamCertV1Signed {
 		})(t.Signatures),
 	}
 }
-
 func (t TeamCertV1Signed) Export() *TeamCertV1SignedInternal__ {
 	return &TeamCertV1SignedInternal__{
 		Payload: t.Payload.Export(),
@@ -3182,7 +3045,6 @@ func (t TeamCertV1Signed) Export() *TeamCertV1SignedInternal__ {
 		})(t.Signatures),
 	}
 }
-
 func (t *TeamCertV1Signed) Encode(enc rpc.Encoder) error {
 	return enc.Encode(t.Export())
 }
@@ -3202,20 +3064,17 @@ var TeamCertV1SignedTypeUniqueID = rpc.TypeUniqueID(0xd7e2d164a441663b)
 func (t *TeamCertV1Signed) GetTypeUniqueID() rpc.TypeUniqueID {
 	return TeamCertV1SignedTypeUniqueID
 }
-
 func (t *TeamCertV1Signed) Bytes() []byte { return nil }
 
 type TeamCert struct {
 	V     TeamCertVersion
 	F_0__ *TeamCertV1Signed `json:"f0,omitempty"`
 }
-
 type TeamCertInternal__ struct {
 	_struct  struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	V        TeamCertVersion
 	Switch__ TeamCertInternalSwitch__
 }
-
 type TeamCertInternalSwitch__ struct {
 	_struct struct{}                    `codec:",omitempty"` //lint:ignore U1000 msgpack internal field
 	F_0__   *TeamCertV1SignedInternal__ `codec:"0"`
@@ -3230,24 +3089,21 @@ func (t TeamCert) GetV() (ret TeamCertVersion, err error) {
 	}
 	return t.V, nil
 }
-
 func (t TeamCert) V1() TeamCertV1Signed {
 	if t.F_0__ == nil {
-		panic("unexepected nil case; should have been checked")
+		panic("unexpected nil case; should have been checked")
 	}
 	if t.V != TeamCertVersion_V1 {
 		panic(fmt.Sprintf("unexpected switch value (%v) when V1 is called", t.V))
 	}
 	return *t.F_0__
 }
-
 func NewTeamCertWithV1(v TeamCertV1Signed) TeamCert {
 	return TeamCert{
 		V:     TeamCertVersion_V1,
 		F_0__: &v,
 	}
 }
-
 func (t TeamCertInternal__) Import() TeamCert {
 	return TeamCert{
 		V: t.V,
@@ -3265,7 +3121,6 @@ func (t TeamCertInternal__) Import() TeamCert {
 		})(t.Switch__.F_0__),
 	}
 }
-
 func (t TeamCert) Export() *TeamCertInternal__ {
 	return &TeamCertInternal__{
 		V: t.V,
@@ -3279,7 +3134,6 @@ func (t TeamCert) Export() *TeamCertInternal__ {
 		},
 	}
 }
-
 func (t *TeamCert) Encode(enc rpc.Encoder) error {
 	return enc.Encode(t.Export())
 }
@@ -3299,14 +3153,12 @@ var TeamCertTypeUniqueID = rpc.TypeUniqueID(0xbfde7f0ac7a3b707)
 func (t *TeamCert) GetTypeUniqueID() rpc.TypeUniqueID {
 	return TeamCertTypeUniqueID
 }
-
 func (t *TeamCert) Bytes() []byte { return nil }
 
 type TeamCertAndMetadata struct {
 	Cert TeamCert
 	Tir  lib.RationalRange
 }
-
 type TeamCertAndMetadataInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Cert    *TeamCertInternal__
@@ -3329,14 +3181,12 @@ func (t TeamCertAndMetadataInternal__) Import() TeamCertAndMetadata {
 		})(t.Tir),
 	}
 }
-
 func (t TeamCertAndMetadata) Export() *TeamCertAndMetadataInternal__ {
 	return &TeamCertAndMetadataInternal__{
 		Cert: t.Cert.Export(),
 		Tir:  t.Tir.Export(),
 	}
 }
-
 func (t *TeamCertAndMetadata) Encode(enc rpc.Encoder) error {
 	return enc.Encode(t.Export())
 }
@@ -3360,7 +3210,6 @@ func (t TeamCertHash) Export() *TeamCertHashInternal__ {
 	tmp := ((lib.StdHash)(t))
 	return ((*TeamCertHashInternal__)(tmp.Export()))
 }
-
 func (t TeamCertHashInternal__) Import() TeamCertHash {
 	tmp := (lib.StdHashInternal__)(t)
 	return TeamCertHash((func(x *lib.StdHashInternal__) (ret lib.StdHash) {
@@ -3392,7 +3241,6 @@ func (t TeamCertHash) Bytes() []byte {
 type TeamRemoteJoinReqVisibleData struct {
 	Tir *lib.RationalRange
 }
-
 type TeamRemoteJoinReqVisibleDataInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Tir     *lib.RationalRangeInternal__
@@ -3414,7 +3262,6 @@ func (t TeamRemoteJoinReqVisibleDataInternal__) Import() TeamRemoteJoinReqVisibl
 		})(t.Tir),
 	}
 }
-
 func (t TeamRemoteJoinReqVisibleData) Export() *TeamRemoteJoinReqVisibleDataInternal__ {
 	return &TeamRemoteJoinReqVisibleDataInternal__{
 		Tir: (func(x *lib.RationalRange) *lib.RationalRangeInternal__ {
@@ -3425,7 +3272,6 @@ func (t TeamRemoteJoinReqVisibleData) Export() *TeamRemoteJoinReqVisibleDataInte
 		})(t.Tir),
 	}
 }
-
 func (t *TeamRemoteJoinReqVisibleData) Encode(enc rpc.Encoder) error {
 	return enc.Encode(t.Export())
 }
@@ -3447,7 +3293,6 @@ type TeamRemoteJoinReq struct {
 	Box    lib.Box
 	Vd     TeamRemoteJoinReqVisibleData
 }
-
 type TeamRemoteJoinReqInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	HepkFp  *lib.HEPKFingerprintInternal__
@@ -3477,7 +3322,6 @@ func (t TeamRemoteJoinReqInternal__) Import() TeamRemoteJoinReq {
 		})(t.Vd),
 	}
 }
-
 func (t TeamRemoteJoinReq) Export() *TeamRemoteJoinReqInternal__ {
 	return &TeamRemoteJoinReqInternal__{
 		HepkFp: t.HepkFp.Export(),
@@ -3485,7 +3329,6 @@ func (t TeamRemoteJoinReq) Export() *TeamRemoteJoinReqInternal__ {
 		Vd:     t.Vd.Export(),
 	}
 }
-
 func (t *TeamRemoteJoinReq) Encode(enc rpc.Encoder) error {
 	return enc.Encode(t.Export())
 }
@@ -3507,7 +3350,6 @@ type InboxPagination struct {
 	End   lib.Time
 	Limit uint64
 }
-
 type InboxPaginationInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Start   *lib.TimeInternal__
@@ -3537,7 +3379,6 @@ func (i InboxPaginationInternal__) Import() InboxPagination {
 		})(i.Limit),
 	}
 }
-
 func (i InboxPagination) Export() *InboxPaginationInternal__ {
 	return &InboxPaginationInternal__{
 		Start: i.Start.Export(),
@@ -3545,7 +3386,6 @@ func (i InboxPagination) Export() *InboxPaginationInternal__ {
 		Limit: &i.Limit,
 	}
 }
-
 func (i *InboxPagination) Encode(enc rpc.Encoder) error {
 	return enc.Encode(i.Export())
 }
@@ -3577,7 +3417,6 @@ var JoinreqStateMap = map[string]JoinreqState{
 	"Rejected":  2,
 	"Withdrawn": 3,
 }
-
 var JoinreqStateRevMap = map[JoinreqState]string{
 	0: "Pending",
 	1: "Approved",
@@ -3590,7 +3429,6 @@ type JoinreqStateInternal__ JoinreqState
 func (j JoinreqStateInternal__) Import() JoinreqState {
 	return JoinreqState(j)
 }
-
 func (j JoinreqState) Export() *JoinreqStateInternal__ {
 	return ((*JoinreqStateInternal__)(&j))
 }
@@ -3601,7 +3439,6 @@ type TeamRawInboxRowLocal struct {
 	SrcRole lib.Role
 	Perm    lib.PermissionToken
 }
-
 type TeamRawInboxRowLocalInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Tok     *lib.TeamRSVPLocalInternal__
@@ -3638,7 +3475,6 @@ func (t TeamRawInboxRowLocalInternal__) Import() TeamRawInboxRowLocal {
 		})(t.Perm),
 	}
 }
-
 func (t TeamRawInboxRowLocal) Export() *TeamRawInboxRowLocalInternal__ {
 	return &TeamRawInboxRowLocalInternal__{
 		Tok:     t.Tok.Export(),
@@ -3647,7 +3483,6 @@ func (t TeamRawInboxRowLocal) Export() *TeamRawInboxRowLocalInternal__ {
 		Perm:    t.Perm.Export(),
 	}
 }
-
 func (t *TeamRawInboxRowLocal) Encode(enc rpc.Encoder) error {
 	return enc.Encode(t.Export())
 }
@@ -3668,7 +3503,6 @@ type TeamRawInboxRowRemote struct {
 	Tok lib.TeamRSVPRemote
 	Req TeamRemoteJoinReq
 }
-
 type TeamRawInboxRowRemoteInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Tok     *lib.TeamRSVPRemoteInternal__
@@ -3691,14 +3525,12 @@ func (t TeamRawInboxRowRemoteInternal__) Import() TeamRawInboxRowRemote {
 		})(t.Req),
 	}
 }
-
 func (t TeamRawInboxRowRemote) Export() *TeamRawInboxRowRemoteInternal__ {
 	return &TeamRawInboxRowRemoteInternal__{
 		Tok: t.Tok.Export(),
 		Req: t.Req.Export(),
 	}
 }
-
 func (t *TeamRawInboxRowRemote) Encode(enc rpc.Encoder) error {
 	return enc.Encode(t.Export())
 }
@@ -3720,13 +3552,11 @@ type TeamRawInboxRowVar struct {
 	F_1__ *TeamRawInboxRowLocal  `json:"f1,omitempty"`
 	F_2__ *TeamRawInboxRowRemote `json:"f2,omitempty"`
 }
-
 type TeamRawInboxRowVarInternal__ struct {
 	_struct  struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	T        TeamJoinReqType
 	Switch__ TeamRawInboxRowVarInternalSwitch__
 }
-
 type TeamRawInboxRowVarInternalSwitch__ struct {
 	_struct struct{}                         `codec:",omitempty"` //lint:ignore U1000 msgpack internal field
 	F_1__   *TeamRawInboxRowLocalInternal__  `codec:"1"`
@@ -3746,41 +3576,36 @@ func (t TeamRawInboxRowVar) GetT() (ret TeamJoinReqType, err error) {
 	}
 	return t.T, nil
 }
-
 func (t TeamRawInboxRowVar) Local() TeamRawInboxRowLocal {
 	if t.F_1__ == nil {
-		panic("unexepected nil case; should have been checked")
+		panic("unexpected nil case; should have been checked")
 	}
 	if t.T != TeamJoinReqType_Local {
 		panic(fmt.Sprintf("unexpected switch value (%v) when Local is called", t.T))
 	}
 	return *t.F_1__
 }
-
 func (t TeamRawInboxRowVar) Remote() TeamRawInboxRowRemote {
 	if t.F_2__ == nil {
-		panic("unexepected nil case; should have been checked")
+		panic("unexpected nil case; should have been checked")
 	}
 	if t.T != TeamJoinReqType_Remote {
 		panic(fmt.Sprintf("unexpected switch value (%v) when Remote is called", t.T))
 	}
 	return *t.F_2__
 }
-
 func NewTeamRawInboxRowVarWithLocal(v TeamRawInboxRowLocal) TeamRawInboxRowVar {
 	return TeamRawInboxRowVar{
 		T:     TeamJoinReqType_Local,
 		F_1__: &v,
 	}
 }
-
 func NewTeamRawInboxRowVarWithRemote(v TeamRawInboxRowRemote) TeamRawInboxRowVar {
 	return TeamRawInboxRowVar{
 		T:     TeamJoinReqType_Remote,
 		F_2__: &v,
 	}
 }
-
 func (t TeamRawInboxRowVarInternal__) Import() TeamRawInboxRowVar {
 	return TeamRawInboxRowVar{
 		T: t.T,
@@ -3810,7 +3635,6 @@ func (t TeamRawInboxRowVarInternal__) Import() TeamRawInboxRowVar {
 		})(t.Switch__.F_2__),
 	}
 }
-
 func (t TeamRawInboxRowVar) Export() *TeamRawInboxRowVarInternal__ {
 	return &TeamRawInboxRowVarInternal__{
 		T: t.T,
@@ -3830,7 +3654,6 @@ func (t TeamRawInboxRowVar) Export() *TeamRawInboxRowVarInternal__ {
 		},
 	}
 }
-
 func (t *TeamRawInboxRowVar) Encode(enc rpc.Encoder) error {
 	return enc.Encode(t.Export())
 }
@@ -3852,7 +3675,6 @@ type TeamRawInboxRow struct {
 	State JoinreqState
 	Row   TeamRawInboxRowVar
 }
-
 type TeamRawInboxRowInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Time    *lib.TimeInternal__
@@ -3882,7 +3704,6 @@ func (t TeamRawInboxRowInternal__) Import() TeamRawInboxRow {
 		})(t.Row),
 	}
 }
-
 func (t TeamRawInboxRow) Export() *TeamRawInboxRowInternal__ {
 	return &TeamRawInboxRowInternal__{
 		Time:  t.Time.Export(),
@@ -3890,7 +3711,6 @@ func (t TeamRawInboxRow) Export() *TeamRawInboxRowInternal__ {
 		Row:   t.Row.Export(),
 	}
 }
-
 func (t *TeamRawInboxRow) Encode(enc rpc.Encoder) error {
 	return enc.Encode(t.Export())
 }
@@ -3918,7 +3738,6 @@ var TeamJoinReqTypeMap = map[string]TeamJoinReqType{
 	"Local":  1,
 	"Remote": 2,
 }
-
 var TeamJoinReqTypeRevMap = map[TeamJoinReqType]string{
 	1: "Local",
 	2: "Remote",
@@ -3929,7 +3748,6 @@ type TeamJoinReqTypeInternal__ TeamJoinReqType
 func (t TeamJoinReqTypeInternal__) Import() TeamJoinReqType {
 	return TeamJoinReqType(t)
 }
-
 func (t TeamJoinReqType) Export() *TeamJoinReqTypeInternal__ {
 	return ((*TeamJoinReqTypeInternal__)(&t))
 }
@@ -3937,7 +3755,6 @@ func (t TeamJoinReqType) Export() *TeamJoinReqTypeInternal__ {
 type TeamRawInbox struct {
 	Rows []TeamRawInboxRow
 }
-
 type TeamRawInboxInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Rows    *[](*TeamRawInboxRowInternal__)
@@ -3965,7 +3782,6 @@ func (t TeamRawInboxInternal__) Import() TeamRawInbox {
 		})(t.Rows),
 	}
 }
-
 func (t TeamRawInbox) Export() *TeamRawInboxInternal__ {
 	return &TeamRawInboxInternal__{
 		Rows: (func(x []TeamRawInboxRow) *[](*TeamRawInboxRowInternal__) {
@@ -3980,7 +3796,6 @@ func (t TeamRawInbox) Export() *TeamRawInboxInternal__ {
 		})(t.Rows),
 	}
 }
-
 func (t *TeamRawInbox) Encode(enc rpc.Encoder) error {
 	return enc.Encode(t.Export())
 }
@@ -4004,7 +3819,6 @@ type TeamRemoteJoinReqPayload struct {
 	SrcRole lib.Role
 	Vd      TeamRemoteJoinReqVisibleData
 }
-
 type TeamRemoteJoinReqPayloadInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Joiner  *lib.FQPartyInternal__
@@ -4048,7 +3862,6 @@ func (t TeamRemoteJoinReqPayloadInternal__) Import() TeamRemoteJoinReqPayload {
 		})(t.Vd),
 	}
 }
-
 func (t TeamRemoteJoinReqPayload) Export() *TeamRemoteJoinReqPayloadInternal__ {
 	return &TeamRemoteJoinReqPayloadInternal__{
 		Joiner:  t.Joiner.Export(),
@@ -4058,7 +3871,6 @@ func (t TeamRemoteJoinReqPayload) Export() *TeamRemoteJoinReqPayloadInternal__ {
 		Vd:      t.Vd.Export(),
 	}
 }
-
 func (t *TeamRemoteJoinReqPayload) Encode(enc rpc.Encoder) error {
 	return enc.Encode(t.Export())
 }
@@ -4078,14 +3890,12 @@ var TeamRemoteJoinReqPayloadTypeUniqueID = rpc.TypeUniqueID(0xae6970de2a147061)
 func (t *TeamRemoteJoinReqPayload) GetTypeUniqueID() rpc.TypeUniqueID {
 	return TeamRemoteJoinReqPayloadTypeUniqueID
 }
-
 func (t *TeamRemoteJoinReqPayload) Bytes() []byte { return nil }
 
 type TeamVOBearerTokenReqAndRole struct {
 	Req  TeamVOBearerTokenReq
 	Role lib.Role
 }
-
 type TeamVOBearerTokenReqAndRoleInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Req     *TeamVOBearerTokenReqInternal__
@@ -4108,14 +3918,12 @@ func (t TeamVOBearerTokenReqAndRoleInternal__) Import() TeamVOBearerTokenReqAndR
 		})(t.Role),
 	}
 }
-
 func (t TeamVOBearerTokenReqAndRole) Export() *TeamVOBearerTokenReqAndRoleInternal__ {
 	return &TeamVOBearerTokenReqAndRoleInternal__{
 		Req:  t.Req.Export(),
 		Role: t.Role.Export(),
 	}
 }
-
 func (t *TeamVOBearerTokenReqAndRole) Encode(enc rpc.Encoder) error {
 	return enc.Encode(t.Export())
 }
@@ -4135,7 +3943,6 @@ func (t *TeamVOBearerTokenReqAndRole) Bytes() []byte { return nil }
 type TeamConfig struct {
 	MaxRoles uint64
 }
-
 type TeamConfigInternal__ struct {
 	_struct  struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	MaxRoles *uint64
@@ -4151,13 +3958,11 @@ func (t TeamConfigInternal__) Import() TeamConfig {
 		})(t.MaxRoles),
 	}
 }
-
 func (t TeamConfig) Export() *TeamConfigInternal__ {
 	return &TeamConfigInternal__{
 		MaxRoles: &t.MaxRoles,
 	}
 }
-
 func (t *TeamConfig) Encode(enc rpc.Encoder) error {
 	return enc.Encode(t.Export())
 }
@@ -4179,7 +3984,6 @@ var TeamAdminProtocolID rpc.ProtocolUniqueID = rpc.ProtocolUniqueID(0xdbe1ddbe)
 type ReserveTeamnameArg struct {
 	N lib.Name
 }
-
 type ReserveTeamnameArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	N       *lib.NameInternal__
@@ -4195,13 +3999,11 @@ func (r ReserveTeamnameArgInternal__) Import() ReserveTeamnameArg {
 		})(r.N),
 	}
 }
-
 func (r ReserveTeamnameArg) Export() *ReserveTeamnameArgInternal__ {
 	return &ReserveTeamnameArgInternal__{
 		N: r.N.Export(),
 	}
 }
-
 func (r *ReserveTeamnameArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(r.Export())
 }
@@ -4226,7 +4028,6 @@ type CreateTeamArg struct {
 	Eta                      EditTeamArg
 	TeamMembershipLink       PostGenericLinkArg
 }
-
 type CreateTeamArgInternal__ struct {
 	_struct                  struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	NameUtf8                 *lib.NameUtf8Internal__
@@ -4277,7 +4078,6 @@ func (c CreateTeamArgInternal__) Import() CreateTeamArg {
 		})(c.TeamMembershipLink),
 	}
 }
-
 func (c CreateTeamArg) Export() *CreateTeamArgInternal__ {
 	return &CreateTeamArgInternal__{
 		NameUtf8:                 c.NameUtf8.Export(),
@@ -4288,7 +4088,6 @@ func (c CreateTeamArg) Export() *CreateTeamArgInternal__ {
 		TeamMembershipLink:       c.TeamMembershipLink.Export(),
 	}
 }
-
 func (c *CreateTeamArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(c.Export())
 }
@@ -4312,7 +4111,6 @@ type EditTeamArg struct {
 	Tok              *TeamBearerToken
 	InsLocalPermsFor []lib.PartyID
 }
-
 type EditTeamArgInternal__ struct {
 	_struct          struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Link             *lib.LinkOuterInternal__
@@ -4374,7 +4172,6 @@ func (e EditTeamArgInternal__) Import() EditTeamArg {
 		})(e.InsLocalPermsFor),
 	}
 }
-
 func (e EditTeamArg) Export() *EditTeamArgInternal__ {
 	return &EditTeamArgInternal__{
 		Link:             e.Link.Export(),
@@ -4398,7 +4195,6 @@ func (e EditTeamArg) Export() *EditTeamArgInternal__ {
 		})(e.InsLocalPermsFor),
 	}
 }
-
 func (e *EditTeamArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(e.Export())
 }
@@ -4420,7 +4216,6 @@ type MakeInertTeamBearerTokenArg struct {
 	Role lib.Role
 	Gen  lib.Generation
 }
-
 type MakeInertTeamBearerTokenArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Team    *lib.TeamIDInternal__
@@ -4450,7 +4245,6 @@ func (m MakeInertTeamBearerTokenArgInternal__) Import() MakeInertTeamBearerToken
 		})(m.Gen),
 	}
 }
-
 func (m MakeInertTeamBearerTokenArg) Export() *MakeInertTeamBearerTokenArgInternal__ {
 	return &MakeInertTeamBearerTokenArgInternal__{
 		Team: m.Team.Export(),
@@ -4458,7 +4252,6 @@ func (m MakeInertTeamBearerTokenArg) Export() *MakeInertTeamBearerTokenArgIntern
 		Gen:  m.Gen.Export(),
 	}
 }
-
 func (m *MakeInertTeamBearerTokenArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(m.Export())
 }
@@ -4479,7 +4272,6 @@ type ActivateTeamBearerTokenArg struct {
 	Bl  TeamBearerTokenChallengeBlob
 	Sig lib.Signature
 }
-
 type ActivateTeamBearerTokenArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Bl      *TeamBearerTokenChallengeBlobInternal__
@@ -4502,14 +4294,12 @@ func (a ActivateTeamBearerTokenArgInternal__) Import() ActivateTeamBearerTokenAr
 		})(a.Sig),
 	}
 }
-
 func (a ActivateTeamBearerTokenArg) Export() *ActivateTeamBearerTokenArgInternal__ {
 	return &ActivateTeamBearerTokenArgInternal__{
 		Bl:  a.Bl.Export(),
 		Sig: a.Sig.Export(),
 	}
 }
-
 func (a *ActivateTeamBearerTokenArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(a.Export())
 }
@@ -4529,7 +4319,6 @@ func (a *ActivateTeamBearerTokenArg) Bytes() []byte { return nil }
 type CheckTeamBearerTokenArg struct {
 	Tok TeamBearerToken
 }
-
 type CheckTeamBearerTokenArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Tok     *TeamBearerTokenInternal__
@@ -4545,13 +4334,11 @@ func (c CheckTeamBearerTokenArgInternal__) Import() CheckTeamBearerTokenArg {
 		})(c.Tok),
 	}
 }
-
 func (c CheckTeamBearerTokenArg) Export() *CheckTeamBearerTokenArgInternal__ {
 	return &CheckTeamBearerTokenArgInternal__{
 		Tok: c.Tok.Export(),
 	}
 }
-
 func (c *CheckTeamBearerTokenArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(c.Export())
 }
@@ -4572,7 +4359,6 @@ type PutTeamCertArg struct {
 	Tok  TeamBearerToken
 	Cert TeamCert
 }
-
 type PutTeamCertArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Tok     *TeamBearerTokenInternal__
@@ -4595,14 +4381,12 @@ func (p PutTeamCertArgInternal__) Import() PutTeamCertArg {
 		})(p.Cert),
 	}
 }
-
 func (p PutTeamCertArg) Export() *PutTeamCertArgInternal__ {
 	return &PutTeamCertArgInternal__{
 		Tok:  p.Tok.Export(),
 		Cert: p.Cert.Export(),
 	}
 }
-
 func (p *PutTeamCertArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(p.Export())
 }
@@ -4622,7 +4406,6 @@ func (p *PutTeamCertArg) Bytes() []byte { return nil }
 type GetCurrentTeamCertsArg struct {
 	Tok TeamBearerToken
 }
-
 type GetCurrentTeamCertsArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Tok     *TeamBearerTokenInternal__
@@ -4638,13 +4421,11 @@ func (g GetCurrentTeamCertsArgInternal__) Import() GetCurrentTeamCertsArg {
 		})(g.Tok),
 	}
 }
-
 func (g GetCurrentTeamCertsArg) Export() *GetCurrentTeamCertsArgInternal__ {
 	return &GetCurrentTeamCertsArgInternal__{
 		Tok: g.Tok.Export(),
 	}
 }
-
 func (g *GetCurrentTeamCertsArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(g.Export())
 }
@@ -4665,7 +4446,6 @@ type LoadTeamRemoteJoinReqArg struct {
 	Tok TeamBearerToken
 	Jrt lib.TeamRSVPRemote
 }
-
 type LoadTeamRemoteJoinReqArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Tok     *TeamBearerTokenInternal__
@@ -4688,14 +4468,12 @@ func (l LoadTeamRemoteJoinReqArgInternal__) Import() LoadTeamRemoteJoinReqArg {
 		})(l.Jrt),
 	}
 }
-
 func (l LoadTeamRemoteJoinReqArg) Export() *LoadTeamRemoteJoinReqArgInternal__ {
 	return &LoadTeamRemoteJoinReqArgInternal__{
 		Tok: l.Tok.Export(),
 		Jrt: l.Jrt.Export(),
 	}
 }
-
 func (l *LoadTeamRemoteJoinReqArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(l.Export())
 }
@@ -4716,7 +4494,6 @@ type PostTeamMembershipLinkArg struct {
 	Tok  TeamBearerToken
 	Link PostGenericLinkArg
 }
-
 type PostTeamMembershipLinkArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Tok     *TeamBearerTokenInternal__
@@ -4739,14 +4516,12 @@ func (p PostTeamMembershipLinkArgInternal__) Import() PostTeamMembershipLinkArg 
 		})(p.Link),
 	}
 }
-
 func (p PostTeamMembershipLinkArg) Export() *PostTeamMembershipLinkArgInternal__ {
 	return &PostTeamMembershipLinkArgInternal__{
 		Tok:  p.Tok.Export(),
 		Link: p.Link.Export(),
 	}
 }
-
 func (p *PostTeamMembershipLinkArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(p.Export())
 }
@@ -4768,7 +4543,6 @@ type LoadRemovalKeyBoxForTeamAdminArg struct {
 	Member  lib.FQParty
 	SrcRole lib.Role
 }
-
 type LoadRemovalKeyBoxForTeamAdminArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Tok     *TeamBearerTokenInternal__
@@ -4798,7 +4572,6 @@ func (l LoadRemovalKeyBoxForTeamAdminArgInternal__) Import() LoadRemovalKeyBoxFo
 		})(l.SrcRole),
 	}
 }
-
 func (l LoadRemovalKeyBoxForTeamAdminArg) Export() *LoadRemovalKeyBoxForTeamAdminArgInternal__ {
 	return &LoadRemovalKeyBoxForTeamAdminArgInternal__{
 		Tok:     l.Tok.Export(),
@@ -4806,7 +4579,6 @@ func (l LoadRemovalKeyBoxForTeamAdminArg) Export() *LoadRemovalKeyBoxForTeamAdmi
 		SrcRole: l.SrcRole.Export(),
 	}
 }
-
 func (l *LoadRemovalKeyBoxForTeamAdminArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(l.Export())
 }
@@ -4827,7 +4599,6 @@ type PostTeamRemovalArg struct {
 	Tok TeamBearerToken
 	Rm  TeamRemovalAndComm
 }
-
 type PostTeamRemovalArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Tok     *TeamBearerTokenInternal__
@@ -4850,14 +4621,12 @@ func (p PostTeamRemovalArgInternal__) Import() PostTeamRemovalArg {
 		})(p.Rm),
 	}
 }
-
 func (p PostTeamRemovalArg) Export() *PostTeamRemovalArgInternal__ {
 	return &PostTeamRemovalArgInternal__{
 		Tok: p.Tok.Export(),
 		Rm:  p.Rm.Export(),
 	}
 }
-
 func (p *PostTeamRemovalArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(p.Export())
 }
@@ -4878,7 +4647,6 @@ type LoadTeamRawInboxArg struct {
 	Tok        TeamBearerToken
 	Pagination *InboxPagination
 }
-
 type LoadTeamRawInboxArgInternal__ struct {
 	_struct    struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Tok        *TeamBearerTokenInternal__
@@ -4907,7 +4675,6 @@ func (l LoadTeamRawInboxArgInternal__) Import() LoadTeamRawInboxArg {
 		})(l.Pagination),
 	}
 }
-
 func (l LoadTeamRawInboxArg) Export() *LoadTeamRawInboxArgInternal__ {
 	return &LoadTeamRawInboxArgInternal__{
 		Tok: l.Tok.Export(),
@@ -4919,7 +4686,6 @@ func (l LoadTeamRawInboxArg) Export() *LoadTeamRawInboxArgInternal__ {
 		})(l.Pagination),
 	}
 }
-
 func (l *LoadTeamRawInboxArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(l.Export())
 }
@@ -4940,7 +4706,6 @@ type RejectJoinReqArg struct {
 	Tok TeamBearerToken
 	Req lib.TeamRSVP
 }
-
 type RejectJoinReqArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Tok     *TeamBearerTokenInternal__
@@ -4963,14 +4728,12 @@ func (r RejectJoinReqArgInternal__) Import() RejectJoinReqArg {
 		})(r.Req),
 	}
 }
-
 func (r RejectJoinReqArg) Export() *RejectJoinReqArgInternal__ {
 	return &RejectJoinReqArgInternal__{
 		Tok: r.Tok.Export(),
 		Req: r.Req.Export(),
 	}
 }
-
 func (r *RejectJoinReqArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(r.Export())
 }
@@ -4989,7 +4752,6 @@ func (r *RejectJoinReqArg) Bytes() []byte { return nil }
 
 type GetTeamConfigArg struct {
 }
-
 type GetTeamConfigArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 }
@@ -4997,11 +4759,9 @@ type GetTeamConfigArgInternal__ struct {
 func (g GetTeamConfigArgInternal__) Import() GetTeamConfigArg {
 	return GetTeamConfigArg{}
 }
-
 func (g GetTeamConfigArg) Export() *GetTeamConfigArgInternal__ {
 	return &GetTeamConfigArgInternal__{}
 }
-
 func (g *GetTeamConfigArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(g.Export())
 }
@@ -5060,7 +4820,7 @@ func (t teamAdminErrorUnwrapperAdapter) MakeArg() interface{} {
 func (t teamAdminErrorUnwrapperAdapter) UnwrapError(raw interface{}) (appError error, dispatchError error) {
 	sTmp, ok := raw.(*lib.StatusInternal__)
 	if !ok {
-		return nil, errors.New("Error converting to internal type in UnwrapError")
+		return nil, errors.New("error converting to internal type in UnwrapError")
 	}
 	if sTmp == nil {
 		return nil, nil
@@ -5088,7 +4848,6 @@ func (c TeamAdminClient) ReserveTeamname(ctx context.Context, n lib.Name) (res R
 	res = tmp.Import()
 	return
 }
-
 func (c TeamAdminClient) CreateTeam(ctx context.Context, arg CreateTeamArg) (err error) {
 	warg := arg.Export()
 	err = c.Cli.Call2(ctx, rpc.NewMethodV2(TeamAdminProtocolID, 1, "TeamAdmin.createTeam"), warg, nil, 0*time.Millisecond, teamAdminErrorUnwrapperAdapter{h: c.ErrorUnwrapper})
@@ -5097,7 +4856,6 @@ func (c TeamAdminClient) CreateTeam(ctx context.Context, arg CreateTeamArg) (err
 	}
 	return
 }
-
 func (c TeamAdminClient) EditTeam(ctx context.Context, arg EditTeamArg) (res EditTeamRes, err error) {
 	warg := arg.Export()
 	var tmp EditTeamResInternal__
@@ -5108,7 +4866,6 @@ func (c TeamAdminClient) EditTeam(ctx context.Context, arg EditTeamArg) (res Edi
 	res = tmp.Import()
 	return
 }
-
 func (c TeamAdminClient) MakeInertTeamBearerToken(ctx context.Context, arg MakeInertTeamBearerTokenArg) (res TeamBearerToken, err error) {
 	warg := arg.Export()
 	var tmp TeamBearerTokenInternal__
@@ -5119,7 +4876,6 @@ func (c TeamAdminClient) MakeInertTeamBearerToken(ctx context.Context, arg MakeI
 	res = tmp.Import()
 	return
 }
-
 func (c TeamAdminClient) ActivateTeamBearerToken(ctx context.Context, arg ActivateTeamBearerTokenArg) (err error) {
 	warg := arg.Export()
 	err = c.Cli.Call2(ctx, rpc.NewMethodV2(TeamAdminProtocolID, 4, "TeamAdmin.activateTeamBearerToken"), warg, nil, 0*time.Millisecond, teamAdminErrorUnwrapperAdapter{h: c.ErrorUnwrapper})
@@ -5128,7 +4884,6 @@ func (c TeamAdminClient) ActivateTeamBearerToken(ctx context.Context, arg Activa
 	}
 	return
 }
-
 func (c TeamAdminClient) CheckTeamBearerToken(ctx context.Context, tok TeamBearerToken) (res lib.TeamID, err error) {
 	arg := CheckTeamBearerTokenArg{
 		Tok: tok,
@@ -5142,7 +4897,6 @@ func (c TeamAdminClient) CheckTeamBearerToken(ctx context.Context, tok TeamBeare
 	res = tmp.Import()
 	return
 }
-
 func (c TeamAdminClient) PutTeamCert(ctx context.Context, arg PutTeamCertArg) (err error) {
 	warg := arg.Export()
 	err = c.Cli.Call2(ctx, rpc.NewMethodV2(TeamAdminProtocolID, 6, "TeamAdmin.putTeamCert"), warg, nil, 0*time.Millisecond, teamAdminErrorUnwrapperAdapter{h: c.ErrorUnwrapper})
@@ -5151,7 +4905,6 @@ func (c TeamAdminClient) PutTeamCert(ctx context.Context, arg PutTeamCertArg) (e
 	}
 	return
 }
-
 func (c TeamAdminClient) GetCurrentTeamCerts(ctx context.Context, tok TeamBearerToken) (res []TeamCert, err error) {
 	arg := GetCurrentTeamCertsArg{
 		Tok: tok,
@@ -5182,7 +4935,6 @@ func (c TeamAdminClient) GetCurrentTeamCerts(ctx context.Context, tok TeamBearer
 	})(&tmp)
 	return
 }
-
 func (c TeamAdminClient) LoadTeamRemoteJoinReq(ctx context.Context, arg LoadTeamRemoteJoinReqArg) (res TeamRemoteJoinReq, err error) {
 	warg := arg.Export()
 	var tmp TeamRemoteJoinReqInternal__
@@ -5193,7 +4945,6 @@ func (c TeamAdminClient) LoadTeamRemoteJoinReq(ctx context.Context, arg LoadTeam
 	res = tmp.Import()
 	return
 }
-
 func (c TeamAdminClient) PostTeamMembershipLink(ctx context.Context, arg PostTeamMembershipLinkArg) (err error) {
 	warg := arg.Export()
 	err = c.Cli.Call2(ctx, rpc.NewMethodV2(TeamAdminProtocolID, 9, "TeamAdmin.postTeamMembershipLink"), warg, nil, 0*time.Millisecond, teamAdminErrorUnwrapperAdapter{h: c.ErrorUnwrapper})
@@ -5202,7 +4953,6 @@ func (c TeamAdminClient) PostTeamMembershipLink(ctx context.Context, arg PostTea
 	}
 	return
 }
-
 func (c TeamAdminClient) LoadRemovalKeyBoxForTeamAdmin(ctx context.Context, arg LoadRemovalKeyBoxForTeamAdminArg) (res lib.TeamRemovalKeyBox, err error) {
 	warg := arg.Export()
 	var tmp lib.TeamRemovalKeyBoxInternal__
@@ -5213,7 +4963,6 @@ func (c TeamAdminClient) LoadRemovalKeyBoxForTeamAdmin(ctx context.Context, arg 
 	res = tmp.Import()
 	return
 }
-
 func (c TeamAdminClient) PostTeamRemoval(ctx context.Context, arg PostTeamRemovalArg) (err error) {
 	warg := arg.Export()
 	err = c.Cli.Call2(ctx, rpc.NewMethodV2(TeamAdminProtocolID, 11, "TeamAdmin.postTeamRemoval"), warg, nil, 0*time.Millisecond, teamAdminErrorUnwrapperAdapter{h: c.ErrorUnwrapper})
@@ -5222,7 +4971,6 @@ func (c TeamAdminClient) PostTeamRemoval(ctx context.Context, arg PostTeamRemova
 	}
 	return
 }
-
 func (c TeamAdminClient) LoadTeamRawInbox(ctx context.Context, arg LoadTeamRawInboxArg) (res TeamRawInbox, err error) {
 	warg := arg.Export()
 	var tmp TeamRawInboxInternal__
@@ -5233,7 +4981,6 @@ func (c TeamAdminClient) LoadTeamRawInbox(ctx context.Context, arg LoadTeamRawIn
 	res = tmp.Import()
 	return
 }
-
 func (c TeamAdminClient) RejectJoinReq(ctx context.Context, arg RejectJoinReqArg) (err error) {
 	warg := arg.Export()
 	err = c.Cli.Call2(ctx, rpc.NewMethodV2(TeamAdminProtocolID, 13, "TeamAdmin.rejectJoinReq"), warg, nil, 0*time.Millisecond, teamAdminErrorUnwrapperAdapter{h: c.ErrorUnwrapper})
@@ -5242,7 +4989,6 @@ func (c TeamAdminClient) RejectJoinReq(ctx context.Context, arg RejectJoinReqArg
 	}
 	return
 }
-
 func (c TeamAdminClient) GetTeamConfig(ctx context.Context) (res TeamConfig, err error) {
 	var arg GetTeamConfigArg
 	warg := arg.Export()
@@ -5254,7 +5000,6 @@ func (c TeamAdminClient) GetTeamConfig(ctx context.Context) (res TeamConfig, err
 	res = tmp.Import()
 	return
 }
-
 func TeamAdminProtocol(i TeamAdminInterface) rpc.ProtocolV2 {
 	return rpc.ProtocolV2{
 		Name: "TeamAdmin",
@@ -5595,7 +5340,6 @@ var TeamGuestProtocolID rpc.ProtocolUniqueID = rpc.ProtocolUniqueID(0xf6d7585c)
 type LookupTeamCertByHashArg struct {
 	I lib.TeamInvite
 }
-
 type LookupTeamCertByHashArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	I       *lib.TeamInviteInternal__
@@ -5611,13 +5355,11 @@ func (l LookupTeamCertByHashArgInternal__) Import() LookupTeamCertByHashArg {
 		})(l.I),
 	}
 }
-
 func (l LookupTeamCertByHashArg) Export() *LookupTeamCertByHashArgInternal__ {
 	return &LookupTeamCertByHashArgInternal__{
 		I: l.I.Export(),
 	}
 }
-
 func (l *LookupTeamCertByHashArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(l.Export())
 }
@@ -5638,7 +5380,6 @@ type AcceptInviteRemoteArg struct {
 	I  lib.TeamInvite
 	Jr TeamRemoteJoinReq
 }
-
 type AcceptInviteRemoteArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	I       *lib.TeamInviteInternal__
@@ -5661,14 +5402,12 @@ func (a AcceptInviteRemoteArgInternal__) Import() AcceptInviteRemoteArg {
 		})(a.Jr),
 	}
 }
-
 func (a AcceptInviteRemoteArg) Export() *AcceptInviteRemoteArgInternal__ {
 	return &AcceptInviteRemoteArgInternal__{
 		I:  a.I.Export(),
 		Jr: a.Jr.Export(),
 	}
 }
-
 func (a *AcceptInviteRemoteArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(a.Export())
 }
@@ -5714,7 +5453,7 @@ func (t teamGuestErrorUnwrapperAdapter) MakeArg() interface{} {
 func (t teamGuestErrorUnwrapperAdapter) UnwrapError(raw interface{}) (appError error, dispatchError error) {
 	sTmp, ok := raw.(*lib.StatusInternal__)
 	if !ok {
-		return nil, errors.New("Error converting to internal type in UnwrapError")
+		return nil, errors.New("error converting to internal type in UnwrapError")
 	}
 	if sTmp == nil {
 		return nil, nil
@@ -5742,7 +5481,6 @@ func (c TeamGuestClient) LookupTeamCertByHash(ctx context.Context, i lib.TeamInv
 	res = tmp.Import()
 	return
 }
-
 func (c TeamGuestClient) AcceptInviteRemote(ctx context.Context, arg AcceptInviteRemoteArg) (res lib.TeamRSVPRemote, err error) {
 	warg := arg.Export()
 	var tmp lib.TeamRSVPRemoteInternal__
@@ -5753,7 +5491,6 @@ func (c TeamGuestClient) AcceptInviteRemote(ctx context.Context, arg AcceptInvit
 	res = tmp.Import()
 	return
 }
-
 func TeamGuestProtocol(i TeamGuestInterface) rpc.ProtocolV2 {
 	return rpc.ProtocolV2{
 		Name: "TeamGuest",

@@ -1,5 +1,5 @@
-// Auto-generated to Go types and interfaces using @foks-proj/snowpack-compiler 1.0.8 (git+https://github.com/foks-proj/node-snowpack-compiler.git)
-//  Input file: ../../proto-src/lib/git.snowp
+// Auto-generated to Go types and interfaces using snowpc 0.0.4 (https://github.com/foks-proj/go-snowpack-compiler)
+//  Input file:../../proto-src/lib/git.snowp
 
 package lib
 
@@ -14,7 +14,6 @@ func (g GitRepo) Export() *GitRepoInternal__ {
 	tmp := ((string)(g))
 	return ((*GitRepoInternal__)(&tmp))
 }
-
 func (g GitRepoInternal__) Import() GitRepo {
 	tmp := (string)(g)
 	return GitRepo((func(x *string) (ret string) {
@@ -47,7 +46,6 @@ type GitRemoteRepoID struct {
 	Host HostID
 	Dir  DirID
 }
-
 type GitRemoteRepoIDInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Host    *HostIDInternal__
@@ -70,14 +68,12 @@ func (g GitRemoteRepoIDInternal__) Import() GitRemoteRepoID {
 		})(g.Dir),
 	}
 }
-
 func (g GitRemoteRepoID) Export() *GitRemoteRepoIDInternal__ {
 	return &GitRemoteRepoIDInternal__{
 		Host: g.Host.Export(),
 		Dir:  g.Dir.Export(),
 	}
 }
-
 func (g *GitRemoteRepoID) Encode(enc rpc.Encoder) error {
 	return enc.Encode(g.Export())
 }
@@ -103,7 +99,6 @@ const (
 var GitProtoTypeMap = map[string]GitProtoType{
 	"Foks": 1,
 }
-
 var GitProtoTypeRevMap = map[GitProtoType]string{
 	1: "Foks",
 }
@@ -113,7 +108,6 @@ type GitProtoTypeInternal__ GitProtoType
 func (g GitProtoTypeInternal__) Import() GitProtoType {
 	return GitProtoType(g)
 }
-
 func (g GitProtoType) Export() *GitProtoTypeInternal__ {
 	return ((*GitProtoTypeInternal__)(&g))
 }
@@ -125,7 +119,6 @@ func (g GitURLString) Export() *GitURLStringInternal__ {
 	tmp := ((string)(g))
 	return ((*GitURLStringInternal__)(&tmp))
 }
-
 func (g GitURLStringInternal__) Import() GitURLString {
 	tmp := (string)(g)
 	return GitURLString((func(x *string) (ret string) {
@@ -158,7 +151,6 @@ type GitRefBoxed struct {
 	De  KVDirent
 	Sfb SmallFileBox
 }
-
 type GitRefBoxedInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	De      *KVDirentInternal__
@@ -181,14 +173,12 @@ func (g GitRefBoxedInternal__) Import() GitRefBoxed {
 		})(g.Sfb),
 	}
 }
-
 func (g GitRefBoxed) Export() *GitRefBoxedInternal__ {
 	return &GitRefBoxedInternal__{
 		De:  g.De.Export(),
 		Sfb: g.Sfb.Export(),
 	}
 }
-
 func (g *GitRefBoxed) Encode(enc rpc.Encoder) error {
 	return enc.Encode(g.Export())
 }
@@ -209,7 +199,6 @@ type GitRef struct {
 	Name  KVPath
 	Value string
 }
-
 type GitRefInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Name    *KVPathInternal__
@@ -232,14 +221,12 @@ func (g GitRefInternal__) Import() GitRef {
 		})(g.Value),
 	}
 }
-
 func (g GitRef) Export() *GitRefInternal__ {
 	return &GitRefInternal__{
 		Name:  g.Name.Export(),
 		Value: &g.Value,
 	}
 }
-
 func (g *GitRef) Encode(enc rpc.Encoder) error {
 	return enc.Encode(g.Export())
 }
@@ -260,7 +247,6 @@ type GitRefBoxedSet struct {
 	DirVersion KVVersion
 	Refs       []GitRefBoxed
 }
-
 type GitRefBoxedSetInternal__ struct {
 	_struct    struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	DirVersion *KVVersionInternal__
@@ -295,7 +281,6 @@ func (g GitRefBoxedSetInternal__) Import() GitRefBoxedSet {
 		})(g.Refs),
 	}
 }
-
 func (g GitRefBoxedSet) Export() *GitRefBoxedSetInternal__ {
 	return &GitRefBoxedSetInternal__{
 		DirVersion: g.DirVersion.Export(),
@@ -311,7 +296,6 @@ func (g GitRefBoxedSet) Export() *GitRefBoxedSetInternal__ {
 		})(g.Refs),
 	}
 }
-
 func (g *GitRefBoxedSet) Encode(enc rpc.Encoder) error {
 	return enc.Encode(g.Export())
 }
@@ -333,7 +317,6 @@ type GitURL struct {
 	Fqp   FQPartyParsed
 	Repo  GitRepo
 }
-
 type GitURLInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Proto   *GitProtoTypeInternal__
@@ -363,7 +346,6 @@ func (g GitURLInternal__) Import() GitURL {
 		})(g.Repo),
 	}
 }
-
 func (g GitURL) Export() *GitURLInternal__ {
 	return &GitURLInternal__{
 		Proto: g.Proto.Export(),
@@ -371,7 +353,6 @@ func (g GitURL) Export() *GitURLInternal__ {
 		Repo:  g.Repo.Export(),
 	}
 }
-
 func (g *GitURL) Encode(enc rpc.Encoder) error {
 	return enc.Encode(g.Export())
 }

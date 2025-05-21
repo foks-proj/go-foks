@@ -1,5 +1,5 @@
-// Auto-generated to Go types and interfaces using @foks-proj/snowpack-compiler 1.0.8 (git+https://github.com/foks-proj/node-snowpack-compiler.git)
-//  Input file: ../../proto-src/lib/names.snowp
+// Auto-generated to Go types and interfaces using snowpc 0.0.4 (https://github.com/foks-proj/go-snowpack-compiler)
+//  Input file:../../proto-src/lib/names.snowp
 
 package lib
 
@@ -14,7 +14,6 @@ func (n NameUtf8) Export() *NameUtf8Internal__ {
 	tmp := ((string)(n))
 	return ((*NameUtf8Internal__)(&tmp))
 }
-
 func (n NameUtf8Internal__) Import() NameUtf8 {
 	tmp := (string)(n)
 	return NameUtf8((func(x *string) (ret string) {
@@ -50,7 +49,6 @@ func (n NameSeqno) Export() *NameSeqnoInternal__ {
 	tmp := ((int64)(n))
 	return ((*NameSeqnoInternal__)(&tmp))
 }
-
 func (n NameSeqnoInternal__) Import() NameSeqno {
 	tmp := (int64)(n)
 	return NameSeqno((func(x *int64) (ret int64) {
@@ -83,7 +81,6 @@ type NameBundle struct {
 	Name     Name
 	NameUtf8 NameUtf8
 }
-
 type NameBundleInternal__ struct {
 	_struct  struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Name     *NameInternal__
@@ -106,14 +103,12 @@ func (n NameBundleInternal__) Import() NameBundle {
 		})(n.NameUtf8),
 	}
 }
-
 func (n NameBundle) Export() *NameBundleInternal__ {
 	return &NameBundleInternal__{
 		Name:     n.Name.Export(),
 		NameUtf8: n.NameUtf8.Export(),
 	}
 }
-
 func (n *NameBundle) Encode(enc rpc.Encoder) error {
 	return enc.Encode(n.Export())
 }
@@ -134,7 +129,6 @@ type NameAndSeqnoBundle struct {
 	B NameBundle
 	S NameSeqno
 }
-
 type NameAndSeqnoBundleInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	B       *NameBundleInternal__
@@ -157,14 +151,12 @@ func (n NameAndSeqnoBundleInternal__) Import() NameAndSeqnoBundle {
 		})(n.S),
 	}
 }
-
 func (n NameAndSeqnoBundle) Export() *NameAndSeqnoBundleInternal__ {
 	return &NameAndSeqnoBundleInternal__{
 		B: n.B.Export(),
 		S: n.S.Export(),
 	}
 }
-
 func (n *NameAndSeqnoBundle) Encode(enc rpc.Encoder) error {
 	return enc.Encode(n.Export())
 }
