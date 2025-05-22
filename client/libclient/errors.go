@@ -6,9 +6,6 @@ package libclient
 import (
 	"errors"
 	"fmt"
-	"os"
-	"regexp"
-	"runtime"
 
 	"github.com/foks-proj/go-foks/lib/core"
 )
@@ -34,15 +31,7 @@ func ErrToStringCLI(e error) string {
 			)
 
 		case core.KVAbsPathError:
-			windowsAbsRxx := regexp.MustCompile(`^[a-zA-Z]:/`)
-			msys := map[string]bool{
-				"MSYS":    true,
-				"MINGW32": true,
-				"MINGW64": true,
-			}
-			if runtime.GOOS == "windows" &&
-				windowsAbsRxx.MatchString(te.Path.String()) &&
-				msys[os.Getenv("MSYSTEM")] {
+			if IsGitBashEnv() && IsWindowsDrivePath(te.Path) {
 				return "Need an absolute path unix-style path (e.g. /a/b/c) but got \"" +
 					te.Path.String() + "\"; note that Git Bash translates unix-style paths " +
 					"to absolute Windows-style paths, but you can use " +

@@ -6,6 +6,10 @@ changelog:
     urgency: low
     stable: false
     changes:
+      - desc: Actually try to rewrite the git-bash-mangled paths, rather than just warn; easy to backout if it's a flop
+        closes: ["#62"]
+      - desc: Online documentation for dealing with weird path translation in git bash
+        closes: ["#60"]
       - desc: Remove old version clash warning
         closes: ["#48"]
       - desc: Retire TypeScript-based snowpack compiler; move over to Go-based compiler

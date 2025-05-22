@@ -43,6 +43,11 @@ func actAsTeamOpt(
 	cmd.Flags().StringVarP(teamStr, "team", "t", "", "team to work on behalf of (default is to operate as the logged in user)")
 }
 
+func makeKVPath(s string) proto.KVPath {
+	// noop unless we are in a gitbash environment on windows
+	return libclient.GitBashAbsPathInvert(proto.KVPath(s))
+}
+
 func quickKVCmd(
 	m libclient.MetaContext,
 	top *cobra.Command,
@@ -181,7 +186,7 @@ func kvReadlink(m libclient.MetaContext, top *cobra.Command) {
 			if len(arg) != 1 {
 				return ArgsError("expected exactly one argument -- the key-value store symlink")
 			}
-			path := proto.KVPath(arg[0])
+			path := makeKVPath(arg[0])
 			res, err := cli.ClientKVReadlink(m.Ctx(), lcl.ClientKVReadlinkArg{
 				Cfg:  cfg,
 				Path: path,
@@ -209,8 +214,8 @@ func kvMv(m libclient.MetaContext, top *cobra.Command) {
 			if len(arg) != 2 {
 				return ArgsError("expected exactly 2 arguments -- the source and the destination")
 			}
-			src := proto.KVPath(arg[0])
-			dst := proto.KVPath(arg[1])
+			src := makeKVPath(arg[0])
+			dst := makeKVPath(arg[1])
 			err := cli.ClientKVMv(m.Ctx(), lcl.ClientKVMvArg{
 				Cfg: cfg,
 				Src: src,
@@ -255,7 +260,8 @@ func kvGetUsage(m libclient.MetaContext, top *cobra.Command) {
 
 func kvRm(m libclient.MetaContext, top *cobra.Command) {
 	quickKVCmd(m, top,
-		"rm", []string{"remove", "unlink", "delete"},
+		"rm <key1> <key2> ....",
+		[]string{"remove", "unlink", "delete"},
 		"remove a key-value store entry",
 		"Remove a key-value store entry; supply -r to remove directories",
 		quickKVOpts{
@@ -273,7 +279,7 @@ func kvRm(m libclient.MetaContext, top *cobra.Command) {
 					m.Ctx(),
 					lcl.ClientKVRmArg{
 						Cfg:  cfg,
-						Path: proto.KVPath(a),
+						Path: makeKVPath(a),
 					},
 				)
 				if err != nil {
@@ -287,7 +293,7 @@ func kvRm(m libclient.MetaContext, top *cobra.Command) {
 
 func kvSymlink(m libclient.MetaContext, top *cobra.Command) {
 	quickKVCmd(m, top,
-		"symlink", nil,
+		"symlink <key> <target>", nil,
 		"create a key-value store symlink",
 		"Create a key-value store symlink",
 		quickKVOpts{SupportWriteRole: true, SupportReadRole: true},
@@ -296,8 +302,8 @@ func kvSymlink(m libclient.MetaContext, top *cobra.Command) {
 			if len(arg) != 2 {
 				return ArgsError("expected exactly 2 arguments -- the key and the target")
 			}
-			path := proto.KVPath(arg[0])
-			target := proto.KVPath(arg[1])
+			path := makeKVPath(arg[0])
+			target := makeKVPath(arg[1])
 			res, err := cli.ClientKVSymlink(m.Ctx(), lcl.ClientKVSymlinkArg{
 				Cfg:    cfg,
 				Path:   path,
@@ -319,7 +325,7 @@ func kvGet(m libclient.MetaContext, top *cobra.Command) {
 	var mode int
 	var force bool
 	quickKVCmd(m, top,
-		"get", nil,
+		"get <key> <output-file>", nil,
 		"get a key-value store entry",
 		"Get a key-value store entry",
 		quickKVOpts{},
@@ -337,7 +343,7 @@ func kvGet(m libclient.MetaContext, top *cobra.Command) {
 			if arg[1] == "-" && mode >= 0 {
 				return ArgsError("cannot specify file mode when writing to stdout")
 			}
-			path := proto.KVPath(arg[0])
+			path := makeKVPath(arg[0])
 			err := kvGetWithArgs(m, cfg, cli, path, arg[1], mode, force)
 			if err != nil {
 				return err
@@ -350,7 +356,7 @@ func kvGet(m libclient.MetaContext, top *cobra.Command) {
 func kvPut(m libclient.MetaContext, top *cobra.Command) {
 	var isFile bool
 	quickKVCmd(m, top,
-		"put", nil,
+		"put <key> <value>", nil,
 		"put a key-value store entry",
 		"Put a key-value store entry",
 		quickKVOpts{SupportWriteRole: true, SupportReadRole: true, SupportOverwrite: true},
@@ -361,7 +367,7 @@ func kvPut(m libclient.MetaContext, top *cobra.Command) {
 			if len(arg) != 2 {
 				return ArgsError("expected exactly 2 arguments -- the key and the value")
 			}
-			path := proto.KVPath(arg[0])
+			path := makeKVPath(arg[0])
 			err := kvPutWithArgs(m, cfg, cli, path, arg[1], isFile)
 			if err != nil {
 				return err
@@ -441,7 +447,7 @@ func kvLs(
 	top *cobra.Command,
 ) {
 	quickKVCmd(m, top,
-		"ls", []string{"list"},
+		"ls <key>", []string{"list"},
 		"list a key-value store directory",
 		"List a key-value store directory, will come back in random order",
 		quickKVOpts{
@@ -452,7 +458,7 @@ func kvLs(
 			if len(arg) != 1 {
 				return ArgsError("expected exactly one argument -- the directory to list")
 			}
-			path := proto.KVPath(arg[0])
+			path := makeKVPath(arg[0])
 			num := m.G().Cfg().KVListPageSize()
 			keepGoing := true
 			var json []lcl.KVListEntry
@@ -548,7 +554,7 @@ func kvPutWithArgs(
 
 func kvMkdir(m libclient.MetaContext, top *cobra.Command) {
 	quickKVCmd(m, top,
-		"mkdir", nil,
+		"mkdir <key>", nil,
 		"make a new key-value store directory",
 		"Make a new key-value store directory (and parents with -p)",
 		quickKVOpts{SupportReadRole: true, SupportWriteRole: true},
@@ -557,7 +563,7 @@ func kvMkdir(m libclient.MetaContext, top *cobra.Command) {
 			if len(arg) != 1 {
 				return ArgsError("expected exactly one argument -- the key-value store directory name")
 			}
-			path := proto.KVPath(arg[0])
+			path := makeKVPath(arg[0])
 			res, err := cli.ClientKVMkdir(m.Ctx(), lcl.ClientKVMkdirArg{
 				Cfg:  cfg,
 				Path: path,
