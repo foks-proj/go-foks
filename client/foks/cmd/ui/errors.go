@@ -27,9 +27,8 @@ func ClientifyErrorMessage(e error) string {
 			),
 		)
 		return b.String()
-	default:
-		return e.Error()
 	}
+	return e.Error()
 }
 
 func RenderError(e error) string {

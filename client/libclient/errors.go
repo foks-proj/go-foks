@@ -6,11 +6,15 @@ package libclient
 import (
 	"errors"
 	"fmt"
+	"os"
+	"regexp"
+	"runtime"
 
 	"github.com/foks-proj/go-foks/lib/core"
 )
 
 func ErrToStringCLI(e error) string {
+
 	switch {
 	case e == nil:
 		return ""
@@ -21,13 +25,31 @@ func ErrToStringCLI(e error) string {
 	case errors.Is(e, core.YubiPINRequredError{}):
 		return "PIN needed to unlock YubiKey; supply PIN via `foks yubi unlock --prompt-pin`"
 	default:
+
 		switch te := e.(type) {
 		case core.AgentConnectError:
 			return fmt.Sprintf(
 				"could not connect to the FOKS agent; start it via `foks ctl start` (socket file: %s)",
 				te.Path.String(),
 			)
+
+		case core.KVAbsPathError:
+			windowsAbsRxx := regexp.MustCompile(`^[a-zA-Z]:/`)
+			msys := map[string]bool{
+				"MSYS":    true,
+				"MINGW32": true,
+				"MINGW64": true,
+			}
+			if runtime.GOOS == "windows" &&
+				windowsAbsRxx.MatchString(te.Path.String()) &&
+				msys[os.Getenv("MSYSTEM")] {
+				return "Need an absolute path unix-style path (e.g. /a/b/c) but got \"" +
+					te.Path.String() + "\"; note that Git Bash translates unix-style paths " +
+					"to absolute Windows-style paths, but you can use " +
+					"a leading double-slash (e.g., //path/to/my/key) to avoid this behavior"
+			}
 		}
+
 		return e.Error()
 	}
 }

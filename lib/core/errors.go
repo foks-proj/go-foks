@@ -903,6 +903,14 @@ func (k KVPathError) Error() string {
 	return "path error: " + string(k)
 }
 
+type KVAbsPathError struct {
+	Path proto.KVPath
+}
+
+func (k KVAbsPathError) Error() string {
+	return "asbolute path required (got " + k.Path.String() + ")"
+}
+
 type KVMkdirError string
 
 func (k KVMkdirError) Error() string {
@@ -1537,6 +1545,8 @@ func ErrorToStatus(e error) proto.Status {
 		return proto.NewStatusWithKvRmdirNeedRecursiveError()
 	case KVNotAvailableError:
 		return proto.NewStatusWithKvNotAvailableError()
+	case KVAbsPathError:
+		return proto.NewStatusWithKvAbsPathError(te.Path.String())
 	case StripeSessionExistsError:
 		return proto.NewStatusWithStripeSessionExistsError()
 	case NonRetriableError:
@@ -1848,6 +1858,8 @@ func StatusToError(s proto.Status) error {
 		return KVRmdirNeedRecursiveError{}
 	case proto.StatusCode_KV_NOT_AVAILABLE_ERROR:
 		return KVNotAvailableError{}
+	case proto.StatusCode_KV_ABS_PATH_ERROR:
+		return KVAbsPathError{Path: proto.KVPath(s.KvAbsPathError())}
 	case proto.StatusCode_STRIPE_SESSION_EXISTS_ERROR:
 		return StripeSessionExistsError{}
 	case proto.StatusCode_CHAIN_LOADER_ERROR:

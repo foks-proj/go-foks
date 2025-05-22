@@ -64,7 +64,7 @@ func ParseAbsPath(p proto.KVPath) (*ParsedPath, error) {
 		return nil, err
 	}
 	if !pp.LeadingSlash {
-		return nil, core.KVPathError("not an absolute path")
+		return nil, core.KVAbsPathError{Path: p}
 	}
 	return pp, nil
 }
