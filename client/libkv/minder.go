@@ -869,7 +869,7 @@ func (k *Minder) mkRoot(
 		return nil, err
 	}
 
-	m.Infow("created new root dir", "fqp", ret.Id, "dir", *ret)
+	m.Infow("created new root dir", "id", ret.Id())
 
 	auth, cli, err := k.client(m, kvp)
 	if err != nil {

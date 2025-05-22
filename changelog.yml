@@ -12,6 +12,10 @@ changelog:
         closes : []
       - desc: Fix panic in `team add` from failing to load a user by username a second time
         closes: ["#52"]
+      - desc: Fix bug in kv-store big objects as a team
+        closes: ["#58"]
+      - desc: Clean up leaky debug in KV mkroot 
+        closes: ["#57"]
   - version: 0.0.19
     urgency: low
     stable: false

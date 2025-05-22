@@ -534,6 +534,7 @@ func kvPutWithArgs(
 		},
 		func(id proto.FileID, data []byte, offset proto.Offset, final bool) error {
 			arg := lcl.ClientKVPutChunkArg{
+				Cfg:    cfg,
 				Id:     id,
 				Chunk:  data,
 				Offset: offset,
