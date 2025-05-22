@@ -96,6 +96,18 @@ rpm: rpm-arm64 rpm-amd64
 darwin-zip: darwin-arm64-zip-release darwin-amd64-zip-release
 	@echo "macOS zip packages are ready in the build directory"
 
+.PHONY: choco
+choco: choco-amd64 choco-x86
+	@echo "Chocolatey windows packages are ready in the build directory"
+
+.PHONY: choco-x86
+choco-x86: proto
+	./scripts/cross-compile-win.bash -p win-x86 -sc
+
+.PHONY: choco-amd64
+choco-amd64: proto
+	./scripts/cross-compile-win.bash -p win-amd64 -sc
+
 .PHONY: release-all
 release-all: deb rpm darwin-zip
 	@echo "All release packages are ready in the build directory"

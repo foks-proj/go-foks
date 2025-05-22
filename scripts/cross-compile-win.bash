@@ -3,14 +3,18 @@
 # Licensed under the MIT License. See LICENSE in the project root for details.
 
 set -euo pipefail
+set -x 
 
 usage() {
-    echo "Usage: $0 -p {win-arm64|win-amd64|win-x86} [-s]"
+    echo "Usage: $0 -p {win-arm64|win-amd64|win-x86} [-sc]"
     exit 1
 }
 
 strip=0
 packaging="local"
+pkgTag=""
+outSffx="exe"
+doZip=0
 
 # take two arguments: -p which can be arm64 or amd64, and also
 # -s, which is a boolean flag that means to strip the binary
@@ -26,6 +30,9 @@ while getopts ":p:sc" opt; do
         c)
             choco=1
             packaging="choco"
+            pkgTag="-choco"
+            outSffx="zip"
+            doZip=1
             ;;
         \?)
             echo "Invalid option: -$OPTARG" >&2
@@ -43,26 +50,36 @@ if [ $# -ne 0 ]; then
    usage
 fi
 
+if [ -z ${plat+x} ]; then
+    echo "Platform not specified. Use -p to specify the platform."
+    usage
+fi
+
 version=$(git describe --tags --always)
+sversion=$(git describe --tags --abbrev=0)
+
 
 docker_plat=''
 docker_file=''
 goarch=''
 cxx=''
+filearch=''
 cc=''
 case $plat in
     win-arm64)
-        @echo "not yet supported!"
+        echo "not yet supported!"
         exit 1
         docker_plat='linux/arm64'
         docker_file=dockerfiles/cross-compile-win-arm64.dev
         goarch=arm64
+        filearch=amd64
         ;;
     win-amd64)
         docker_plat='linux/amd64'
         docker_file=dockerfiles/cross-compile-win-amd64.dev
         cc=x86_64-w64-mingw32-gcc
         cxx=x86_64-w64-mingw32-g++
+        filearch=amd64
         ;;
     win-x86)
         docker_plat='linux/amd64'
@@ -70,6 +87,7 @@ case $plat in
         goarch=386
         cc=i686-w64-mingw32-gcc 
         cxx=i686-w64-mingw32-g++
+        filearch=x86
         ;;
     *)
         echo "Invalid platform: $plat"
@@ -77,13 +95,22 @@ case $plat in
         ;;
 esac
 
+output=foks-${sversion}-win${pkgTag}-${filearch}.${outSffx}
+target=build/${output}
+
+tmpdir=""
+if [ $doZip -eq 1 ]; then
+    tmpdir=$(mktemp -d)
+    outDir=${tmpdir}
+    target=${outDir}/foks.exe
+fi
+
 build() {
     mkdir -p build/
     file_sffx=''
     if [ "$strip" -eq 1 ]; then
         file_sffx='.stripped'
     fi
-    output=foks.${plat}${file_sffx}.exe
     name=foks-${plat}-build
     tmp=temp-foks-${plat}
 
@@ -107,10 +134,23 @@ build() {
         GOARCH=${goarch} CC=${cc} CXX=${cxx} \
         go build ${trimpath} -o foks.exe -ldflags '${ldflags}' .)"
 
-    docker cp ${tmp}:/foks/go-foks/client/foks/foks.exe build/${output}
+    docker cp ${tmp}:/foks/go-foks/client/foks/foks.exe ${target}
     docker rm ${tmp}
 
-    echo "Build for ${plat} is complete: build/${output}"
+    echo "Build for ${plat} is complete: ${target}"
+}
+
+pkgZip() {
+    if [ $doZip -eq 1 ]; then
+        final=build/${output}
+        (cd ${tmpdir} && zip -r ${output} foks.exe)
+        mv ${tmpdir}/${output} ${final}
+        rm -rf ${tmpdir}
+        echo "Zipped build for ${plat} is complete: ${final}"
+    fi
 }
 
 build 
+pkgZip
+
+
