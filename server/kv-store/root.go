@@ -69,7 +69,7 @@ func putRoot(
 	role proto.Role,
 	arg rem.KvPutRootArg,
 ) error {
-	err := assertAdmin(role)
+	err := assertAdmin(role, "creating KV root")
 	if err != nil {
 		return err
 	}

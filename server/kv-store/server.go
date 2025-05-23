@@ -5,6 +5,7 @@ package kvStore
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
 	"github.com/foks-proj/go-foks/lib/core"
@@ -202,13 +203,15 @@ func assertAtOrAbove(r1 proto.Role, r2 proto.Role, op proto.KVOp, rsrc proto.KVN
 	return nil
 }
 
-func assertAdmin(role proto.Role) error {
+func assertAdmin(role proto.Role, what string) error {
 	ok, err := role.IsAdminOrAbove()
 	if err != nil {
 		return err
 	}
 	if !ok {
-		return core.AuthError{}
+		return core.PermissionError(
+			fmt.Sprintf("team admin permission needed for %s", what),
+		)
 	}
 	return nil
 }
