@@ -20,7 +20,7 @@ cat <<EOF >pkg/choco/foks.nuspec
     <owners>Maxwell Krohn</owners>
     <title>foks (Install)</title>
     <authors>Maxwell Krohn</authors>
-    <projectUrl>https://github.com/foks-proj/go-foks</projectUrl>
+    <projectUrl>https://foks.pub</projectUrl>
     <iconUrl>https://foks.pub/img/foks.png</iconUrl>
     <copyright>2025 ne43, Inc.</copyright>
     <licenseUrl>https://github.com/foks-proj/go-foks/blob/main/LICENSE</licenseUrl>
@@ -48,6 +48,7 @@ Many applications can be built on top of this primitive but best suited are thos
 that share end-to-end encrypted, persistent information across groups of users with multiple
 devices. For instance, files and git hosting.
     </description>
+    <releaseNotes>https://github.com/foks-proj/go-foks/releases</releaseNotes>
   </metadata>
   <files>
     <file src="tools\**" target="tools" />
