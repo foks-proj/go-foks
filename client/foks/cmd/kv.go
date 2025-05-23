@@ -293,7 +293,7 @@ func kvRm(m libclient.MetaContext, top *cobra.Command) {
 
 func kvSymlink(m libclient.MetaContext, top *cobra.Command) {
 	quickKVCmd(m, top,
-		"symlink <key> <target>", nil,
+		"symlink <key> <target>", []string{"ln"},
 		"create a key-value store symlink",
 		"Create a key-value store symlink",
 		quickKVOpts{SupportWriteRole: true, SupportReadRole: true},
@@ -315,7 +315,11 @@ func kvSymlink(m libclient.MetaContext, top *cobra.Command) {
 			if m.G().Cfg().JSONOutput() {
 				return JSONOutput(m, res)
 			}
-			m.G().UIs().Terminal.Printf("NodeID: %s\n", res)
+			resStr, err := res.StringErr()
+			if err != nil {
+				return err
+			}
+			m.G().UIs().Terminal.Printf("NodeID: %s\n", resStr)
 			return PartingConsoleMessage(m)
 		},
 	)

@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 
 	"github.com/foks-proj/go-foks/client/libclient"
 	"github.com/foks-proj/go-foks/lib/core"
@@ -94,6 +95,18 @@ func MainWithArgs(cmd string, args []string) {
 	os.Exit(rc)
 }
 
+func stripDirAndExtFromCommand(cmd string) string {
+	ret := filepath.Base(cmd)
+	if runtime.GOOS != "windows" {
+		return ret
+	}
+	ext := filepath.Ext(ret)
+	if ext == ".exe" {
+		ret = ret[:len(ret)-len(ext)]
+	}
+	return ret
+}
+
 func rootCmdFromArgs(
 	m libclient.MetaContext,
 	cmd string,
@@ -105,7 +118,7 @@ func rootCmdFromArgs(
 
 	var ret *cobra.Command
 
-	cmdBase := filepath.Base(cmd)
+	cmdBase := stripDirAndExtFromCommand(cmd)
 
 	if cmdBase == GitRemoteHelper {
 		ret = rootCmdGitRemoteHelper(m)
