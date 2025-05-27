@@ -1101,7 +1101,7 @@ func (c *RegClientConn) CheckNameExists(ctx context.Context, arg proto.Name) err
 
 func (c *RegClientConn) LoadUserChain(ctx context.Context, arg rem.LoadUserChainArg) (rem.UserChain, error) {
 	m := shared.NewMetaContextConn(ctx, c)
-	return shared.LoadUserChain(m, nil, arg)
+	return shared.LoadUserChain(m, nil, nil, arg)
 }
 
 func (c *RegClientConn) ErrorWrapper() func(error) proto.Status {

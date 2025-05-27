@@ -47,17 +47,21 @@ func (i *InitDB) DatabaseNames() []string {
 	return ret
 }
 
+func SplitSQLStatements(b string) []string {
+	// Strip both /*…*/ (even across lines) and --… comments
+	re := regexp.MustCompile(`(?s:/\*.*?\*/)|--[^\r\n]*`)
+	clean := re.ReplaceAllString(b, "")
+
+	// Now split on semicolons
+	return strings.Split(clean, ";")
+}
+
 func (i *InitDB) readSQLFile(m MetaContext, d DbType) ([]string, error) {
 	b, found := sql.SQL[d.ToString()]
 	if !found {
 		return nil, errors.New("no SQL found for " + d.ToString())
 	}
-
-	// strip comments, since otherwise a semicolon in a comment can hose us
-	re := regexp.MustCompile(`/\*.*?\*/`)
-	b = re.ReplaceAllString(b, "")
-
-	return strings.Split(b, ";"), nil
+	return SplitSQLStatements(b), nil
 }
 
 func (i *InitDB) runMakeTablesOne(m MetaContext, db *pgxpool.Conn, typ DbType, name string) (err error) {

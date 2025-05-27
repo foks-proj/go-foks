@@ -339,7 +339,7 @@ func CheckTeamVOBearerToken(
 		 JOIN team_members 
 		 USING (short_host_id, team_id, member_id, member_host_id, 
 			 src_role_type, src_viz_level, seqno)
-		 WHERE short_host_id=$1 AND token=$2`,
+		 WHERE short_host_id=$1 AND token=$2 AND T.state='active'`,
 		m.ShortHostID().ExportToDB(),
 		tok.ExportToDB(),
 	).Scan(&rawTeam, &active, &tm, &dstRoleType, &dstVizLevel, &g, &rawMember, &rawMemberHost,

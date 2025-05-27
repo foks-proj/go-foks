@@ -19,6 +19,7 @@ func TestTeamLoaderPermissions(t *testing.T) {
 	bluey := tew.NewTestUser(t)
 	bingo := tew.NewTestUser(t)
 	chloe := tew.NewTestUser(t)
+	boto := tew.NewTestUser(t)
 
 	vh := tew.VHostMakeI(t, 0)
 	muffin := tew.NewTestUserAtVHost(t, vh)
@@ -214,7 +215,8 @@ func TestTeamLoaderPermissions(t *testing.T) {
 	)
 	tew.DirectMerklePokeInTest(t)
 
-	// now it shiould work
+	// now it shiould work -- bluey is an owner of tm0, and members
+	// of tm0 at level *admin and above* have permission to load tm1.
 	_, err = libclient.LoadTeam(blueyMc, libclient.LoadTeamArg{
 		Team:               tm1.FQTeam(t),
 		As:                 tm0.FQTeam(t).FQParty(),
@@ -233,5 +235,38 @@ func TestTeamLoaderPermissions(t *testing.T) {
 	})
 	require.Error(t, err)
 	require.Equal(t, core.NotFoundError("team vo bearer token"), err)
+
+	// Add boto to tm0 as a member/0. We're going to test that
+	// he can't load tm1 with tm0's view-only token, since his role
+	// in tm0 is not high enough.
+	mr := boto.toMemberRole(t, proto.DefaultRole, tm0.hepks)
+	tm0.makeChanges(
+		t,
+		m,
+		bluey,
+		[]proto.MemberRole{mr},
+		nil,
+	)
+	botoMc := tew.NewClientMetaContext(t, boto)
+	tl, _, err = libclient.LoadTeamReturnLoader(botoMc, libclient.LoadTeamArg{
+		Team:    tm0.FQTeam(t),
+		As:      boto.FQUser().FQParty(),
+		Keys:    boto.KeySeq(t, proto.OwnerRole),
+		SrcRole: proto.OwnerRole,
+	})
+	require.NoError(t, err)
+	tok = tl.Tok()
+	require.NotNil(t, tok)
+
+	_, err = libclient.LoadTeam(botoMc, libclient.LoadTeamArg{
+		Team:               tm1.FQTeam(t),
+		As:                 tm0.FQTeam(t).FQParty(),
+		LocalParentTeamTok: tok,
+	})
+	require.Error(t, err)
+	require.Equal(t,
+		core.PermissionError("view permission insufficient"),
+		err,
+	)
 
 }

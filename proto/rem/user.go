@@ -797,15 +797,17 @@ func (s *SetPassphraseAnnex) Decode(dec rpc.Decoder) error {
 func (s *SetPassphraseAnnex) Bytes() []byte { return nil }
 
 type GrantLocalViewPermissionPayload struct {
-	Viewee lib.PartyID
-	Viewer lib.PartyID
-	Tm     lib.Time
+	Viewee     lib.PartyID
+	Viewer     lib.PartyID
+	Tm         lib.Time
+	ViewerRole *lib.Role
 }
 type GrantLocalViewPermissionPayloadInternal__ struct {
-	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
-	Viewee  *lib.PartyIDInternal__
-	Viewer  *lib.PartyIDInternal__
-	Tm      *lib.TimeInternal__
+	_struct    struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
+	Viewee     *lib.PartyIDInternal__
+	Viewer     *lib.PartyIDInternal__
+	Tm         *lib.TimeInternal__
+	ViewerRole *lib.RoleInternal__
 }
 
 func (g GrantLocalViewPermissionPayloadInternal__) Import() GrantLocalViewPermissionPayload {
@@ -828,6 +830,18 @@ func (g GrantLocalViewPermissionPayloadInternal__) Import() GrantLocalViewPermis
 			}
 			return x.Import()
 		})(g.Tm),
+		ViewerRole: (func(x *lib.RoleInternal__) *lib.Role {
+			if x == nil {
+				return nil
+			}
+			tmp := (func(x *lib.RoleInternal__) (ret lib.Role) {
+				if x == nil {
+					return ret
+				}
+				return x.Import()
+			})(x)
+			return &tmp
+		})(g.ViewerRole),
 	}
 }
 func (g GrantLocalViewPermissionPayload) Export() *GrantLocalViewPermissionPayloadInternal__ {
@@ -835,6 +849,12 @@ func (g GrantLocalViewPermissionPayload) Export() *GrantLocalViewPermissionPaylo
 		Viewee: g.Viewee.Export(),
 		Viewer: g.Viewer.Export(),
 		Tm:     g.Tm.Export(),
+		ViewerRole: (func(x *lib.Role) *lib.RoleInternal__ {
+			if x == nil {
+				return nil
+			}
+			return (*x).Export()
+		})(g.ViewerRole),
 	}
 }
 func (g *GrantLocalViewPermissionPayload) Encode(enc rpc.Encoder) error {

@@ -146,7 +146,15 @@ func newEvilServerTestHarness(
 	uid proto.UID,
 	loggedInUID *proto.UID,
 ) *evilServerTestHarness {
-	srv := shared.NewUserLoader(loggedInUID)
+	var role *proto.Role
+
+	// for now, assume that all user devices are at owner level
+	if loggedInUID != nil {
+		tmp := proto.OwnerRole
+		role = &tmp
+	}
+
+	srv := shared.NewUserLoader(loggedInUID, role)
 	var loadMode libclient.LoadMode
 	if loggedInUID != nil && uid.Eq(*loggedInUID) {
 		loadMode = libclient.LoadModeSelf

@@ -1540,7 +1540,12 @@ func acceptInviteLocal(
 	if !certPayload.Team.Host.Eq(m.HostID().Id) {
 		return nil, core.HostMismatchError{}
 	}
-	tok, err := InsertLocalViewPermission(m, tx, certPayload.Team.Team.ToPartyID(), viewee)
+
+	// For now, default to admin as to the role in the team that can load the owner (which is all admins
+	// and above).
+	viewerPermRole := core.TemporaryDefaultViewerRole
+
+	tok, err := InsertLocalViewPermission(m, tx, certPayload.Team.Team.ToPartyID(), viewerPermRole, viewee)
 	if err != nil {
 		return nil, err
 	}

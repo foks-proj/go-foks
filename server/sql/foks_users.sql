@@ -566,6 +566,8 @@ CREATE TABLE local_view_permissions (
     token BYTEA NOT NULL, /* random 32-byte ID */
     ctime TIMESTAMP NOT NULL,
     mtime TIMESTAMP NOT NULL,
+    viewer_role_type SMALLINT NOT NULL, /* defaults to 2 (admin) prior to patch 1; viewers in the party at above this role can view*/
+    viewer_viz_level SMALLINT NOT NULL, /* defaults to 0 prior to patch 1 */
     PRIMARY KEY(short_host_id, target_eid, viewer_eid)
 );
 CREATE UNIQUE INDEX local_view_permissions_token_idx ON local_view_permissions(short_host_id, token);
@@ -900,3 +902,27 @@ CREATE TABLE yubi_mgmt_keys (
     mtime TIMESTAMP NOT NULL,
     PRIMARY KEY(short_host_id, uid, key_id)
 );
+
+CREATE TABLE team_member_load_floor (
+    short_host_id SMALLINT NOT NULL,
+    team_id BYTEA NOT NULL,
+
+    seqno INTEGER NOT NULL,
+
+    -- If alice is in the team, she can use the team to load other members if she is in the team 
+    -- at or above the role just below:
+    role_type SMALLINT NOT NULL,
+    viz_level SMALLINT NOT NULL,
+
+    ctime TIMESTAMP NOT NULL,
+
+    PRIMARY KEY (short_host_id, team_id, seqno),
+    FOREIGN KEY (short_host_id, team_id) REFERENCES teams(short_host_id, team_id)
+);
+
+CREATE TABLE schema_patches (
+    id INTEGER NOT NULL PRIMARY KEY,
+    ctime TIMESTAMP NOT NULL
+);
+
+INSERT INTO schema_patches (id, ctime) VALUES (1, NOW());

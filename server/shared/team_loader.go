@@ -68,11 +68,11 @@ func (l *TeamLoader) checkPerms(m MetaContext) error {
 		}
 		l.viewer = viewer
 	case rem.TokenType_LocalParentTeam:
-		teamID, err := checkTeamVOBearerTokenForLocalParentTeam(m, l.db, l.Arg.Tok.Localparentteam())
+		teamID, roleInTeam, err := checkTeamVOBearerTokenForLocalParentTeam(m, l.db, l.Arg.Tok.Localparentteam())
 		if err != nil {
 			return err
 		}
-		err = checkLocalViewPermission(m, l.db, teamID.ToPartyID(), l.Arg.Team)
+		err = checkLocalViewPermission(m, l.db, teamID.ToPartyID(), *roleInTeam, l.Arg.Team)
 		if err != nil {
 			return err
 		}
@@ -90,11 +90,13 @@ func checkLocalViewPermission(
 	m MetaContext,
 	db *pgxpool.Conn,
 	viewer proto.PartyID,
+	viewerRole proto.Role,
 	target proto.FQTeam,
 ) error {
-	var dummy int
+	var rt, vl int
 	err := db.QueryRow(m.Ctx(),
-		`SELECT 1 FROM local_view_permissions
+		`SELECT viewer_role_type, viewer_viz_level
+		 FROM local_view_permissions
 		 WHERE short_host_id=$1
 		 AND viewer_eid=$2
 		 AND target_eid=$3
@@ -102,15 +104,26 @@ func checkLocalViewPermission(
 		m.ShortHostID(),
 		viewer.ExportToDB(),
 		target.Team.ExportToDB(),
-	).Scan(&dummy)
+	).Scan(&rt, &vl)
 	if !m.HostID().Id.Eq(target.Host) {
 		return core.HostMismatchError{}
 	}
-	if errors.Is(err, pgx.ErrNoRows) || dummy != 1 {
+	if errors.Is(err, pgx.ErrNoRows) {
 		return core.PermissionError("no view permission")
 	}
 	if err != nil {
 		return err
+	}
+	minRole, err := proto.ImportRoleFromDB(rt, vl)
+	if err != nil {
+		return err
+	}
+	lt, err := viewerRole.LessThan(*minRole)
+	if err != nil {
+		return err
+	}
+	if lt {
+		return core.PermissionError("view permission insufficient")
 	}
 	return nil
 }
@@ -164,24 +177,26 @@ func checkTeamVOBearerTokenForLocalParentTeam(
 	tok rem.TeamVOBearerToken,
 ) (
 	*proto.TeamID,
+	*proto.Role,
 	error,
 ) {
 	creds, err := CheckTeamVOBearerToken(m, db, tok, 0)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	isID, err := creds.Req.Team.IdOrName.GetId()
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	if !isID {
-		return nil, core.InternalError("expected a teamID from CheckTeamVOBearerToken")
+		return nil, nil, core.InternalError("expected a teamID from CheckTeamVOBearerToken")
 	}
 	if !creds.Req.Team.Host.Eq(m.HostID().Id) {
-		return nil, core.HostMismatchError{}
+		return nil, nil, core.HostMismatchError{}
 	}
 	id := creds.Req.Team.IdOrName.True()
-	return &id, nil
+	role := creds.Role
+	return &id, &role, nil
 }
 
 func checkTeamVOBearerTokenForTeam(

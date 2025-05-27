@@ -5,11 +5,9 @@ package main
 
 import (
 	"errors"
-	"fmt"
 	"strings"
 
 	"github.com/foks-proj/go-foks/lib/core"
-	proto "github.com/foks-proj/go-foks/proto/lib"
 	"github.com/foks-proj/go-foks/server/shared"
 	"github.com/manifoldco/promptui"
 	"github.com/spf13/cobra"
@@ -100,36 +98,11 @@ func (i *InitDB) runDrop(m shared.MetaContext) error {
 }
 
 func allShards(m shared.MetaContext) ([]shared.KVShardDescriptor, error) {
-	shcfg, err := m.G().Config().KVShardsConfig(m.Ctx())
-	if err != nil {
-		return nil, err
-	}
-	all := shcfg.All()
-	var ret []shared.KVShardDescriptor
-	for _, shard := range all {
-		ret = append(ret, shared.KVShardDescriptor{
-			Index:  shard.Id(),
-			Active: shard.IsActive(),
-			Name:   shard.Name(),
-		})
-	}
-	return ret, nil
+	return shared.AllShards(m)
 }
 
 func someShards(m shared.MetaContext, indices []int) ([]shared.KVShardDescriptor, error) {
-	shcfg, err := m.G().Config().KVShardsConfig(m.Ctx())
-	if err != nil {
-		return nil, err
-	}
-	var ret []shared.KVShardDescriptor
-	for _, id := range indices {
-		shard := shcfg.Get(proto.KVShardID(id))
-		if shard == nil {
-			return nil, fmt.Errorf("no such shard: %d", id)
-		}
-		ret = append(ret, shared.MakeShardDescriptor(shard))
-	}
-	return ret, nil
+	return shared.SomeShards(m, indices)
 }
 
 func (i *InitDB) Run(m shared.MetaContext) error {

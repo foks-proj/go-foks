@@ -33,3 +33,12 @@ var SQL = map[string]string{
 	"foks_beacon":        foksBeacon,
 	"foks_kv_store":      foksKVStore,
 }
+
+//go:embed patches/foks_users/p1.sql
+var foksUsersPatch1 string
+
+var Patches = map[string]map[int]string{
+	"foks_users": {
+		1: foksUsersPatch1,
+	},
+}

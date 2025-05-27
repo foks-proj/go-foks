@@ -231,7 +231,7 @@ func OpenTeamLink(
 
 	var tnc *proto.Commitment
 	var rng *core.RationalRange
-	// Open link metadata -- only team name changes are supported now.
+	// Open link metadata -- only team name changes are supported now, and team index range changes are supported.
 	for _, md := range gc.Metadata {
 		typ, err := md.GetT()
 		if err != nil {

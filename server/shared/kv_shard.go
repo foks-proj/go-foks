@@ -6,6 +6,7 @@ package shared
 import (
 	"encoding/binary"
 	"errors"
+	"fmt"
 	"sync"
 
 	"github.com/foks-proj/go-foks/lib/core"
@@ -321,5 +322,38 @@ func (s *KVShardMgr) getOrMakeID(
 	}
 
 	put()
+	return ret, nil
+}
+
+func AllShards(m MetaContext) ([]KVShardDescriptor, error) {
+	shcfg, err := m.G().Config().KVShardsConfig(m.Ctx())
+	if err != nil {
+		return nil, err
+	}
+	all := shcfg.All()
+	var ret []KVShardDescriptor
+	for _, shard := range all {
+		ret = append(ret, KVShardDescriptor{
+			Index:  shard.Id(),
+			Active: shard.IsActive(),
+			Name:   shard.Name(),
+		})
+	}
+	return ret, nil
+}
+
+func SomeShards(m MetaContext, indices []int) ([]KVShardDescriptor, error) {
+	shcfg, err := m.G().Config().KVShardsConfig(m.Ctx())
+	if err != nil {
+		return nil, err
+	}
+	var ret []KVShardDescriptor
+	for _, id := range indices {
+		shard := shcfg.Get(proto.KVShardID(id))
+		if shard == nil {
+			return nil, core.BadArgsError(fmt.Sprintf("no such shard: %d", id))
+		}
+		ret = append(ret, MakeShardDescriptor(shard))
+	}
 	return ret, nil
 }

@@ -4,6 +4,8 @@
 package shared
 
 import (
+	"errors"
+
 	"github.com/foks-proj/go-foks/lib/core"
 	proto "github.com/foks-proj/go-foks/proto/lib"
 	"github.com/foks-proj/go-foks/proto/rem"
@@ -22,6 +24,7 @@ type UserLoader struct {
 	db            *pgxpool.Conn
 	Arg           rem.LoadUserChainArg
 	loggedInUID   *proto.UID
+	loggedInRole  *proto.Role
 	Res           rem.UserChain
 	Locs          map[int]proto.TreeLocation
 	Un            proto.Name
@@ -283,30 +286,44 @@ func (u *UserLoader) checkPerms(m MetaContext) error {
 			return core.BadArgsError("team id must be an ID")
 		}
 		teamID := creds.Req.Team.IdOrName.True()
+		rk, lev, err := creds.Role.ExportToDB()
+		if err != nil {
+			return err
+		}
 		q = `SELECT 1 FROM local_view_permissions 
 			 WHERE short_host_id=$1
 			 AND viewer_eid=$2
 			 AND target_eid=$3
+			 AND (viewer_role_type < $4 
+			   OR (viewer_role_type = $4 AND viewer_viz_level <= $5))
 			 AND state='valid'`
 		args = []any{
 			m.ShortHostID().ExportToDB(),
 			teamID.ExportToDB(),
 			u.Arg.Uid.ExportToDB(),
+			rk, lev,
 		}
 	case rem.LoadUserChainAuthType_AsLocalUser:
-		if u.loggedInUID != nil {
+		if u.loggedInUID != nil && u.loggedInRole != nil {
+			rk, lev, err := u.loggedInRole.ExportToDB()
+			if err != nil {
+				return err
+			}
 			q = `SELECT 1 FROM local_view_permissions
 		     WHERE short_host_id=$1 
 			 AND viewer_eid=$2 
 			 AND target_eid=$3
+			 AND (viewer_role_type < $4
+			   OR (viewer_role_type = $4 AND viewer_viz_level <= $5))
 			 AND state='valid'`
 			args = []any{
 				m.ShortHostID().ExportToDB(),
 				u.loggedInUID.ExportToDB(),
 				u.Arg.Uid.ExportToDB(),
+				rk, lev,
 			}
 		} else {
-			return core.PermissionError("no logged in UID available")
+			return core.PermissionError("no logged in UID (or role) available")
 		}
 	case rem.LoadUserChainAuthType_OpenVHost:
 		if u.loggedInUID == nil {
@@ -328,11 +345,11 @@ func (u *UserLoader) checkPerms(m MetaContext) error {
 
 	var dummy int
 	err = u.db.QueryRow(m.Ctx(), q, args...).Scan(&dummy)
-	if err == pgx.ErrNoRows || dummy != 1 {
-		return core.PermissionError("no view permission")
-	}
-	if err != nil {
+	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
 		return err
+	}
+	if errors.Is(err, pgx.ErrNoRows) || dummy != 1 {
+		return core.PermissionError("no view permission")
 	}
 	return nil
 }
@@ -352,13 +369,18 @@ func (u *UserLoader) cleanup(m MetaContext) error {
 	return nil
 }
 
-func NewUserLoader(loggedInUID *proto.UID) *UserLoader {
-	return &UserLoader{loggedInUID: loggedInUID}
+func NewUserLoader(loggedInUID *proto.UID, role *proto.Role) *UserLoader {
+	return &UserLoader{loggedInUID: loggedInUID, loggedInRole: role}
 }
 
-func LoadUserChain(m MetaContext, loggedInUUID *proto.UID, arg rem.LoadUserChainArg) (rem.UserChain, error) {
+func LoadUserChain(
+	m MetaContext,
+	loggedInUUID *proto.UID,
+	loggedInRole *proto.Role,
+	arg rem.LoadUserChainArg,
+) (rem.UserChain, error) {
 	var zed rem.UserChain
-	u := NewUserLoader(loggedInUUID)
+	u := NewUserLoader(loggedInUUID, loggedInRole)
 	err := u.Run(m, arg)
 	if err != nil {
 		return zed, err

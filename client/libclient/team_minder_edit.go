@@ -654,7 +654,7 @@ func (t *TeamEditor) prepareAllRemovals(m MetaContext) error {
 	return nil
 }
 
-func (t *TeamEditor) boxRmvt(
+func (t *TeamEditor) boxOneRemoteMemberViewToken(
 	m MetaContext,
 	rtp RemoteTokenPackage,
 	ptk core.SharedPrivateSuiter,
@@ -681,7 +681,7 @@ func (t *TeamEditor) boxRmvt(
 	return nil
 }
 
-func (t *TeamEditor) boxRemoteMemberViewTokens(m MetaContext) error {
+func (t *TeamEditor) boxAllRemoteMemberViewTokens(m MetaContext) error {
 	if len(t.rtps) == 0 {
 		return nil
 	}
@@ -690,7 +690,7 @@ func (t *TeamEditor) boxRemoteMemberViewTokens(m MetaContext) error {
 		return core.KeyNotFoundError{Which: "PTK"}
 	}
 	for _, rtp := range t.rtps {
-		err := t.boxRmvt(m, rtp, ptk)
+		err := t.boxOneRemoteMemberViewToken(m, rtp, ptk)
 		if err != nil {
 			return err
 		}
@@ -820,7 +820,7 @@ func (t *TeamEditor) Run(m MetaContext) error {
 		return err
 	}
 
-	err = t.boxRemoteMemberViewTokens(m)
+	err = t.boxAllRemoteMemberViewTokens(m)
 	if err != nil {
 		return err
 	}

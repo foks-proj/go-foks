@@ -17,6 +17,7 @@ func InsertLocalViewPermission(
 	m MetaContext,
 	db DbExecer,
 	viewer proto.PartyID,
+	viewerRole proto.Role,
 	viewee proto.PartyID,
 ) (
 	*proto.PermissionToken,
@@ -27,16 +28,24 @@ func InsertLocalViewPermission(
 	if err != nil {
 		return nil, err
 	}
+	rk, vl, err := viewerRole.ExportToDB()
+	if err != nil {
+		return nil, err
+	}
 	tag, err := db.Exec(
 		m.Ctx(),
-		`INSERT INTO local_view_permissions(short_host_id, target_eid, viewer_eid, state, ctime, mtime, token)
-		 VALUES($1, $2, $3, 'valid', NOW(), NOW(), $4)
+		`INSERT INTO local_view_permissions(short_host_id, target_eid, viewer_eid, state, ctime, mtime, token,
+		   viewer_role_type, viewer_viz_level)
+		 VALUES($1, $2, $3, 'valid', NOW(), NOW(), $4, $5, $6)
 		 ON CONFLICT(short_host_id, target_eid, viewer_eid)
-		 DO UPDATE SET state='valid', mtime=NOW()`,
+		 DO UPDATE SET state='valid', mtime=NOW(),
+		    viewer_role_type=$5, viewer_viz_level=$6`,
 		m.ShortHostID().ExportToDB(),
 		viewee.ExportToDB(),
 		viewer.ExportToDB(),
 		ret.ExportToDB(),
+		rk,
+		vl,
 	)
 	if err != nil {
 		return nil, err
@@ -69,7 +78,14 @@ func GrantLocalViewPermission(
 		return zed, err
 	}
 
-	ret, err := InsertLocalViewPermission(m, db, arg.Viewer, arg.Viewee)
+	rolep := arg.ViewerRole
+	if rolep == nil {
+		// Default role was assumed to be admin, prior to version v0.0.20.
+		tmp := core.TemporaryDefaultViewerRole
+		rolep = &tmp
+	}
+
+	ret, err := InsertLocalViewPermission(m, db, arg.Viewer, *rolep, arg.Viewee)
 	if err != nil {
 		return zed, err
 	}
@@ -162,6 +178,7 @@ func BulkInsertLocalViewPermissions(
 	m MetaContext,
 	db DbExecer,
 	viewer proto.PartyID,
+	viewerRole proto.Role,
 	viewees []proto.PartyID,
 	edits []proto.MemberRole,
 ) error {
@@ -204,7 +221,7 @@ func BulkInsertLocalViewPermissions(
 		if _, ok := adds[fx]; !ok {
 			return core.BadArgsError("viewee not in edit list")
 		}
-		_, err = InsertLocalViewPermission(m, db, viewer, viewee)
+		_, err = InsertLocalViewPermission(m, db, viewer, viewerRole, viewee)
 		if err != nil {
 			return err
 		}

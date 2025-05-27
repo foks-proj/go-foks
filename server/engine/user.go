@@ -723,7 +723,7 @@ func (c *UserClientConn) TestQueueService(ctx context.Context, arg infra.TestQue
 
 func (c *UserClientConn) LoadUserChain(ctx context.Context, arg rem.LoadUserChainArg) (rem.UserChain, error) {
 	m := shared.NewMetaContextConn(ctx, c)
-	return shared.LoadUserChain(m, m.UIDp(), arg)
+	return shared.LoadUserChain(m, m.UIDp(), m.Rolep(), arg)
 }
 
 func (c *UserClientConn) ResolveUsername(ctx context.Context, arg rem.ResolveUsernameArg) (proto.UID, error) {

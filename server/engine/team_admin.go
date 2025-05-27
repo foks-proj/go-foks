@@ -246,10 +246,18 @@ func (c *teamEditor) findNewKeyInChanges() error {
 func (c *teamEditor) insertLocalViewPermission(
 	m shared.MetaContext,
 ) error {
+
+	// BulkInsertLocalViewPermissions assumes open-viewership mode for
+	// any additions. For open viewership, it makes sense to insert a low
+	// role here. Maybe should be even lower than m/0. This is temporary
+	// BTW, we should revisit this in subqeuent PRs.
+	viewerRole := proto.DefaultRole
+
 	err := shared.BulkInsertLocalViewPermissions(
 		m,
 		c.tx,
 		c.teamID.ToPartyID(),
+		viewerRole,
 		c.arg.InsLocalPermsFor,
 		c.openres.Gc.Changes,
 	)
@@ -429,9 +437,14 @@ func (c *teamCreator) run(
 		return err
 	}
 
+	// Eventually this will be specified in the team chain, but before then, default to
+	// admin as to the role in the team that can load the owner (which is all admins
+	// and above). This mimics the behavior prior to v0.0.20.
+	viewerPermRole := core.TemporaryDefaultViewerRole
+
 	// Owner gives permission to *future* members to load him, once they are allowed
 	// into the group. Otherwise, they can't.
-	_, err = shared.InsertLocalViewPermission(m, c.tx, c.teamID.ToPartyID(), m.UID().ToPartyID())
+	_, err = shared.InsertLocalViewPermission(m, c.tx, c.teamID.ToPartyID(), viewerPermRole, m.UID().ToPartyID())
 	if err != nil {
 		return err
 	}

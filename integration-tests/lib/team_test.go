@@ -1383,7 +1383,8 @@ func TestTeamRemoval(t *testing.T) {
 }
 
 // Bingo makes a team and adds Coco and Snickers to it, all locally. New Snickers cam load
-// Coco's user.
+// Coco's user. But muffin is just a *member* so therefore, he fails to load Coco's user
+// via the team.
 func TestUserLoadAsTeam(t *testing.T) {
 	defer common.DebugEntryAndExit()()
 
@@ -1391,6 +1392,7 @@ func TestUserLoadAsTeam(t *testing.T) {
 	bingo := tew.NewTestUser(t)
 	coco := tew.NewTestUser(t)
 	snickers := tew.NewTestUser(t)
+	muffin := tew.NewTestUser(t)
 	tew.DirectDoubleMerklePokeInTest(t)
 	tm := tew.makeTeamForOwner(t, bingo)
 	m := tew.MetaContext()
@@ -1412,8 +1414,8 @@ func TestUserLoadAsTeam(t *testing.T) {
 		require.NoError(t, err)
 	}
 
-	// owner adds two members
-	mem := proto.NewRoleWithMember(0)
+	// owner adds two members as Admins (needed to allow for user loading via the team)
+	mem := proto.AdminRole
 	tm.makeChanges(
 		t,
 		m,
@@ -1421,6 +1423,7 @@ func TestUserLoadAsTeam(t *testing.T) {
 		[]proto.MemberRole{
 			coco.toMemberRole(t, mem, tm.hepks),
 			snickers.toMemberRole(t, mem, tm.hepks),
+			muffin.toMemberRole(t, proto.DefaultRole, tm.hepks),
 		},
 		nil,
 	)
@@ -1439,6 +1442,27 @@ func TestUserLoadAsTeam(t *testing.T) {
 		},
 	)
 	require.NoError(t, err)
+
+	// muffin fails to load coco since muffin is lowly member/0 in the team.
+	// need admin privs or higher.
+	tok = makeVOBearerTokenForUser(t, tm, muffin, nil)
+	require.NotNil(t, tok)
+	mMuffin := tew.NewClientMetaContext(t, muffin)
+	_, err = libclient.LoadUser(mMuffin,
+		libclient.LoadUserArg{
+			Uid:               coco.uid,
+			LoadMode:          libclient.LoadModeOthers,
+			TeamVOBearerToken: &tok,
+		},
+	)
+	require.Error(t, err)
+	require.Equal(t,
+		core.ChainLoaderError{
+			Err:  core.PermissionError("no view permission"),
+			Race: true,
+		},
+		err,
+	)
 }
 
 func TestTeamCertPutGet(t *testing.T) {

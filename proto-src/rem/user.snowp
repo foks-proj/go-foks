@@ -71,6 +71,11 @@ struct GrantLocalViewPermissionPayload @0xf620e4a9845fa063 {
     viewee @0 : lib.PartyID;
     viewer @1 : lib.PartyID;
     tm @2 : lib.Time;
+
+    // The min role the member has to have in the viewer to use the permission.
+    // Was NULL prior to v0.0.20; for NULL, assume default value of ADMIN, since that's
+    // the behavior, essentially, pre-v0.0.20.
+    viewerRole @3 : Option(lib.Role); 
 }
 
 struct ChangedUsernameFullUpdateArg {
