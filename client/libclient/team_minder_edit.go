@@ -668,12 +668,15 @@ func (t *TeamEditor) boxOneRemoteMemberViewToken(
 	if err != nil {
 		return err
 	}
+	mlf := t.tw.MemberLoadFloor()
+
 	rmvtk := proto.TeamRemoteMemberViewToken{
 		Team: t.id,
 		Inner: proto.TeamRemoteMemberViewTokenInner{
 			SecretBox: *sbox,
 			PtkGen:    ptk.Metadata().Gen,
 			Member:    rtp.Rmvtbp.Party,
+			PtkRole:   mlf,
 		},
 		Jrt: *jrt,
 	}
@@ -685,7 +688,13 @@ func (t *TeamEditor) boxAllRemoteMemberViewTokens(m MetaContext) error {
 	if len(t.rtps) == 0 {
 		return nil
 	}
-	ptk := t.tw.KeyRing().CurrentPrivateKeyAtRole(RemoteViewTokenEncryptionRole)
+	mlf := t.tw.MemberLoadFloor()
+	mlfRk, err := core.ImportRole(mlf)
+	if err != nil {
+		return err
+	}
+
+	ptk := t.tw.KeyRing().CurrentPrivateKeyAtRole(*mlfRk)
 	if ptk == nil {
 		return core.KeyNotFoundError{Which: "PTK"}
 	}

@@ -4,6 +4,7 @@
 package lib
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/foks-proj/go-foks/client/libclient"
@@ -516,4 +517,66 @@ func TestSimpleVhostAction(t *testing.T) {
 		Keys:    coco.KeySeq(t, proto.OwnerRole),
 	})
 	require.NoError(t, err)
+}
+
+// In v0.0.20 and above, it is possible to load the other members of a team
+// even if you are just a member/0 or above. so test this.
+func TestTeamLoadMembersAsNonAdmin(t *testing.T) {
+	tew := testEnvBeta(t)
+	pikachu := tew.NewTestUserOpts(t, &TestUserOpts{UsernamePrefix: "pika"})
+	charmander := tew.NewTestUserOpts(t, &TestUserOpts{UsernamePrefix: "char"})
+	sprigatito := tew.NewTestUserOpts(t, &TestUserOpts{UsernamePrefix: "sprig"})
+	tew.DirectDoubleMerklePokeInTest(t)
+
+	t0 := tew.makeTeamForOwner(t, pikachu)
+	m := tew.MetaContext()
+	tew.DirectMerklePokeInTest(t)
+
+	role := proto.DefaultRole
+	runLocalJoinSequenceForUser(t, m, t0, pikachu, charmander, role, nil)
+	tew.DirectMerklePokeInTest(t)
+	runLocalJoinSequenceForUser(t, m, t0, pikachu, sprigatito, role, nil)
+	tew.DirectMerklePokeInTest(t)
+
+	mc := tew.NewClientMetaContext(t, sprigatito)
+	twr, err := libclient.LoadTeam(mc, libclient.LoadTeamArg{
+		Team:        t0.FQTeam(t),
+		As:          sprigatito.FQUser().FQParty(),
+		SrcRole:     proto.OwnerRole,
+		Keys:        sprigatito.KeySeq(t, proto.OwnerRole),
+		LoadMembers: true,
+	})
+	require.NoError(t, err)
+	x, err := twr.ExportToRoster()
+	require.NoError(t, err)
+	fmt.Printf("Members: %v\n", x.Members)
+
+	expected := map[proto.NameUtf8]struct {
+		role proto.Role
+		uid  proto.UID
+	}{
+		charmander.name: {
+			role: role,
+			uid:  charmander.uid,
+		},
+		sprigatito.name: {
+			role: role,
+			uid:  sprigatito.uid,
+		},
+		pikachu.name: {
+			role: proto.OwnerRole,
+			uid:  pikachu.uid,
+		},
+	}
+	require.Equal(t, len(expected), len(x.Members))
+	for _, m := range x.Members {
+		e, ok := expected[m.Mem.Name]
+		require.True(t, ok, "unexpected member %s", m.Mem.Name)
+		require.Equal(t, e.role, m.DstRole)
+		require.True(t, m.Mem.Fqp.Party.IsUser())
+		uid, err := m.Mem.Fqp.Party.UID()
+		require.NoError(t, err)
+		require.Equal(t, e.uid, uid, "unexpected UID for member %s", m.Mem.Name)
+	}
+
 }

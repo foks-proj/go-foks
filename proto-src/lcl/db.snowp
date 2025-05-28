@@ -115,5 +115,6 @@ struct TeamChainState {
     hepks @11 : lib.HEPKSet;
     tir @12 : lib.RationalRange; // TeamIndexRange
     historicalSenders @13 : List(lib.SenderPair); // Senders we have used for unboxing in the past
+    memberLoadFloor @14 : Option(lib.Role); // Defaults to m/0 if not set.
 }
 

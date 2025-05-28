@@ -189,6 +189,7 @@ enum ChangeType {
     Eldest @2;
     Teamname @3;
     TeamIndexRange @4;
+    MemberLoadFloor @5;
 }
 
 enum DeviceType {
@@ -224,6 +225,17 @@ variant ChangeMetadata switch (t : ChangeType) {
     case DeviceName, Username, Teamname @0 : Commitment;
     case Eldest @1 : EldestMetadata;
     case TeamIndexRange @2 : RationalRange;
+
+    // The minimal target role that a member has to be in the team
+    // before they can view other teams (as a function of being in the team).
+    // This field was introduced in v0.0.20. Prior to that, we assumed
+    // it was hard-coded in at AdminRole, but only a few teams were created
+    // with this behavior. Going forward, with v0.0.20 and onward,
+    // we assume a default value of m/0 role if this field is left out
+    // (for pre-v0.0.20 chains). Going forward, with v0.0.20 and onward,
+    // this field is required in eldest team links. In the future,
+    // but not now, we might allow this field to be updated.
+    case MemberLoadFloor @3 : Role;
 }
 
 variant LinkOuter switch (v : LinkVersion) @0xed4cc0f7081732b6 {

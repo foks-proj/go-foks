@@ -1821,6 +1821,14 @@ var OwnerRole = NewRoleDefault(RoleType_OWNER)
 var AdminRole = NewRoleDefault(RoleType_ADMIN)
 var DefaultRole = NewRoleWithMember(VizLevel(0))
 var MinKVRole = NewRoleWithMember(VizLevelKvMin)
+var DefaultMemberLoadFloor = DefaultRole
+
+func (r *Role) WithDefaultMemberLoadFloor() Role {
+	if r == nil {
+		return DefaultMemberLoadFloor
+	}
+	return *r
+}
 
 func (d DeviceLabel) Eq(d2 DeviceLabel) bool {
 	return d.Name == d2.Name && d.Serial == d2.Serial
@@ -4770,4 +4778,17 @@ func (s SemVer) Cmp(s2 SemVer) int {
 
 func (s SemVer) String() string {
 	return fmt.Sprintf("%d.%d.%d", s.Major, s.Minor, s.Patch)
+}
+
+func (i TeamRemoteMemberViewTokenInner) GetPTKRole() (*Role, error) {
+	ret := i.PtkRole
+	typ, err := ret.GetT()
+	if err != nil {
+		return nil, err
+	}
+	if typ == RoleType_NONE {
+		ret := AdminRole
+		return &ret, nil
+	}
+	return &ret, nil
 }

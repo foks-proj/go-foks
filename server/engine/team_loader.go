@@ -235,5 +235,20 @@ func (u *UserClientConn) LoadTeamRemoteViewTokens(
 	return shared.LoadTeamRemoteViewTokens(m, arg)
 }
 
+func (u *UserClientConn) GetServerConfig(
+	ctx context.Context,
+) (
+	proto.RegServerConfig,
+	error,
+) {
+	m := shared.NewMetaContextConn(ctx, u)
+	var zed proto.RegServerConfig
+	ret, err := shared.GetServerConfig(m)
+	if err != nil {
+		return zed, err
+	}
+	return *ret, nil
+}
+
 var _ rem.TeamLoaderInterface = (*UserClientConn)(nil)
 var _ rem.TeamLoaderInterface = (*RegClientConn)(nil)

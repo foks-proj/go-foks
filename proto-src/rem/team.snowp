@@ -172,6 +172,8 @@ protocol TeamLoader errors lib.Status @0xf9128579 {
         tok @1 : TeamVOBearerToken,
         members @2 : List(lib.FQParty)
     ) -> TeamRemoteViewTokenSet;
+
+    getServerConfig @7 () : GetServerConfigTeamLoaderArg -> lib.RegServerConfig;
 }
 
 protocol TeamMember errors lib.Status @0xbda3b9d3 {

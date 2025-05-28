@@ -1146,18 +1146,12 @@ func (c *RegClientConn) ResolveUsername(
 
 func (c *RegClientConn) GetServerConfig(ctx context.Context) (proto.RegServerConfig, error) {
 	m := shared.NewMetaContextConn(ctx, c)
-	var ret proto.RegServerConfig
-	ssoCfg, err := shared.LoadSSOConfig(m, nil)
+	ret, err := shared.GetServerConfig(m)
+	var zed proto.RegServerConfig
 	if err != nil {
-		return ret, err
+		return zed, err
 	}
-	ret.Sso = ssoCfg
-	cfg, err := m.G().HostIDMap().Config(m, m.ShortHostID())
-	if err != nil {
-		return ret, err
-	}
-	ret.Typ = cfg.Typ
-	return ret, nil
+	return *ret, nil
 }
 
 func (c *RegClientConn) InitOAuth2Session(ctx context.Context, arg rem.InitOAuth2SessionArg) (proto.URLString, error) {

@@ -656,6 +656,10 @@ func TestTeamRemoteTeamInviteSequence(t *testing.T) {
 	m := tew.MetaContext()
 	doublePoke(t, m)
 	tm := tew.makeTeamForOwner(t, u)
+
+	mlfRole := proto.DefaultMemberLoadFloor
+	mlfRoleKey, err := core.ImportRole(mlfRole)
+	require.NoError(t, err)
 	ptk := tm.ptks[core.AdminRole]
 	require.NotNil(t, ptk)
 
@@ -786,7 +790,9 @@ func TestTeamRemoteTeamInviteSequence(t *testing.T) {
 		Tm:    proto.Now(),
 		Party: rjrp2.Joiner,
 	}
-	skey := ptk.SecretBoxKey()
+	ptkM0 := tm.ptks[*mlfRoleKey]
+	require.NotNil(t, ptkM0)
+	skey := ptkM0.SecretBoxKey()
 	sbox, err := core.SealIntoSecretBox(&vtbp, &skey)
 	require.NoError(t, err)
 	tid, err := tm.id.ToTeamID()
@@ -795,8 +801,9 @@ func TestTeamRemoteTeamInviteSequence(t *testing.T) {
 		Team: tid,
 		Inner: proto.TeamRemoteMemberViewTokenInner{
 			Member:    rjrp2.Joiner,
-			PtkGen:    ptk.Metadata().Gen,
+			PtkGen:    ptkM0.Metadata().Gen,
 			SecretBox: *sbox,
+			PtkRole:   mlfRole,
 		},
 		Jrt: jrtok,
 	}
@@ -1423,7 +1430,7 @@ func TestUserLoadAsTeam(t *testing.T) {
 		[]proto.MemberRole{
 			coco.toMemberRole(t, mem, tm.hepks),
 			snickers.toMemberRole(t, mem, tm.hepks),
-			muffin.toMemberRole(t, proto.DefaultRole, tm.hepks),
+			muffin.toMemberRole(t, proto.NewRoleWithMember(-4), tm.hepks),
 		},
 		nil,
 	)
@@ -1443,8 +1450,8 @@ func TestUserLoadAsTeam(t *testing.T) {
 	)
 	require.NoError(t, err)
 
-	// muffin fails to load coco since muffin is lowly member/0 in the team.
-	// need admin privs or higher.
+	// muffin fails to load coco since muffin is lowly member/-4 in the team.
+	// need m/0 privs or higher.
 	tok = makeVOBearerTokenForUser(t, tm, muffin, nil)
 	require.NotNil(t, tok)
 	mMuffin := tew.NewClientMetaContext(t, muffin)
@@ -1459,7 +1466,7 @@ func TestUserLoadAsTeam(t *testing.T) {
 	require.Equal(t,
 		core.ChainLoaderError{
 			Err:  core.PermissionError("no view permission"),
-			Race: true,
+			Race: false,
 		},
 		err,
 	)

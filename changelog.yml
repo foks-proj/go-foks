@@ -6,6 +6,8 @@ changelog:
     urgency: low
     stable: false
     changes:
+      - desc: Allow m/0's to load adjacent team members (previously it was only admins and above). This improves the output of `team ls` for non-admins
+        closes: ["#72"]
       - desc: Better error message for confusing case; team admin or above needed to make KV root
         closes: ["#67"]
       - desc: Actually try to rewrite the git-bash-mangled paths, rather than just warn; easy to backout if it's a flop

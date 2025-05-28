@@ -78,14 +78,9 @@ func GrantLocalViewPermission(
 		return zed, err
 	}
 
-	rolep := arg.ViewerRole
-	if rolep == nil {
-		// Default role was assumed to be admin, prior to version v0.0.20.
-		tmp := core.TemporaryDefaultViewerRole
-		rolep = &tmp
-	}
+	role := arg.ViewerRole.WithDefaultMemberLoadFloor()
 
-	ret, err := InsertLocalViewPermission(m, db, arg.Viewer, *rolep, arg.Viewee)
+	ret, err := InsertLocalViewPermission(m, db, arg.Viewer, role, arg.Viewee)
 	if err != nil {
 		return zed, err
 	}

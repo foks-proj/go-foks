@@ -55,6 +55,11 @@ struct TeamRemoteMemberViewTokenInner {
     member @0 : FQParty;
     ptkGen @1 : Generation; // The generation of the PTK it's encrypted for
     secretBox @2 : SecretBox; // The secret box of ViewTokenBoxPayload
+
+    // The PTK role it's encrypted for. Prior to v0.0.20, this value was
+    // missing, but was understood to be ADMIN. So a NONE value here
+    // is assumed to be ADMIN.
+    ptkRole @3 : Role; 
 }
 
 typedef TeamCertHash = StdHash;

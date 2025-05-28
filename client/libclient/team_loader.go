@@ -119,14 +119,16 @@ type TeamLoader struct {
 	ptks            *TeamKeyRing
 	rosterPre       *team.Roster
 	rosterPost      *team.Roster
-	otlrs           []team.OpeanTeamLinkRes
+	otlrs           []team.OpenTeamLinkRes
 	allMerkleLeaves []proto.MerkleLeaf
 	sctlsc          *proto.TreeLocationCommitment
+	memberLoadFloor *proto.Role
 	tncs            []proto.Commitment // team name commitments
 	tnseq           proto.NameSeqno
 	removalKey      *rem.TeamRemovalKey
 	rosterDetails   map[proto.FQEntityFixed]*rosterPackage
-	isAdmin         bool
+	canLoadMembers  bool
+	openView        bool
 	hepks           *core.HEPKSet
 	indexRange      *core.RationalRange
 	histSend        HistoricalSenders
@@ -234,6 +236,10 @@ func (l *TeamWrapper) RemovalKey() *rem.TeamRemovalKey {
 
 func (l *TeamWrapper) SeedCommitment() *proto.TreeLocationCommitment {
 	return &l.prot.Sctlsc
+}
+
+func (l *TeamWrapper) MemberLoadFloor() proto.Role {
+	return l.prot.MemberLoadFloor.WithDefaultMemberLoadFloor()
 }
 
 func (l *TeamLoader) Tok() *rem.TeamVOBearerToken {
@@ -378,10 +384,11 @@ func (w *TeamWrapper) ExportToRoster() (*lcl.TeamRoster, error) {
 	}
 	var roster []lcl.TeamRosterMember
 	for _, v := range w.rosterDetails {
-		if v.err == nil {
-			x := v.Export()
-			roster = append(roster, x)
-		}
+		// note that we still export the roster details even if we failed to load
+		// the user, since we still can display uid/hostid (just not username).
+		// i.e. we are not checking v.err here.
+		x := v.Export()
+		roster = append(roster, x)
 	}
 	slices.SortFunc(roster, func(a, b lcl.TeamRosterMember) int {
 		i := -1 * a.DstRole.SimpleCmp(b.DstRole)
@@ -734,7 +741,7 @@ func (l *TeamLoader) loadExistingTeam(m MetaContext) error {
 		return nil
 	}
 
-	// We've previously ran this team loaded before, and it's
+	// We've previously ran this team loader before, and it's
 	// up-to-date w/r/t what's on disk. Slight advantage here in
 	// that we won't have to unbox everything again.
 	if l.preload != nil {
@@ -746,6 +753,8 @@ func (l *TeamLoader) loadExistingTeam(m MetaContext) error {
 		l.existing = l.preload
 		l.preload = nil
 		l.sctlsc = &l.existing.Sctlsc
+		l.memberLoadFloor = l.existing.MemberLoadFloor
+
 		err := loadHEPKs()
 		if err != nil {
 			return err
@@ -781,6 +790,7 @@ func (l *TeamLoader) loadExistingTeam(m MetaContext) error {
 	l.newState = l.existing
 	l.histSend.Load(ret.HistoricalSenders)
 	l.sctlsc = &ret.Sctlsc
+	l.memberLoadFloor = ret.MemberLoadFloor
 
 	err = loadHEPKs()
 	if err != nil {
@@ -923,12 +933,13 @@ func (l *TeamLoader) checkRes(m MetaContext) error {
 	return nil
 }
 
-func (l *TeamLoader) playLinkEldest(m MetaContext, link *proto.LinkOuter, otlr team.OpeanTeamLinkRes) error {
+func (l *TeamLoader) playLinkEldest(m MetaContext, link *proto.LinkOuter, otlr team.OpenTeamLinkRes) error {
 	res, err := team.OpenEldestLinkWithOTLR(link, l.Arg.Team.Host, &otlr)
 	if err != nil {
 		return err
 	}
 	l.sctlsc = &res.Stltc
+	l.memberLoadFloor = res.MemberLoadFloor
 
 	return nil
 }
@@ -945,7 +956,7 @@ func (l *TeamLoader) addIndexRangeEldest(rng *core.RationalRange) error {
 	return nil
 }
 
-func (l *TeamLoader) playLink(m MetaContext, link *proto.LinkOuter, otlr team.OpeanTeamLinkRes) error {
+func (l *TeamLoader) playLink(m MetaContext, link *proto.LinkOuter, otlr team.OpenTeamLinkRes) error {
 
 	// Hold onto all team names
 	if otlr.Tnc != nil {
@@ -1195,23 +1206,35 @@ func (l *TeamLoader) runOnce(m MetaContext) error {
 	return nil
 }
 
-var RemoteViewTokenEncryptionRole = core.AdminRole
-
 func (p *rosterPackage) decrypt(
 	m MetaContext,
-	ptks *TeamKeysForRole,
+	kr *TeamKeyRing,
 ) error {
 	if p.remote == nil {
 		return nil
 	}
+	role, err := p.remote.tokBox.GetPTKRole()
+	if err != nil {
+		return err
+	}
+	rk, err := core.ImportRole(*role)
+	if err != nil {
+		return err
+	}
+
+	ptks := kr.KeysForRole(*rk)
+	if !ptks.HasPrivates() {
+		return core.KeyNotFoundError{Which: "remote view token decrypt"}
+	}
+
 	gen := p.remote.tokBox.PtkGen
 	key := ptks.At(gen)
 	if key == nil {
-		return core.PTKNotFound{Gen: gen, Role: RemoteViewTokenEncryptionRole.Export()}
+		return core.PTKNotFound{Gen: gen, Role: *role}
 	}
 	sbkey := key.SecretBoxKey()
 	var payload proto.TeamRemoteMemberViewTokenBoxPayload
-	err := core.OpenSecretBoxInto(&payload,
+	err = core.OpenSecretBoxInto(&payload,
 		p.remote.tokBox.SecretBox,
 		&sbkey,
 	)
@@ -1237,16 +1260,12 @@ func (l *TeamLoader) updateHEPKs(m MetaContext) error {
 func (l *TeamLoader) openRemoteViewTokens(
 	m MetaContext,
 ) error {
-	if !l.isAdmin {
+	if !l.canLoadMembers {
 		return nil
-	}
-	ptks := l.ptks.KeysForRole(RemoteViewTokenEncryptionRole)
-	if !ptks.HasPrivates() {
-		return core.KeyNotFoundError{Which: "remote view token decrypt"}
 	}
 	for _, tok := range l.rosterDetails {
 		// Just warn if we can't decrypt
-		err := tok.decrypt(m, ptks)
+		err := tok.decrypt(m, l.ptks)
 		if err != nil {
 			m.Warnw("TeamLoader.openRemoteViewTokens", "err", err, "stage", "decrypt")
 		}
@@ -1265,7 +1284,9 @@ func (p *rosterPackage) load(m MetaContext, l *TeamLoader) error {
 	}
 	switch {
 	case uid != nil:
-		arg := LoadUserArg{Uid: *uid, LoadMode: LoadModeOthers}
+		mode := core.Sel(l.openView, LoadModeOpenOthers, LoadModeOthers)
+
+		arg := LoadUserArg{Uid: *uid, LoadMode: mode}
 		if p.isRemote {
 			arg.Host = &LoadUserHost{
 				HostID: p.fqp.Host,
@@ -1306,7 +1327,7 @@ func (p *rosterPackage) load(m MetaContext, l *TeamLoader) error {
 func (l *TeamLoader) loadMembers(
 	m MetaContext,
 ) error {
-	if !l.isAdmin {
+	if !l.canLoadMembers {
 		return nil
 	}
 	for _, rd := range l.rosterDetails {
@@ -1319,7 +1340,7 @@ func (l *TeamLoader) loadMembers(
 	return nil
 }
 
-func (l *TeamLoader) setAdminFlag(m MetaContext) error {
+func (l *TeamLoader) setCanLoadMembersFlag(m MetaContext) error {
 	role, err := l.destRoleForLoader(m)
 	if err != nil {
 		return err
@@ -1327,7 +1348,33 @@ func (l *TeamLoader) setAdminFlag(m MetaContext) error {
 	if role == nil {
 		return core.TeamError("loader wasn't found in loaded team")
 	}
-	l.isAdmin = role.IsAdminOrAbove()
+	mlf := l.memberLoadFloor.WithDefaultMemberLoadFloor()
+	mlfKey, err := core.ImportRole(mlf)
+	if err != nil {
+		return err
+	}
+
+	// we can load the team members if our role in the team is great than or equal
+	// to the member load floor.
+	canLoad := !role.LessThan(*mlfKey)
+	if canLoad {
+		l.canLoadMembers = true
+		return nil
+	}
+
+	// if it's an open host, we're allowed to load members, even if under
+	// the lower limit
+	cfg, err := l.rpcLoader.GetServerConfig(m.Ctx())
+	if err != nil {
+		return err
+	}
+
+	if cfg.View.User == proto.ViewershipMode_OpenToAll {
+		l.canLoadMembers = true
+		l.openView = true
+		return nil
+	}
+
 	return nil
 }
 
@@ -1344,7 +1391,7 @@ func (l *TeamLoader) loadTokensAndMembers(
 	if l.Arg.Keys == nil {
 		return nil
 	}
-	err := l.setAdminFlag(m)
+	err := l.setCanLoadMembersFlag(m)
 	if err != nil {
 		return err
 	}
@@ -1395,7 +1442,7 @@ func (l *TeamLoader) loadAllRemoteViewTokens(
 	m MetaContext,
 ) error {
 
-	if !l.isAdmin {
+	if !l.canLoadMembers {
 		return nil
 	}
 
@@ -1651,6 +1698,7 @@ func (l *TeamLoader) saveState(m MetaContext) error {
 		Hepks:             l.hepks.Export(),
 		Tir:               ir,
 		HistoricalSenders: l.histSend.Export(),
+		MemberLoadFloor:   l.memberLoadFloor,
 	}
 	if l.sctlsc == nil {
 		return core.InternalError("no 'sctlsc' set; it should be set in save(); refusing to save")

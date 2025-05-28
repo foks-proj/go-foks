@@ -29,6 +29,7 @@ struct UserContext {
 struct RegServerConfig {
     sso @0 : Option(SSOConfig);
     typ @1 : HostType; 
+    view @2 : HostViewership;
 }
 
 typedef Email = Text;

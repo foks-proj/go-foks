@@ -490,12 +490,14 @@ type TeamRemoteMemberViewTokenInner struct {
 	Member    FQParty
 	PtkGen    Generation
 	SecretBox SecretBox
+	PtkRole   Role
 }
 type TeamRemoteMemberViewTokenInnerInternal__ struct {
 	_struct   struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Member    *FQPartyInternal__
 	PtkGen    *GenerationInternal__
 	SecretBox *SecretBoxInternal__
+	PtkRole   *RoleInternal__
 }
 
 func (t TeamRemoteMemberViewTokenInnerInternal__) Import() TeamRemoteMemberViewTokenInner {
@@ -518,6 +520,12 @@ func (t TeamRemoteMemberViewTokenInnerInternal__) Import() TeamRemoteMemberViewT
 			}
 			return x.Import()
 		})(t.SecretBox),
+		PtkRole: (func(x *RoleInternal__) (ret Role) {
+			if x == nil {
+				return ret
+			}
+			return x.Import()
+		})(t.PtkRole),
 	}
 }
 func (t TeamRemoteMemberViewTokenInner) Export() *TeamRemoteMemberViewTokenInnerInternal__ {
@@ -525,6 +533,7 @@ func (t TeamRemoteMemberViewTokenInner) Export() *TeamRemoteMemberViewTokenInner
 		Member:    t.Member.Export(),
 		PtkGen:    t.PtkGen.Export(),
 		SecretBox: t.SecretBox.Export(),
+		PtkRole:   t.PtkRole.Export(),
 	}
 }
 func (t *TeamRemoteMemberViewTokenInner) Encode(enc rpc.Encoder) error {

@@ -518,8 +518,9 @@ func scanTeamRemoteViewToks(
 	var ret []proto.TeamRemoteMemberViewTokenInner
 	for rows.Next() {
 		var pidRaw, hidRaw, box []byte
+		var rt, vl int
 		var gen int
-		err := rows.Scan(&pidRaw, &hidRaw, &gen, &box)
+		err := rows.Scan(&pidRaw, &hidRaw, &gen, &box, &rt, &vl)
 		if err != nil {
 			return nil, err
 		}
@@ -537,6 +538,10 @@ func scanTeamRemoteViewToks(
 		if err != nil {
 			return nil, err
 		}
+		ptkRole, err := proto.ImportRoleFromDB(rt, vl)
+		if err != nil {
+			return nil, err
+		}
 		row := proto.TeamRemoteMemberViewTokenInner{
 			Member: proto.FQParty{
 				Party: pid,
@@ -544,6 +549,7 @@ func scanTeamRemoteViewToks(
 			},
 			PtkGen:    proto.Generation(gen),
 			SecretBox: sb,
+			PtkRole:   *ptkRole,
 		}
 		ret = append(ret, row)
 	}
@@ -558,7 +564,8 @@ func (l *TeamLoader) loadRemoteViewTokens(m MetaContext) error {
 		return core.BadArgsError("cannot load remote view tokens without a VO bearer token")
 	}
 	rows, err := l.db.Query(m.Ctx(),
-		`SELECT member_id, member_host_id, ptk_gen, secret_box
+		`SELECT member_id, member_host_id, ptk_gen, secret_box, 
+		    ptk_role_type, ptk_viz_level
 		 FROM team_remote_member_view_tokens
 		 WHERE short_host_id=$1 AND team_id=$2`,
 		m.ShortHostID(),
@@ -725,12 +732,16 @@ func LoadTeamRemoteViewTokens(
 ) {
 	var ret rem.TeamRemoteViewTokenSet
 	err := withTeamAndTok(m, arg.Team, arg.Tok, func(m MetaContext, db *pgxpool.Conn, r proto.Role) error {
-		ok, err := r.IsAdminOrAbove()
+		mlf, err := LoadMemberLoadFloor(m, db, arg.Team.Team)
 		if err != nil {
 			return err
 		}
-		if !ok {
-			return core.PermissionError("must be admin to load remote view tokens")
+		lt, err := r.LessThan(*mlf)
+		if err != nil {
+			return err
+		}
+		if lt {
+			return core.PermissionError("insufficient permissions to load remote view tokens")
 		}
 		parties := make([][]byte, len(arg.Members))
 		hosts := make([][]byte, len(arg.Members))
@@ -739,7 +750,8 @@ func LoadTeamRemoteViewTokens(
 			hosts[i] = ExportHostInScope(m, mem.Host)
 		}
 		rows, err := db.Query(m.Ctx(),
-			`SELECT t.member_id, t.member_host_id, t.ptk_gen, t.secret_box
+			`SELECT t.member_id, t.member_host_id, t.ptk_gen, t.secret_box,
+				t.ptk_role_type, t.ptk_viz_level	
  			FROM unnest($1::bytea[], $2::bytea[]) AS m(member_id, member_host_id)
 			JOIN team_remote_member_view_tokens AS t USING (member_id, member_host_id)
 			WHERE t.short_host_id=$3 AND t.team_id=$4`,

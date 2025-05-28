@@ -236,10 +236,10 @@ func TestTeamLoaderPermissions(t *testing.T) {
 	require.Error(t, err)
 	require.Equal(t, core.NotFoundError("team vo bearer token"), err)
 
-	// Add boto to tm0 as a member/0. We're going to test that
+	// Add boto to tm0 as a member/-3. We're going to test that
 	// he can't load tm1 with tm0's view-only token, since his role
 	// in tm0 is not high enough.
-	mr := boto.toMemberRole(t, proto.DefaultRole, tm0.hepks)
+	mr := boto.toMemberRole(t, proto.NewRoleWithMember(-3), tm0.hepks)
 	tm0.makeChanges(
 		t,
 		m,

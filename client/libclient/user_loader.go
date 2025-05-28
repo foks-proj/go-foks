@@ -516,7 +516,7 @@ func (u *UserLoader) loadUserFromServer(m MetaContext) error {
 	res, err := u.rpcLoader.LoadUserChain(m.Ctx(), arg)
 	if err != nil {
 		race := true
-		if core.IsAuthError(err) {
+		if core.IsAuthError(err) || core.IsPermissionError(err) {
 			race = false
 		}
 		return core.ChainLoaderError{

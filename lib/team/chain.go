@@ -11,7 +11,7 @@ import (
 
 type PTKGens map[core.RoleKey]proto.Generation
 
-type OpeanTeamLinkRes struct {
+type OpenTeamLinkRes struct {
 	Gc         proto.GroupChange
 	SharedKeys []core.SharedPublicSuite
 	signer     core.EntityPublic
@@ -22,8 +22,13 @@ type OpeanTeamLinkRes struct {
 }
 
 type OpenEldestRes struct {
-	OpeanTeamLinkRes
-	Stltc proto.TreeLocationCommitment
+	OpenTeamLinkRes
+	Stltc           proto.TreeLocationCommitment
+	MemberLoadFloor *proto.Role
+}
+
+func (o *OpenEldestRes) MemberLoadFloorOrDefault() proto.Role {
+	return o.MemberLoadFloor.WithDefaultMemberLoadFloor()
 }
 
 func OpenEldestLink(
@@ -69,14 +74,14 @@ func findSharedKeyForRole(k []proto.SharedKey, role proto.Role) (*proto.SharedKe
 func OpenEldestLinkWithOTLR(
 	link *proto.LinkOuter,
 	hostID proto.HostID,
-	otlr *OpeanTeamLinkRes,
+	otlr *OpenTeamLinkRes,
 ) (
 	*OpenEldestRes,
 	error,
 ) {
 
 	ret := OpenEldestRes{
-		OpeanTeamLinkRes: *otlr,
+		OpenTeamLinkRes: *otlr,
 	}
 
 	if len(otlr.Gc.Metadata) < 3 {
@@ -111,6 +116,21 @@ func OpenEldestLinkWithOTLR(
 	}
 	tmp := core.NewRationalRange(otlr.Gc.Metadata[2].Teamindexrange())
 	ret.Range = &tmp
+
+	// Prior to v0.0.20, there were only 3 metadata entries for teams.
+	// At v0.0.20 and above, the fourth metadata entry is the member load floor.
+	if len(otlr.Gc.Metadata) > 3 {
+		md3 := otlr.Gc.Metadata[3]
+		typ, err = md3.GetT()
+		if err != nil {
+			return nil, err
+		}
+		if typ != proto.ChangeType_MemberLoadFloor {
+			return nil, core.LinkError("fourth metadata entry must be a member load floor")
+		}
+		tmp := md3.Memberloadfloor()
+		ret.MemberLoadFloor = &tmp
+	}
 
 	err = core.CheckEldestChainer(otlr.Gc.Chainer.Base)
 	if err != nil {
@@ -170,7 +190,7 @@ func OpenTeamLink(
 	hostID proto.HostID,
 	rPre *Roster,
 ) (
-	*OpeanTeamLinkRes,
+	*OpenTeamLinkRes,
 	error,
 ) {
 
@@ -253,7 +273,7 @@ func OpenTeamLink(
 		}
 	}
 
-	ret := OpeanTeamLinkRes{
+	ret := OpenTeamLinkRes{
 		Gc:         *gc,
 		SharedKeys: sharedKeys,
 		signer:     signerEp,
@@ -397,6 +417,9 @@ func MakeEldestLink(
 			),
 			proto.NewChangeMetadataWithTeamindexrange(
 				core.NewDefaultRange().RationalRange,
+			),
+			proto.NewChangeMetadataWithMemberloadfloor(
+				proto.DefaultMemberLoadFloor,
 			),
 		},
 	}

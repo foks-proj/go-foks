@@ -241,7 +241,7 @@ func InsertPTKs(
 	tx pgx.Tx,
 	team proto.EntityID,
 	doer proto.EntityID,
-	openres team.OpeanTeamLinkRes,
+	openres team.OpenTeamLinkRes,
 	obd rem.OffchainBoxData,
 ) error {
 
@@ -889,23 +889,26 @@ func loadTeamCertByHashWithDB(
 func InsertRemoteMemberViewTokens(
 	m MetaContext,
 	tx pgx.Tx,
-	team proto.EntityID,
+	team proto.TeamID,
 	toks []proto.TeamRemoteMemberViewToken,
 ) error {
-	ptkRole := core.TemporaryDefaultViewerRole
-	rt, vl, err := ptkRole.ExportToDB()
-	if err != nil {
-		return err
-	}
 
 	for _, tok := range toks {
 		if tok.Inner.Member.Host.Eq(m.HostID().Id) {
 			return core.TeamError("cannot insert local member view token")
 		}
-		if !tok.Team.EntityID().Eq(team) {
+		if !tok.Team.Eq(team) {
 			return core.TeamError("wrong team for token")
 		}
 		b, err := core.EncodeToBytes(&tok.Inner.SecretBox)
+		if err != nil {
+			return err
+		}
+		mlf, err := tok.Inner.GetPTKRole()
+		if err != nil {
+			return err
+		}
+		rt, vl, err := mlf.ExportToDB()
 		if err != nil {
 			return err
 		}
@@ -1553,9 +1556,14 @@ func acceptInviteLocal(
 
 	// For now, default to admin as to the role in the team that can load the owner (which is all admins
 	// and above).
-	viewerPermRole := core.TemporaryDefaultViewerRole
+	mlf, err := LoadMemberLoadFloor(m, tx, certPayload.Team.Team)
+	if err != nil {
+		return nil, err
+	}
 
-	tok, err := InsertLocalViewPermission(m, tx, certPayload.Team.Team.ToPartyID(), viewerPermRole, viewee)
+	tok, err := InsertLocalViewPermission(
+		m, tx, certPayload.Team.Team.ToPartyID(),
+		*mlf, viewee)
 	if err != nil {
 		return nil, err
 	}
@@ -2083,4 +2091,61 @@ func GetNamedTeamListForUser(
 	}
 	return ret, nil
 
+}
+
+func InsertMemberLoadFloor(
+	m MetaContext,
+	tx pgx.Tx,
+	teamID proto.TeamID,
+	role proto.Role,
+) error {
+	rk, vl, err := role.ExportToDB()
+	if err != nil {
+		return err
+	}
+
+	tag, err := tx.Exec(m.Ctx(),
+		`INSERT INTO team_member_load_floor
+		 (short_host_id, team_id, seqno, role_type, viz_level, ctime)
+		VALUES($1, $2, $3, $4, $5, NOW())`,
+		m.ShortHostID().ExportToDB(),
+		teamID.ExportToDB(),
+		int(proto.ChainEldestSeqno),
+		rk,
+		vl,
+	)
+	if err != nil {
+		return err
+	}
+	if tag.RowsAffected() != 1 {
+		return core.InsertError("team_member_load_floor")
+	}
+	return nil
+}
+
+func LoadMemberLoadFloor(
+	m MetaContext,
+	rq Querier,
+	teamID proto.TeamID,
+) (
+	*proto.Role,
+	error,
+) {
+	var rk, vl int
+	err := rq.QueryRow(m.Ctx(),
+		`SELECT role_type, viz_level FROM team_member_load_floor
+		 WHERE short_host_id=$1 AND team_id=$2
+		 ORDER BY seqno DESC`,
+		m.ShortHostID().ExportToDB(),
+		teamID.ExportToDB(),
+	).Scan(&rk, &vl)
+
+	if errors.Is(err, pgx.ErrNoRows) {
+		def := proto.DefaultMemberLoadFloor
+		return &def, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return proto.ImportRoleFromDB(rk, vl)
 }

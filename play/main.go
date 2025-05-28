@@ -34,6 +34,7 @@ import (
 	"strings"
 
 	"github.com/go-piv/piv-go/v2/piv"
+	"github.com/keybase/go-codec/codec"
 )
 
 var pinOld = piv.DefaultPIN
@@ -197,8 +198,50 @@ func ff(doErr bool) (err error) {
 	return nil
 }
 
-func main() {
+func Main4() {
 	fmt.Printf("%v\n", ff(true))
 	fmt.Printf("%v\n", ff(false))
+}
+
+type Obj1 struct {
+	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
+	F1      *int
+	F2      *string
+}
+
+type Obj2 struct {
+	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
+	F1      *int
+	F2      *string
+	F3      *int
+}
+
+func main() {
+
+	i := 10
+	s := "yo"
+
+	o1 := &Obj1{
+		F1: &i,
+		F2: &s,
+	}
+	var mh codec.MsgpackHandle
+	mh.WriteExt = true
+	var buf []byte
+
+	enc := codec.NewEncoderBytes(&buf, &mh)
+	err := enc.Encode(o1)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Printf("%+v\n", buf)
+
+	var o2 Obj2
+	dec := codec.NewDecoderBytes(buf, &mh)
+	err = dec.Decode(&o2)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Printf("%+v\n", o2)
 
 }

@@ -1171,15 +1171,23 @@ func runRemoteJoinSequence(
 		Tm:    proto.Now(),
 		Party: joinerParty,
 	}
-	skey := ptk.SecretBoxKey()
+
+	mlfRole := proto.DefaultMemberLoadFloor
+	mlfRoleKey, err := core.ImportRole(mlfRole)
+	require.NoError(t, err)
+
+	ptkM0 := tm.ptks[*mlfRoleKey]
+	require.NotNil(t, ptkM0)
+	skey := ptkM0.SecretBoxKey()
 	sbox, err := core.SealIntoSecretBox(&vtbp, &skey)
 	require.NoError(t, err)
 	trmvt := proto.TeamRemoteMemberViewToken{
 		Team: tm.FQTeam(t).Team,
 		Inner: proto.TeamRemoteMemberViewTokenInner{
 			Member:    joinerParty,
-			PtkGen:    ptk.Metadata().Gen,
+			PtkGen:    ptkM0.Metadata().Gen,
 			SecretBox: *sbox,
+			PtkRole:   mlfRole,
 		},
 		Jrt: jrtok,
 	}

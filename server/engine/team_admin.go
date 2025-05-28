@@ -31,7 +31,7 @@ type teamEditor struct {
 	vtab      teamEditInterface
 	tx        pgx.Tx
 	arg       rem.EditTeamArg
-	openres   *team.OpeanTeamLinkRes
+	openres   *team.OpenTeamLinkRes
 	signer    proto.EntityID
 	teamID    proto.TeamID
 	name      proto.Name
@@ -43,19 +43,19 @@ type teamEditor struct {
 
 type teamCreator struct {
 	*teamEditor
-	openeres *team.OpenEldestRes
-	arg      rem.CreateTeamArg
+	openEldestRes *team.OpenEldestRes
+	arg           rem.CreateTeamArg
 }
 
 type teamEditInterface interface {
 	insertCreateTeam(m shared.MetaContext) error
-	openLink(m shared.MetaContext) (*team.OpeanTeamLinkRes, error)
+	openLink(m shared.MetaContext) (*team.OpenTeamLinkRes, error)
 }
 
 func (e *teamEditor) insertCreateTeam(m shared.MetaContext) error { return nil }
 
-func (c *teamCreator) openLink(m shared.MetaContext) (*team.OpeanTeamLinkRes, error) {
-	return &c.openeres.OpeanTeamLinkRes, nil
+func (c *teamCreator) openLink(m shared.MetaContext) (*team.OpenTeamLinkRes, error) {
+	return &c.openEldestRes.OpenTeamLinkRes, nil
 }
 
 var _ teamEditInterface = (*teamCreator)(nil)
@@ -199,7 +199,7 @@ func (c *teamCreator) insertCreateTeam(
 		c.name,
 		c.arg.NameUtf8,
 		&c.arg.TeamnameCommitmentKey,
-		c.openeres.Tnc,
+		c.openEldestRes.Tnc,
 		c.arg.Rnr.Seq,
 		rem.NameType_Team,
 	)
@@ -212,11 +212,20 @@ func (c *teamCreator) insertCreateTeam(
 	}
 
 	err = shared.InsertSubchainTreeLocationSeed(m, c.tx, c.teamID.ToPartyID(),
-		c.arg.SubchainTreeLocationSeed, c.openeres.Stltc)
+		c.arg.SubchainTreeLocationSeed, c.openEldestRes.Stltc)
 	if err != nil {
 		return err
 	}
 
+	err = shared.InsertMemberLoadFloor(
+		m,
+		c.tx,
+		c.teamID,
+		c.openEldestRes.MemberLoadFloorOrDefault(),
+	)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -346,7 +355,7 @@ func (c *teamEditor) insertRemoteMemberViewTokens(
 	return shared.InsertRemoteMemberViewTokens(
 		m,
 		c.tx,
-		c.teamID.EntityID(),
+		c.teamID,
 		c.arg.Obd.RemoteMemberViewTokens,
 	)
 }
@@ -412,8 +421,8 @@ func (c *teamCreator) run(
 		return err
 	}
 
-	c.openeres = openRes
-	c.teamEditor.openres = &openRes.OpeanTeamLinkRes
+	c.openEldestRes = openRes
+	c.teamEditor.openres = &openRes.OpenTeamLinkRes
 	c.teamID, err = openRes.Gc.Entity.Entity.ToTeamID()
 	if err != nil {
 		return err
@@ -437,10 +446,7 @@ func (c *teamCreator) run(
 		return err
 	}
 
-	// Eventually this will be specified in the team chain, but before then, default to
-	// admin as to the role in the team that can load the owner (which is all admins
-	// and above). This mimics the behavior prior to v0.0.20.
-	viewerPermRole := core.TemporaryDefaultViewerRole
+	viewerPermRole := c.openEldestRes.MemberLoadFloorOrDefault()
 
 	// Owner gives permission to *future* members to load him, once they are allowed
 	// into the group. Otherwise, they can't.
@@ -468,7 +474,7 @@ func (e *teamEditor) runEdit(m shared.MetaContext) error {
 	return e.runEditCommon(m)
 }
 
-func (c *teamEditor) openLink(m shared.MetaContext) (*team.OpeanTeamLinkRes, error) {
+func (c *teamEditor) openLink(m shared.MetaContext) (*team.OpenTeamLinkRes, error) {
 	roster, prev, err := shared.LoadRoster(m, c.tx, c.teamID)
 	if err != nil {
 		return nil, err

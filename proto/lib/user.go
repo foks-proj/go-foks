@@ -269,13 +269,15 @@ func (u *UserContext) Decode(dec rpc.Decoder) error {
 func (u *UserContext) Bytes() []byte { return nil }
 
 type RegServerConfig struct {
-	Sso *SSOConfig
-	Typ HostType
+	Sso  *SSOConfig
+	Typ  HostType
+	View HostViewership
 }
 type RegServerConfigInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Sso     *SSOConfigInternal__
 	Typ     *HostTypeInternal__
+	View    *HostViewershipInternal__
 }
 
 func (r RegServerConfigInternal__) Import() RegServerConfig {
@@ -298,6 +300,12 @@ func (r RegServerConfigInternal__) Import() RegServerConfig {
 			}
 			return x.Import()
 		})(r.Typ),
+		View: (func(x *HostViewershipInternal__) (ret HostViewership) {
+			if x == nil {
+				return ret
+			}
+			return x.Import()
+		})(r.View),
 	}
 }
 func (r RegServerConfig) Export() *RegServerConfigInternal__ {
@@ -308,7 +316,8 @@ func (r RegServerConfig) Export() *RegServerConfigInternal__ {
 			}
 			return (*x).Export()
 		})(r.Sso),
-		Typ: r.Typ.Export(),
+		Typ:  r.Typ.Export(),
+		View: r.View.Export(),
 	}
 }
 func (r *RegServerConfig) Encode(enc rpc.Encoder) error {

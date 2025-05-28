@@ -1040,6 +1040,7 @@ type TeamChainState struct {
 	Hepks             lib.HEPKSet
 	Tir               lib.RationalRange
 	HistoricalSenders []lib.SenderPair
+	MemberLoadFloor   *lib.Role
 }
 type TeamChainStateInternal__ struct {
 	_struct           struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
@@ -1057,6 +1058,7 @@ type TeamChainStateInternal__ struct {
 	Hepks             *lib.HEPKSetInternal__
 	Tir               *lib.RationalRangeInternal__
 	HistoricalSenders *[](*lib.SenderPairInternal__)
+	MemberLoadFloor   *lib.RoleInternal__
 }
 
 func (t TeamChainStateInternal__) Import() TeamChainState {
@@ -1223,6 +1225,18 @@ func (t TeamChainStateInternal__) Import() TeamChainState {
 			}
 			return ret
 		})(t.HistoricalSenders),
+		MemberLoadFloor: (func(x *lib.RoleInternal__) *lib.Role {
+			if x == nil {
+				return nil
+			}
+			tmp := (func(x *lib.RoleInternal__) (ret lib.Role) {
+				if x == nil {
+					return ret
+				}
+				return x.Import()
+			})(x)
+			return &tmp
+		})(t.MemberLoadFloor),
 	}
 }
 func (t TeamChainState) Export() *TeamChainStateInternal__ {
@@ -1300,6 +1314,12 @@ func (t TeamChainState) Export() *TeamChainStateInternal__ {
 			}
 			return &ret
 		})(t.HistoricalSenders),
+		MemberLoadFloor: (func(x *lib.Role) *lib.RoleInternal__ {
+			if x == nil {
+				return nil
+			}
+			return (*x).Export()
+		})(t.MemberLoadFloor),
 	}
 }
 func (t *TeamChainState) Encode(enc rpc.Encoder) error {

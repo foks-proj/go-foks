@@ -1954,6 +1954,34 @@ func (l *LoadTeamRemoteViewTokensArg) Decode(dec rpc.Decoder) error {
 
 func (l *LoadTeamRemoteViewTokensArg) Bytes() []byte { return nil }
 
+type GetServerConfigTeamLoaderArg struct {
+}
+type GetServerConfigTeamLoaderArgInternal__ struct {
+	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
+}
+
+func (g GetServerConfigTeamLoaderArgInternal__) Import() GetServerConfigTeamLoaderArg {
+	return GetServerConfigTeamLoaderArg{}
+}
+func (g GetServerConfigTeamLoaderArg) Export() *GetServerConfigTeamLoaderArgInternal__ {
+	return &GetServerConfigTeamLoaderArgInternal__{}
+}
+func (g *GetServerConfigTeamLoaderArg) Encode(enc rpc.Encoder) error {
+	return enc.Encode(g.Export())
+}
+
+func (g *GetServerConfigTeamLoaderArg) Decode(dec rpc.Decoder) error {
+	var tmp GetServerConfigTeamLoaderArgInternal__
+	err := dec.Decode(&tmp)
+	if err != nil {
+		return err
+	}
+	*g = tmp.Import()
+	return nil
+}
+
+func (g *GetServerConfigTeamLoaderArg) Bytes() []byte { return nil }
+
 type TeamLoaderInterface interface {
 	GetTeamVOBearerTokenChallenge(context.Context, TeamVOBearerTokenReq) (TeamVOBearerTokenChallenge, error)
 	ActivateTeamVOBearerToken(context.Context, ActivateTeamVOBearerTokenArg) (ActivatedVOBearerToken, error)
@@ -1962,6 +1990,7 @@ type TeamLoaderInterface interface {
 	LoadTeamMembershipChain(context.Context, LoadTeamMembershipChainArg) (GenericChain, error)
 	LoadRemovalForMember(context.Context, LoadRemovalForMemberArg) (TeamRemovalAndKeyBox, error)
 	LoadTeamRemoteViewTokens(context.Context, LoadTeamRemoteViewTokensArg) (TeamRemoteViewTokenSet, error)
+	GetServerConfig(context.Context) (lib.RegServerConfig, error)
 	ErrorWrapper() func(error) lib.Status
 }
 
@@ -2070,6 +2099,17 @@ func (c TeamLoaderClient) LoadTeamRemoteViewTokens(ctx context.Context, arg Load
 	warg := arg.Export()
 	var tmp TeamRemoteViewTokenSetInternal__
 	err = c.Cli.Call2(ctx, rpc.NewMethodV2(TeamLoaderProtocolID, 6, "TeamLoader.loadTeamRemoteViewTokens"), warg, &tmp, 0*time.Millisecond, teamLoaderErrorUnwrapperAdapter{h: c.ErrorUnwrapper})
+	if err != nil {
+		return
+	}
+	res = tmp.Import()
+	return
+}
+func (c TeamLoaderClient) GetServerConfig(ctx context.Context) (res lib.RegServerConfig, err error) {
+	var arg GetServerConfigTeamLoaderArg
+	warg := arg.Export()
+	var tmp lib.RegServerConfigInternal__
+	err = c.Cli.Call2(ctx, rpc.NewMethodV2(TeamLoaderProtocolID, 7, "TeamLoader.getServerConfig"), warg, &tmp, 0*time.Millisecond, teamLoaderErrorUnwrapperAdapter{h: c.ErrorUnwrapper})
 	if err != nil {
 		return
 	}
@@ -2227,6 +2267,27 @@ func TeamLoaderProtocol(i TeamLoaderInterface) rpc.ProtocolV2 {
 					},
 				},
 				Name: "loadTeamRemoteViewTokens",
+			},
+			7: {
+				ServeHandlerDescription: rpc.ServeHandlerDescription{
+					MakeArg: func() interface{} {
+						var ret GetServerConfigTeamLoaderArgInternal__
+						return &ret
+					},
+					Handler: func(ctx context.Context, args interface{}) (interface{}, error) {
+						_, ok := args.(*GetServerConfigTeamLoaderArgInternal__)
+						if !ok {
+							err := rpc.NewTypeError((*GetServerConfigTeamLoaderArgInternal__)(nil), args)
+							return nil, err
+						}
+						tmp, err := i.GetServerConfig(ctx)
+						if err != nil {
+							return nil, err
+						}
+						return tmp.Export(), nil
+					},
+				},
+				Name: "getServerConfig",
 			},
 		},
 		WrapError: TeamLoaderMakeGenericErrorWrapper(i.ErrorWrapper()),

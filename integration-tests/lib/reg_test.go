@@ -496,10 +496,21 @@ func NewTestUserWithUsername(un proto.NameUtf8) *TestUser {
 	}
 }
 
-func NewTestUser(t *testing.T) *TestUser {
-	un, err := RandomUsername(9)
+func NewTestUserWithPrefix(t *testing.T, prefix string) *TestUser {
+	baselen := 9
+	if len(prefix) > 0 {
+		baselen = 7
+	}
+	un, err := RandomUsername(baselen)
 	require.NoError(t, err)
+	if len(prefix) > 0 {
+		un = prefix + "_" + un
+	}
 	return NewTestUserWithUsername(proto.NameUtf8(un))
+}
+
+func NewTestUser(t *testing.T) *TestUser {
+	return NewTestUserWithPrefix(t, "")
 }
 
 func deviceKeyConstructor(role proto.Role, host proto.HostID) (core.PrivateSuiter, error) {
@@ -542,6 +553,7 @@ type TestUserOpts struct {
 	KeyConstructor func(role proto.Role, host proto.HostID) (core.PrivateSuiter, error)
 	InviteCode     *rem.InviteCode
 	HostID         *core.HostIDAndName
+	UsernamePrefix string
 }
 
 func (u *TestUser) SignupWithOpts(
@@ -757,7 +769,11 @@ func GenerateNewTestUser(t *testing.T) *TestUser {
 
 func GenerateNewTestUserWithRegCli(t *testing.T, te *common.TestEnv, cli *rem.RegClient, opts *TestUserOpts) *TestUser {
 	m := te.MetaContext()
-	testUser := NewTestUser(t)
+	var prfx string
+	if opts != nil && opts.UsernamePrefix != "" {
+		prfx = opts.UsernamePrefix
+	}
+	testUser := NewTestUserWithPrefix(t, prfx)
 	testUser.SignupWithRegCli(t, m, te, cli, opts)
 	return testUser
 }

@@ -195,5 +195,3 @@ func (k LocalUserIndex) Export() proto.LocalUserIndex {
 		},
 	}
 }
-
-var TemporaryDefaultViewerRole = proto.AdminRole

@@ -1798,19 +1798,21 @@ func (l *LinkOuterV1) Bytes() []byte { return nil }
 type ChangeType int
 
 const (
-	ChangeType_DeviceName     ChangeType = 0
-	ChangeType_Username       ChangeType = 1
-	ChangeType_Eldest         ChangeType = 2
-	ChangeType_Teamname       ChangeType = 3
-	ChangeType_TeamIndexRange ChangeType = 4
+	ChangeType_DeviceName      ChangeType = 0
+	ChangeType_Username        ChangeType = 1
+	ChangeType_Eldest          ChangeType = 2
+	ChangeType_Teamname        ChangeType = 3
+	ChangeType_TeamIndexRange  ChangeType = 4
+	ChangeType_MemberLoadFloor ChangeType = 5
 )
 
 var ChangeTypeMap = map[string]ChangeType{
-	"DeviceName":     0,
-	"Username":       1,
-	"Eldest":         2,
-	"Teamname":       3,
-	"TeamIndexRange": 4,
+	"DeviceName":      0,
+	"Username":        1,
+	"Eldest":          2,
+	"Teamname":        3,
+	"TeamIndexRange":  4,
+	"MemberLoadFloor": 5,
 }
 var ChangeTypeRevMap = map[ChangeType]string{
 	0: "DeviceName",
@@ -1818,6 +1820,7 @@ var ChangeTypeRevMap = map[ChangeType]string{
 	2: "Eldest",
 	3: "Teamname",
 	4: "TeamIndexRange",
+	5: "MemberLoadFloor",
 }
 
 type ChangeTypeInternal__ ChangeType
@@ -2072,6 +2075,7 @@ type ChangeMetadata struct {
 	F_0__ *Commitment     `json:"f0,omitempty"`
 	F_1__ *EldestMetadata `json:"f1,omitempty"`
 	F_2__ *RationalRange  `json:"f2,omitempty"`
+	F_3__ *Role           `json:"f3,omitempty"`
 }
 type ChangeMetadataInternal__ struct {
 	_struct  struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
@@ -2083,6 +2087,7 @@ type ChangeMetadataInternalSwitch__ struct {
 	F_0__   *CommitmentInternal__     `codec:"0"`
 	F_1__   *EldestMetadataInternal__ `codec:"1"`
 	F_2__   *RationalRangeInternal__  `codec:"2"`
+	F_3__   *RoleInternal__           `codec:"3"`
 }
 
 func (c ChangeMetadata) GetT() (ret ChangeType, err error) {
@@ -2098,6 +2103,10 @@ func (c ChangeMetadata) GetT() (ret ChangeType, err error) {
 	case ChangeType_TeamIndexRange:
 		if c.F_2__ == nil {
 			return ret, errors.New("unexpected nil case for F_2__")
+		}
+	case ChangeType_MemberLoadFloor:
+		if c.F_3__ == nil {
+			return ret, errors.New("unexpected nil case for F_3__")
 		}
 	}
 	return c.T, nil
@@ -2147,6 +2156,15 @@ func (c ChangeMetadata) Teamindexrange() RationalRange {
 	}
 	return *c.F_2__
 }
+func (c ChangeMetadata) Memberloadfloor() Role {
+	if c.F_3__ == nil {
+		panic("unexpected nil case; should have been checked")
+	}
+	if c.T != ChangeType_MemberLoadFloor {
+		panic(fmt.Sprintf("unexpected switch value (%v) when Memberloadfloor is called", c.T))
+	}
+	return *c.F_3__
+}
 func NewChangeMetadataWithDevicename(v Commitment) ChangeMetadata {
 	return ChangeMetadata{
 		T:     ChangeType_DeviceName,
@@ -2175,6 +2193,12 @@ func NewChangeMetadataWithTeamindexrange(v RationalRange) ChangeMetadata {
 	return ChangeMetadata{
 		T:     ChangeType_TeamIndexRange,
 		F_2__: &v,
+	}
+}
+func NewChangeMetadataWithMemberloadfloor(v Role) ChangeMetadata {
+	return ChangeMetadata{
+		T:     ChangeType_MemberLoadFloor,
+		F_3__: &v,
 	}
 }
 func (c ChangeMetadataInternal__) Import() ChangeMetadata {
@@ -2216,6 +2240,18 @@ func (c ChangeMetadataInternal__) Import() ChangeMetadata {
 			})(x)
 			return &tmp
 		})(c.Switch__.F_2__),
+		F_3__: (func(x *RoleInternal__) *Role {
+			if x == nil {
+				return nil
+			}
+			tmp := (func(x *RoleInternal__) (ret Role) {
+				if x == nil {
+					return ret
+				}
+				return x.Import()
+			})(x)
+			return &tmp
+		})(c.Switch__.F_3__),
 	}
 }
 func (c ChangeMetadata) Export() *ChangeMetadataInternal__ {
@@ -2240,6 +2276,12 @@ func (c ChangeMetadata) Export() *ChangeMetadataInternal__ {
 				}
 				return (*x).Export()
 			})(c.F_2__),
+			F_3__: (func(x *Role) *RoleInternal__ {
+				if x == nil {
+					return nil
+				}
+				return (*x).Export()
+			})(c.F_3__),
 		},
 	}
 }
