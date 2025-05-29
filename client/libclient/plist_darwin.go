@@ -23,9 +23,10 @@ var LaunchCtl = "/bin/launchctl"
 // used to write a text file down on the file system, which is later sourced via shell out to
 // the `launchctl` command.
 type Plist struct {
-	label string
-	home  string
-	path  string
+	label  string
+	home   string
+	path   string
+	logDir string
 }
 
 func (p *Plist) Template() string {
@@ -45,6 +46,10 @@ func (p *Plist) Template() string {
 	  </array>
 	  <key>RunAtLoad</key><true/>
 	  <key>KeepAlive</key><true/>
+	  <key>StandardErrorPath</key>
+	  <string>{{.LogDir}}/agent.err.log</string>
+	  <key>StandardOutputPath</key>
+	  <string>{{.LogDir}}/agent.out.log</string>
 	</dict>
 </plist>`
 }
@@ -223,7 +228,12 @@ func (p *Plist) Configure(m MetaContext) error {
 	if err != nil {
 		return err
 	}
-	home, err := m.G().Cfg().HomeFinder().Home(false)
+	hf := m.G().Cfg().HomeFinder()
+	home, err := hf.Home(false)
+	if err != nil {
+		return err
+	}
+	logDir, err := hf.LogDir()
 	if err != nil {
 		return err
 	}
@@ -248,6 +258,7 @@ func (p *Plist) Configure(m MetaContext) error {
 		return err
 	}
 	p.home = home
+	p.logDir = logDir
 	p.label = label
 	p.path = buf.String()
 
@@ -284,16 +295,19 @@ func (p *Plist) Write(m MetaContext) error {
 	}
 	home := fix(core.Path(p.home))
 	cfg = fix(cfg)
+	logDir := fix(core.Path(p.logDir))
 	data := struct {
 		Label   string
 		Program string
 		Home    core.Path
 		Config  core.Path
+		LogDir  core.Path
 	}{
 		Label:   p.label,
 		Program: prog,
 		Home:    home,
 		Config:  cfg,
+		LogDir:  logDir,
 	}
 	plistPath := core.Path(p.path)
 
