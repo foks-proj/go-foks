@@ -510,6 +510,10 @@ func (b BindAddr) Export() proto.BindAddr {
 	return proto.BindAddr(b)
 }
 
+func (b BindAddr) GetPort() (proto.Port, error) {
+	return b.Export().GetPort()
+}
+
 type ClientVersioner interface {
 	MinVersion() *proto.SemVer
 	NewestVersion() *proto.SemVer

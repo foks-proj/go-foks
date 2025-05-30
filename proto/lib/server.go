@@ -5,6 +5,7 @@ package lib
 
 import (
 	"fmt"
+	"strings"
 )
 
 func (t ServerType) Hostname(base Hostname) (Hostname, error) {
@@ -71,6 +72,11 @@ func (t ServerType) ToString() string {
 	}
 }
 
+func (t ServerType) ToCommand() string {
+	ret := t.ToString()
+	return strings.Replace(ret, "_", "-", -1)
+}
+
 func (t *ServerType) ImportFromString(s string) error {
 	switch s {
 	case "reg":
@@ -115,6 +121,21 @@ var AllServers []ServerType = []ServerType{
 var FrontFacingServers []ServerType = []ServerType{
 	ServerType_Reg, ServerType_User, ServerType_MerkleQuery, ServerType_KVStore,
 	ServerType_Probe, ServerType_Web,
+}
+
+var CoreServers []ServerType = []ServerType{
+	ServerType_Reg, ServerType_User, ServerType_MerkleBuilder, ServerType_InternalCA, ServerType_MerkleQuery,
+	ServerType_Queue, ServerType_MerkleBatcher, ServerType_MerkleSigner, ServerType_Probe,
+	ServerType_KVStore,
+}
+
+func (t ServerType) IsFrontFacing() bool {
+	for _, s := range FrontFacingServers {
+		if t == s {
+			return true
+		}
+	}
+	return false
 }
 
 func (t ServerType) ServiceID() UID {

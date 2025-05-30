@@ -50,6 +50,7 @@ func (b *BeaconProbe) loadPrev(m MetaContext, tx pgx.Tx) error {
 	).Scan(&tailRaw, &seqRaw)
 
 	if err == pgx.ErrNoRows {
+		m.Infow("no prev hostchain found")
 		return nil
 	}
 	if err != nil {
@@ -60,6 +61,8 @@ func (b *BeaconProbe) loadPrev(m MetaContext, tx pgx.Tx) error {
 		return err
 	}
 	b.prev = core.NewHostchainSkeleton(b.hostID, *lh, proto.Seqno(seqRaw))
+
+	m.Infow("loaded prev")
 
 	return nil
 }
@@ -88,10 +91,13 @@ func (b *BeaconProbe) probe(m MetaContext) error {
 		HostchainLastSeqno: 0,
 		Hostname:           b.addr.Hostname().Normalize(),
 	}
+	m.Infow("sending probe", "addr", b.addr)
 	pr, err := pcli.Probe(m.Ctx(), arg)
 	if err != nil {
+		m.Warnw("probe failed", "err", err)
 		return err
 	}
+	m.Infow("probe succeeded")
 	b.res = &pr
 	return nil
 }
@@ -99,8 +105,10 @@ func (b *BeaconProbe) probe(m MetaContext) error {
 func (b *BeaconProbe) playChain(m MetaContext) error {
 	ch, err := core.PlayChain(b.addr, b.res.Hostchain, &b.hostID)
 	if err != nil {
+		m.Warnw("play chain failed", "err", err)
 		return err
 	}
+	m.Infow("played chain", "tail", ch.Tail())
 	b.ch = ch
 	return nil
 }
@@ -157,8 +165,18 @@ func (b *BeaconProbe) storeChain(m MetaContext, tx pgx.Tx) error {
 	return nil
 }
 
-func (b *BeaconProbe) runTryTx(m MetaContext, tx pgx.Tx) error {
-	var err error
+func (b *BeaconProbe) runTryTx(m MetaContext, tx pgx.Tx) (err error) {
+
+	m = m.WithLogTag("beacon-probe")
+	m.Infow("running beacon probe", "host", b.host, "port", b.port, "host_id", b.hostID)
+
+	defer func() {
+		if err != nil {
+			m.Infow("beacon probe failed", "err", err)
+		} else {
+			m.Warnw("beacon probe succeeded")
+		}
+	}()
 
 	err = b.loadPrev(m, tx)
 	if err != nil {
@@ -177,11 +195,13 @@ func (b *BeaconProbe) runTryTx(m MetaContext, tx pgx.Tx) error {
 
 	err = core.CheckChainAgainstPriorChains(*b.ch, b.prev)
 	if err != nil {
+		m.Warnw("check chain against prior chains failed", "err", err)
 		return err
 	}
 
 	b.pz, err = core.CheckZoneSig(*b.ch, *b.res)
 	if err != nil {
+		m.Warnw("check zone sig failed", "err", err)
 		return err
 	}
 

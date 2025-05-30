@@ -19,7 +19,7 @@ import (
 
 func Connect(m MetaContext, t proto.ServerType, clientCert *tls.Certificate) (rpc.Transporter, error) {
 
-	addr, _, tlsCfg, err := m.G().ListenParams(m.Ctx(), t)
+	_, addr, tlsCfg, err := m.G().ListenParams(m.Ctx(), t)
 	if err != nil {
 		return nil, err
 	}
@@ -35,7 +35,7 @@ func Connect(m MetaContext, t proto.ServerType, clientCert *tls.Certificate) (rp
 		tlsCfg.Certificates = []tls.Certificate{*clientCert}
 	}
 
-	conn, err := tls.Dial("tcp", string(addr), tlsCfg)
+	conn, err := tls.Dial("tcp", addr.String(), tlsCfg)
 	if err != nil {
 		return nil, err
 	}

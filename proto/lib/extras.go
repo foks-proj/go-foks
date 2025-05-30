@@ -1082,6 +1082,10 @@ func NewTCPAddrPortOpt(h Hostname, p *Port) TCPAddr {
 	return NewTCPAddr(h, *p)
 }
 
+func (b BindAddr) GetPort() (Port, error) {
+	return TCPAddr(b).GetPort()
+}
+
 // GetPort gets the port from the TCPAddr. If no port is found, it will return
 // 0 with no error. If a port is found, it will return the port number and no
 // error. If the port is not a valid number, it will return an error. Works

@@ -64,3 +64,31 @@ srv-install: srv-assets
 .PHONY: srv-dev
 srv-dev:
 	go tool air
+
+.PHONY: ghcr-login
+ghcr-login:
+	foks kv get --team build.server /secrets/github/classic-access-token-ghcr - | \
+		docker login ghcr.io --username maxtaco --password-stdin
+
+
+.PHONY: foks-server-docker-image-latest
+foks-server-docker-image-latest:
+	docker buildx build \
+		-f dockerfiles/foks-server.dev \
+		-t foks-server:latest \
+		--platform=linux/arm64,linux/amd64 .
+
+.PHONY: foks-server-docker-push
+foks-server-docker-push: ghcr-login foks-server-docker-image-latest foks-tool-docker-image-latest
+	docker tag foks-server:latest ghcr.io/foks-proj/foks-server:latest
+	docker push ghcr.io/foks-proj/foks-server:latest
+	docker tag foks-tool:latest ghcr.io/foks-proj/foks-tool:latest
+	docker push ghcr.io/foks-proj/foks-tool:latest
+
+
+.PHONY: foks-tool-docker-image-latest
+foks-tool-docker-image-latest:
+	docker buildx build \
+		-f dockerfiles/foks-tool.dev \
+		-t foks-tool:latest \
+		--platform=linux/arm64,linux/amd64 .

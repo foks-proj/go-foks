@@ -1,0 +1,19 @@
+
+services:
+  postgresql:
+    image: docker.io/library/postgres:17-alpine
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -d $${POSTGRES_DB} -U $${POSTGRES_USER}"]
+      start_period: 20s
+      interval: 30s
+      retries: 5
+      timeout: 5s
+    ports:
+      - "${DBPORT:-54320}:5432"
+    volumes:
+      - database:/var/lib/postgresql/data
+    environment:
+      POSTGRES_PASSWORD: ${DBPW_ROOT:?database password required}
+    env_file:
+      - .env

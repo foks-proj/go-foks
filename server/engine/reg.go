@@ -358,16 +358,40 @@ func (c *RegClientConn) signupInsertPassphrase(
 	return nil
 }
 
-func (c *RegClientConn) signupTryTx(m shared.MetaContext, tx pgx.Tx, arg rem.SignupArg) error {
+func (c *RegClientConn) signupTryTx(m shared.MetaContext, tx pgx.Tx, arg rem.SignupArg) (err error) {
 
 	hostId := m.HostID().Id
 
-	err := shared.CheckSeatLimits(m, tx)
+	m = m.WithLogTag("signup")
+	m.Infow("signup start", "arg", arg)
+
+	var stage int
+
+	defer func() {
+		if err == nil {
+			m.Infow("signup exit")
+		} else {
+			m.Warnw("signup exit", "stage", stage, "err", err)
+		}
+	}()
+
+	hitStage := func(s int) {
+		stage = s
+		m.Infow("signup", "stage", s)
+	}
+
+	hitStage(0)
+
+	err = shared.CheckSeatLimits(m, tx)
+	hitStage(1)
+
 	if err != nil {
 		return err
 	}
 
 	username, err := c.signupHandleUsernameReservation(m, tx, arg)
+	hitStage(2)
+
 	if err != nil {
 		return err
 	}
@@ -376,6 +400,7 @@ func (c *RegClientConn) signupTryTx(m shared.MetaContext, tx pgx.Tx, arg rem.Sig
 		return err
 	}
 	openRes, err := core.OpenEldestLink(&arg.Link, hepks, hostId)
+	hitStage(3)
 	if err != nil {
 		return err
 	}
@@ -390,67 +415,81 @@ func (c *RegClientConn) signupTryTx(m shared.MetaContext, tx pgx.Tx, arg rem.Sig
 		arg.Rur.Seq,
 		rem.NameType_User,
 	)
+	hitStage(4)
 	if err != nil {
 		return err
 	}
 
 	err = c.signupInsertIntoUsers(m, tx, uid, username)
+	hitStage(5)
+
 	if err != nil {
 		return err
 	}
 
 	// Must happen after signupInsertIntoUsers due to foreign key constraints.
 	err = shared.SignupHandleSSO(m, tx, uid, signer, arg.Sso, arg.UsernameUtf8, arg.Email)
+	hitStage(6)
 	if err != nil {
 		return err
 	}
 
 	err = c.signupInsertShortParty(m, tx, uid)
+	hitStage(7)
 	if err != nil {
 		return err
 	}
 
 	err = c.signupInviteCode(m, tx, arg.InviteCode, uid, arg.Sso)
+	hitStage(8)
 	if err != nil {
 		return err
 	}
 
 	err = c.signupEmail(m, tx, uid, arg.Email)
+	hitStage(9)
 	if err != nil {
 		return err
 	}
 
 	err = c.signupInsertLink(m, tx, uid, &arg.Link, signer)
+	hitStage(10)
 	if err != nil {
 		return err
 	}
 
 	err = c.signupInsertDevice(m, tx, signer, openRes, arg)
+	hitStage(11)
 	if err != nil {
 		return err
 	}
 
 	err = shared.InsertSubkeyCheckSanity(m, tx, signer, openRes.Subkey, arg.SubkeyBox)
+	hitStage(12)
 	if err != nil {
 		return err
 	}
 
 	err = c.signupInsertPUKs(m, tx, signer, openRes, arg)
+	hitStage(13)
 	if err != nil {
 		return err
 	}
 
 	err = c.signupTreeLocation(m, tx, uid, openRes, arg.NextTreeLocation)
+	hitStage(14)
 	if err != nil {
 		return err
 	}
 
 	err = c.signupInsertPassphrase(m, tx, uid, arg.Passphrase)
+	hitStage(15)
 	if err != nil {
 		return err
 	}
 
 	err = c.signupInsertSubchainTreeLocationSeed(m, tx, uid, openRes, arg.SubchainTreeLocationSeed)
+	hitStage(16)
 	if err != nil {
 		return err
 	}

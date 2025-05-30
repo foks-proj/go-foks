@@ -50,12 +50,8 @@ func (a *Autocert) CheckArgs(args []string) error {
 	return nil
 }
 
-func (a *Autocert) Run(m shared.MetaContext) error {
-	err := shared.InitHostID(m)
-	if err != nil {
-		return err
-	}
-	pkg, err := m.G().Config().AutocertPackage(m.Ctx(), a.typ, proto.Port(a.port))
+func doAutocert(m shared.MetaContext, typ proto.ServerType, port proto.Port) error {
+	pkg, err := m.G().Config().AutocertPackage(m.Ctx(), typ, port)
 	if err != nil {
 		return err
 	}
@@ -65,15 +61,23 @@ func (a *Autocert) Run(m shared.MetaContext) error {
 		Pkg: infra.AutocertPackage{
 			Hostname: pkg.Hostname,
 			Hostid:   hid,
-			Styp:     a.typ,
+			Styp:     typ,
 		},
 	}
-	err = shared.OneshotAutocert(m, arg, proto.Port(a.port))
+	err = shared.OneshotAutocert(m, arg, port)
 	if err != nil {
 		return err
 	}
-
 	return nil
+
+}
+
+func (a *Autocert) Run(m shared.MetaContext) error {
+	err := shared.InitHostID(m)
+	if err != nil {
+		return err
+	}
+	return doAutocert(m, a.typ, proto.Port(a.port))
 }
 
 func (a *Autocert) SetGlobalContext(g *shared.GlobalContext) {}

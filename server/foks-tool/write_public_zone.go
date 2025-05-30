@@ -36,7 +36,11 @@ func (i *WritePublicZone) CheckArgs(args []string) error {
 }
 
 func (i *WritePublicZone) Run(m shared.MetaContext) error {
-	hk, err := shared.ReadHostKeyFromFile(m.Ctx(), core.Path(i.key))
+	return doWritePublicZone(m, core.Path(i.key))
+}
+
+func doWritePublicZone(m shared.MetaContext, key core.Path) error {
+	hk, err := shared.ReadHostKeyFromFile(m.Ctx(), key)
 	if err != nil {
 		return err
 	}
