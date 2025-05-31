@@ -66,12 +66,14 @@ srv-dev:
 	go tool air
 
 .PHONY: foks-server-docker-image-latest
+foks-server-docker-image-latest:
 	docker buildx build \
 		-f dockerfiles/foks-server.dev \
 		-t foks-server \
 		--platform=linux/arm64,linux/amd64 .
 
 .PHONY: foks-tool-docker-image-latest
+foks-tool-docker-image-latest:
 	docker buildx build \
 		-f dockerfiles/foks-tool.dev \
 		-t foks-server \
