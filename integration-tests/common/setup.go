@@ -59,11 +59,9 @@ func (x *X509CA) Generate(dir core.Path, stem string) error {
 }
 
 type X509Material struct {
-	RootCA     X509CA
-	ClientCA   X509CA
-	InternalCA X509CA
-	Db         X509Pair
-	Server     X509Pair
+	RootCA X509CA
+	Db     X509Pair
+	Server X509Pair
 
 	// In a real deployment, the probe server would be the only one whose
 	// cert is signed up to the root CAs (like digicert). This is because the
@@ -102,8 +100,6 @@ func (x *X509Material) Generate(m shared.MetaContext, dir core.Path, setupOpts S
 		Stem string
 	}{
 		{&x.RootCA, "ca"},
-		{&x.ClientCA, "client_ca"},
-		{&x.InternalCA, "internal_ca"},
 		{&x.ProbeCA, "probe_ca"},
 	}
 	for _, ca := range CAs {

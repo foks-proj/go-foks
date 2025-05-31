@@ -12,10 +12,6 @@ local base = pre.base({
     vanity_rootpki_dir : self.top_dir + 'vanity/rootpki/',
     vanity_hostchain_dir : self.top_dir + 'vanity/hostchain/',
     ca : self.certs_dir + "main.rootca.cert",
-    client_ca_stem : self.certs_dir + "client_ca.rootca",
-    client_ca : self.client_ca_stem + ".cert",
-    client_ca_key : self.client_ca_stem + ".key", // needed online to make new vhosts
-    internal_client_ca : self.certs_dir + "internal_ca.rootca.cert",
     probe_ca : self.certs_dir + "probe_ca.rootca.cert",
     bind_addr_ext : "127.0.0.1",
     bind_addr_int : "127.0.0.1",
