@@ -76,5 +76,5 @@ foks-server-docker-image-latest:
 foks-tool-docker-image-latest:
 	docker buildx build \
 		-f dockerfiles/foks-tool.dev \
-		-t foks-server \
+		-t foks-tool \
 		--platform=linux/arm64,linux/amd64 .

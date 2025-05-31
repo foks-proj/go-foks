@@ -12,8 +12,9 @@ COPY proto proto
 COPY server server
 RUN CGO_ENABLED=0 GOOS=linux GOFLAGS="-tags=noresinit" go build -C server/foks-tool -o ../../foks-tool .
 
-WORKDIR /
-RUN mv /build/foks-tool /foks-tool
-RUN rm -rf /build /go
+FROM scratch
+COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
+COPY --from=builder /build/foks-tool /foks-tool
+
 
 ENTRYPOINT ["/foks-tool"]
