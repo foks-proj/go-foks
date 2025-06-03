@@ -39,9 +39,9 @@ const dbContainerNamePrefix = "foks-postgres"
 const dbVolumeNamePrefix = "foks-postgres-data"
 const hostConfDir = "conf-host"
 const guestConfDir = "conf-guest"
-const mountPrefix = "/foks"
-const mountedConfDir = mountPrefix + "/conf"
-const mountedKeysDir = mountPrefix + "/keys"
+const mountPrefix = "/foks/"
+const mountedConfDir = mountPrefix + "conf"
+const mountedKeysDir = mountPrefix + keysDir
 const keysDir = "keys"
 const dbImage = "postgres:17-alpine"
 const envFile = ".env"
@@ -77,7 +77,7 @@ const (
 	StandupStageWriteDockerYML   StandupStage = 144
 )
 
-type Standup struct {
+type StandupCmd struct {
 	CLIAppBase
 	hostname      string
 	dbport        int
@@ -85,7 +85,7 @@ type Standup struct {
 	force         bool
 }
 
-func (s *Standup) CobraConfig() *cobra.Command {
+func (s *StandupCmd) CobraConfig() *cobra.Command {
 	ret := &cobra.Command{
 		Use:   "standup",
 		Short: "Standup a new stand-alone FOKS server",
@@ -100,7 +100,7 @@ docker-compose up`,
 	return ret
 }
 
-func (s *Standup) CheckArgs(args []string) error {
+func (s *StandupCmd) CheckArgs(args []string) error {
 	if len(args) != 0 {
 		return core.BadArgsError("no args allowed")
 	}
@@ -110,7 +110,7 @@ func (s *Standup) CheckArgs(args []string) error {
 	return nil
 }
 
-func (s *Standup) Run(m shared.MetaContext) error {
+func (s *StandupCmd) Run(m shared.MetaContext) error {
 	eng := &StandupEng{
 		hostname:      proto.Hostname(s.hostname),
 		dbPort:        s.dbport,
@@ -120,7 +120,7 @@ func (s *Standup) Run(m shared.MetaContext) error {
 	return eng.runAndCleanup(m)
 }
 
-func (s *Standup) SetGlobalContext(g *shared.GlobalContext) {
+func (s *StandupCmd) SetGlobalContext(g *shared.GlobalContext) {
 }
 
 type StandupEng struct {
@@ -458,7 +458,7 @@ local final(o) = o + {
 		Key:           e.cksKey.String(),
 		DockerCompose: !isHost,
 		Hostname:      e.hostname,
-		Topdir:        "/foks",
+		Topdir:        mountPrefix,
 	}
 
 	if isHost {
@@ -1377,6 +1377,8 @@ func (e *StandupEng) runAndCleanup(m shared.MetaContext) (err error) {
 	}()
 
 	defer func() {
+		// Our context might be canceled by now, so don't use it for cleanup.
+		m = m.Background()
 		cleanupErr := e.teardownDockerDB(m)
 		if cleanupErr != nil {
 			m.Infow("Error during cleanup", "cleanup_err", cleanupErr)
@@ -1470,8 +1472,13 @@ func (e *StandupEng) run(m shared.MetaContext) (err error) {
 	return nil
 }
 
-var _ shared.CLIApp = (*Standup)(nil)
+func (b *StandupCmd) TweakOpts(opts *shared.GlobalCLIConfigOpts) {
+	opts.SkipConfig = true
+	opts.SkipNetwork = true
+}
+
+var _ shared.CLIApp = (*StandupCmd)(nil)
 
 func init() {
-	AddCmd(&Standup{})
+	AddCmd(&StandupCmd{})
 }
