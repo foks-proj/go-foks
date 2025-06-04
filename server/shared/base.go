@@ -416,10 +416,12 @@ func runShared(m MetaContext, rc *RootCommand, s BaseProcess) error {
 		return err
 	}
 
-	m.Infow(
-		"starting up",
-		"pid", os.Getpid(),
-	)
+	if !rc.Opts.NoStartupMsg {
+		m.Infow(
+			"starting up",
+			"pid", os.Getpid(),
+		)
+	}
 	return nil
 }
 

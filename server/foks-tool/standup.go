@@ -15,6 +15,7 @@ import (
 	"text/template"
 	"time"
 
+	"github.com/briandowns/spinner"
 	"github.com/compose-spec/compose-go/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/image"
@@ -22,6 +23,7 @@ import (
 	"github.com/docker/docker/api/types/volume"
 	"github.com/docker/docker/client"
 	"github.com/docker/go-connections/nat"
+	"github.com/fatih/color"
 	"github.com/foks-proj/go-foks/conf/srv"
 	"github.com/foks-proj/go-foks/lib/core"
 	"github.com/foks-proj/go-foks/lib/merkle"
@@ -51,6 +53,7 @@ const foksServer = "ghcr.io/foks-proj/foks-server:latest"
 const foksTool = "ghcr.io/foks-proj/foks-tool:latest"
 const postgresContainerName = "postgresql"
 const defPostgresPort = 5432
+const logfile = "standup.log"
 
 type StandupStatus struct {
 	Sc    proto.StatusCode `json:"sc"`
@@ -92,9 +95,11 @@ func (s *StandupCmd) CobraConfig() *cobra.Command {
 		Long: `Standup a new stand-alone FOKS server from scratch. Will create and initialize 
 databases, make keys, configurations etc. Subsequent restarts of the server can use simply
 docker-compose up`,
+		SilenceUsage:  true,
+		SilenceErrors: true,
 	}
 	ret.Flags().StringVarP(&s.hostname, "hostname", "H", "", "hostname of the FOKS server")
-	ret.Flags().IntVar(&s.dbport, "db-port", 54321, "port for the database (default: 54321)")
+	ret.Flags().IntVar(&s.dbport, "db-port", 54321, "port for the database")
 	ret.Flags().BoolVarP(&s.force, "force", "f", false, "force overwrite even if files already exist")
 	ret.Flags().IntVar(&s.httpLocalPort, "http-local-port", 80, "port to listen for HTTP requests on (default: 80)")
 	return ret
@@ -117,6 +122,8 @@ func (s *StandupCmd) Run(m shared.MetaContext) error {
 		httpLocalPort: s.httpLocalPort,
 		force:         s.force,
 	}
+	m.G().ShuntLogToFile(logfile)
+	m.Infow("starting up", "pid", os.Getpid())
 	return eng.runAndCleanup(m)
 }
 
@@ -605,8 +612,36 @@ func (e *StandupEng) getDockerCli(m shared.MetaContext) (*client.Client, error) 
 	return cli, nil
 }
 
-func (e *StandupEng) setupFiles(m shared.MetaContext) error {
-	err := e.makeDirs(m)
+var phaseCounter = 1
+
+const totalPhases = 15
+
+func (e *StandupEng) phase(which string, getErr func() error) func() {
+
+	s := spinner.New(spinner.CharSets[9], 100*time.Millisecond)
+	lbl := fmt.Sprintf("[%2d/%d] %s", phaseCounter, totalPhases, which)
+	phaseCounter++
+
+	s.Suffix = "  " + lbl
+	s.Start()
+
+	return func() {
+		s.Stop()
+		if getErr() == nil {
+			fmt.Printf("✅ %s ... ", lbl)
+			color.Green("done\n")
+		} else {
+			fmt.Printf("❌ %s ... ", lbl)
+			color.Red("failed")
+		}
+	}
+}
+
+func (e *StandupEng) setupFiles(m shared.MetaContext) (err error) {
+
+	defer e.phase("setting up files", func() error { return err })()
+
+	err = e.makeDirs(m)
 	if err != nil {
 		return err
 	}
@@ -715,8 +750,11 @@ func (e *StandupEng) databaseRunContainer(m shared.MetaContext) error {
 	return nil
 }
 
-func (e *StandupEng) makeDatabase(m shared.MetaContext) error {
-	err := e.databaseImagePull(m)
+func (e *StandupEng) makeDatabase(m shared.MetaContext) (err error) {
+
+	defer e.phase("setting up database", func() error { return err })()
+
+	err = e.databaseImagePull(m)
 	if err != nil {
 		return err
 	}
@@ -750,7 +788,10 @@ func (e *StandupEng) getDBConnRoot(m shared.MetaContext) (*pgx.Conn, error) {
 	return conn, nil
 }
 
-func (e *StandupEng) makeFoksUser(m shared.MetaContext) error {
+func (e *StandupEng) makeFoksUser(m shared.MetaContext) (err error) {
+
+	defer e.phase("creating FOKS database user", func() error { return err })()
+
 	return e.checkpointedOperation(
 		m,
 		StandupStageCreateFoksUser,
@@ -919,9 +960,12 @@ func (e *StandupEng) findDockerSock(m shared.MetaContext) error {
 	return core.BadArgsError("could not find Docker socket; please set DOCKER_HOST environment variable")
 }
 
-func (e *StandupEng) pollDBRunning(m shared.MetaContext) error {
+func (e *StandupEng) pollDBRunning(m shared.MetaContext) (err error) {
+	defer e.phase("waiting for database to start", func() error { return err })()
+
 	for range 50 {
-		conn, err := e.getDBConnRoot(m)
+		var conn *pgx.Conn
+		conn, err = e.getDBConnRoot(m)
 		if err != nil {
 			m.Infow("Waiting for database to start", "err", err)
 		} else {
@@ -937,7 +981,9 @@ func (e *StandupEng) pollDBRunning(m shared.MetaContext) error {
 	return core.DbError("Database did not start within the expected time frame; please check the logs for errors")
 }
 
-func (e *StandupEng) initDB(m shared.MetaContext) error {
+func (e *StandupEng) initDB(m shared.MetaContext) (err error) {
+	defer e.phase("initializing databases", func() error { return err })()
+
 	return e.checkpointedOperation(
 		m,
 		StandupStageInitDB,
@@ -963,17 +1009,23 @@ func (e *StandupEng) initDB(m shared.MetaContext) error {
 	)
 }
 
-func (e *StandupEng) config(m shared.MetaContext) error {
-	err := m.G().Configure(m.Ctx(), shared.GlobalCLIConfigOpts{
+func (e *StandupEng) config(m shared.MetaContext) (err error) {
+	defer e.phase("configuring FOKS runtime", func() error { return err })()
+
+	err = m.G().Configure(m.Ctx(), shared.GlobalCLIConfigOpts{
 		ConfigPath: core.Path(hostConfDir).Join("foks.jsonnet"),
 	})
 	if err != nil {
 		return err
 	}
+	// Redo this since logCfg replaced as a result of calling config
+	m.G().ShuntLogToFile(logfile)
 	return nil
 }
 
-func (e *StandupEng) genCAs(m shared.MetaContext) error {
+func (e *StandupEng) genCAs(m shared.MetaContext) (err error) {
+	defer e.phase("generating CAs", func() error { return err })()
+
 	return e.checkpointedOperation(
 		m,
 		StandupStageGenCAs,
@@ -995,7 +1047,9 @@ func (e *StandupEng) genCAs(m shared.MetaContext) error {
 	)
 }
 
-func (e *StandupEng) makeHostChain(m shared.MetaContext) error {
+func (e *StandupEng) makeHostChain(m shared.MetaContext) (err error) {
+	defer e.phase("making hostchain", func() error { return err })()
+
 	return e.checkpointedOperation(
 		m,
 		StandupStageMakeHostChain,
@@ -1013,7 +1067,9 @@ func (e *StandupEng) makeHostChain(m shared.MetaContext) error {
 	)
 }
 
-func (e *StandupEng) makeFrontendCert(m shared.MetaContext) error {
+func (e *StandupEng) makeFrontendCert(m shared.MetaContext) (err error) {
+	defer e.phase("making frontend cert", func() error { return err })()
+
 	return e.checkpointedOperation(
 		m,
 		StandupStageMakeFrontendCert,
@@ -1034,7 +1090,9 @@ func (e *StandupEng) makeFrontendCert(m shared.MetaContext) error {
 	)
 }
 
-func (e *StandupEng) makeBackendCert(m shared.MetaContext) error {
+func (e *StandupEng) makeBackendCert(m shared.MetaContext) (err error) {
+
+	defer e.phase("making backend cert", func() error { return err })()
 
 	tmp := []string{
 		"localhost",
@@ -1072,7 +1130,9 @@ func (e *StandupEng) makeBackendCert(m shared.MetaContext) error {
 	)
 }
 
-func (e *StandupEng) issueProbeCert(m shared.MetaContext) error {
+func (e *StandupEng) issueProbeCert(m shared.MetaContext) (err error) {
+	defer e.phase("requesting a TLS cert from LetsEncrypt", func() error { return err })()
+
 	return e.checkpointedOperation(
 		m,
 		StandupStageIssueProbeCert,
@@ -1083,7 +1143,9 @@ func (e *StandupEng) issueProbeCert(m shared.MetaContext) error {
 	)
 }
 
-func (e *StandupEng) initMerkleTree(m shared.MetaContext) error {
+func (e *StandupEng) initMerkleTree(m shared.MetaContext) (err error) {
+	defer e.phase("initializing Merkle tree", func() error { return err })()
+
 	return e.checkpointedOperation(
 		m,
 		StandupStageInitMerkleTree,
@@ -1099,7 +1161,9 @@ func (e *StandupEng) initMerkleTree(m shared.MetaContext) error {
 	)
 }
 
-func (e *StandupEng) writePublicZone(m shared.MetaContext) error {
+func (e *StandupEng) writePublicZone(m shared.MetaContext) (err error) {
+	defer e.phase("writing public zone", func() error { return err })()
+
 	return e.checkpointedOperation(
 		m,
 		StandupStageWritePublicZone,
@@ -1110,7 +1174,9 @@ func (e *StandupEng) writePublicZone(m shared.MetaContext) error {
 	)
 }
 
-func (e *StandupEng) makeInviteCode(m shared.MetaContext) error {
+func (e *StandupEng) makeInviteCode(m shared.MetaContext) (err error) {
+	defer e.phase("making invite code", func() error { return err })()
+
 	return e.checkpointedOperation(
 		m,
 		StandupStageMakeInviteCode,
@@ -1136,7 +1202,9 @@ func (e *StandupEng) makeInviteCode(m shared.MetaContext) error {
 	)
 }
 
-func (e *StandupEng) generateDBKeys(m shared.MetaContext) error {
+func (e *StandupEng) generateDBKeys(m shared.MetaContext) (err error) {
+	defer e.phase("generating database keys", func() error { return err })()
+
 	return e.checkpointedOperation(
 		m,
 		StandupStageGenerateDBKeys,
@@ -1292,7 +1360,10 @@ func (e *StandupEng) writeDockerComposeYMLinner(m shared.MetaContext) error {
 	return nil
 }
 
-func (e *StandupEng) writeDockerCompileYML(m shared.MetaContext) error {
+func (e *StandupEng) writeDockerCompileYML(m shared.MetaContext) (err error) {
+
+	defer e.phase("cooking up docker-compose.yml", func() error { return err })()
+
 	return e.checkpointedOperation(
 		m,
 		StandupStageWriteDockerYML,
@@ -1304,9 +1375,6 @@ func (e *StandupEng) writeDockerCompileYML(m shared.MetaContext) error {
 }
 
 func (e *StandupEng) teardownDockerDB(m shared.MetaContext) error {
-	if !e.dbRunning {
-		return nil
-	}
 	err := e.stopDockerDB(m)
 	if err != nil {
 		return err
@@ -1339,6 +1407,9 @@ func (e *StandupEng) removeDockerDB(m shared.MetaContext) error {
 }
 
 func (e *StandupEng) stopDockerDB(m shared.MetaContext) error {
+	if !e.dbRunning {
+		return nil
+	}
 	cli, err := e.getDockerCli(m)
 	if err != nil {
 		return err
@@ -1358,6 +1429,10 @@ func (e *StandupEng) stopDockerDB(m shared.MetaContext) error {
 	}
 	e.dbRunning = false
 	return nil
+}
+
+func (e *StandupEng) errorOutput(format string, args ...interface{}) {
+	color.Red(format, args...)
 }
 
 func (e *StandupEng) runAndCleanup(m shared.MetaContext) (err error) {
@@ -1386,7 +1461,13 @@ func (e *StandupEng) runAndCleanup(m shared.MetaContext) (err error) {
 		cancel()
 	}()
 
-	return e.run(m)
+	err = e.run(m)
+	if err != nil {
+		e.errorOutput("️❗ %s\n", err.Error())
+		e.errorOutput("❗ Standup failed; see log file for more details: %s\n", logfile)
+		return err
+	}
+	return nil
 }
 
 func (e *StandupEng) run(m shared.MetaContext) (err error) {
@@ -1407,7 +1488,6 @@ func (e *StandupEng) run(m shared.MetaContext) (err error) {
 	if err != nil {
 		return err
 	}
-
 	err = e.pollDBRunning(m)
 	if err != nil {
 		return err
@@ -1468,13 +1548,15 @@ func (e *StandupEng) run(m shared.MetaContext) (err error) {
 	if err != nil {
 		return err
 	}
-	m.Infow("setup successful; next run `docker-compose up` to start the server")
+	m.Infow("setup successful")
+	fmt.Printf("🫡 Success! Run `docker-compose up` to start your FOKS server\n")
 	return nil
 }
 
 func (b *StandupCmd) TweakOpts(opts *shared.GlobalCLIConfigOpts) {
 	opts.SkipConfig = true
 	opts.SkipNetwork = true
+	opts.NoStartupMsg = true
 }
 
 var _ shared.CLIApp = (*StandupCmd)(nil)

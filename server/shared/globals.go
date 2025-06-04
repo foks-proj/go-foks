@@ -106,6 +106,16 @@ type GlobalContextOpts struct {
 	Testing bool
 }
 
+func (g *GlobalContext) ShuntLogToFile(path string) error {
+	g.Lock()
+	defer g.Unlock()
+	if path == "" {
+		return core.BadArgsError("path cannot be empty")
+	}
+	g.logCfg.OutputPaths = []string{path}
+	return g.swapLog()
+}
+
 func NewGlobalContext(opts *GlobalContextOpts) *GlobalContext {
 	cfg := zap.NewProductionConfig()
 	if isatty.IsTerminal(os.Stdout.Fd()) {
@@ -312,6 +322,7 @@ type GlobalCLIConfigOpts struct {
 	DNSAliases   []string
 	Refork       bool
 	ReforkChild  bool
+	NoStartupMsg bool
 }
 
 func (g GlobalCLIConfigOpts) GetConfigPath() core.Path {
