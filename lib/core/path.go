@@ -115,10 +115,22 @@ func (p Path) Dial() (net.Conn, error) {
 	if !errors.As(err, &opErr) {
 		return nil, err
 	}
-	if !errors.Is(opErr.Err, os.ErrNotExist) {
-		return nil, err
+
+	// On macOS, we hit this branch...
+	if errors.Is(opErr.Err, os.ErrNotExist) {
+		return nil, AgentConnectError{Path: p}
 	}
-	return nil, AgentConnectError{Path: p}
+
+	// On windows, we hit this branch. It might not be necessary to be this
+	// specific.
+	var syscallErr *os.SyscallError
+	if opErr.Op == "dial" &&
+		opErr.Net == "unix" &&
+		errors.As(opErr.Err, &syscallErr) &&
+		syscallErr.Syscall == "connect" {
+		return nil, AgentConnectError{Path: p}
+	}
+	return nil, err
 }
 
 func (p Path) Remove() error {

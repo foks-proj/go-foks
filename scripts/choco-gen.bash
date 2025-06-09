@@ -7,13 +7,39 @@ if [ ! -f ".top" ]; then
 	exit 1
 fi
 
-sversion=$(git describe --tags --abbrev=0)
+# take one optional argument: --version <version>
+if [ $# -gt 2 ]; then
+  echo "Usage: $0 [--version <version>]"
+  exit 1
+fi
+
+if [ $# -eq 1 ] && [ "$1" != "--version" ]; then
+  echo "Unknown argument: $1"
+  echo "Usage: $0 [--version <version>]"
+  exit 1
+fi
+if [ $# -eq 2 ]; then
+  sversion="$2"
+else
+  # Get the latest tag from git
+  sversion=$(git describe --tags --abbrev=0)
+fi
+if [ -z "$sversion" ]; then
+  echo "No git tags found. Please create a tag to proceed."
+  exit 1
+fi
+if [[ ! "$sversion" =~ ^v[0-9]+ ]]; then
+  echo "Invalid version format: $sversion. Expected format: v<major>.<minor>.<patch>"
+  exit 1
+fi
+
+
 numversion=$(echo $sversion | cut -d'v' -f2)
 
 url32="https://github.com/foks-proj/go-foks/releases/download/${sversion}/foks-${sversion}-win-choco-x86.zip"
-url32sha=$(curl -sSL $url32 | sha256sum | cut -d' ' -f1)
+pkg32sha=$(curl -sSL $url32 | sha256sum | cut -d' ' -f1)
 url64="https://github.com/foks-proj/go-foks/releases/download/${sversion}/foks-${sversion}-win-choco-amd64.zip"
-url64sha=$(curl -sSL $url64 | sha256sum | cut -d' ' -f1)
+pkg64sha=$(curl -sSL $url64 | sha256sum | cut -d' ' -f1)
 
 mkdir -p pkg/choco/tools
 
@@ -64,23 +90,21 @@ devices. For instance, files and git hosting.
 EOF
 
 cat <<EOF >pkg/choco/tools/chocolateyinstall.ps1
-\$url64       = "${url64}"
-\$url         = "${url32}"
-\$checksum    = "${url32sha}"
-\$checksum64  = "${url64sha}"
-\$packageName = "foks"
 \$toolsDir    = "\$(Split-Path -Parent \$MyInvocation.MyCommand.Definition)"
 
-Install-ChocolateyZipPackage \`
-  -PackageName   \$packageName \`
-  -FileType      'zip' \`
-  -Url            \$url \`
-  -Url64bit       \$url64 \`
-  -Checksum       \$checksum \`
-  -ChecksumType   'sha256' \`
-  -Checksum64     \$checksum64 \`
-  -ChecksumType64 'sha256' \`
-  -UnzipLocation  \$toolsDir
+$packageArgs = @{
+  packageName    = 'foks'
+  fileType       = 'zip'
+  url            = '${url32}'
+  url64          = '${url64}'
+  checksum64     = '${pkg64sha}'
+  checksum       = '${pkg32sha}'
+  checksumType   = 'sha256'
+  checksumType64 = 'sha256'
+  unzipLocation  = '\$toolsDir'
+}
+
+Install-ChocolateyZipPackage @packageArgs
 
 # Need to copy the item over since we need to know the equivalent of os.Args[0]
 # inside the executable, and we lose that via the shimming process.

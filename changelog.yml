@@ -2,6 +2,13 @@ project: foks
 maintaner: Maxwell Krohn <max@ne43.com>
 
 changelog:
+  - version: 0.0.21
+    urgency: low
+    stable: false
+    date: none-yet
+    changes:
+      - desc: Better errors messages on windows for agent being dead
+        closes: ["#94"]
   - version: 0.0.20
     urgency: low
     stable: false
