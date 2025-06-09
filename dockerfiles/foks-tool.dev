@@ -7,8 +7,6 @@ WORKDIR /build
 COPY go.mod go.sum ./
 RUN go mod download
 
-ARG LDFLAGS=""
-
 COPY lib lib
 COPY proto proto
 COPY server server
@@ -16,7 +14,7 @@ COPY conf/srv conf/srv
 
 RUN CGO_ENABLED=0 GOOS=linux GOFLAGS="-tags=noresinit" \
     go build -C server/foks-tool \
-       -o ../../foks-tool -ldflags \'$LDFLAGS\' .
+       -o ../../foks-tool -trimpath .
 
 FROM scratch
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt

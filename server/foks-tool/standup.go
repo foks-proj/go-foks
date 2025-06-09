@@ -92,7 +92,8 @@ const (
 	StandupStageWritePublicZone  StandupStage = 11
 	StandupStageMakeInviteCode   StandupStage = 12
 	StandupStageGenerateDBKeys   StandupStage = 13
-	StandupStageWriteDockerYML   StandupStage = 144
+	StandupStageWriteDockerYML   StandupStage = 14
+	StandupStageSetViewership    StandupStage = 15
 )
 
 type StandupCmd struct {
@@ -102,6 +103,8 @@ type StandupCmd struct {
 	httpLocalPort int
 	force         bool
 	interactive   bool
+	viewershipStr string
+	viewership    *proto.ViewershipMode
 }
 
 func (s *StandupCmd) CobraConfig() *cobra.Command {
@@ -119,7 +122,22 @@ docker-compose up`,
 	ret.Flags().BoolVarP(&s.force, "force", "f", false, "force overwrite even if files already exist")
 	ret.Flags().IntVar(&s.httpLocalPort, "http-local-port", defHttpPort, "port to listen for HTTP requests on")
 	ret.Flags().BoolVar(&s.interactive, "interactive", true, "run in interactive mode, prompting for user input")
+	ret.Flags().StringVar(&s.viewershipStr, "viewership", "", "viewership mode for the server; one of: closed, open (default: open)")
 	return ret
+}
+
+func (s *StandupCmd) setViewership() error {
+
+	if s.viewershipStr == "" {
+		s.viewershipStr = "open"
+	}
+	var tmp proto.ViewershipMode
+	err := tmp.ImportFromCLI(s.viewershipStr)
+	if err != nil {
+		return core.BadArgsError("invalid value for --viewership; must be 'open' or 'closed'")
+	}
+	s.viewership = &tmp
+	return nil
 }
 
 func (s *StandupCmd) CheckArgs(args []string) error {
@@ -127,14 +145,22 @@ func (s *StandupCmd) CheckArgs(args []string) error {
 		return core.BadArgsError("no args allowed")
 	}
 	if s.interactive {
-		if s.dbport != 54321 || s.httpLocalPort != 80 || s.hostname != "" {
-			return core.BadArgsError("in interactive mode, do not specify --db-port, --http-local-port or --hostname; they will be prompted for")
+		if s.dbport != defLocalPostgresPort ||
+			s.httpLocalPort != defHttpPort ||
+			s.hostname != "" ||
+			s.viewershipStr != "" {
+			return core.BadArgsError("in interactive mode, do not specify --db-port, --http-local-port, --viewership or --hostname; they will be prompted for")
 		}
 	} else {
 		if s.hostname == "" {
 			return core.BadArgsError("hostname is required")
 		}
 	}
+	err := s.setViewership()
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -229,6 +255,37 @@ func (s *StandupCmd) getDbPort(m shared.MetaContext) error {
 	return nil
 }
 
+func (s *StandupCmd) getViewshipMode(m shared.MetaContext) error {
+	lbl := "👁️  Viewership Mode:"
+	prompt := promptui.Select{
+		Label: lbl,
+		Items: []string{
+			"open    (all users on this host can see each other; recommended)",
+			"closed  (users must explicitly allow others to view them)",
+		},
+		Templates: &promptui.SelectTemplates{
+			Selected: fmt.Sprintf(`✔ {{ "%s" | green }} {{ . | faint }}`, lbl),
+		},
+	}
+	i, _, err := prompt.Run()
+	if err != nil {
+		return err
+	}
+	switch i {
+	case 0:
+		s.viewershipStr = "open"
+		tmp := proto.ViewershipMode_OpenToAll
+		s.viewership = &tmp
+	case 1:
+		s.viewershipStr = "closed"
+		tmp := proto.ViewershipMode_Closed
+		s.viewership = &tmp
+	default:
+		return core.BadArgsError("invalid viewership mode")
+	}
+	return nil
+}
+
 func (s *StandupCmd) runInteractive(m shared.MetaContext) error {
 	err := s.getHostname(m)
 	if err != nil {
@@ -242,15 +299,20 @@ func (s *StandupCmd) runInteractive(m shared.MetaContext) error {
 	if err != nil {
 		return err
 	}
+	err = s.getViewshipMode(m)
+	if err != nil {
+		return err
+	}
 	fmt.Printf("🔄 Starting standup with the following parameters:\n")
 	fmt.Printf("  - 🏠 Hostname: %s\n", s.hostname)
 	fmt.Printf("  - 🌐 HTTP Local Port: %d\n", s.httpLocalPort)
 	fmt.Printf("  - 🗄️  Database Port: %d\n", s.dbport)
+	fmt.Printf("  - 👁️  Viewership Mode: %s\n", s.viewership.String())
 	return nil
 }
 
 func (s *StandupCmd) Run(m shared.MetaContext) error {
-	m.G().ShuntLogToFile(logfile)
+	_ = m.G().ShuntLogToFile(logfile)
 	m.Infow("starting up", "pid", os.Getpid())
 
 	if s.interactive {
@@ -259,12 +321,16 @@ func (s *StandupCmd) Run(m shared.MetaContext) error {
 			return err
 		}
 	}
+	if s.viewership == nil {
+		return core.InternalError("viewership mode is required")
+	}
 
 	eng := &StandupEng{
 		hostname:      proto.Hostname(s.hostname),
 		dbPort:        s.dbport,
 		httpLocalPort: s.httpLocalPort,
 		force:         s.force,
+		viewership:    *s.viewership,
 	}
 
 	return eng.runAndCleanup(m)
@@ -279,6 +345,7 @@ type StandupEng struct {
 	dbPort        int
 	httpLocalPort int
 	force         bool
+	viewership    proto.ViewershipMode
 
 	// generated secrets and keys
 	iid        string // instance ID, generated at startup
@@ -757,7 +824,7 @@ func (e *StandupEng) getDockerCli(m shared.MetaContext) (*client.Client, error) 
 
 var phaseCounter = 1
 
-const totalPhases = 16
+const totalPhases = 18
 
 func (e *StandupEng) phase(which string, getErr func() error) func() {
 
@@ -1162,7 +1229,7 @@ func (e *StandupEng) config(m shared.MetaContext) (err error) {
 		return err
 	}
 	// Redo this since logCfg replaced as a result of calling config
-	m.G().ShuntLogToFile(logfile)
+	_ = m.G().ShuntLogToFile(logfile)
 	return nil
 }
 
@@ -1200,7 +1267,9 @@ func (e *StandupEng) makeHostChain(m shared.MetaContext) (err error) {
 			return true, nil
 		},
 		func() error {
-			hc := shared.NewHostChain().WithHostname(proto.Hostname(e.hostname))
+			hc := shared.NewHostChain().
+				WithHostname(proto.Hostname(e.hostname)).
+				WithHostType(proto.HostType_Standalone)
 			err := hc.Forge(m, core.Path(keysDir))
 			if err != nil {
 				return err
@@ -1613,6 +1682,17 @@ func (e *StandupEng) runAndCleanup(m shared.MetaContext) (err error) {
 	return nil
 }
 
+func (e *StandupEng) setViewership(m shared.MetaContext) (err error) {
+	defer e.phase("setting host viewership", func() error { return err })()
+
+	return e.checkpointedOperation(
+		m,
+		StandupStageSetViewership,
+		func() (bool, error) { return true, nil },
+		func() error { return shared.SetViewership(m, e.viewership, nil) },
+	)
+}
+
 func (e *StandupEng) testHttp(m shared.MetaContext) (err error) {
 	defer e.phase("testing HTTP connectivity", func() error { return err })()
 
@@ -1632,9 +1712,10 @@ func (e *StandupEng) testHttp(m shared.MetaContext) (err error) {
 	server := &http.Server{
 		Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if r.URL.Path == "/test" && r.Header.Get("X-Test-Token") == token {
-				w.Write([]byte("ok"))
+				_, _ = w.Write([]byte("ok"))
 			} else {
 				w.WriteHeader(http.StatusNotFound)
+				_, _ = w.Write([]byte("not found"))
 			}
 		}),
 	}
@@ -1670,7 +1751,7 @@ func (e *StandupEng) testHttp(m shared.MetaContext) (err error) {
 	// Shutdown server
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	server.Shutdown(ctx)
+	_ = server.Shutdown(ctx)
 
 	return nil
 }
@@ -1749,6 +1830,10 @@ func (e *StandupEng) run(m shared.MetaContext) (err error) {
 		return err
 	}
 	err = e.generateDBKeys(m)
+	if err != nil {
+		return err
+	}
+	err = e.setViewership(m)
 	if err != nil {
 		return err
 	}

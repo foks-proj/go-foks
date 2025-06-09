@@ -9,6 +9,10 @@ changelog:
     changes:
       - desc: Better errors messages on windows for agent being dead
         closes: ["#94"]
+      - desc: FOKS_HOME variable is like HOME but doesn't mess with system HOME
+        closes: ["#93"]
+      - desc: Introduce standalone server mode
+        closes: ["#93"]
   - version: 0.0.20
     urgency: low
     stable: false

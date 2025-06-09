@@ -90,6 +90,14 @@ func (b Base) getHome() string {
 			return ret
 		}
 	}
+
+	// Sometimes we want to run foks from a different home directory
+	// without affecting standard system services.
+	ret := b.getenv("FOKS_HOME")
+	if ret != "" {
+		return ret
+	}
+
 	return ""
 }
 

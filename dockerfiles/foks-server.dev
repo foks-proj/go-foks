@@ -11,7 +11,8 @@ COPY lib lib
 COPY proto proto
 COPY server server
 COPY conf/srv conf/srv
-RUN CGO_ENABLED=0 GOOS=linux GOFLAGS="-tags=noresinit" go build -C server/foks-server -o ../../foks-server .
+RUN CGO_ENABLED=0 GOOS=linux GOFLAGS="-tags=noresinit" \
+    go build -C server/foks-server -o ../../foks-server -trimpath .
 
 FROM scratch
 

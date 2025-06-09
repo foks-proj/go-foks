@@ -73,7 +73,8 @@ pre.final({
         merkle_builder : make_listen(base, 2, "merkle_builder", false),
         merkle_signer : make_listen(base, 3, "merkle_signer", false),
         queue : make_listen(base, 4, "queue", false),
-        quota : make_listen(base, 5, "quota", false)
+        quota : make_listen(base, 5, "quota", false),
+        autocert : make_listen(base, 6, "autocert", false),
     },
 
     apps : {

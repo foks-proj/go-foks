@@ -108,7 +108,7 @@ CREATE TABLE server_aliases (
     FOREIGN KEY(root_short_host_id) REFERENCES hosts(short_host_id)
 );
 
-CREATE TYPE host_type AS ENUM('big_top', 'vhost_management', 'vhost');
+CREATE TYPE host_type AS ENUM('big_top', 'vhost_management', 'vhost', 'standalone');
 
 CREATE TYPE viewership_mode AS ENUM('closed', 'open_to_admin', 'open_to_all');
 
@@ -242,3 +242,10 @@ CREATE TABLE x509_assets (
 );
 
 CREATE INDEX x509_assets_ctime_idx ON x509_assets(short_host_id, typ, ctime) WHERE active=true;
+
+CREATE TABLE schema_patches (
+    id INTEGER NOT NULL PRIMARY KEY,
+    ctime TIMESTAMP NOT NULL
+);
+
+INSERT INTO schema_patches (id, ctime) VALUES (1, NOW());

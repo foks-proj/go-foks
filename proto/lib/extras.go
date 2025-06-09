@@ -4191,6 +4191,18 @@ func (v ViewershipMode) String() string {
 	}
 }
 
+func (v *ViewershipMode) ImportFromCLI(s string) error {
+	switch s {
+	case "closed":
+		*v = ViewershipMode_Closed
+	case "open":
+		*v = ViewershipMode_OpenToAll
+	default:
+		return DataError("bad viewership mode")
+	}
+	return nil
+}
+
 func (v *ViewershipMode) ImportFromDB(s string) error {
 	switch s {
 	case "closed":
@@ -4583,10 +4595,12 @@ func (t HostType) String() string {
 		return "none"
 	case HostType_BigTop:
 		return "big_top"
-	case HostType_VHostManagement:
-		return "vhost_management"
 	case HostType_VHost:
 		return "vhost"
+	case HostType_VHostManagement:
+		return "vhost_management"
+	case HostType_Standalone:
+		return "standalone"
 	default:
 		return "error"
 	}
@@ -4600,6 +4614,8 @@ func (t *HostType) ImportFromString(s string) error {
 		*t = HostType_BigTop
 	case "vhost_management":
 		*t = HostType_VHostManagement
+	case "standalone":
+		*t = HostType_Standalone
 	case "vhost":
 		*t = HostType_VHost
 	default:
@@ -4622,7 +4638,7 @@ func (t Time) UnixSeconds() int64 {
 
 func (h HostType) SupportKVStore() bool {
 	switch h {
-	case HostType_BigTop, HostType_VHost:
+	case HostType_BigTop, HostType_VHost, HostType_Standalone:
 		return true
 	default:
 		return false

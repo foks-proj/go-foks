@@ -86,7 +86,7 @@ foks-server-docker-push: ghcr-login foks-server-docker-image-latest foks-tool-do
 	docker push ghcr.io/foks-proj/foks-tool:latest
 
 .PHONY: foks-tool-linux
-foks-tool-linux: build/foks-tool.linux-arm64 build/foks-tool.linux-amd64
+foks-tool-linux: build/foks-tool.linux.arm64.gz build/foks-tool.linux.amd64.gz
 
 .PHONY: foks-tool-docker-image-latest
 foks-tool-docker-image-latest:
@@ -95,8 +95,17 @@ foks-tool-docker-image-latest:
 		-t foks-tool:latest \
 		--platform=linux/arm64,linux/amd64 .
 
-build/foks-tool.linux-arm64:
+.PHONY: build/foks-tool.linux.arm64.gz
+build/foks-tool.linux.arm64.gz:
 	bash -x scripts/cross-compile-foks-tool.bash -p arm64 -s
-build/foks-tool.linux-amd64:
+
+.PHONY: build/foks-tool.linux.amd64.gz
+build/foks-tool.linux.amd64.gz:
 	bash -x scripts/cross-compile-foks-tool.bash -p amd64 -s
 
+.PHONY: foks-tool-release
+foks-tool-gh-push: foks-tool-linux
+	gh release upload \
+		--clobber $$(git describe --tags --abbrev=0) \
+		build/foks-tool.linux.arm64.gz \
+		build/foks-tool.linux.amd64.gz

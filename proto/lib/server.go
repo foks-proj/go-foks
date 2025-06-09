@@ -126,7 +126,7 @@ var FrontFacingServers []ServerType = []ServerType{
 var CoreServers []ServerType = []ServerType{
 	ServerType_Reg, ServerType_User, ServerType_MerkleBuilder, ServerType_InternalCA, ServerType_MerkleQuery,
 	ServerType_Queue, ServerType_MerkleBatcher, ServerType_MerkleSigner, ServerType_Probe,
-	ServerType_KVStore,
+	ServerType_KVStore, ServerType_Autocert,
 }
 
 func (t ServerType) IsFrontFacing() bool {

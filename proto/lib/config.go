@@ -42,6 +42,7 @@ const (
 	HostType_BigTop          HostType = 1
 	HostType_VHostManagement HostType = 2
 	HostType_VHost           HostType = 3
+	HostType_Standalone      HostType = 4
 )
 
 var HostTypeMap = map[string]HostType{
@@ -49,12 +50,14 @@ var HostTypeMap = map[string]HostType{
 	"BigTop":          1,
 	"VHostManagement": 2,
 	"VHost":           3,
+	"Standalone":      4,
 }
 var HostTypeRevMap = map[HostType]string{
 	0: "None",
 	1: "BigTop",
 	2: "VHostManagement",
 	3: "VHost",
+	4: "Standalone",
 }
 
 type HostTypeInternal__ HostType
