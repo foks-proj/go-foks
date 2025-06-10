@@ -184,7 +184,7 @@ func BulkInsertLocalViewPermissions(
 	if err != nil {
 		return err
 	}
-	if cfg.Viewership.User != proto.ViewershipMode_OpenToAll {
+	if cfg.Viewership.User != proto.ViewershipMode_Open {
 		return core.PermissionError("no open viewership mode")
 	}
 

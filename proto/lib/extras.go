@@ -4184,23 +4184,11 @@ func (v ViewershipMode) String() string {
 		return "closed"
 	case ViewershipMode_OpenToAdmin:
 		return "open_to_admin"
-	case ViewershipMode_OpenToAll:
-		return "open_to_all"
+	case ViewershipMode_Open:
+		return "open"
 	default:
 		return "error"
 	}
-}
-
-func (v *ViewershipMode) ImportFromCLI(s string) error {
-	switch s {
-	case "closed":
-		*v = ViewershipMode_Closed
-	case "open":
-		*v = ViewershipMode_OpenToAll
-	default:
-		return DataError("bad viewership mode")
-	}
-	return nil
 }
 
 func (v *ViewershipMode) ImportFromDB(s string) error {
@@ -4209,8 +4197,8 @@ func (v *ViewershipMode) ImportFromDB(s string) error {
 		*v = ViewershipMode_Closed
 	case "open_to_admin":
 		*v = ViewershipMode_OpenToAdmin
-	case "open_to_all":
-		*v = ViewershipMode_OpenToAll
+	case "open":
+		*v = ViewershipMode_Open
 	default:
 		return DataError("bad viewership mode")
 	}

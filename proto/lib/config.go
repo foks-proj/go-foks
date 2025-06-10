@@ -12,18 +12,18 @@ type ViewershipMode int
 const (
 	ViewershipMode_Closed      ViewershipMode = 0
 	ViewershipMode_OpenToAdmin ViewershipMode = 1
-	ViewershipMode_OpenToAll   ViewershipMode = 2
+	ViewershipMode_Open        ViewershipMode = 2
 )
 
 var ViewershipModeMap = map[string]ViewershipMode{
 	"Closed":      0,
 	"OpenToAdmin": 1,
-	"OpenToAll":   2,
+	"Open":        2,
 }
 var ViewershipModeRevMap = map[ViewershipMode]string{
 	0: "Closed",
 	1: "OpenToAdmin",
-	2: "OpenToAll",
+	2: "Open",
 }
 
 type ViewershipModeInternal__ ViewershipMode

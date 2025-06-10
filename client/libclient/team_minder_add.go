@@ -44,7 +44,7 @@ func (t *TeamMinder) requireOpenViewership(m MetaContext) error {
 	if err != nil {
 		return err
 	}
-	if cfg.Viewership.User != proto.ViewershipMode_OpenToAll {
+	if cfg.Viewership.User != proto.ViewershipMode_Open {
 		return core.PermissionError("host does not allow open viewership; must use 3-way invitation flow")
 	}
 	return nil

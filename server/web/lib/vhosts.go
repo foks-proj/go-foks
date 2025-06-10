@@ -20,7 +20,7 @@ type ViewershipMode struct {
 }
 
 var ValidUserViewershipModes = []ViewershipMode{
-	{proto.ViewershipMode_OpenToAll, "open"},
+	{proto.ViewershipMode_Open, "open"},
 	{proto.ViewershipMode_Closed, "closed"},
 }
 

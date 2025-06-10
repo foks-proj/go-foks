@@ -132,8 +132,9 @@ func (s *StandupCmd) setViewership() error {
 		s.viewershipStr = "open"
 	}
 	var tmp proto.ViewershipMode
-	err := tmp.ImportFromCLI(s.viewershipStr)
-	if err != nil {
+	err := tmp.ImportFromDB(s.viewershipStr)
+	if err != nil ||
+		(tmp != proto.ViewershipMode_Open && tmp != proto.ViewershipMode_Closed) {
 		return core.BadArgsError("invalid value for --viewership; must be 'open' or 'closed'")
 	}
 	s.viewership = &tmp
@@ -274,7 +275,7 @@ func (s *StandupCmd) getViewshipMode(m shared.MetaContext) error {
 	switch i {
 	case 0:
 		s.viewershipStr = "open"
-		tmp := proto.ViewershipMode_OpenToAll
+		tmp := proto.ViewershipMode_Open
 		s.viewership = &tmp
 	case 1:
 		s.viewershipStr = "closed"

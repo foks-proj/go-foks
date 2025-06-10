@@ -6,7 +6,7 @@
 enum ViewershipMode {
     Closed @0;
     OpenToAdmin @1;
-    OpenToAll @2;
+    Open @2;
 }
 
 enum HostType {

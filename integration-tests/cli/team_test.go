@@ -419,7 +419,7 @@ func createTeamOpenViewership(
 	require.NoError(t, err)
 	m = m.WithHostID(chid)
 
-	err = shared.VHostSetUserViewership(m, proto.ViewershipMode_OpenToAll)
+	err = shared.VHostSetUserViewership(m, proto.ViewershipMode_Open)
 	require.NoError(t, err)
 
 	y := newTestAgent(t)

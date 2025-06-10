@@ -53,7 +53,7 @@ func TestOpenUserViewAndTeamAdd(t *testing.T) {
 
 	m = m.WithHostID(&vHostID.HostID)
 
-	err = shared.VHostSetUserViewership(m, proto.ViewershipMode_OpenToAll)
+	err = shared.VHostSetUserViewership(m, proto.ViewershipMode_Open)
 	require.NoError(t, err)
 
 	// don't forget to change it back so other tests don't fail
@@ -165,7 +165,7 @@ func TestOpenViewTeamList(t *testing.T) {
 
 	m := tew.MetaContext()
 	m = m.WithHostID(&vHostID.HostID)
-	err := shared.VHostSetUserViewership(m, proto.ViewershipMode_OpenToAll)
+	err := shared.VHostSetUserViewership(m, proto.ViewershipMode_Open)
 	require.NoError(t, err)
 
 	// don't forget to change it back so other tests don't fail

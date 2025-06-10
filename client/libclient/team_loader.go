@@ -1369,7 +1369,7 @@ func (l *TeamLoader) setCanLoadMembersFlag(m MetaContext) error {
 		return err
 	}
 
-	if cfg.View.User == proto.ViewershipMode_OpenToAll {
+	if cfg.View.User == proto.ViewershipMode_Open {
 		l.canLoadMembers = true
 		l.openView = true
 		return nil

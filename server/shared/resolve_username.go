@@ -36,7 +36,7 @@ func ResolveUsername(
 
 	switch typ {
 	case rem.LoadUserChainAuthType_OpenVHost:
-		if hc.Viewership.User != proto.ViewershipMode_OpenToAll {
+		if hc.Viewership.User != proto.ViewershipMode_Open {
 			return zed, pde
 		}
 		authed = true

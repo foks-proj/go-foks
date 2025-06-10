@@ -110,7 +110,7 @@ CREATE TABLE server_aliases (
 
 CREATE TYPE host_type AS ENUM('big_top', 'vhost_management', 'vhost', 'standalone');
 
-CREATE TYPE viewership_mode AS ENUM('closed', 'open_to_admin', 'open_to_all');
+CREATE TYPE viewership_mode AS ENUM('closed', 'open_to_admin', 'open');
 
 /*
  * one row in host-config for every host, whether virtual or not.

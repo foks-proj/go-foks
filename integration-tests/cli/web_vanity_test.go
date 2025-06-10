@@ -331,14 +331,14 @@ func (a *adminWebClient) openUserViewership(t *testing.T) {
 	slices.Sort(vals)
 	require.Equal(t, []string{
 		proto.ViewershipMode_Closed.String(),
-		proto.ViewershipMode_OpenToAll.String(),
+		proto.ViewershipMode_Open.String(),
 	}, vals)
 	targ, found := form.Attr("hx-patch")
 	require.True(t, found, "hx-patch")
 	varName, found := sel.Attr("name")
 	require.True(t, found, "name")
 	data := url.Values{}
-	data.Add(varName, proto.ViewershipMode_OpenToAll.String())
+	data.Add(varName, proto.ViewershipMode_Open.String())
 	resp := a.httpOp(t, "PATCH", proto.URLString(targ), data, nil)
 	require.Equal(t, http.StatusOK, resp.StatusCode)
 }

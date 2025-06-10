@@ -38,8 +38,9 @@ func (i *ViewCmd) CheckArgs(args []string) error {
 	}
 	if i.SetTo != "" {
 		var tmp proto.ViewershipMode
-		err := tmp.ImportFromCLI(i.SetTo)
-		if err != nil {
+		err := tmp.ImportFromDB(i.SetTo)
+		if err != nil ||
+			(tmp != proto.ViewershipMode_Open && tmp != proto.ViewershipMode_Closed) {
 			return core.BadArgsError("invalid value for --set; must be 'open' or 'closed'")
 		}
 		i.Set = &tmp

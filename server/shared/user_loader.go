@@ -334,7 +334,7 @@ func (u *UserLoader) checkPerms(m MetaContext) error {
 			return err
 		}
 		switch cfg.Viewership.User {
-		case proto.ViewershipMode_OpenToAll:
+		case proto.ViewershipMode_Open:
 			return nil
 		default:
 			return core.PermissionError("no open viewership mode")
