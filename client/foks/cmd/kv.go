@@ -8,6 +8,7 @@ import (
 	"io"
 	"os"
 	"time"
+	"unicode/utf8"
 
 	"github.com/foks-proj/go-foks/client/agent"
 	"github.com/foks-proj/go-foks/client/libclient"
@@ -328,27 +329,37 @@ func kvSymlink(m libclient.MetaContext, top *cobra.Command) {
 func kvGet(m libclient.MetaContext, top *cobra.Command) {
 	var mode int
 	var force bool
+	var forceOutput bool
 	quickKVCmd(m, top,
 		"get <key> <output-file>", nil,
 		"get a key-value store entry",
-		"Get a key-value store entry",
+		core.MustRewrap(
+			`Get a key-value store entry. Supply a key and an optional output file. If
+no output file is given, or if the output file is '-', then the value is printed to standard output.
+If standard output is a terminal, and the file is probably binary, an error is returned.
+This behavior can be overridden by specifying the --force-output flag. `, 72, 0),
 		quickKVOpts{},
 		func(cmd *cobra.Command) {
 			cmd.Flags().IntVarP(&mode, "mode", "", -1, "file mode to use when writing to a file")
 			cmd.Flags().BoolVarP(&force, "force", "", false, "overwrite existing file")
+			cmd.Flags().BoolVarP(&forceOutput, "force-output", "", false, "force output to terminal even if it looks like binary data")
 		},
 		func(arg []string, cfg lcl.KVConfig, cli lcl.KVClient) error {
-			if len(arg) != 2 {
-				return ArgsError("expected exactly 2 arguments -- the key and the file to write to (or '-' for stdout)")
+			if len(arg) != 2 && len(arg) != 1 {
+				return ArgsError("expected 1 or 2 arguments -- the key and the file to write to (or '-' for stdout)")
+			}
+			out := "-"
+			if len(arg) == 2 {
+				out = arg[1]
 			}
 			if mode != -1 && (mode < 0 || mode > 0o777) {
 				return ArgsError("mode must be between 0 and 0o777")
 			}
-			if arg[1] == "-" && mode >= 0 {
+			if out == "-" && mode >= 0 {
 				return ArgsError("cannot specify file mode when writing to stdout")
 			}
 			path := makeKVPath(arg[0])
-			err := kvGetWithArgs(m, cfg, cli, path, arg[1], mode, force)
+			err := kvGetWithArgs(m, cfg, cli, path, out, mode, force, forceOutput)
 			if err != nil {
 				return err
 			}
@@ -396,10 +407,70 @@ func openReader(m libclient.MetaContext, value string, isFile bool) (io.Reader, 
 	return f, nil
 }
 
-func openWriter(m libclient.MetaContext, dest string, mode int, force bool) (io.WriteCloser, error) {
-	if dest == "-" {
-		return m.G().UIs().Terminal.OutputStream(), nil
+type terminalOutputWrapper struct {
+	io.WriteCloser
+	didFirst bool
+}
+
+func isProbablyBinary(data []byte) bool {
+	if len(data) == 0 {
+		return false
 	}
+	if !utf8.Valid(data) {
+		return true
+	}
+	for _, b := range data {
+		if b < 0x09 || (b > 0x0D && b < 0x20) {
+			return true
+		}
+	}
+	return false
+}
+
+type TerminalError string
+
+func (e TerminalError) Error() string {
+	return string(e)
+}
+
+func (t *terminalOutputWrapper) Write(p []byte) (n int, err error) {
+	if !t.didFirst {
+		t.didFirst = true
+		if isProbablyBinary(p) {
+			return 0, TerminalError(
+				"refusing to output binary data to terminal; use --force-output to override",
+			)
+		}
+	}
+	return t.WriteCloser.Write(p)
+}
+
+var _ io.WriteCloser = (*terminalOutputWrapper)(nil)
+
+func (t *terminalOutputWrapper) Close() error {
+	return t.WriteCloser.Close()
+}
+
+func openWriter(
+	m libclient.MetaContext,
+	dest string,
+	mode int,
+	force bool,
+	forceOutput bool,
+) (io.WriteCloser, error) {
+
+	if dest == "-" {
+		tui := m.G().UIs().Terminal
+		stdout := tui.OutputStream()
+		if tui.IsOutputTTY() && !forceOutput {
+			return &terminalOutputWrapper{
+				WriteCloser: stdout,
+				didFirst:    false,
+			}, nil
+		}
+		return stdout, nil
+	}
+
 	if mode < 0 {
 		mode = 0o600
 	}
@@ -420,8 +491,9 @@ func kvGetWithArgs(
 	dest string,
 	mode int,
 	force bool,
+	forceOutput bool,
 ) error {
-	wrt, err := openWriter(m, dest, mode, force)
+	wrt, err := openWriter(m, dest, mode, force, forceOutput)
 	if err != nil {
 		return err
 	}
