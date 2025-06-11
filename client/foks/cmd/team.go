@@ -6,6 +6,7 @@ package cmd
 import (
 	"github.com/foks-proj/go-foks/client/agent"
 	"github.com/foks-proj/go-foks/client/libclient"
+	"github.com/foks-proj/go-foks/client/libterm"
 	"github.com/foks-proj/go-foks/lib/core"
 	"github.com/foks-proj/go-foks/lib/team"
 	"github.com/foks-proj/go-foks/proto/lcl"
@@ -270,7 +271,7 @@ func teamAdd(m libclient.MetaContext, top *cobra.Command) {
 		Use:     "add <team> <user1> <user2> ...",
 		Aliases: nil,
 		Short:   "add a user to a team (on an open-view host)",
-		Long: core.MustRewrap(`Add a user to a team on an open-view host.
+		Long: libterm.MustRewrapSense(`Add a user to a team on an open-view host.
 
 Recall that typically, adding a team (or user) to a team is a 3-way handshake, since
 the intended party needs to allow the team admin first to view its sigchain. On an open-view
@@ -291,7 +292,7 @@ on other hosts.
 
 See `+"`foks help roles`"+` for more information on roles -- how they work and how 
 to specify them for CLI commands.
-`, terminalCols(), 0),
+`, 0),
 		Example: `
 # Add to team acme at the admin level: (1) bob (source role is owner);
 # and (2) the member/0 members of human-resources team; and (2) the 
@@ -353,7 +354,7 @@ func teamChangeRoles(m libclient.MetaContext, top *cobra.Command) {
 		Use:     "change-roles <team> <change1> <change2> ...",
 		Aliases: nil,
 		Short:   "change the roles of a set of users in a team",
-		Long: core.MustRewrap(`Change the roles of a set of users in a team; or remove them if applicable.
+		Long: libterm.MustRewrapSense(`Change the roles of a set of users in a team; or remove them if applicable.
 
 Role changes are of the form: <party>[/<src-role>]→<new-role>. Party is specified as usual, in
 <party>[@<host>] form. If no host is specified, then the current host is used. The 
@@ -366,7 +367,7 @@ to specify them for CLI commands.
 
 Note that for this command, it's possible to use a two-character arrow ("->") instead of the 
 unicode arrow ("→"), but on most shells, it must be written "-\>" to avoid being interpreted as 
-an output redirection.`, terminalCols(), 0),
+an output redirection.`, 0),
 		Example: `
 # for team acme:
 foks team change-roles acme alice/m→o   # change alice's role to owner

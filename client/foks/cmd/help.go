@@ -14,7 +14,7 @@ import (
 	"unicode"
 
 	"github.com/foks-proj/go-foks/client/libclient"
-	"github.com/foks-proj/go-foks/lib/core"
+	"github.com/foks-proj/go-foks/client/libterm"
 	"github.com/spf13/cobra"
 )
 
@@ -172,7 +172,7 @@ func helpRoles(m libclient.MetaContext) *cobra.Command {
 	return &cobra.Command{
 		Use:   "roles",
 		Short: "Help about how roles work in FOKS",
-		Long: core.MustRewrap(`
+		Long: libterm.MustRewrapSense(`
 There are four roles in FOKS. From most privileged to least: owner, admin,
 member, and none. First consider roles in the context of a team. The user that
 creates a team starts as its sole owner. Owners have the ability to later delete
@@ -208,7 +208,7 @@ keys. One can imagine an "m/3" user key that might be used to encrypt and decryp
 data but not to make changes to the user's set of keys and devices. We so far
 have not implemented this, so it's currently safe to assume that all user keys
 are at the owner level.
-`, terminalCols(), 0),
+`, 0),
 	}
 }
 

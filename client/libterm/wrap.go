@@ -1,7 +1,7 @@
 // Copyright (c) 2025 ne43, Inc.
 // Licensed under the MIT License. See LICENSE in the project root for details.
 
-package core
+package libterm
 
 import (
 	"bufio"
@@ -87,6 +87,10 @@ func MustRewrap(s string, cols int, pad int) string {
 	return s
 }
 
+func MustRewrapSense(s string, pad int) string {
+	return MustRewrap(s, TerminalWidthWithDefault(), pad)
+}
+
 func Blockquote(s string, cols int) string {
 	lines := strings.Split(s, "\n")
 	spcs := func(n int) string {
@@ -108,4 +112,28 @@ func Blockquote(s string, cols int) string {
 		}
 	}
 	return strings.Join(lines, "\n")
+}
+
+func FancyUIWrapText(s string, padding int, secondLineIndent int) string {
+
+	dims, err := GetTermDims()
+	if err != nil {
+		return s
+	}
+	width := dims.Width
+
+	// the rewrap function we're going to call decreases the inner width by
+	// padding, but we also want a right margin, so are including it here.
+	width -= padding
+
+	txt, err := Rewrap(s, width, padding+secondLineIndent)
+	if err != nil {
+		return s
+	}
+
+	if len(txt) > secondLineIndent {
+		txt = txt[secondLineIndent:]
+	}
+
+	return txt
 }

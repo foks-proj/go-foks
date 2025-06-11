@@ -13,6 +13,7 @@ import (
 	"github.com/foks-proj/go-foks/client/agent"
 	"github.com/foks-proj/go-foks/client/libclient"
 	"github.com/foks-proj/go-foks/client/libkv"
+	"github.com/foks-proj/go-foks/client/libterm"
 	"github.com/foks-proj/go-foks/lib/core"
 	"github.com/foks-proj/go-foks/proto/lcl"
 	proto "github.com/foks-proj/go-foks/proto/lib"
@@ -333,11 +334,11 @@ func kvGet(m libclient.MetaContext, top *cobra.Command) {
 	quickKVCmd(m, top,
 		"get <key> [<output-file>]", nil,
 		"get a key-value store entry",
-		core.MustRewrap(
+		libterm.MustRewrapSense(
 			`Get a key-value store entry. Supply a key and an optional output file. If
 no output file is given, or if the output file is '-', then the value is printed to standard output.
 If standard output is a terminal, and the file is probably binary, an error is returned.
-This behavior can be overridden by specifying the --force-output flag. `, 72, 0),
+This behavior can be overridden by specifying the --force-output flag. `, 0),
 		quickKVOpts{},
 		func(cmd *cobra.Command) {
 			cmd.Flags().IntVarP(&mode, "mode", "", -1, "file mode to use when writing to a file")

@@ -10,6 +10,7 @@ import (
 	"runtime"
 
 	"github.com/foks-proj/go-foks/client/libclient"
+	"github.com/foks-proj/go-foks/client/libterm"
 	"github.com/foks-proj/go-foks/lib/core"
 	"github.com/spf13/cobra"
 )
@@ -18,7 +19,7 @@ func rootCmdSwissArmyKnife() *cobra.Command {
 	return &cobra.Command{
 		Use:   "foks",
 		Short: "Command-line interface to the Federated Open Key Service (FOKS)",
-		Long: `FOKS is a federated protocol that allows for online public key advertisement,
+		Long: libterm.MustRewrapSense(`FOKS is a federated protocol that allows for online public key advertisement,
 sharing, and rotation. It works for a user and their many devices, for many users who want
 to form a group, for groups of groups etc. The core primitive is that several
 private key holders can conveniently share a private key; and that private key
@@ -34,7 +35,7 @@ services.
 
 Many applications can be built on top of this primitive but best suited are those
 that share encrypted, persistent information across groups of users with multiple
-devices. For instance, files and git hosting.`,
+devices. For instance, files and git hosting.`, 0),
 		Version: core.CurrentSoftwareVersion.String(),
 	}
 }
@@ -172,8 +173,6 @@ func MainInnerWithCmd(cmd string, args []string, testSetupHook func(m libclient.
 
 	return nil
 }
-
-func terminalCols() int { return 65 }
 
 func init() {
 	AddCmd(versionCmd)

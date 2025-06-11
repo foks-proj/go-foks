@@ -10,6 +10,7 @@ import (
 	"github.com/foks-proj/go-foks/client/agent"
 	"github.com/foks-proj/go-foks/client/foks/cmd/ui"
 	"github.com/foks-proj/go-foks/client/libclient"
+	"github.com/foks-proj/go-foks/client/libterm"
 	"github.com/foks-proj/go-foks/client/libyubi"
 	"github.com/foks-proj/go-foks/lib/core"
 	"github.com/foks-proj/go-foks/proto/lcl"
@@ -114,7 +115,7 @@ func yubiSetPinCmd(m libclient.MetaContext) *cobra.Command {
 		Use:     "set-pin-and-puk",
 		Aliases: []string{"set-pin"},
 		Short:   "set PIN for YubiKey",
-		Long: core.MustRewrap(`Set the PIN for the YubiKey; also will set the PUK and management key.
+		Long: libterm.MustRewrapSense(`Set the PIN for the YubiKey; also will set the PUK and management key.
 
 Run with no arguments to use the wizard. Or supply --current-pin and --new-pin,
 --current-puk and --new-puk to run without interactivity. Leaving --current-pin
@@ -153,7 +154,7 @@ so setting the PIN without setting the PUK or the management key achieves nothin
 
 One last item here. FOKS has its own notion of "PUK" which stands for "per-user key".
 This is different from the YubiKey's version of "PUK", which stands for "PIN unblock key".
-Unfortunate acronym collision!`, 72, 0),
+Unfortunate acronym collision!`, 0),
 		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, arg []string) error {
 			return runYubiSPP(m, cmd, arg, &opts)

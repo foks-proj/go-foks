@@ -5,49 +5,11 @@ package ui
 
 import (
 	"fmt"
-	"os"
 	"strings"
 
 	"github.com/charmbracelet/bubbles/textinput"
-	"github.com/foks-proj/go-foks/lib/core"
-	"golang.org/x/term"
+	"github.com/foks-proj/go-foks/client/libterm"
 )
-
-func getTermSize() (int, int) {
-	fd := int(os.Stdout.Fd())
-	if !term.IsTerminal(fd) {
-		return 0, 0
-	}
-
-	width, height, err := term.GetSize(fd)
-	if err != nil {
-		return 0, 0
-	}
-	return width, height
-}
-
-func wrapText(s string, padding int, secondLineIndent int) string {
-
-	width, _ := getTermSize()
-	if width == 0 {
-		return s
-	}
-
-	// the rewrap function we're going to call decreases the inner width by
-	// padding, but we also want a right margin, so are including it here.
-	width -= padding
-
-	txt, err := core.Rewrap(s, width, padding+secondLineIndent)
-	if err != nil {
-		return s
-	}
-
-	if len(txt) > secondLineIndent {
-		txt = txt[secondLineIndent:]
-	}
-
-	return txt
-}
 
 func drawTextInput(ti textinput.Model, prompt string, validator func(string) error) string {
 	var err error
@@ -61,7 +23,7 @@ func drawTextInput(ti textinput.Model, prompt string, validator func(string) err
 			emsg = styl.Render(textInputStyle.Render(err.Error())) + "\n\n"
 		}
 	}
-	prompt = wrapText(prompt, 4, 3)
+	prompt = libterm.FancyUIWrapText(prompt, 4, 3)
 	var b strings.Builder
 	fmt.Fprintf(&b, "\n%s\n\n%s\n\n%s",
 		prompt,

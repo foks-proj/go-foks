@@ -11,7 +11,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/foks-proj/go-foks/client/libclient"
-	"github.com/foks-proj/go-foks/lib/core"
+	"github.com/foks-proj/go-foks/client/libterm"
 	"github.com/foks-proj/go-foks/proto/lcl"
 	proto "github.com/foks-proj/go-foks/proto/lib"
 )
@@ -110,7 +110,7 @@ func newStateYSPPSetManagementKey() state {
 
 				fmt.Fprintf(&b,
 					"%s\n   %s\n\n",
-					core.MustRewrap(whatThe, 72, 2),
+					libterm.MustRewrapSense(whatThe, 2),
 					key,
 				)
 				succ = "YubiKey management key set"
@@ -120,7 +120,7 @@ func newStateYSPPSetManagementKey() state {
 					"did not change. You can write it down and keep it in a safe place if you haven't already."
 				fmt.Fprintf(&b,
 					"%s\n   %s\n\n",
-					core.MustRewrap(whatThe, 72, 2),
+					libterm.MustRewrapSense(whatThe, 2),
 					key,
 				)
 				succ = "YubiKey management key verified"
