@@ -240,8 +240,8 @@ github.com/cli/browser v1.3.0/go.mod h1:HH8s+fOAxjhQoBUAsKuPCbqUuxZDhQ2/aD+SzsEf
 github.com/cli/safeexec v1.0.1 h1:e/C79PbXF4yYTN/wauC4tviMxEV13BwljGj0N9j+N00=
 github.com/cli/safeexec v1.0.1/go.mod h1:Z/D4tTN8Vs5gXYHDCbaM1S/anmEDnJb1iW0+EJ5zx3Q=
 github.com/client9/misspell v0.3.4/go.mod h1:qj6jICC3Q7zFZvVWo7KLAzC3yx5G7kyvSDkc90ppPyw=
-github.com/cloudflare/circl v1.6.0 h1:cr5JKic4HI+LkINy2lg3W2jF8sHCVTBncJr5gIIq7qk=
-github.com/cloudflare/circl v1.6.0/go.mod h1:uddAzsPgqdMAYatqJ0lsjX1oECcQLIlRpzZh3pJrofs=
+github.com/cloudflare/circl v1.6.1 h1:zqIqSPIndyBh1bjLVVDHMPpVKqp8Su/V+6MeDzzQBQ0=
+github.com/cloudflare/circl v1.6.1/go.mod h1:uddAzsPgqdMAYatqJ0lsjX1oECcQLIlRpzZh3pJrofs=
 github.com/cncf/udpa/go v0.0.0-20191209042840-269d4d468f6f/go.mod h1:M8M6+tZqaGXZJjfX53e64911xZQV5JYwmTeXPW+k8Sc=
 github.com/compose-spec/compose-go v1.20.2 h1:u/yfZHn4EaHGdidrZycWpxXgFffjYULlTbRfJ51ykjQ=
 github.com/compose-spec/compose-go v1.20.2/go.mod h1:+MdqXV4RA7wdFsahh/Kb8U0pAJqkg7mr4PM9tFKU8RM=
@@ -309,12 +309,6 @@ github.com/foks-proj/go-ctxlog v0.0.0-20250303173751-8f2c09f6847f h1:+a3x6K1YmVr
 github.com/foks-proj/go-ctxlog v0.0.0-20250303173751-8f2c09f6847f/go.mod h1:Krvn7SJOuBi1gZx2r40NBOAjftGg2j++3nHiAPis9Oo=
 github.com/foks-proj/go-git-remhelp v0.0.2 h1:DPAJAm26TdK2KOVdu66ZvleOLsQ1LlXCGiuZBf7i1bQ=
 github.com/foks-proj/go-git-remhelp v0.0.2/go.mod h1:64ubmkraJ8SDpgHcsnSyTapwpZgYF/NXZHN8Jx0f1FM=
-github.com/foks-proj/go-snowpack-compiler v0.0.2 h1:KjQcy5Cra6FEkaf7QsZebrFzgqu5Ke81+dlLpcIy7W0=
-github.com/foks-proj/go-snowpack-compiler v0.0.2/go.mod h1:8XQT6+B9p0g3eluzp6L3ujtk6OuoFOMbkUXTVcytL+E=
-github.com/foks-proj/go-snowpack-compiler v0.0.3 h1:7yIbDWeEySj9+MxnFKnLJp0czqFvgoTXEMo4NjaRApg=
-github.com/foks-proj/go-snowpack-compiler v0.0.3/go.mod h1:8XQT6+B9p0g3eluzp6L3ujtk6OuoFOMbkUXTVcytL+E=
-github.com/foks-proj/go-snowpack-compiler v0.0.4 h1:J+lUbTLhEHMR21AdnNiBjv1WNnAIxYnLCZo+wKeSZKo=
-github.com/foks-proj/go-snowpack-compiler v0.0.4/go.mod h1:8XQT6+B9p0g3eluzp6L3ujtk6OuoFOMbkUXTVcytL+E=
 github.com/foks-proj/go-snowpack-compiler v0.0.5 h1:06u7A6/1LRV8B6Y16SXQRlg04V9NnCzEopXXT2snjPg=
 github.com/foks-proj/go-snowpack-compiler v0.0.5/go.mod h1:8XQT6+B9p0g3eluzp6L3ujtk6OuoFOMbkUXTVcytL+E=
 github.com/foks-proj/go-snowpack-rpc v0.0.2 h1:2aYoOTBMMRzvAAJdToEeAEjcNWzUVFHl1J1zpF2lPWI=
