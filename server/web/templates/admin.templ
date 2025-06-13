@@ -30,7 +30,7 @@ templ AdminMain(u *lib.AdminPageData) {
 
 templ billingPill(u *lib.AdminPageData) {
 	@leftColPill("billing", "") {
-		<h3 class="font-semibold text-slate-700">
+		<h3 class="font-semibold text-slate-700 dark:text-slate-200">
 			Billing
 		</h3>
 		<ul class="m-1">
@@ -59,6 +59,20 @@ templ billingPill(u *lib.AdminPageData) {
 	}
 }
 
+templ themeTogglePill() {
+	@leftColPill("theme-toggle-pill", "") {
+		<div class="text-center">
+			<button
+				id="theme-toggle"
+				class="px-3 py-1 standard w-full"
+			>
+				<span class="dark:hidden">🌙 Dark Mode</span>
+				<span class="hidden dark:inline">☀️ Light Mode</span>
+			</button>
+		</div>
+	}
+}
+
 templ adminMenuBar(u *lib.AdminPageData) {
 	@errorDiv()
 	switch u.Which.HostType {
@@ -70,6 +84,7 @@ templ adminMenuBar(u *lib.AdminPageData) {
 			<div>🦊</div>
 	}
 	@billingPill(u)
+	@themeTogglePill()
 }
 
 templ Admin(u *lib.AdminPageData) {

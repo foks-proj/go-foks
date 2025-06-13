@@ -13,13 +13,13 @@ templ code() {
 
 templ user(u *lib.User, showHost bool) {
 	<span class="">
-		<span class="text-teal-500" id="username">
+		<span class="text-teal-500 dark:text-teal-400" id="username">
 			{ u.Name.String() }
 		</span>
 		if showHost && u.Host != nil {
 			<span class="mx-0.5">
 				{ "@" }
-				<span class="ml-0.5 text-slate-800">{ u.Host.Name.String() }</span>
+				<span class="ml-0.5 text-slate-800 dark:text-slate-200">{ u.Host.Name.String() }</span>
 			</span>
 		}
 	</span>
@@ -28,9 +28,9 @@ templ user(u *lib.User, showHost bool) {
 templ topBar(u *lib.User, typ proto.HostType) {
 	<div class="p-3 mx-0 mt-2 mb-3 text-sm grid sm:grid-cols-2 xs:grid-cols-1 admin-panel-border" id="page-title">
 		<div>
-			<h1 class="font-bold">
+			<h1 class="font-bold dark:text-gray-100">
 				FOKS Control Panel
-				<span class="text-xs font-medium text-slate-500" id="page-subtitle">
+				<span class="text-xs font-medium text-slate-500 dark:text-slate-400" id="page-subtitle">
 					switch typ {
 						case proto.HostType_BigTop:
 							Team and Quota Management

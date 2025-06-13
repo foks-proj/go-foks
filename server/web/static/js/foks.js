@@ -282,6 +282,19 @@
     });
   }
 
+  function setThemeToggle() {
+    const themeToggle = document.getElementById('theme-toggle');
+    if (!themeToggle) {
+      return;
+    }
+    if (!attachDespam(themeToggle)) {
+      return;
+    }
+    themeToggle.addEventListener('click', function() {
+      toggleTheme();
+    });
+  }
+
   function setFormMachinery() {
     setHostnameValidator();
     setBYODValidator();
@@ -302,6 +315,7 @@
     }
     setFormMachinery();
     setDisplayWidgets();
+    setThemeToggle();
   }
 
   function beforeSwap(evt) {
@@ -322,6 +336,26 @@
       }
     }
   }
+
+  // Dark mode functionality
+  function initTheme() {
+    const savedTheme = localStorage.getItem('theme');
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    
+    if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }
+
+  function toggleTheme() {
+    const isDark = document.documentElement.classList.toggle('dark');
+    localStorage.setItem('theme', isDark ? 'dark' : 'light');
+  }
+
+  // Initialize theme on page load
+  initTheme();
 
   htmx.on("htmx:load", updateDOM);
   htmx.on("htmx:beforeSwap", beforeSwap);

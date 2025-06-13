@@ -82,7 +82,7 @@ templ usageTable(u *lib.AdminPageData) {
 	>
 		@usageRowSet(u.Usage.Mine, true, false)
 		<div
-			class={ "border-t-2 col-span-4 m-1 border-dotted border-slate-400 " + 
+			class={ "border-t-2 col-span-4 m-1 border-dotted border-slate-400 dark:border-slate-600 " + 
 		        core.Sel(u.Usage.HasTheirs(), "", "hidden") }
 			id="teams-table-sep"
 		></div>
@@ -93,7 +93,7 @@ templ usageTable(u *lib.AdminPageData) {
 templ usagePill(u *lib.UsageData, swap string) {
 	@leftColPill("usage-pill", swap) {
 		<div>
-			<h3 class="font-semibold text-slate-700">
+			<h3 class="font-semibold text-slate-700 dark:text-slate-200">
 				<a
 					hx-trigger="click"
 					hx-swap="innerHTML"
@@ -107,7 +107,7 @@ templ usagePill(u *lib.UsageData, swap string) {
 			</h3>
 		</div>
 		<div class="m-1">
-			<span class="text-slate-700">Plan: </span>
+			<span class="text-slate-700 dark:text-slate-200">Plan: </span>
 			<span>
 				if u.UserPlan == nil || !u.UserPlan.IsLive() {
 					<i>none active </i>
@@ -125,7 +125,7 @@ templ usagePill(u *lib.UsageData, swap string) {
 			</span>
 		</div>
 		<div class="m-1">
-			<span class="text-slate-700">
+			<span class="text-slate-700 dark:text-slate-200">
 				Linked teams:
 			</span>
 			<span>
@@ -136,7 +136,7 @@ templ usagePill(u *lib.UsageData, swap string) {
 			</span>
 		</div>
 		<div class="m-1">
-			<span class="text-slate-700">
+			<span class="text-slate-700 dark:text-slate-200">
 				Disk usage:
 			</span>
 			<span>
