@@ -308,7 +308,7 @@ templ managePlanActive(d *lib.AdminPageData) {
 				</div>
 				<div class="flex flex-wrap justify-around">
 					if d.UserPlan.Status.CanCancel() && !d.UserPlan.PendingCancel {
-						<div class="mb-2 grow min-w-28 max-w-64 border rounded p-3">
+						<div class="plan-manage-box">
 							<div>
 								<form
 									hx-put={ "/admin/plans/active/cancel" }
@@ -340,7 +340,7 @@ templ managePlanActive(d *lib.AdminPageData) {
 							</div>
 						</div>
 					} else if d.UserPlan.Status == infra.PlanStatus_Active && d.UserPlan.PendingCancel {
-						<div class="mb-2 grow min-w-28 max-w-64 border rounded p-3">
+						<div class="plan-manage-box">
 							<div>
 								<form
 									hx-put={ "/admin/plans/active/resume" }
@@ -371,7 +371,7 @@ templ managePlanActive(d *lib.AdminPageData) {
 							</div>
 						</div>
 					}
-					<div class="mb-2 grow min-w-28 max-w-64 border rounded p-3">
+					<div class="plan-manage-box">
 						<div>
 							<form
 								hx-delete={ "/admin/plans/active" }
