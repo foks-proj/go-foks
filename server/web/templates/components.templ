@@ -26,7 +26,7 @@ templ user(u *lib.User, showHost bool) {
 }
 
 templ topBar(u *lib.User, typ proto.HostType) {
-	<div class="p-3 mx-0 mt-2 mb-3 text-sm grid sm:grid-cols-3 xs:grid-cols-1 admin-panel-border" id="page-title">
+	<div class="p-3 mx-0 mt-2 mb-3 text-sm grid sm:grid-cols-2 xs:grid-cols-1 admin-panel-border" id="page-title">
 		<div>
 			<h1 class="font-bold dark:text-gray-100">
 				FOKS Control Panel
@@ -41,16 +41,6 @@ templ topBar(u *lib.User, typ proto.HostType) {
 					}
 				</span>
 			</h1>
-		</div>
-		<div class="sm:text-center">
-			<button
-				id="theme-toggle"
-				class="px-3 py-1 text-xs rounded border border-slate-400 hover:bg-slate-100 dark:border-slate-600 dark:hover:bg-slate-700 dark:text-slate-200"
-				onclick="toggleTheme()"
-			>
-				<span class="dark:hidden">🌙 Dark</span>
-				<span class="hidden dark:inline">☀️ Light</span>
-			</button>
 		</div>
 		<div class="sm:text-right">
 			@user(u, true)
