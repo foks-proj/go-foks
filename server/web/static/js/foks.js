@@ -323,6 +323,29 @@
     }
   }
 
+  // Dark mode functionality
+  function initTheme() {
+    const savedTheme = localStorage.getItem('theme');
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    
+    if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }
+
+  function toggleTheme() {
+    const isDark = document.documentElement.classList.toggle('dark');
+    localStorage.setItem('theme', isDark ? 'dark' : 'light');
+  }
+
+  // Make toggleTheme globally available
+  window.toggleTheme = toggleTheme;
+
+  // Initialize theme on page load
+  initTheme();
+
   htmx.on("htmx:load", updateDOM);
   htmx.on("htmx:beforeSwap", beforeSwap);
   htmx.on("htmx:configRequest", configRequest);

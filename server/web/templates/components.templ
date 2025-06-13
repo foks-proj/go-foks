@@ -13,24 +13,24 @@ templ code() {
 
 templ user(u *lib.User, showHost bool) {
 	<span class="">
-		<span class="text-teal-500" id="username">
+		<span class="text-teal-500 dark:text-teal-400" id="username">
 			{ u.Name.String() }
 		</span>
 		if showHost && u.Host != nil {
 			<span class="mx-0.5">
 				{ "@" }
-				<span class="ml-0.5 text-slate-800">{ u.Host.Name.String() }</span>
+				<span class="ml-0.5 text-slate-800 dark:text-slate-200">{ u.Host.Name.String() }</span>
 			</span>
 		}
 	</span>
 }
 
 templ topBar(u *lib.User, typ proto.HostType) {
-	<div class="p-3 mx-0 mt-2 mb-3 text-sm grid sm:grid-cols-2 xs:grid-cols-1 admin-panel-border" id="page-title">
+	<div class="p-3 mx-0 mt-2 mb-3 text-sm grid sm:grid-cols-3 xs:grid-cols-1 admin-panel-border" id="page-title">
 		<div>
-			<h1 class="font-bold">
+			<h1 class="font-bold dark:text-gray-100">
 				FOKS Control Panel
-				<span class="text-xs font-medium text-slate-500" id="page-subtitle">
+				<span class="text-xs font-medium text-slate-500 dark:text-slate-400" id="page-subtitle">
 					switch typ {
 						case proto.HostType_BigTop:
 							Team and Quota Management
@@ -41,6 +41,16 @@ templ topBar(u *lib.User, typ proto.HostType) {
 					}
 				</span>
 			</h1>
+		</div>
+		<div class="sm:text-center">
+			<button
+				id="theme-toggle"
+				class="px-3 py-1 text-xs rounded border border-slate-400 hover:bg-slate-100 dark:border-slate-600 dark:hover:bg-slate-700 dark:text-slate-200"
+				onclick="toggleTheme()"
+			>
+				<span class="dark:hidden">🌙 Dark</span>
+				<span class="hidden dark:inline">☀️ Light</span>
+			</button>
 		</div>
 		<div class="sm:text-right">
 			@user(u, true)
