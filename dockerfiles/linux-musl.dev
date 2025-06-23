@@ -1,0 +1,47 @@
+# syntax=docker/dockerfile:1.4
+FROM alpine:3.18 AS build
+
+ARG TARGETARCH
+ARG VERSION
+
+# Install build dependencies
+RUN apk add --no-cache \
+    curl \
+    gcc \
+    musl-dev \
+    git \
+    make \
+    pkgconf \
+    pcsc-lite-dev \
+    pcsc-lite-static \
+    pcsc-lite-libs
+
+RUN pkg-config --cflags --libs libpcsclite || { echo "pkg-config failed"; exit 1; }
+
+# Optional: manually install Go 1.24.4
+ENV GOLANG_VERSION=1.24.4
+RUN curl -fsSL "https://go.dev/dl/go${GOLANG_VERSION}.linux-${TARGETARCH}.tar.gz" \
+    | tar -C /usr/local -xz
+ENV PATH="/usr/local/go/bin:$PATH"
+
+ENV CGO_ENABLED=1
+ENV GOOS=linux
+
+WORKDIR /foks
+COPY go.mod go.sum ./
+RUN go mod download
+COPY . .
+
+# Source arch
+RUN (cd client/foks && go build \
+      -trimpath \
+      -ldflags="-linkmode=external -extldflags '-static -w' -w  \
+        -X github.com/foks-proj/go-foks/client/libclient.LinkerVersion=${VERSION}  \
+        -X github.com/foks-proj/go-foks/client/libclient.LinkerPackaging=linux-musl \
+       "\
+      -o /foks/foks . )
+
+# Final image is just the binary (pick one)
+FROM scratch
+COPY --from=build /foks/foks /foks
+ENTRYPOINT ["/foks"]

@@ -108,7 +108,7 @@ rpm: rpm-arm64 rpm-amd64
 darwin-zip: darwin-arm64-zip-release darwin-amd64-zip-release
 	@echo "macOS zip packages are ready in the build directory"
 
-.PHONYT: brew
+.PHONY: brew
 brew: brew-arm64 brew-amd64
 	@echo "Homebrew zip packages are ready in the build directory"
 
@@ -124,8 +124,20 @@ choco-x86: proto
 choco-amd64: proto
 	./scripts/cross-compile-win.bash -p win-amd64 -sc
 
+.PHONY: musl-arm64
+musl-arm64:
+	./scripts/linux-musl.bash -p arm64
+
+.PHONY: musl-amd64
+musl-amd64:
+	./scripts/linux-musl.bash -p amd64
+
+.PHONY: musl
+musl: musl-arm64 musl-amd64
+	@echo "Musl binaries are ready in the build directory"
+
 .PHONY: release-all
-release-all: deb rpm darwin-zip
+release-all: deb rpm darwin-zip brew musl
 	@echo "All release packages are ready in the build directory"
 
 ##

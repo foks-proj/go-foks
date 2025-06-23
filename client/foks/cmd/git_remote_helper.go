@@ -12,6 +12,7 @@ import (
 
 	"github.com/foks-proj/go-foks/client/agent"
 	"github.com/foks-proj/go-foks/client/libclient"
+	"github.com/foks-proj/go-foks/client/libterm"
 	"github.com/foks-proj/go-foks/lib/core"
 	"github.com/foks-proj/go-foks/proto/lcl"
 	proto "github.com/foks-proj/go-foks/proto/lib"
@@ -126,14 +127,13 @@ func rootCmdGitRemoteHelper(mctx libclient.MetaContext) *cobra.Command {
 	return &cobra.Command{
 		Use:   GitRemoteHelper + " branch remote",
 		Short: "git remote helper",
-		Long: `Remote helper for git, following the Git-Remote-Helper protocol. Users
-should typically not call into this executable directly. Rather, it is called from git
+		Long: libterm.MustRewrapSense(`Remote helper for git, following the Git-Remote-Helper protocol. 
+Users should typically not call into this executable directly. Rather, it is called from git
 when interacting with remote repositories prefixed by the foks:// protocol. It must be
 in the current path for git to be able to find it. 
 
-git doesn't supply any flags, but they are there for debugging. The flags mirror those
-exactly from the foks general purpose command. Configure FOKS-specific behavior via
-git instead via environment variables of configuration files.`,
+git doesn't supply any flags, so to change FOKS-specific behavior,
+use either environment variables or configuration files.`, 0),
 		Example:      GitRemoteHelper + " origin foks://ne43.pub/t:firingSquad/secrets",
 		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
