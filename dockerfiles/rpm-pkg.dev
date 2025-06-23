@@ -24,7 +24,7 @@ ARG PLAT=arm64
 WORKDIR /root
 
 RUN (cd /root && \
-    curl -fSsL https://go.dev/dl/go1.24.2.linux-${PLAT}.tar.gz > go.tgz && \
+    curl -fSsL https://go.dev/dl/go1.24.4.linux-${PLAT}.tar.gz > go.tgz && \
     tar -xzf go.tgz && \
     rm -f go.tgz && \
     mv go /usr/local/go)

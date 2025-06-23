@@ -103,9 +103,12 @@ build/foks-tool.linux.arm64.gz:
 build/foks-tool.linux.amd64.gz:
 	bash -x scripts/cross-compile-foks-tool.bash -p amd64 -s
 
-.PHONY: foks-tool-release
+.PHONY: foks-tool-gh-push
 foks-tool-gh-push: foks-tool-linux
 	gh release upload \
 		--clobber $$(git describe --tags --abbrev=0) \
 		build/foks-tool.linux.arm64.gz \
 		build/foks-tool.linux.amd64.gz
+
+.PHONY: foks-server-release
+foks-server-release: foks-tool-gh-push foks-server-docker-push

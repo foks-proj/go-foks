@@ -68,6 +68,7 @@ fi
 
 vversion=$(git tag --list | grep -E '^v[0-9]+\.' | sort -V | tail -1)
 version=$(echo $vversion | sed 's/^v//')
+lversion=$(git describe --tags --always)
 
 if [ -z "$version" ]; then
     echo "No version found. Please tag the commit with a version."
@@ -182,7 +183,11 @@ export GOPATH=\$(mktemp -d)
 mkdir -p \$GOPATH/src/github.com/foks-proj
 ln -sf %{_builddir}/%{name}-%{version} \$GOPATH/src/github.com/foks-proj/go-foks
 pushd \$GOPATH/src/github.com/foks-proj/go-foks/client/foks
-go build -o %{name}
+go build -o %{name} \
+    -ldflags "\
+    -X github.com/foks-proj/go-foks/client/libclient.LinkerVersion=${lversion} \
+    -X github.com/foks-proj/go-foks/client/libclient.LinkerPackaging=rpm" \
+    -trimpath .
 mv %{name} ../..
 popd
 
