@@ -142,6 +142,11 @@ func (a *Agent) Stop() {
 }
 
 func (a *Agent) startBg(m libclient.MetaContext) error {
+
+	err := m.SetAsAgent()
+	if err != nil {
+		return err
+	}
 	cfg, err := m.G().Cfg().BgConfig()
 	if err != nil {
 		return err
@@ -149,6 +154,7 @@ func (a *Agent) startBg(m libclient.MetaContext) error {
 	bg := libclient.NewBgJobMgr(*cfg)
 	a.bg = bg
 	bg.Run(m)
+
 	return nil
 }
 

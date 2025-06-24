@@ -128,6 +128,8 @@ type GlobalContext struct {
 
 	deviceNameCache DeviceNameCache
 
+	logRotate *LogRotate
+
 	// Other fields that are only set in test
 	Testing *TestingGlobalContext
 
@@ -152,6 +154,15 @@ func (g *GlobalContext) PushShutdownHook(h func()) {
 			h()
 		}
 	}
+}
+
+func (g *GlobalContext) After(dur time.Duration) <-chan time.Time {
+	g.Lock()
+	defer g.Unlock()
+	if g.clock == nil {
+		return time.After(dur)
+	}
+	return g.clock.After(dur)
 }
 
 func (g *GlobalContext) Now() time.Time {
@@ -217,6 +228,12 @@ func (g *GlobalContext) SetUIs(u UIs) {
 	g.uis = u
 }
 
+func (g *GlobalContext) LogSync() error {
+	g.logMu.Lock()
+	defer g.logMu.Unlock()
+	return g.log.Sync()
+}
+
 func (g *GlobalContext) Shutdown() {
 	g.Lock()
 	defer g.Unlock()
@@ -224,6 +241,9 @@ func (g *GlobalContext) Shutdown() {
 	hook := g.shutdownHook
 	if hook == nil {
 		return
+	}
+	if g.logRotate != nil {
+		g.logRotate.Stop()
 	}
 	g.shutdownHook = nil
 	hook()
@@ -323,6 +343,22 @@ func (g *GlobalContext) SecretStore() *SecretStore {
 	g.Lock()
 	defer g.Unlock()
 	return g.ss
+}
+
+func (g *GlobalContext) OutLogPath() (core.Path, error) {
+	g.Lock()
+	defer g.Unlock()
+	out, err := g.cfg.LogsOutFile(g.name)
+	if err != nil {
+		return "", err
+	}
+	return core.Path(out), nil
+}
+
+func (g *GlobalContext) ConfigureLogging(ctx context.Context) error {
+	g.Lock()
+	defer g.Unlock()
+	return g.configureLogging(ctx)
 }
 
 func (g *GlobalContext) configureLogging(ctx context.Context) error {
@@ -568,4 +604,26 @@ func (g *GlobalContext) MerkleRaceConfig() (*MerkleConfig, error) {
 		Eracer: g.merkleEracer,
 		Cfg:    tmp,
 	}, nil
+}
+
+func (g *GlobalContext) SetAsAgent(ctx context.Context) error {
+	err := g.startLogRotate(ctx)
+	if err != nil {
+		return err
+	}
+	return err
+}
+
+func (g *GlobalContext) startLogRotate(ctx context.Context) error {
+	g.Lock()
+	lr := NewLogRotate()
+	g.logRotate = lr
+	g.Unlock()
+	return lr.Run(NewMetaContext(ctx, g))
+}
+
+func (g *GlobalContext) LogRotate() *LogRotate {
+	g.Lock()
+	defer g.Unlock()
+	return g.logRotate
 }

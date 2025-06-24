@@ -2,6 +2,13 @@ project: foks
 maintaner: Maxwell Krohn <max@ne43.com>
 
 changelog:
+  - version: 0.0.22
+    urgency: low
+    stable: false
+    date: none-yet
+    changes:
+      - desc: cli - log rotation for agent logs (not for error, just for output)
+        closes: []
   - version: 0.0.21
     urgency: low
     stable: false

@@ -148,3 +148,42 @@ func Getwd() (Path, error) {
 	}
 	return Path(cwd), nil
 }
+
+func (p Path) Rename(newPath Path) error {
+	if p.IsNil() {
+		return errors.New("cannot rename nil path")
+	}
+	if newPath.IsNil() {
+		return errors.New("cannot rename to nil path")
+	}
+	return os.Rename(p.String(), newPath.String())
+}
+
+func (p Path) ReadDir() ([]os.DirEntry, error) {
+	return os.ReadDir(p.String())
+}
+
+func (p Path) AddSuffix(suffix string) Path {
+	if p.IsNil() {
+		return p
+	}
+	return Path(p.String() + suffix)
+}
+
+func (p Path) Create() (*os.File, error) {
+	if p.IsNil() {
+		return nil, errors.New("cannot create file at nil path")
+	}
+	return os.Create(p.String())
+}
+
+func (p Path) Open() (*os.File, error) {
+	if p.IsNil() {
+		return nil, errors.New("cannot open file at nil path")
+	}
+	f, err := os.Open(p.String())
+	if err != nil {
+		return nil, err
+	}
+	return f, nil
+}

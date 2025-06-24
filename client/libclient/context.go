@@ -191,3 +191,8 @@ func (g *GlobalContext) WarnwWithContext(
 ) {
 	core.WarnwWithContext(ctx, g.Log(), msg, keysAndValues...)
 }
+
+func (m MetaContext) SetAsAgent() error {
+	return m.g.SetAsAgent(m.Ctx())
+
+}
