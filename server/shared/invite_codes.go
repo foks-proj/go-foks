@@ -178,6 +178,16 @@ func CheckInviteCode(m MetaContext, ic rem.InviteCode) error {
 		return err
 	}
 	switch typ {
+	case rem.InviteCodeType_Empty:
+		cfg, err := m.HostConfig()
+		if err != nil {
+			return err
+		}
+		if cfg.Icr != proto.InviteCodeRegime_CodeOptional {
+			m.Warnw("empty invite code not allowed", "icr", cfg.Icr)
+			return core.BadInviteCodeError{}
+		}
+		return nil
 	case rem.InviteCodeType_Standard:
 		query = `SELECT 1 
 		         FROM invite_codes 
@@ -210,5 +220,28 @@ func CheckInviteCode(m MetaContext, ic rem.InviteCode) error {
 	if !found {
 		return core.BadInviteCodeError{}
 	}
+	return nil
+}
+
+func SetInviteCodeOptional(m MetaContext) error {
+	db, err := m.Db(DbTypeServerConfig)
+	if err != nil {
+		return err
+	}
+	defer db.Release()
+
+	q := `UPDATE host_config
+	      SET invite_code_regime=$1
+		  WHERE short_host_id=$2`
+	_, err = db.Exec(m.Ctx(), q,
+		proto.InviteCodeRegime_CodeOptional.String(),
+		m.ShortHostID().ExportToDB(),
+	)
+	if err != nil {
+		return err
+	}
+
+	m.G().HostIDMap().ClearConfig(m, m.ShortHostID())
+
 	return nil
 }

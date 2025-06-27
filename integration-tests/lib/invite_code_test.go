@@ -5,9 +5,12 @@ package lib
 
 import (
 	"testing"
+	"time"
 
 	"github.com/foks-proj/go-foks/integration-tests/common"
 	"github.com/foks-proj/go-foks/lib/core"
+	proto "github.com/foks-proj/go-foks/proto/lib"
+	"github.com/foks-proj/go-foks/proto/rem"
 	"github.com/foks-proj/go-foks/server/shared"
 	"github.com/stretchr/testify/require"
 )
@@ -65,4 +68,31 @@ func TestStandardInviteCode(t *testing.T) {
 	require.Error(t, err)
 	require.Equal(t, core.BadInviteCodeError{}, err)
 
+}
+
+func TestOptionalInviteCode(t *testing.T) {
+	defer common.DebugEntryAndExit()()
+
+	domain := RandomDomain(t)
+	p1 := proto.Hostname("bogey." + domain)
+	tew := ForkNewTestEnvWrapperWithOpts(t,
+		common.SetupOpts{
+			MerklePollWait: time.Hour,
+			Hostnames: &common.Hostnames{
+				Probe: []proto.Hostname{p1},
+			},
+		},
+	)
+	defer tew.Shutdown()
+	vhostId := tew.VHostMakeWithOpts(t, p1, shared.VHostInitOpts{
+		Icr: proto.InviteCodeRegime_CodeOptional,
+		Config: proto.HostConfig{
+			Typ: proto.HostType_BigTop,
+		},
+	})
+
+	ic := rem.NewInviteCodeWithEmpty()
+	tew.NewTestUserAtVHostWithOpts(t, vhostId, &TestUserOpts{
+		InviteCode: &ic,
+	})
 }

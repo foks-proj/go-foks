@@ -194,7 +194,11 @@ func (s *mockSignupUI) GetEmail(m libclient.MetaContext) (*proto.Email, error) {
 	return &s.em, nil
 }
 
-func (s *mockSignupUI) GetInviteCode(m libclient.MetaContext, attempt int) (*lcl.InviteCodeString, error) {
+func (s *mockSignupUI) GetInviteCode(
+	m libclient.MetaContext,
+	icr proto.InviteCodeRegime,
+	attempt int,
+) (*lcl.InviteCodeString, error) {
 	if s.noInviteCode {
 		return nil, core.CancelSignupError{Stage: core.CancelSignupStageWaitList}
 	}
@@ -962,4 +966,30 @@ func TestYubiNewThenYubiProvision(t *testing.T) {
 	require.NotNil(t, uinfo.Info.YubiInfo)
 
 	b.runCmd(t, nil, "yubi", "unlock")
+}
+
+func TestSignupInviteCodeOptional(t *testing.T) {
+	defer common.DebugEntryAndExit()()
+
+	env := globalTestEnv
+	merklePoke(t)
+	tvh := env.VHostInit(t, "braves")
+	agentOpts := agentOpts{dnsAliases: []proto.Hostname{tvh.Hostname}}
+
+	x := newTestAgentWithOpts(t, agentOpts)
+	x.runAgent(t)
+	defer x.stop(t)
+
+	m := env.MetaContext().WithHostID(&tvh.HostID)
+	err := shared.SetInviteCodeOptional(m)
+	require.NoError(t, err)
+
+	eic := rem.NewInviteCodeWithEmpty()
+	uis := libclient.UIs{
+		Signup: newMockSignupUI().
+			withServer(tvh.ProbeAddr).
+			withDeviceKey().
+			withInviteCode(&eic),
+	}
+	x.runCmdWithUIs(t, uis, "--simple-ui", "signup")
 }

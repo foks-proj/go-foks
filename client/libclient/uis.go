@@ -26,7 +26,7 @@ type SignupUIer interface {
 	PickServer(m MetaContext, def proto.TCPAddr, timeout time.Duration) (*proto.TCPAddr, error)
 	CheckedServer(m MetaContext, addr proto.TCPAddr, e error) error
 
-	GetInviteCode(m MetaContext, attempt int) (*lcl.InviteCodeString, error)
+	GetInviteCode(m MetaContext, icr proto.InviteCodeRegime, attempt int) (*lcl.InviteCodeString, error)
 	CheckedInviteCode(m MetaContext, code lcl.InviteCodeString, e error) error
 
 	ShowWaitListID(m MetaContext, wlid proto.WaitListID) error

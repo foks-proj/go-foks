@@ -67,7 +67,7 @@ func TestVHostCertsDir(t *testing.T) {
 	defer common.DebugEntryAndExit()()
 
 	var hostnames []proto.Hostname
-	for i := 0; i < 3; i++ {
+	for range 3 {
 		d := "foks." + RandomDomain(t)
 		hostnames = append(hostnames, proto.Hostname(d))
 	}

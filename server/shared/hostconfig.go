@@ -16,11 +16,12 @@ func GetServerConfig(
 	}
 	var ret proto.RegServerConfig
 	ret.Sso = ssoCfg
-	cfg, err := m.G().HostIDMap().Config(m, m.ShortHostID())
+	cfg, err := m.HostConfig()
 	if err != nil {
 		return nil, err
 	}
 	ret.Typ = cfg.Typ
 	ret.View = cfg.Viewership
+	ret.Icr = cfg.Icr
 	return &ret, nil
 }

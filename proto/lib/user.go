@@ -268,16 +268,49 @@ func (u *UserContext) Decode(dec rpc.Decoder) error {
 
 func (u *UserContext) Bytes() []byte { return nil }
 
+type InviteCodeRegime int
+
+const (
+	InviteCodeRegime_None         InviteCodeRegime = 0
+	InviteCodeRegime_CodeRequired InviteCodeRegime = 1
+	InviteCodeRegime_CodeOptional InviteCodeRegime = 2
+	InviteCodeRegime_SkipViaSSO   InviteCodeRegime = 3
+)
+
+var InviteCodeRegimeMap = map[string]InviteCodeRegime{
+	"None":         0,
+	"CodeRequired": 1,
+	"CodeOptional": 2,
+	"SkipViaSSO":   3,
+}
+var InviteCodeRegimeRevMap = map[InviteCodeRegime]string{
+	0: "None",
+	1: "CodeRequired",
+	2: "CodeOptional",
+	3: "SkipViaSSO",
+}
+
+type InviteCodeRegimeInternal__ InviteCodeRegime
+
+func (i InviteCodeRegimeInternal__) Import() InviteCodeRegime {
+	return InviteCodeRegime(i)
+}
+func (i InviteCodeRegime) Export() *InviteCodeRegimeInternal__ {
+	return ((*InviteCodeRegimeInternal__)(&i))
+}
+
 type RegServerConfig struct {
 	Sso  *SSOConfig
 	Typ  HostType
 	View HostViewership
+	Icr  InviteCodeRegime
 }
 type RegServerConfigInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Sso     *SSOConfigInternal__
 	Typ     *HostTypeInternal__
 	View    *HostViewershipInternal__
+	Icr     *InviteCodeRegimeInternal__
 }
 
 func (r RegServerConfigInternal__) Import() RegServerConfig {
@@ -306,6 +339,12 @@ func (r RegServerConfigInternal__) Import() RegServerConfig {
 			}
 			return x.Import()
 		})(r.View),
+		Icr: (func(x *InviteCodeRegimeInternal__) (ret InviteCodeRegime) {
+			if x == nil {
+				return ret
+			}
+			return x.Import()
+		})(r.Icr),
 	}
 }
 func (r RegServerConfig) Export() *RegServerConfigInternal__ {
@@ -318,6 +357,7 @@ func (r RegServerConfig) Export() *RegServerConfigInternal__ {
 		})(r.Sso),
 		Typ:  r.Typ.Export(),
 		View: r.View.Export(),
+		Icr:  r.Icr.Export(),
 	}
 }
 func (r *RegServerConfig) Encode(enc rpc.Encoder) error {

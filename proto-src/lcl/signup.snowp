@@ -148,9 +148,7 @@ protocol Signup
         sessionId @0 : lib.UISessionID
     ) -> lib.Email;
 
-    getSkipInviteCodeSSO @32 (
-        sessionId @0 : lib.UISessionID
-    ) -> Bool;
+    // RPC @32 is deprecated, used to getSkipInviteCodeSSO
 
     finishNKWNewDeviceKey @33 (
         sessionId @0 : lib.UISessionID
@@ -159,4 +157,8 @@ protocol Signup
     finishNKWNewBackupKey @34 (
         sessionId @0 : lib.UISessionID
     ) -> BackupHESP;
+
+    getInviteCodeRegime @35 (
+        sessionId @0 : lib.UISessionID
+    ) -> lib.InviteCodeRegime;
 }

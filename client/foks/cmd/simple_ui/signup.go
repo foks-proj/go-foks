@@ -216,11 +216,21 @@ func (s *SignupUI) GetEmail(m libclient.MetaContext) (*proto.Email, error) {
 	return &tmp, nil
 }
 
-func (s *SignupUI) GetInviteCode(m libclient.MetaContext, attempt int) (*lcl.InviteCodeString, error) {
+func (s *SignupUI) GetInviteCode(
+	m libclient.MetaContext,
+	icr proto.InviteCodeRegime,
+	attempt int,
+) (*lcl.InviteCodeString, error) {
 	var label string
-	if attempt > 0 {
+	isOpt := (icr == proto.InviteCodeRegime_CodeOptional)
+	switch {
+	case isOpt && attempt == 0:
+		label = "✒️  Invite code (optional, push enter to forego it): "
+	case isOpt && attempt > 0:
+		label = fmt.Sprintf("✒️  invalid invite code (%d), try again (or leave blank): ", attempt)
+	case !isOpt && attempt > 0:
 		label = fmt.Sprintf("✒️  invalid invite code (%d), try again (or push enter to join waitlist): ", attempt)
-	} else {
+	default:
 		label = "✒️  Invite code (or push enter to join waitlist): "
 	}
 

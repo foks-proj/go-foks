@@ -665,7 +665,7 @@ func SetupServers(
 		return nil, err
 	}
 
-	err = configureTestInviteCode(m)
+	err = configureTestInviteCode(m, setupOpts.Icr)
 	if err != nil {
 		return nil, err
 	}
@@ -700,6 +700,27 @@ func RandomMultiUseInviteCode() (*rem.MultiUseInviteCode, error) {
 	}
 	txt := rem.MultiUseInviteCode(core.Base36Encoding.EncodeToString(b))
 	return &txt, nil
+}
+
+func SetInviteCodeOptional(m shared.MetaContext) error {
+	db, err := m.Db(shared.DbTypeServerConfig)
+	if err != nil {
+		return err
+	}
+	defer db.Release()
+
+	tag, err := db.Exec(m.Ctx(),
+		`UPDATE host_config SET invite_code_regime=$1 WHERE short_host_id=$2`,
+		proto.InviteCodeRegime_CodeOptional.String(),
+		m.ShortHostID().ExportToDB(),
+	)
+	if err != nil {
+		return err
+	}
+	if tag.RowsAffected() != 1 {
+		return core.UpdateError("host_config invite_code_regime failed update")
+	}
+	return nil
 }
 
 func InsertNewMutliuseInviteCode(m shared.MetaContext) (*rem.InviteCode, error) {
@@ -753,12 +774,21 @@ func CopyMultiUseInviteCode(m shared.MetaContext, to core.ShortHostID) error {
 	return nil
 }
 
-func configureTestInviteCode(m shared.MetaContext) error {
+func configureTestInviteCode(
+	m shared.MetaContext,
+	icr proto.InviteCodeRegime,
+) error {
 	code, err := InsertNewMutliuseInviteCode(m)
 	if err != nil {
 		return err
 	}
 	m.G().SetTestMultiUseInviteCode(*code)
+	if icr == proto.InviteCodeRegime_CodeRequired {
+		err := SetInviteCodeOptional(m)
+		if err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
@@ -834,6 +864,7 @@ type SetupOpts struct {
 	UseMockAutocertDoer   bool
 	PrimaryHostname       proto.Hostname
 	ForkFromHostname      proto.Hostname
+	Icr                   proto.InviteCodeRegime
 }
 
 func (s *SetupOpts) initHostname() error {

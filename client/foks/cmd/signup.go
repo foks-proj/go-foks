@@ -42,6 +42,7 @@ type baseSignupProvisionState struct {
 	ycli      lcl.YubiClient
 	typ       proto.UISessionType
 	sso       *proto.SSOConfig
+	icr       proto.InviteCodeRegime
 }
 
 type signupState struct {
@@ -131,6 +132,7 @@ func (s *baseSignupProvisionState) pickServer(m libclient.MetaContext) error {
 		return err
 	}
 	s.sso = regCfg.Sso
+	s.icr = regCfg.Icr
 	return nil
 }
 
@@ -152,7 +154,7 @@ func (s *signupState) getInviteCode(m libclient.MetaContext) error {
 	}
 
 	for i := 0; i < 10; i++ {
-		code, err := m.G().UIs().Signup.GetInviteCode(m, i)
+		code, err := m.G().UIs().Signup.GetInviteCode(m, s.icr, i)
 
 		if code == nil && err == (core.CancelSignupError{Stage: core.CancelSignupStageWaitList}) {
 			tmp := s.joinWaitList(m)

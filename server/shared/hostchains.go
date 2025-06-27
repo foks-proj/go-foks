@@ -848,14 +848,16 @@ func (h *HostChain) writeChainToDB(m MetaContext, eld proto.HostchainLinkOuter, 
 func (h *HostChain) writeConfigToDB(m MetaContext, tx pgx.Tx) error {
 	tag, err := tx.Exec(m.Ctx(),
 		`INSERT INTO host_config (short_host_id, user_metering,
-		  vhost_metering, per_vhost_disk_metering, host_type, user_viewing)
-		VALUES($1, $2, $3, $4, $5, $6)`,
+		  vhost_metering, per_vhost_disk_metering, host_type, user_viewing,
+		  invite_code_regime)
+		VALUES($1, $2, $3, $4, $5, $6, $7)`,
 		int(h.hostID.Short),
 		h.cfg.Metering.Users,
 		h.cfg.Metering.VHosts,
 		h.cfg.Metering.PerVHostDisk,
 		h.cfg.Typ.String(),
 		proto.ViewershipMode_Closed.String(),
+		proto.InviteCodeRegime_CodeRequired.String(),
 	)
 	if err != nil {
 		return err

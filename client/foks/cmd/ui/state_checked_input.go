@@ -32,23 +32,33 @@ type stateCheckedInput struct {
 	// to be filled in by "subclasses"
 	//  - cancelInput potentially interrupts the input, say in Kex if the
 	//    other side does the input.
-	nextState        func(s stateCheckedInput, mdl model) state
-	initHook         func(mctx libclient.MetaContext, s stateCheckedInput, mdl model) (stateCheckedInput, error)
-	post             func(mctx libclient.MetaContext, s stateCheckedInput, mdl model) error
-	cancelInput      func(mctx libclient.MetaContext, mdl model) tea.Cmd
+	nextState   func(s stateCheckedInput, mdl model) state
+	initHook    func(mctx libclient.MetaContext, s stateCheckedInput, mdl model) (stateCheckedInput, error)
+	post        func(mctx libclient.MetaContext, s stateCheckedInput, mdl model) error
+	cancelInput func(mctx libclient.MetaContext, mdl model) tea.Cmd
+	noConfirm   func() bool
+
 	isBadInputError  func(e error) bool
 	badInputMsg      string
 	checkingInputMsg string
 	goodInputMsg     string
 	inputResetCount  int
 	prompt           string
+	getPrompt        func() string
 	validate         func(s string) error
 	summaryLabel     string
 	summarySuffix    string
 }
 
+func (s stateCheckedInput) hasGoodInput() bool {
+	return s.res != nil && s.res.err == nil && !s.checking
+}
+
 func (s stateCheckedInput) next(mctx libclient.MetaContext, mdl model) (state, tea.Cmd, error) {
-	if (!s.checking && s.confirmed && len(s.acceptedInput) > 0) || s.canceled || s.skipped {
+	if (!s.checking && s.confirmed && len(s.acceptedInput) > 0) ||
+		s.canceled ||
+		s.skipped ||
+		(s.hasGoodInput() && s.noConfirm != nil && s.noConfirm()) {
 		return s.nextState(s, mdl), nil, nil
 	}
 	return nil, nil, nil
@@ -60,9 +70,15 @@ func pushReturnToContinue(b *strings.Builder, s string) {
 
 func (s stateCheckedInput) view() string {
 	var b strings.Builder
+	var prompt string
+	if s.getPrompt != nil {
+		prompt = s.getPrompt()
+	} else {
+		prompt = s.prompt
+	}
 	msg := drawTextInput(
 		s.input,
-		s.prompt,
+		prompt,
 		s.validate,
 	)
 	b.WriteString(msg)

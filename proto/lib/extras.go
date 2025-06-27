@@ -4802,3 +4802,34 @@ func (i TeamRemoteMemberViewTokenInner) GetPTKRole() (*Role, error) {
 	}
 	return &ret, nil
 }
+
+func (i *InviteCodeRegime) ImportFromString(s string) error {
+	switch s {
+	case "none":
+		*i = InviteCodeRegime_None
+	case "optional":
+		*i = InviteCodeRegime_CodeOptional
+	case "required":
+		*i = InviteCodeRegime_CodeRequired
+	case "skip_via_sso":
+		*i = InviteCodeRegime_SkipViaSSO
+	default:
+		return DataError("bad invite code regime")
+	}
+	return nil
+}
+
+func (i InviteCodeRegime) String() string {
+	switch i {
+	case InviteCodeRegime_None:
+		return "none"
+	case InviteCodeRegime_CodeOptional:
+		return "optional"
+	case InviteCodeRegime_CodeRequired:
+		return "required"
+	case InviteCodeRegime_SkipViaSSO:
+		return "skip_via_sso"
+	default:
+		return "error"
+	}
+}

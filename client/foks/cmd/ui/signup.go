@@ -1052,13 +1052,14 @@ func newStateGetInviteCode() stateCheckedInput {
 	ti.Width = defaultWidth
 	ti.CharLimit = 140
 	ti.Prompt = "> "
+	var icr proto.InviteCodeRegime
 	return stateCheckedInput{
 		input: ti,
 		nextState: func(s stateCheckedInput, mdl model) state {
 			return newPickYubiSlotSignup()
 		},
 		validate: func(s string) error {
-			return core.ValidateInviteCodeString(lcl.InviteCodeString(s))
+			return core.ValidateInviteCodeString(lcl.InviteCodeString(s), icr)
 		},
 		post: func(mctx libclient.MetaContext, s stateCheckedInput, mdl model) error {
 			err := mdl.cli.PutInviteCode(
@@ -1070,17 +1071,29 @@ func newStateGetInviteCode() stateCheckedInput {
 			)
 			return err
 		},
+		noConfirm: func() bool {
+			return icr == proto.InviteCodeRegime_CodeOptional
+		},
 		badInputMsg:      "Server rejected invite code",
 		checkingInputMsg: "Checking invite code",
 		goodInputMsg:     "Invite code confirmed",
 		inputResetCount:  2,
-		prompt:           "Enter your invite code",
+		getPrompt: func() string {
+			ret := "Enter your invite code"
+			if icr == proto.InviteCodeRegime_CodeOptional {
+				ret = "Enter your optional invite code (or leave blank to skip)"
+			}
+			return ret
+		},
 		initHook: func(mctx libclient.MetaContext, s stateCheckedInput, mdl model) (stateCheckedInput, error) {
-			ic, err := mdl.cli.GetSkipInviteCodeSSO(mctx.Ctx(), mdl.sessId)
+			tmp, err := mdl.cli.GetInviteCodeRegime(mctx.Ctx(), mdl.sessId)
+			icr = tmp
 			if err != nil {
 				return s, err
 			}
-			s.skipped = ic
+			if icr == proto.InviteCodeRegime_SkipViaSSO {
+				s.skipped = true
+			}
 			return s, nil
 		},
 	}

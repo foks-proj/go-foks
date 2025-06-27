@@ -502,6 +502,12 @@ func (e *TestEnv) VHostMakeWithOpts(
 	err = CopyMultiUseInviteCode(m, vhostId.Short)
 	require.NoError(t, err)
 
+	if opts.Icr == proto.InviteCodeRegime_CodeOptional {
+		m = m.WithHostID(vhostId)
+		err = SetInviteCodeOptional(m)
+		require.NoError(t, err)
+	}
+
 	return &core.HostIDAndName{
 		HostID:   *vhostId,
 		Hostname: hostname,

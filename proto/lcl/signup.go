@@ -1358,45 +1358,6 @@ func (g *GetEmailSSOArg) Decode(dec rpc.Decoder) error {
 
 func (g *GetEmailSSOArg) Bytes() []byte { return nil }
 
-type GetSkipInviteCodeSSOArg struct {
-	SessionId lib.UISessionID
-}
-type GetSkipInviteCodeSSOArgInternal__ struct {
-	_struct   struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
-	SessionId *lib.UISessionIDInternal__
-}
-
-func (g GetSkipInviteCodeSSOArgInternal__) Import() GetSkipInviteCodeSSOArg {
-	return GetSkipInviteCodeSSOArg{
-		SessionId: (func(x *lib.UISessionIDInternal__) (ret lib.UISessionID) {
-			if x == nil {
-				return ret
-			}
-			return x.Import()
-		})(g.SessionId),
-	}
-}
-func (g GetSkipInviteCodeSSOArg) Export() *GetSkipInviteCodeSSOArgInternal__ {
-	return &GetSkipInviteCodeSSOArgInternal__{
-		SessionId: g.SessionId.Export(),
-	}
-}
-func (g *GetSkipInviteCodeSSOArg) Encode(enc rpc.Encoder) error {
-	return enc.Encode(g.Export())
-}
-
-func (g *GetSkipInviteCodeSSOArg) Decode(dec rpc.Decoder) error {
-	var tmp GetSkipInviteCodeSSOArgInternal__
-	err := dec.Decode(&tmp)
-	if err != nil {
-		return err
-	}
-	*g = tmp.Import()
-	return nil
-}
-
-func (g *GetSkipInviteCodeSSOArg) Bytes() []byte { return nil }
-
 type FinishNKWNewDeviceKeyArg struct {
 	SessionId lib.UISessionID
 }
@@ -1475,6 +1436,45 @@ func (f *FinishNKWNewBackupKeyArg) Decode(dec rpc.Decoder) error {
 
 func (f *FinishNKWNewBackupKeyArg) Bytes() []byte { return nil }
 
+type GetInviteCodeRegimeArg struct {
+	SessionId lib.UISessionID
+}
+type GetInviteCodeRegimeArgInternal__ struct {
+	_struct   struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
+	SessionId *lib.UISessionIDInternal__
+}
+
+func (g GetInviteCodeRegimeArgInternal__) Import() GetInviteCodeRegimeArg {
+	return GetInviteCodeRegimeArg{
+		SessionId: (func(x *lib.UISessionIDInternal__) (ret lib.UISessionID) {
+			if x == nil {
+				return ret
+			}
+			return x.Import()
+		})(g.SessionId),
+	}
+}
+func (g GetInviteCodeRegimeArg) Export() *GetInviteCodeRegimeArgInternal__ {
+	return &GetInviteCodeRegimeArgInternal__{
+		SessionId: g.SessionId.Export(),
+	}
+}
+func (g *GetInviteCodeRegimeArg) Encode(enc rpc.Encoder) error {
+	return enc.Encode(g.Export())
+}
+
+func (g *GetInviteCodeRegimeArg) Decode(dec rpc.Decoder) error {
+	var tmp GetInviteCodeRegimeArgInternal__
+	err := dec.Decode(&tmp)
+	if err != nil {
+		return err
+	}
+	*g = tmp.Import()
+	return nil
+}
+
+func (g *GetInviteCodeRegimeArg) Bytes() []byte { return nil }
+
 type SignupInterface interface {
 	LoginAs(context.Context, LoginAsArg) error
 	PutInviteCode(context.Context, PutInviteCodeArg) error
@@ -1501,9 +1501,9 @@ type SignupInterface interface {
 	SignupWaitForSsoLogin(context.Context, lib.UISessionID) (lib.SSOLoginRes, error)
 	GetUsernameSSO(context.Context, lib.UISessionID) (lib.NameUtf8, error)
 	GetEmailSSO(context.Context, lib.UISessionID) (lib.Email, error)
-	GetSkipInviteCodeSSO(context.Context, lib.UISessionID) (bool, error)
 	FinishNKWNewDeviceKey(context.Context, lib.UISessionID) error
 	FinishNKWNewBackupKey(context.Context, lib.UISessionID) (BackupHESP, error)
+	GetInviteCodeRegime(context.Context, lib.UISessionID) (lib.InviteCodeRegime, error)
 	ErrorWrapper() func(error) lib.Status
 	CheckArgHeader(ctx context.Context, h Header) error
 	MakeResHeader() Header
@@ -2117,30 +2117,6 @@ func (c SignupClient) GetEmailSSO(ctx context.Context, sessionId lib.UISessionID
 	res = tmp.Data.Import()
 	return
 }
-func (c SignupClient) GetSkipInviteCodeSSO(ctx context.Context, sessionId lib.UISessionID) (res bool, err error) {
-	arg := GetSkipInviteCodeSSOArg{
-		SessionId: sessionId,
-	}
-	warg := &rpc.DataWrap[Header, *GetSkipInviteCodeSSOArgInternal__]{
-		Data: arg.Export(),
-	}
-	if c.MakeArgHeader != nil {
-		warg.Header = c.MakeArgHeader()
-	}
-	var tmp rpc.DataWrap[Header, bool]
-	err = c.Cli.Call2(ctx, rpc.NewMethodV2(SignupProtocolID, 32, "Signup.getSkipInviteCodeSSO"), warg, &tmp, 0*time.Millisecond, signupErrorUnwrapperAdapter{h: c.ErrorUnwrapper})
-	if err != nil {
-		return
-	}
-	if c.CheckResHeader != nil {
-		err = c.CheckResHeader(ctx, tmp.Header)
-		if err != nil {
-			return
-		}
-	}
-	res = tmp.Data
-	return
-}
 func (c SignupClient) FinishNKWNewDeviceKey(ctx context.Context, sessionId lib.UISessionID) (err error) {
 	arg := FinishNKWNewDeviceKeyArg{
 		SessionId: sessionId,
@@ -2176,6 +2152,30 @@ func (c SignupClient) FinishNKWNewBackupKey(ctx context.Context, sessionId lib.U
 	}
 	var tmp rpc.DataWrap[Header, BackupHESPInternal__]
 	err = c.Cli.Call2(ctx, rpc.NewMethodV2(SignupProtocolID, 34, "Signup.finishNKWNewBackupKey"), warg, &tmp, 0*time.Millisecond, signupErrorUnwrapperAdapter{h: c.ErrorUnwrapper})
+	if err != nil {
+		return
+	}
+	if c.CheckResHeader != nil {
+		err = c.CheckResHeader(ctx, tmp.Header)
+		if err != nil {
+			return
+		}
+	}
+	res = tmp.Data.Import()
+	return
+}
+func (c SignupClient) GetInviteCodeRegime(ctx context.Context, sessionId lib.UISessionID) (res lib.InviteCodeRegime, err error) {
+	arg := GetInviteCodeRegimeArg{
+		SessionId: sessionId,
+	}
+	warg := &rpc.DataWrap[Header, *GetInviteCodeRegimeArgInternal__]{
+		Data: arg.Export(),
+	}
+	if c.MakeArgHeader != nil {
+		warg.Header = c.MakeArgHeader()
+	}
+	var tmp rpc.DataWrap[Header, lib.InviteCodeRegimeInternal__]
+	err = c.Cli.Call2(ctx, rpc.NewMethodV2(SignupProtocolID, 35, "Signup.getInviteCodeRegime"), warg, &tmp, 0*time.Millisecond, signupErrorUnwrapperAdapter{h: c.ErrorUnwrapper})
 	if err != nil {
 		return
 	}
@@ -2907,35 +2907,6 @@ func SignupProtocol(i SignupInterface) rpc.ProtocolV2 {
 				},
 				Name: "getEmailSSO",
 			},
-			32: {
-				ServeHandlerDescription: rpc.ServeHandlerDescription{
-					MakeArg: func() interface{} {
-						var ret rpc.DataWrap[Header, *GetSkipInviteCodeSSOArgInternal__]
-						return &ret
-					},
-					Handler: func(ctx context.Context, args interface{}) (interface{}, error) {
-						typedWrappedArg, ok := args.(*rpc.DataWrap[Header, *GetSkipInviteCodeSSOArgInternal__])
-						if !ok {
-							err := rpc.NewTypeError((*rpc.DataWrap[Header, *GetSkipInviteCodeSSOArgInternal__])(nil), args)
-							return nil, err
-						}
-						if err := i.CheckArgHeader(ctx, typedWrappedArg.Header); err != nil {
-							return nil, err
-						}
-						typedArg := typedWrappedArg.Data
-						tmp, err := i.GetSkipInviteCodeSSO(ctx, (typedArg.Import()).SessionId)
-						if err != nil {
-							return nil, err
-						}
-						ret := rpc.DataWrap[Header, bool]{
-							Data:   tmp,
-							Header: i.MakeResHeader(),
-						}
-						return &ret, nil
-					},
-				},
-				Name: "getSkipInviteCodeSSO",
-			},
 			33: {
 				ServeHandlerDescription: rpc.ServeHandlerDescription{
 					MakeArg: func() interface{} {
@@ -2992,6 +2963,35 @@ func SignupProtocol(i SignupInterface) rpc.ProtocolV2 {
 					},
 				},
 				Name: "finishNKWNewBackupKey",
+			},
+			35: {
+				ServeHandlerDescription: rpc.ServeHandlerDescription{
+					MakeArg: func() interface{} {
+						var ret rpc.DataWrap[Header, *GetInviteCodeRegimeArgInternal__]
+						return &ret
+					},
+					Handler: func(ctx context.Context, args interface{}) (interface{}, error) {
+						typedWrappedArg, ok := args.(*rpc.DataWrap[Header, *GetInviteCodeRegimeArgInternal__])
+						if !ok {
+							err := rpc.NewTypeError((*rpc.DataWrap[Header, *GetInviteCodeRegimeArgInternal__])(nil), args)
+							return nil, err
+						}
+						if err := i.CheckArgHeader(ctx, typedWrappedArg.Header); err != nil {
+							return nil, err
+						}
+						typedArg := typedWrappedArg.Data
+						tmp, err := i.GetInviteCodeRegime(ctx, (typedArg.Import()).SessionId)
+						if err != nil {
+							return nil, err
+						}
+						ret := rpc.DataWrap[Header, *lib.InviteCodeRegimeInternal__]{
+							Data:   tmp.Export(),
+							Header: i.MakeResHeader(),
+						}
+						return &ret, nil
+					},
+				},
+				Name: "getInviteCodeRegime",
 			},
 		},
 		WrapError: SignupMakeGenericErrorWrapper(i.ErrorWrapper()),

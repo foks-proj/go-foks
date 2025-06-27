@@ -163,6 +163,7 @@ func (c *AgentConn) PutServer(ctx context.Context, arg lcl.PutServerArg) (proto.
 	sess.ssoCfg = cfg.Sso
 	sess.regServerType = arg.Typ
 	sess.hostType = cfg.Typ
+	sess.icr = cfg.Icr // invite code regime
 	return cfg, nil
 
 }

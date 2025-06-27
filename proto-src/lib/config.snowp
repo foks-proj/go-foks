@@ -32,4 +32,5 @@ struct HostConfig {
     metering @0 : Metering;
     viewership @1 : HostViewership;
     typ @2 : HostType;
+    icr @3 : InviteCodeRegime;
 }

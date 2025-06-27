@@ -33,15 +33,22 @@ func ExportInviteCode(c rem.InviteCode) (string, error) {
 		base := c.Standard()
 		s := basex.Base62StdEncodingStrict.EncodeToString(base)
 		ret = SingleUsePrefix + s
+	case rem.InviteCodeType_Empty:
+		return "", nil
 	default:
 		return "", VersionNotSupportedError("cannot support invitation code type")
 	}
 	return ret, nil
 }
 
-func ImportInviteCode(s string) (rem.InviteCode, error) {
+func ImportInviteCode(s string, icr proto.InviteCodeRegime) (rem.InviteCode, error) {
 	var ret rem.InviteCode
 	switch {
+	case len(s) == 0:
+		if icr == proto.InviteCodeRegime_CodeOptional {
+			return rem.NewInviteCodeWithEmpty(), nil
+		}
+		return ret, BadInviteCodeError{}
 	case strings.HasPrefix(s, SingleUsePrefix):
 		s = s[2:]
 		b, err := basex.Base62StdEncoding.DecodeString(s)

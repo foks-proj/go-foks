@@ -304,14 +304,16 @@ func SelectHostConfig(m MetaContext, shid core.ShortHostID) (proto.HostConfig, e
 	if err != nil {
 		return ret, err
 	}
-	var typ, uv string
+	var typ, uv, icr string
 	defer db.Release()
 	err = db.QueryRow(
 		m.Ctx(),
-		`SELECT user_metering, vhost_metering, per_vhost_disk_metering, host_type, user_viewing
+		`SELECT user_metering, vhost_metering, per_vhost_disk_metering, 
+		   host_type, user_viewing, invite_code_regime
 		 FROM host_config WHERE short_host_id = $1`,
 		shid.ExportToDB(),
-	).Scan(&ret.Metering.Users, &ret.Metering.VHosts, &ret.Metering.PerVHostDisk, &typ, &uv)
+	).Scan(&ret.Metering.Users, &ret.Metering.VHosts,
+		&ret.Metering.PerVHostDisk, &typ, &uv, &icr)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return ret, nil
 	}
@@ -323,6 +325,10 @@ func SelectHostConfig(m MetaContext, shid core.ShortHostID) (proto.HostConfig, e
 		return ret, err
 	}
 	err = ret.Viewership.User.ImportFromDB(uv)
+	if err != nil {
+		return ret, err
+	}
+	err = ret.Icr.ImportFromString(icr)
 	if err != nil {
 		return ret, err
 	}

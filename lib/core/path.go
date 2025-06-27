@@ -8,6 +8,7 @@ import (
 	"net"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	proto "github.com/foks-proj/go-foks/proto/lib"
@@ -201,7 +202,8 @@ func (p Path) Export() proto.LocalFSPath {
 
 func (p Path) IsBadFilename() bool {
 	s := p.String()
-	if strings.Contains(s, "..") || strings.Contains(s, "/") || strings.Contains(s, "\\") {
+	var validFilename = regexp.MustCompile(`^[a-zA-Z0-9._-]+$`)
+	if len(s) == 0 || len(s) > 255 || !validFilename.MatchString(s) {
 		return true
 	}
 	return false

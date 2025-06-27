@@ -11,6 +11,8 @@ changelog:
         closes: []
       - desc: logsend feature for debugging problems
         closes: ["#119"]
+      - desc: invite codes are optional for some hosts
+        closes: ["#123"]
   - version: 0.0.21
     urgency: low
     stable: false

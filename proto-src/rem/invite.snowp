@@ -10,11 +10,12 @@ enum InviteCodeType {
     Standard @1;
     MultiUse @2;
     SSO @3;
+    Empty @4;
 }
 
 variant InviteCode switch (t : InviteCodeType) {
     default: void;
     case Standard @1 : Blob;
     case MultiUse @2 : MultiUseInviteCode;
-    case SSO: void;
+    case SSO, Empty: void;
 }

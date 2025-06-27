@@ -204,6 +204,7 @@ type VHostInitOpts struct {
 	Config        proto.HostConfig
 	MerklePoke    func() error
 	MakeProbeCert func(m MetaContext) error
+	Icr           proto.InviteCodeRegime // invite code regime, if any
 }
 
 func VHostInit(

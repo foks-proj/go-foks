@@ -112,6 +112,8 @@ CREATE TYPE host_type AS ENUM('big_top', 'vhost_management', 'vhost', 'standalon
 
 CREATE TYPE viewership_mode AS ENUM('closed', 'open_to_admin', 'open');
 
+CREATE TYPE invite_code_regime AS ENUM('none', 'required', 'optional');
+
 /*
  * one row in host-config for every host, whether virtual or not.
  */
@@ -123,8 +125,8 @@ CREATE TABLE host_config (
     per_vhost_disk_metering BOOLEAN NOT NULL, /* disk quota for this vhost */
 
     user_viewing viewership_mode NOT NULL, /* allow users to openly view signchains on this vhost */
-
-    host_type host_type NOT NULL
+    host_type host_type NOT NULL,
+    invite_code_regime invite_code_regime NOT NULL DEFAULT 'none' /* how to handle invite codes */
 );
 
 CREATE TYPE sso_protocol_type AS ENUM('none', 'oauth2', 'saml');
@@ -248,4 +250,5 @@ CREATE TABLE schema_patches (
     ctime TIMESTAMP NOT NULL
 );
 
-INSERT INTO schema_patches (id, ctime) VALUES (1, NOW());
+INSERT INTO schema_patches (id, ctime) VALUES 
+    (1, NOW()), (2, NOW()), (3, NOW());

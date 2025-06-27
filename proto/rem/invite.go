@@ -51,6 +51,7 @@ const (
 	InviteCodeType_Standard InviteCodeType = 1
 	InviteCodeType_MultiUse InviteCodeType = 2
 	InviteCodeType_SSO      InviteCodeType = 3
+	InviteCodeType_Empty    InviteCodeType = 4
 )
 
 var InviteCodeTypeMap = map[string]InviteCodeType{
@@ -58,12 +59,14 @@ var InviteCodeTypeMap = map[string]InviteCodeType{
 	"Standard": 1,
 	"MultiUse": 2,
 	"SSO":      3,
+	"Empty":    4,
 }
 var InviteCodeTypeRevMap = map[InviteCodeType]string{
 	0: "None",
 	1: "Standard",
 	2: "MultiUse",
 	3: "SSO",
+	4: "Empty",
 }
 
 type InviteCodeTypeInternal__ InviteCodeType
@@ -103,7 +106,7 @@ func (i InviteCode) GetT() (ret InviteCodeType, err error) {
 		if i.F_2__ == nil {
 			return ret, errors.New("unexpected nil case for F_2__")
 		}
-	case InviteCodeType_SSO:
+	case InviteCodeType_SSO, InviteCodeType_Empty:
 		break
 	}
 	return i.T, nil
@@ -146,6 +149,11 @@ func NewInviteCodeWithMultiuse(v MultiUseInviteCode) InviteCode {
 func NewInviteCodeWithSso() InviteCode {
 	return InviteCode{
 		T: InviteCodeType_SSO,
+	}
+}
+func NewInviteCodeWithEmpty() InviteCode {
+	return InviteCode{
+		T: InviteCodeType_Empty,
 	}
 }
 func (i InviteCodeInternal__) Import() InviteCode {

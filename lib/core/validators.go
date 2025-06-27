@@ -121,6 +121,8 @@ func ValidateInviteCode(c rem.InviteCode) error {
 		return err
 	}
 	switch typ {
+	case rem.InviteCodeType_Empty:
+		return nil
 	case rem.InviteCodeType_Standard:
 		return ValidateStandardInviteCode(c.Standard())
 	case rem.InviteCodeType_MultiUse:
@@ -130,8 +132,8 @@ func ValidateInviteCode(c rem.InviteCode) error {
 	}
 }
 
-func ValidateInviteCodeString(s lcl.InviteCodeString) error {
-	code, err := ImportInviteCode(string(s))
+func ValidateInviteCodeString(s lcl.InviteCodeString, icr proto.InviteCodeRegime) error {
+	code, err := ImportInviteCode(string(s), icr)
 	if err != nil {
 		return err
 	}

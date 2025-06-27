@@ -131,6 +131,16 @@ func (c *RegClientConn) signupInviteCode(
 	}
 	var tags pgconn.CommandTag
 	switch typ {
+	case rem.InviteCodeType_Empty:
+		cfg, err := m.HostConfig()
+		if err != nil {
+			return err
+		}
+		if cfg.Icr != proto.InviteCodeRegime_CodeOptional {
+			m.Warnw("signup", "stage", "invite code", "err", "invite code required by server")
+			return core.BadInviteCodeError{}
+		}
+		return nil
 	case rem.InviteCodeType_MultiUse:
 		tags, err = tx.Exec(m.Ctx(),
 			`UPDATE multiuse_invite_codes 

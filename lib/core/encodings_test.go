@@ -6,6 +6,7 @@ package core
 import (
 	"testing"
 
+	proto "github.com/foks-proj/go-foks/proto/lib"
 	rem "github.com/foks-proj/go-foks/proto/rem"
 	"github.com/stretchr/testify/require"
 )
@@ -18,7 +19,7 @@ func TestInviteCodeEncoding(t *testing.T) {
 	code := rem.NewInviteCodeWithMultiuse(txt)
 	s, err := ExportInviteCode(code)
 	require.NoError(t, err)
-	code2, err := ImportInviteCode(s)
+	code2, err := ImportInviteCode(s, proto.InviteCodeRegime_CodeRequired)
 	require.NoError(t, err)
 	typ, err := code2.GetT()
 	require.NoError(t, err)

@@ -26,10 +26,18 @@ struct UserContext {
     networkStatus @6 : Status;
 }
 
+enum InviteCodeRegime {
+    None @0;
+    CodeRequired @1;
+    CodeOptional @2;
+    SkipViaSSO @3;
+}
+
 struct RegServerConfig {
     sso @0 : Option(SSOConfig);
     typ @1 : HostType; 
     view @2 : HostViewership;
+    icr @3 : InviteCodeRegime;
 }
 
 typedef Email = Text;

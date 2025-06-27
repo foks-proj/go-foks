@@ -948,7 +948,8 @@ func (c *AgentConn) PutInviteCode(ctx context.Context, arg lcl.PutInviteCodeArg)
 	if err != nil {
 		return err
 	}
-	ic, err := core.ImportInviteCode(string(arg.InviteCode))
+
+	ic, err := core.ImportInviteCode(string(arg.InviteCode), sess.icr)
 	if err != nil {
 		m.Infow("import invite code", "err", err)
 		return core.BadInviteCodeError{}
@@ -1611,16 +1612,20 @@ func (c *AgentConn) GetEmailSSO(
 	return ret, err
 }
 
-func (c *AgentConn) GetSkipInviteCodeSSO(
+func (c *AgentConn) GetInviteCodeRegime(
 	ctx context.Context,
 	sid proto.UISessionID,
 ) (
-	bool,
+	proto.InviteCodeRegime,
 	error,
 ) {
-	var ret bool
+	var ret proto.InviteCodeRegime
 	err := c.withSession(sid, func(sess *SignupSession) error {
-		ret = (sess.oauth2 != nil && sess.oauth2.Idtok != nil)
+		if sess.oauth2 != nil && sess.oauth2.Idtok != nil {
+			ret = proto.InviteCodeRegime_SkipViaSSO
+		} else {
+			ret = sess.icr
+		}
 		return nil
 	})
 	return ret, err

@@ -29,6 +29,7 @@ type SessionBase struct {
 	activeYubiDevice *proto.YubiCardInfo
 	doPinProtect     bool
 	currPIN          *proto.YubiPIN
+	icr              proto.InviteCodeRegime
 }
 
 type Sessioner interface {

@@ -178,12 +178,14 @@ type HostConfig struct {
 	Metering   Metering
 	Viewership HostViewership
 	Typ        HostType
+	Icr        InviteCodeRegime
 }
 type HostConfigInternal__ struct {
 	_struct    struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Metering   *MeteringInternal__
 	Viewership *HostViewershipInternal__
 	Typ        *HostTypeInternal__
+	Icr        *InviteCodeRegimeInternal__
 }
 
 func (h HostConfigInternal__) Import() HostConfig {
@@ -206,6 +208,12 @@ func (h HostConfigInternal__) Import() HostConfig {
 			}
 			return x.Import()
 		})(h.Typ),
+		Icr: (func(x *InviteCodeRegimeInternal__) (ret InviteCodeRegime) {
+			if x == nil {
+				return ret
+			}
+			return x.Import()
+		})(h.Icr),
 	}
 }
 func (h HostConfig) Export() *HostConfigInternal__ {
@@ -213,6 +221,7 @@ func (h HostConfig) Export() *HostConfigInternal__ {
 		Metering:   h.Metering.Export(),
 		Viewership: h.Viewership.Export(),
 		Typ:        h.Typ.Export(),
+		Icr:        h.Icr.Export(),
 	}
 }
 func (h *HostConfig) Encode(enc rpc.Encoder) error {
