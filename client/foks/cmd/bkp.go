@@ -199,7 +199,7 @@ func bkpCmd(m libclient.MetaContext) *cobra.Command {
 		Long:         "Manage backup keys",
 		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, arg []string) error {
-			return cmd.Help()
+			return subcommandHelp(cmd, arg)
 		},
 	}
 	bkpNewCmd(m, top)

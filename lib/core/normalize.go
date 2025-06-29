@@ -110,6 +110,18 @@ func NormalizeName(inp proto.NameUtf8) (proto.Name, error) {
 	return ret, nil
 }
 
+func NormalizedNameEq(a, b proto.NameUtf8) (bool, error) {
+	an, err := NormalizeName(a)
+	if err != nil {
+		return false, err
+	}
+	bn, err := NormalizeName(b)
+	if err != nil {
+		return false, err
+	}
+	return an.Eq(bn), nil
+}
+
 func CheckUsername(u proto.Name) error {
 
 	// Make sure we match the protocol version of normalized name

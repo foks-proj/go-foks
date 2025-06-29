@@ -268,7 +268,7 @@ func yubiCmd(m libclient.MetaContext) *cobra.Command {
 		Long:         "Manage yubikeys",
 		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, arg []string) error {
-			return cmd.Help()
+			return subcommandHelp(cmd, arg)
 		},
 	}
 

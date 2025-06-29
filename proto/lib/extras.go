@@ -3674,6 +3674,38 @@ func (p FQPartyParsed) ToTeam() (*FQTeamParsed, error) {
 	return ret, err
 }
 
+func (p ParsedParty) Select() (*ParsedUser, *ParsedTeam, error) {
+	isName, err := p.GetS()
+	if err != nil {
+		return nil, nil, err
+	}
+
+	if isName {
+		nm := p.True()
+		if nm.IsTeam {
+			ret := NewParsedTeamWithTrue(nm.Name)
+			return nil, &ret, nil
+		} else {
+			ret := NewParsedUserWithTrue(nm.Name)
+			return &ret, nil, nil
+		}
+	}
+	uid, tid, err := p.False().Select()
+	if err != nil {
+		return nil, nil, err
+	}
+	switch {
+	case uid != nil:
+		ret := NewParsedUserWithFalse(*uid)
+		return &ret, nil, nil
+	case tid != nil:
+		ret := NewParsedTeamWithFalse(*tid)
+		return nil, &ret, nil
+	default:
+		return nil, nil, DataError("bad party")
+	}
+}
+
 func (p FQPartyParsed) Select() (*FQUserParsed, *FQTeamParsed, error) {
 	isName, err := p.Party.GetS()
 	if err != nil {

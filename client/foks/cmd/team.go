@@ -584,7 +584,7 @@ func teamIndexRangeCmd(m libclient.MetaContext) *cobra.Command {
 		Long:         "team index range management",
 		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, arg []string) error {
-			return cmd.Help()
+			return subcommandHelp(cmd, arg)
 		},
 	}
 	teamIndexRangeSet(m, cmd)
@@ -602,7 +602,7 @@ func teamCmd(m libclient.MetaContext) *cobra.Command {
 		Long:         "team management commands",
 		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, arg []string) error {
-			return cmd.Help()
+			return subcommandHelp(cmd, arg)
 		},
 	}
 	teamCreate(m, top)

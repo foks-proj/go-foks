@@ -314,16 +314,18 @@ func (c *CLKROneTeam) checkAdmin(m MetaContext) (bool, error) {
 }
 
 func (c *CLKROneTeam) checkMembers(m MetaContext) error {
-	for feq, deet := range c.tw.rosterDetails {
-		if deet.err != nil {
-			m.Warnw("clkr",
-				"team", c.tw.FQTeam(), "member", feq.Unfix(),
-				"role", deet.srcRole, "err", deet.err, "action", "checkMembers")
-			return deet.err
-		}
-		err := c.doOneMember(m, feq, deet)
-		if err != nil {
-			return err
+	for feq, lst := range c.tw.rosterDetails {
+		for _, deet := range lst {
+			if deet.err != nil {
+				m.Warnw("clkr",
+					"team", c.tw.FQTeam(), "member", feq.Unfix(),
+					"role", deet.srcRole, "err", deet.err, "action", "checkMembers")
+				return deet.err
+			}
+			err := c.doOneMember(m, feq, deet)
+			if err != nil {
+				return err
+			}
 		}
 	}
 	return nil

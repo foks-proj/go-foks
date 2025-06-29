@@ -40,7 +40,7 @@ func userCmd(m libclient.MetaContext) *cobra.Command {
 		Hidden:       true,
 		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, arg []string) error {
-			return cmd.Help()
+			return subcommandHelp(cmd, arg)
 		},
 	}
 	top.AddCommand(userLoadMeCmd(m))

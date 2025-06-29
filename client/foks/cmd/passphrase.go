@@ -23,7 +23,7 @@ func passphraseCmd(m libclient.MetaContext) *cobra.Command {
 		Long:         "manage passphrases, which are optionally used to encrypt local keys",
 		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, arg []string) error {
-			return cmd.Help()
+			return subcommandHelp(cmd, arg)
 		},
 	}
 

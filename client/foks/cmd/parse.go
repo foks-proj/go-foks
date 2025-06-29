@@ -14,6 +14,12 @@ func (a ArgsError) Error() string {
 	return "error parsing arguments: " + string(a)
 }
 
+type BadSubCommandError string
+
+func (s BadSubCommandError) Error() string {
+	return "bad subcommand: " + string(s)
+}
+
 func parseRole(s string, def *proto.Role) (*proto.Role, error) {
 	if len(s) == 0 {
 		return def, nil

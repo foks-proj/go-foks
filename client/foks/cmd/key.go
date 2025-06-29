@@ -72,7 +72,7 @@ func keyCmd(m libclient.MetaContext) *cobra.Command {
 		Short:   "manage FOKS keys",
 		Long:    "Manage FOKS keys, including devices, YubiKeys and backup keys",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return cmd.Help()
+			return subcommandHelp(cmd, args)
 		},
 	}
 

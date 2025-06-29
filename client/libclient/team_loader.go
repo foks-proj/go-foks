@@ -126,7 +126,7 @@ type TeamLoader struct {
 	tncs            []proto.Commitment // team name commitments
 	tnseq           proto.NameSeqno
 	removalKey      *rem.TeamRemovalKey
-	rosterDetails   map[proto.FQEntityFixed]*rosterPackage
+	rosterDetails   map[proto.FQEntityFixed][](*rosterPackage)
 	canLoadMembers  bool
 	openView        bool
 	hepks           *core.HEPKSet
@@ -141,12 +141,20 @@ type TeamWrapper struct {
 	memberMap     map[team.MemberID]proto.MemberRoleSeqno
 	srcRoleMap    map[proto.FQEntityFixed][]proto.Role
 	hostname      proto.Hostname
-	rosterDetails map[proto.FQEntityFixed]*rosterPackage
+	rosterDetails map[proto.FQEntityFixed][](*rosterPackage)
 	voTok         *rem.TeamVOBearerToken
 	hepks         *core.HEPKSet
 }
 
 var _ PartyWrapper = (*TeamWrapper)(nil)
+
+func (t *TeamWrapper) FQParty() (*proto.FQParty, error) {
+	if t == nil {
+		return nil, core.InternalError("nil team wrapper")
+	}
+	ret := t.prot.Fqt.FQParty()
+	return &ret, nil
+}
 
 func (t *TeamWrapper) VOBearerToken() *rem.TeamVOBearerToken { return t.voTok }
 func (t *TeamWrapper) Hostname() proto.Hostname              { return t.hostname }
@@ -383,12 +391,14 @@ func (w *TeamWrapper) ExportToRoster() (*lcl.TeamRoster, error) {
 		Fqp: w.ExportToNamedFQParty(),
 	}
 	var roster []lcl.TeamRosterMember
-	for _, v := range w.rosterDetails {
-		// note that we still export the roster details even if we failed to load
-		// the user, since we still can display uid/hostid (just not username).
-		// i.e. we are not checking v.err here.
-		x := v.Export()
-		roster = append(roster, x)
+	for _, l := range w.rosterDetails {
+		for _, v := range l {
+			// note that we still export the roster details even if we failed to load
+			// the user, since we still can display uid/hostid (just not username).
+			// i.e. we are not checking v.err here.
+			x := v.Export()
+			roster = append(roster, x)
+		}
 	}
 	slices.SortFunc(roster, func(a, b lcl.TeamRosterMember) int {
 		i := -1 * a.DstRole.SimpleCmp(b.DstRole)
@@ -1263,11 +1273,13 @@ func (l *TeamLoader) openRemoteViewTokens(
 	if !l.canLoadMembers {
 		return nil
 	}
-	for _, tok := range l.rosterDetails {
-		// Just warn if we can't decrypt
-		err := tok.decrypt(m, l.ptks)
-		if err != nil {
-			m.Warnw("TeamLoader.openRemoteViewTokens", "err", err, "stage", "decrypt")
+	for _, lst := range l.rosterDetails {
+		for _, tok := range lst {
+			// Just warn if we can't decrypt
+			err := tok.decrypt(m, l.ptks)
+			if err != nil {
+				m.Warnw("TeamLoader.openRemoteViewTokens", "err", err, "stage", "decrypt")
+			}
 		}
 	}
 	return nil
@@ -1330,11 +1342,13 @@ func (l *TeamLoader) loadMembers(
 	if !l.canLoadMembers {
 		return nil
 	}
-	for _, rd := range l.rosterDetails {
-		err := rd.load(m, l)
-		if err != nil {
-			m.Warnw("TeamLoader.loadMember", "err", err)
-			rd.err = err
+	for _, lst := range l.rosterDetails {
+		for _, rd := range lst {
+			err := rd.load(m, l)
+			if err != nil {
+				m.Warnw("TeamLoader.loadMember", "err", err)
+				rd.err = err
+			}
 		}
 	}
 	return nil
@@ -1419,7 +1433,7 @@ func (l *TeamLoader) setupRosterDetails(
 ) error {
 	all, closer := l.rosterPost.BorrowMembers()
 	defer closer()
-	ret := make(map[proto.FQEntityFixed]*rosterPackage)
+	ret := make(map[proto.FQEntityFixed][](*rosterPackage))
 	for k, v := range all {
 		fqp, err := k.Fqe.Unfix().FQParty()
 		if err != nil {
@@ -1432,7 +1446,7 @@ func (l *TeamLoader) setupRosterDetails(
 			isRemote: isRemote,
 			srcRole:  k.SrcRole.Export(),
 		}
-		ret[k.Fqe] = rp
+		ret[k.Fqe] = append(ret[k.Fqe], rp)
 	}
 	l.rosterDetails = ret
 	return nil
@@ -1456,8 +1470,11 @@ func (l *TeamLoader) loadAllRemoteViewTokens(
 			if err != nil {
 				return err
 			}
-			l.rosterDetails[*idp].remote = &rosterPackageRemote{
-				tokBox: tok,
+			lst := l.rosterDetails[*idp]
+			for _, v := range lst {
+				v.remote = &rosterPackageRemote{
+					tokBox: tok,
+				}
 			}
 		}
 		return nil
@@ -1465,9 +1482,42 @@ func (l *TeamLoader) loadAllRemoteViewTokens(
 
 	missingMembers := func() []proto.FQParty {
 		var ret []proto.FQParty
-		for _, v := range l.rosterDetails {
-			if v.isRemote && v.remote == nil {
-				ret = append(ret, v.fqp)
+		for _, lst := range l.rosterDetails {
+
+			// if some srcRoles have a remote view token, and other don't,
+			// it's ok to use the same view toke for all of them.
+			// If none of them have a remote view token, we need to fetch it.
+
+			var found *rosterPackageRemote
+
+			if len(lst) == 0 {
+				continue
+			}
+
+			foundFqp := lst[0].fqp
+			isRemote := lst[0].isRemote
+
+			if !isRemote {
+				continue
+			}
+
+			for _, v := range lst {
+				if v.remote != nil {
+					found = v.remote
+					break
+				}
+			}
+
+			if found != nil {
+				for _, v := range lst {
+					if v.remote == nil {
+						v.remote = found
+					}
+				}
+			}
+
+			if found == nil {
+				ret = append(ret, foundFqp)
 			}
 		}
 		return ret
@@ -1513,7 +1563,9 @@ func (l *TeamLoader) loadAllRemoteViewTokens(
 		if err != nil {
 			return err
 		}
-		l.rosterDetails[*fqe].remote = &rosterPackageRemote{tokBox: vt}
+		for _, v := range l.rosterDetails[*fqe] {
+			v.remote = &rosterPackageRemote{tokBox: vt}
+		}
 	}
 	return nil
 }
@@ -1711,8 +1763,9 @@ func (l *TeamLoader) saveState(m MetaContext) error {
 	case l.Arg.LoadMembers:
 		lst := make([]proto.TeamRemoteMemberViewTokenInner, 0, len(l.rosterDetails))
 		for _, v := range l.rosterDetails {
-			if v.remote != nil {
-				lst = append(lst, v.remote.tokBox)
+			// Just save the first remote view token for all srcRoles.
+			if len(v) > 0 && v[0].remote != nil {
+				lst = append(lst, v[0].remote.tokBox)
 			}
 		}
 		res.RemoteViewTokens = lst
@@ -2032,4 +2085,219 @@ func (t *TeamCryptoPartier) Refresh(m MetaContext, tm *TeamMinder) (CryptoPartie
 		Role: t.Role,
 		Kr:   tr.tw.KeyRing(),
 	}, nil
+}
+
+type rosterPackageMatch struct {
+	// one of the two will be non-nil on a match
+	uw      *UserWrapper
+	tw      *TeamWrapper
+	srcRole proto.Role
+}
+
+func (r *rosterPackage) match(
+	fqp proto.FQPartyParsed,
+	currHost proto.HostID,
+) (
+	*rosterPackageMatch,
+	error,
+) {
+	user, team, err := fqp.Party.Select()
+	if err != nil {
+		return nil, err
+	}
+
+	matchHost := func(id proto.HostID, name proto.Hostname) (bool, error) {
+		if fqp.Host == nil {
+			return id.Eq(currHost), nil
+		}
+		isName, err := fqp.Host.GetS()
+		if err != nil {
+			return false, err
+		}
+		if !isName {
+			return fqp.Host.False().Eq(id), nil
+		}
+		return fqp.Host.True().Hostname().NormEq(name), nil
+	}
+
+	matchUser := func() (bool, error) {
+		if r.uw == nil {
+			return false, nil
+		}
+		ok, err := matchHost(r.uw.fqu.HostID, r.uw.Hostname())
+		if err != nil {
+			return false, err
+		}
+		if !ok {
+			return false, nil
+		}
+		isUsername, err := user.GetS()
+		if err != nil {
+			return false, err
+		}
+		if !isUsername {
+			return user.False().Eq(r.uw.fqu.Uid), nil
+		}
+		return core.NormalizedNameEq(user.True(), r.uw.Name())
+	}
+
+	matchTeam := func() (bool, error) {
+		if r.tw == nil {
+			return false, nil
+		}
+		ok, err := matchHost(r.tw.FQTeam().Host, r.tw.Hostname())
+		if err != nil {
+			return false, err
+		}
+		if !ok {
+			return false, nil
+		}
+		isTeamname, err := team.GetS()
+		if err != nil {
+			return false, err
+		}
+		if isTeamname {
+			ok, err := core.NormalizedNameEq(team.True(), r.tw.Name())
+			if err != nil {
+				return false, nil
+			}
+			return ok, nil
+		}
+		return team.False().Eq(r.tw.FQTeam().Team), nil
+	}
+
+	switch {
+	case user != nil:
+		ok, err := matchUser()
+		if err != nil {
+			return nil, err
+		}
+		if ok {
+			return &rosterPackageMatch{
+				uw:      r.uw,
+				srcRole: r.srcRole,
+			}, nil
+		}
+	case team != nil:
+		ok, err := matchTeam()
+		if err != nil {
+			return nil, err
+		}
+		if ok {
+			return &rosterPackageMatch{
+				tw:      r.tw,
+				srcRole: r.srcRole,
+			}, nil
+		}
+	default:
+		return nil, core.InternalError("no user or team in FQPartyParsed")
+	}
+
+	return nil, nil
+}
+
+func (t *TeamWrapper) lookupWrappers(
+	m MetaContext,
+	fqp proto.FQPartyParsed,
+	srcRole *proto.Role,
+) (
+	PartyWrapper,
+	*proto.Role, // return the source role in the case none was specified
+	error,
+) {
+
+	var matches []PartyWrapper
+	var nUsers, nTeams int
+
+	for _, v := range t.rosterDetails {
+		var srcRoleFound *proto.Role
+		for _, l := range v {
+			rpm, err := l.match(fqp, t.FQTeam().Host)
+			if err != nil {
+				return nil, nil, err
+			}
+			if rpm == nil {
+				continue
+			}
+			var srcRoleMatch bool
+
+			if srcRole != nil {
+				match, err := rpm.srcRole.Eq(*srcRole)
+				if err != nil {
+					return nil, nil, err
+				}
+				srcRoleMatch = match
+			} else {
+				srcRoleMatch = true
+			}
+			srcRoleFound = &rpm.srcRole
+
+			if rpm.uw != nil && srcRoleMatch {
+				matches = append(matches, rpm.uw)
+				nUsers++
+			}
+			if rpm.tw != nil && srcRoleMatch {
+				matches = append(matches, rpm.tw)
+				nTeams++
+			}
+		}
+		switch {
+		case nUsers > 0 && nTeams > 0:
+			return nil, nil, core.TeamError("a user and team matches, should never happen")
+		case len(matches) == 1:
+			return matches[0], srcRoleFound, nil
+		case len(matches) > 1 && srcRole == nil:
+			return nil, nil, core.TeamRosterError("multiple users match, but no source role specified")
+		case len(matches) > 1:
+			return nil, nil, core.TeamRosterError("multiple users match with source role specified")
+		}
+	}
+	return nil, nil, core.NotFoundError("team member")
+}
+
+type LookupMemberRes struct {
+	Mem  proto.Member
+	Hepk *proto.HEPK
+}
+
+func (t *TeamWrapper) LookupMember(
+	m MetaContext,
+	fqpp proto.FQPartyParsed,
+	srcRole *proto.Role, // if nil, any role matches
+) (
+	*LookupMemberRes,
+	error,
+) {
+	// Note, if srcRole is nil on the way in, it can be set on the way
+	// out with the (unambiguous) srcRole that matches the given FQPartyParsed.
+	pw, srcRole, err := t.lookupWrappers(m, fqpp, srcRole)
+	if err != nil {
+		return nil, err
+	}
+	if pw == nil {
+		return nil, core.NotFoundError("no member found for FQPartyParsed")
+	}
+	fqp, err := pw.FQParty()
+	if err != nil {
+		return nil, err
+	}
+	fqe := fqp.FQEntity()
+	fqeInScope := fqe.AtHost(t.FQTeam().Host)
+	srk, err := core.ImportRole(*srcRole)
+	if err != nil {
+		return nil, err
+	}
+	tmk, hepk, err := pw.TeamMemberKeys(*srk)
+	if err != nil {
+		return nil, err
+	}
+	return &LookupMemberRes{
+		Mem: proto.Member{
+			Id:      fqeInScope,
+			SrcRole: *srcRole,
+			Keys:    proto.NewMemberKeysWithTeam(*tmk),
+		},
+		Hepk: hepk,
+	}, nil
+
 }

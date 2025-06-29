@@ -31,7 +31,7 @@ func deviceCmd(m libclient.MetaContext) *cobra.Command {
 		Long:         "low-level commands for managing FOKS devices",
 		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, arg []string) error {
-			return cmd.Help()
+			return subcommandHelp(cmd, arg)
 		},
 	}
 	var pcfg ProvisionCmdConfig

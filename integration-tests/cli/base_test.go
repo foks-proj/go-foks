@@ -493,3 +493,13 @@ func activeUserContext(t *testing.T, s lcl.AgentStatus) proto.UserContext {
 	require.NotNil(t, active)
 	return *active
 }
+
+func TestBadSubCommand(t *testing.T) {
+	agent := newTestAgent(t)
+	agent.runAgent(t)
+	defer agent.stop(t)
+
+	err := agent.runCmdErr(nil, "team", "bad-command")
+	require.Error(t, err)
+	require.Equal(t, cmd.BadSubCommandError("bad-command"), err)
+}

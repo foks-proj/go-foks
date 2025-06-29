@@ -545,7 +545,7 @@ func TestTeamAddTeam(t *testing.T) {
 	err = x.runCmdErr(nil, "team", "change-roles", t1.String(), "t:"+t2+"/m/3->m/1")
 	require.Error(t, err)
 	require.Equal(t,
-		core.TeamRosterError("party at position 0 with given source role not found in team"),
+		core.TeamRosterError("for member at position 0: not found: team member"),
 		err,
 	)
 
@@ -573,4 +573,56 @@ func TestTeamAddTeam(t *testing.T) {
 
 	// finally test removal
 	x.runCmd(t, nil, "team", "change-roles", t1.String(), yUserString+"->n")
+}
+
+func TestTeamChangeMembershipClosedViewership(t *testing.T) {
+
+	x := newTestAgent(t)
+	x.runAgent(t)
+	defer x.stop(t)
+
+	newUserWithAgentAtVHost(t, x, 0)
+	merklePoke(t)
+	merklePoke(t)
+
+	var res lcl.TeamCreateRes
+	teamName := "giants"
+	x.runCmdToJSON(t, &res, "team", "create", teamName)
+	merklePoke(t)
+
+	var res3 proto.TeamInvite
+	x.runCmdToJSON(t, &res3, "team", "invite", teamName)
+	inviteStr, err := team.ExportTeamInvite(res3)
+	require.NoError(t, err)
+
+	var xUser lcl.UserMetadataAndSigchainState
+	x.runCmdToJSON(t, &xUser, "user", "load-me")
+
+	y := newTestAgent(t)
+	y.runAgent(t)
+	defer y.stop(t)
+	newUserWithAgentAtVHost(t, y, 0)
+	merklePoke(t)
+	merklePoke(t)
+	y.runCmd(t, nil, "team", "accept", inviteStr)
+
+	var inb lcl.TeamInbox
+	x.runCmdToJSON(t, &inb, "team", "inbox", teamName)
+	require.Equal(t, 1, len(inb.Rows))
+	x.runCmd(t, nil, "team", "admit", teamName, string(inb.Rows[0].Tok.String())+"/m/4")
+	merklePoke(t)
+
+	ystat := y.status(t)
+	yusername := ystat.Users[0].Info.Username.NameUtf8
+
+	x.runCmd(t, nil, "team", "change-roles", teamName, yusername.String()+"->a")
+	merklePoke(t)
+
+	yuid, err := ystat.Users[0].Info.Fqu.Uid.StringErr()
+	require.NoError(t, err)
+
+	// now change the role of y to be a reader, but this time use UID and
+	// specify the source role
+	x.runCmd(t, nil, "team", "change-roles", teamName, yuid+"/o->m/0")
+	merklePoke(t)
 }

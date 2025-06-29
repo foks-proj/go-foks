@@ -78,6 +78,7 @@ type PartyWrapper interface {
 	Name() proto.NameUtf8
 	TeamMemberKeys(r core.RoleKey) (*proto.TeamMemberKeys, *proto.HEPK, error)
 	CheckTeamIndexRange(targetTeam core.RationalRange, joinReqIndexRange *proto.RationalRange) error
+	FQParty() (*proto.FQParty, error)
 }
 
 type UserWrapper struct {
@@ -111,6 +112,14 @@ func (u *UserWrapper) TeamMemberKeys(rk core.RoleKey) (*proto.TeamMemberKeys, *p
 		HepkFp:    lst.HepkFp,
 		Gen:       lst.Gen,
 	}, hepk.Obj(), nil
+}
+
+func (u *UserWrapper) FQParty() (*proto.FQParty, error) {
+	if u == nil {
+		return nil, core.InternalError("nil user wrapper")
+	}
+	ret := u.fqu.ToFQParty()
+	return &ret, nil
 }
 
 func (u *UserWrapper) CheckTeamIndexRange(targetTeam core.RationalRange, joinReqIndexRange *proto.RationalRange) error {

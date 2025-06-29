@@ -13,6 +13,8 @@ changelog:
         closes: ["#119"]
       - desc: invite codes are optional for some hosts
         closes: ["#123"]
+      - desc: fix `team change-roles` on closed-membership hosts
+        closes : ["#127"]
   - version: 0.0.21
     urgency: low
     stable: false

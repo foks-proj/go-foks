@@ -22,7 +22,7 @@ func skmCmd(m libclient.MetaContext) *cobra.Command {
 		Long:         "device secret keys encrypted with a variety of strategies; this command queries and sets them",
 		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, arg []string) error {
-			return cmd.Help()
+			return subcommandHelp(cmd, arg)
 		},
 	}
 
