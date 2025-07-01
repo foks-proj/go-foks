@@ -81,11 +81,11 @@ darwin-amd64-zip-release-verify:
 	./scripts/macos-verify.bash build/darwin-amd64/foks.zip
 
 .PHONY: deb-arm64
-deb-arm64: build/foks.linux-arm64.stripped
+deb-arm64: build/foks.deb.arm64
 	./scripts/build-deb.sh -p arm64
 
 .PHONY: deb-amd64
-deb-amd64: build/foks.linux-amd64.stripped
+deb-amd64: build/foks.deb.amd64
 	./scripts/build-deb.sh -p amd64
 
 .PHONY: deb
@@ -148,6 +148,11 @@ release-all: deb rpm darwin-zip brew musl
 proto: 
 	go generate ./...
 	(cd proto-src && go run ../tools/snowp-checker)
+
+build/foks.deb.amd64: proto
+	./scripts/compile-deb-bin.sh -p linux-amd64 -o deb
+build/foks.deb.arm64: proto
+	./scripts/compile-deb-bin.sh -p linux-arm64 -o deb
 
 build/foks.linux-arm64: proto
 	./scripts/cross-compile.sh -p linux-arm64

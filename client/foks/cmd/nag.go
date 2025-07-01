@@ -113,12 +113,12 @@ func upgradeInstructions(
 	switch libclient.LinkerPackaging {
 	case "brew":
 		fmt.Fprintf(es, "  - to upgrade via brew, run `brew upgrade foks`\n")
-	case "apt":
+	case "apt", "deb":
 		fmt.Fprintf(es, "  - to upgrade via apt, run `apt update && apt install foks`\n")
 	case "yum":
 		fmt.Fprintf(es, "  - to upgrade via yum, run `yum update foks`\n")
-	case "dnf":
-		fmt.Fprintf(es, "  - to upgrade via dnf, run `dnf update foks`\n")
+	case "dnf", "rpm":
+		fmt.Fprintf(es, "  - to upgrade via dnf, run `dnf upgrade --refresh && dnf update foks`\n")
 	}
 
 	return nil

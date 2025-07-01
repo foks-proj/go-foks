@@ -11,7 +11,7 @@ ARG PLAT=arm64
 ARG VERSION=0.0.0
 
 RUN mkdir -p usr/bin usr/share/doc/foks DEBIAN
-COPY build/foks.linux-${PLAT}.stripped usr/bin/foks
+COPY build/foks.deb.${PLAT} usr/bin/foks
 COPY build/debian.control-${VERSION}-${PLAT} DEBIAN/control
 COPY build/debian.copyright usr/share/doc/foks/copyright
 COPY build/changelog.debian-${VERSION}.gz usr/share/doc/foks/changelog.gz
