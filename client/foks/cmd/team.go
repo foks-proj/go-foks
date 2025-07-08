@@ -21,7 +21,7 @@ var teamOpts = agent.StartupOpts{
 
 func teamCreate(m libclient.MetaContext, top *cobra.Command) {
 	quickCmd(m, top,
-		"create", []string{"mk"},
+		"create <team-name>", []string{"mk"},
 		"create a new team", "create a new team with one owner (the current user)",
 		func(cmd *cobra.Command, arg []string) error {
 			if len(arg) != 1 {
@@ -49,9 +49,17 @@ func teamCreate(m libclient.MetaContext, top *cobra.Command) {
 
 func teamInvite(m libclient.MetaContext, top *cobra.Command) {
 	quickCmd(m, top,
-		"invite", []string{"inv"},
+		"invite <team>", []string{"inv"},
 		"create a new team invite, or fetch one if it already exists",
-		"create a new team invite or fetch an existing one; the output string can shared with multiple intended recipients",
+		libterm.MustRewrapSense(`create a new team invite or fetch an existing one; 
+the output string can shared with multiple intended recipients, and can be shared
+via any communication means available, like email or chat.
+
+This command takes 1 argument, the team name (or ID) to make an invite for.
+The operator must be admin or above to proceed.
+
+Users can accept this invitation via the 'foks team accept' command.
+`, 0),
 		func(cmd *cobra.Command, arg []string) error {
 			if len(arg) != 1 {
 				return ArgsError("expected exactly one argument -- the team name")
@@ -81,7 +89,7 @@ func teamInvite(m libclient.MetaContext, top *cobra.Command) {
 
 func teamList(m libclient.MetaContext, top *cobra.Command) {
 	quickCmd(m, top,
-		"list", []string{"ls"},
+		"list <name>", []string{"ls"},
 		"list the memebers of a team",
 		"list teams the members of a team",
 		func(cmd *cobra.Command, arg []string) error {
@@ -145,10 +153,14 @@ func teamAll(m libclient.MetaContext, top *cobra.Command) {
 func teamAccept(m libclient.MetaContext, top *cobra.Command) {
 	var teamStr, roleStr string
 	cmd := &cobra.Command{
-		Use:          "accept",
-		Aliases:      []string{"acc"},
-		Short:        "accept a team invite",
-		Long:         "accept a team invite in any of these 4 formats: {user,team} x {local,remote}",
+		Use:     "accept <invite-code>",
+		Aliases: []string{"acc"},
+		Short:   "accept a team invite",
+		Long: libterm.MustRewrapSense(`Accept a team invite given an invite code.
+The invite code is good for exactly on team. By default, accept the invitation for
+your user, at the role Owner. Optionally, you can specify a team and/or a 
+source role, if you want to accept the invitation on behalf of a team, or with
+a role other than the default.`, 0),
 		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, arg []string) error {
 			var fqt *proto.FQTeamParsed
@@ -236,9 +248,11 @@ Host: %s (%s)
 
 func teamInbox(m libclient.MetaContext, top *cobra.Command) {
 	quickCmd(m, top,
-		"inbox", []string{},
+		"inbox <team>", []string{},
 		"team join requests for the given team",
-		"team join requests for the given team",
+		libterm.MustRewrapSense(`List all of the pending team join requests for the
+given team, so they can be acted on with 'foks team accept'. You must be the 
+admin or owner of the team to use this feature.`, 0),
 		func(cmd *cobra.Command, arg []string) error {
 			if len(arg) != 1 {
 				return ArgsError("expected exactly one argument -- the team to list")
@@ -417,10 +431,25 @@ foks team change-roles acme alice/m/-4→m/0 bob@foks.mydomain.com→n`,
 
 func teamAdmit(m libclient.MetaContext, top *cobra.Command) {
 	cmd := &cobra.Command{
-		Use:          "admit",
-		Aliases:      nil,
-		Short:        "admit a user to a team (given an accept code)",
-		Long:         "admit a user to a team (given an accept code)",
+		Use:     "admit <team> <rsvp1[/role1]> <rsvp2[/role2]> ...",
+		Aliases: nil,
+		Short:   "admit a party to a team",
+		Long: libterm.MustRewrapSense(`Admit a party into a team. Specify
+first the team, and then a series of RSVP x role pairs, where the role is 
+optional. Get RSVP strings from the output of 'foks team inbox'; they should
+correspond to users and/or teams who have accepted an invitation into the team.
+For each, you can optionally specify the destination role they will have in the team.
+If no role is spcified, the default is member/0 (meaning member at visibility level 0).
+
+Here are some examples:`, 0) +
+			`
+# admit RSVP u1Lx6dV7HX48ezh47UqcIc as member/0
+foks team admit my-team u1Lx6dV7HX48ezh47UqcIc 
+
+# admit RSVP u1Qjei39jEv9ejKEem943j as member/-4
+# admit RSVP u19ejeKeoome983KELqee as admin
+foks team admit my-team u1Qjei39jEv9ejKEem943j/m/-4 u19ejeKeoome983KELqee/a
+`,
 		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, arg []string) error {
 			if len(arg) < 2 {
@@ -597,9 +626,37 @@ func teamIndexRangeCmd(m libclient.MetaContext) *cobra.Command {
 func teamCmd(m libclient.MetaContext) *cobra.Command {
 
 	top := &cobra.Command{
-		Use:          "team",
-		Short:        "team management commands",
-		Long:         "team management commands",
+		Use:   "team",
+		Short: "team management commands",
+		Long: libterm.MustRewrapSense(`Team management commands.
+Create teams, change memberships, etc.
+
+In FOKS, there are two strategies for adding users to teams, depending
+on whether the host is an open-view host or not. On an open-view host,
+admins can directly add users or teams to a team, as long as they
+are on the same host. This is because the admin has the ability to
+view those parties' sigchains without needing their permission.
+
+On a closed host, or on an open-view host when interacting with remote parties,
+the invitation sequence has three phases:
+
+1. The admin creates an invite for the team via 'foks team invte'. This
+operations yields an invititation code, which is about 100 characters long.
+The admin can then share this code via email, chat, or any other 
+means available. It can be used multiple times.
+
+2. The target party 'accepts' the invite via 'foks team accept'. By accepting
+the invite, the target party allows the team admin to view their sigchain.
+Once they have accepted, they should use the same communication channel
+used in step 1 to inform the admin.
+
+3. The admin then 'admits' the party to the team. Here there are two
+commands involved: (a) 'foks team inbox' to list the pending join requests;
+and (b) 'foks team admit' to admit the party to the team. When admitting
+a party into the team, the admin can specify the role of the party in the team.
+
+For more information, see the variaous help articles on these individual
+commands.`, 0),
 		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, arg []string) error {
 			return subcommandHelp(cmd, arg)

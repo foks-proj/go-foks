@@ -2,6 +2,13 @@ project: foks
 maintaner: Maxwell Krohn <max@ne43.com>
 
 changelog:
+  - version: 0.1.1
+    urgency: low
+    stable: true
+    date: none-yet
+    changes:
+      - desc: add more online documentation for `team` admin commands
+        closes: ["#128"]
   - version: 0.1.0
     urgency: low
     stable: false
