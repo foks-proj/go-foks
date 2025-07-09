@@ -242,7 +242,7 @@ Host: %s (%s)
 		},
 	}
 	cmd.Flags().StringVarP(&teamStr, "team", "t", "", "team to accept invite for")
-	cmd.Flags().StringVarP(&roleStr, "role", "r", "", "source role to accept team invte as (default=member/0)")
+	cmd.Flags().StringVarP(&roleStr, "role", "r", "", "source role to accept team invite as (default=member/0)")
 	top.AddCommand(cmd)
 }
 
@@ -640,7 +640,7 @@ view those parties' sigchains without needing their permission.
 On a closed host, or on an open-view host when interacting with remote parties,
 the invitation sequence has three phases:
 
-1. The admin creates an invite for the team via 'foks team invte'. This
+1. The admin creates an invite for the team via 'foks team invite'. This
 operations yields an invititation code, which is about 100 characters long.
 The admin can then share this code via email, chat, or any other 
 means available. It can be used multiple times.
