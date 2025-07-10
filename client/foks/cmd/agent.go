@@ -25,7 +25,7 @@ func agentCmd(m libclient.MetaContext) *cobra.Command {
 	var acfg AgentCmdConfig
 	cmd := &cobra.Command{
 		Use:   "agent",
-		Short: "run a foks backgroun agent",
+		Short: "run a foks background agent",
 		Long: `The FOKS background agent is a persistent process that
 manages local key state.`,
 		SilenceUsage: true,
