@@ -82,15 +82,18 @@ make ci                   # uses a mock yubikey
 make ci-yubi-destructive  # uses a real yubikey; it's way slower, and it will make destructive changes to the yubikey
 ```
 
-### Run Locally Against Local Server
+## Running Your Own FOKS Server
+
+The FOKS server is meant for anyone to run. There are a fair number of configuration options
+and steps to starting up a server, so it warrants a [separate discussion](docs/server.md).
+
+If you are in a hurry, we have a wizard that magically stands up a new server:
 
 ```bash
-# YMMV!!! 
-cd /path/to/your/workdir
-/path/to/srcdir/scripts/config.bash --dev # and lots of other options
-cd srv
-./build.bash all # or you can single-step if something goes wrong
+/usr/bin/env bash <(curl -fsSL https://pkgs.foks.pub/server-install.sh)
 ```
+
+If you need more control, refer to the [server documentation](docs/server.md).
 
 ## Protocols
 

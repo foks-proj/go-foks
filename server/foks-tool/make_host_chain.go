@@ -12,10 +12,31 @@ import (
 	"github.com/spf13/cobra"
 )
 
+type hostType struct {
+	proto.HostType
+}
+
+func (h *hostType) String() string {
+	return h.HostType.String()
+}
+
+func (h *hostType) Set(s string) error {
+	err := h.HostType.ImportFromString(s)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (h *hostType) Type() string {
+	return "host-type"
+}
+
 type MakeHostChain struct {
 	CLIAppBase
 	keysDir  core.Path
 	hostname string
+	typ      hostType
 }
 
 func (m *MakeHostChain) CobraConfig() *cobra.Command {
@@ -25,6 +46,7 @@ func (m *MakeHostChain) CobraConfig() *cobra.Command {
 	}
 	ret.Flags().VarP(&m.keysDir, "keys-dir", "", "location to write keys")
 	ret.Flags().StringVar(&m.hostname, "hostname", "", "hostname to use for the primary server")
+	ret.Flags().VarP(&m.typ, "type", "", "type of the host")
 	return ret
 }
 
@@ -43,6 +65,9 @@ func (m *MakeHostChain) CheckArgs(args []string) error {
 
 func (k *MakeHostChain) Run(m shared.MetaContext) error {
 	hc := shared.NewHostChain().WithHostname(proto.Hostname(k.hostname))
+	if k.typ.HostType != proto.HostType_None {
+		hc = hc.WithHostType(k.typ.HostType)
+	}
 	err := hc.Forge(m, k.keysDir)
 	if err != nil {
 		return err

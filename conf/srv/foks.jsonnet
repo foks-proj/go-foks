@@ -4,6 +4,7 @@ local post = import 'local.post.libsonnet';
 
 local base = pre.base({
     local top = self,
+    standalone : false,
     localhost_test : false,
     top_dir : '../',
     keys_dir : self.top_dir + 'keys/',
@@ -37,23 +38,31 @@ local base = pre.base({
     },
 });
 
-local make_listen(base, port, nm, ext, user_ca) = 
-    if ext then {
-        port : base.base_ext_port + port,
-        bind_addr : base.bind_addr_ext,
-        external_addr : base.external_addr,
-    } else {
-        port : base.base_int_port + port,
-        bind_addr : base.bind_addr_int,
-        external_addr : base.internal_addr,
+local in_docker_guest(base) = base.docker_compose && base.is_docker_guest;
+
+local make_listen(base, port, nm, ext) = 
+    local pumped_up_port = (if ext then base.base_ext_port else base.base_int_port) + port;
+    local bind_addr = (if in_docker_guest(base)
+        then "0.0.0.0" 
+        else if ext then base.bind_addr_ext 
+        else base.bind_addr_int);
+    local external_addr = (if in_docker_guest(base)
+        then nm 
+        else if ext then base.external_addr 
+        else base.internal_addr);
+    {
+        port : pumped_up_port,
+        bind_addr : bind_addr,
+        external_addr : external_addr,
+        is_ext : ext,
     };
 
 local make_listen_probe(base, port) = 
-    make_listen(base, port, "probe", true, false);
+    make_listen(base, port, "probe", true);
 
 local make_listen_web(base) =
     {
-        bind_addr : base.bind_addr_ext,
+        bind_addr : if in_docker_guest(base) then "0.0.0.0" else base.bind_addr_ext,
         external_addr : base.external_addr,
         port : base.web_ports.internal,
     };
@@ -61,8 +70,8 @@ local make_listen_web(base) =
 // make_listen_ufs creates listen blocks for User-Facing-Servers (UFSs)
 // that are signed by the hostchain-based CA, and not by the root CAs like
 // Let's Encrypt.
-local make_listen_ufs(base, port, name, user_ca) = 
-    make_listen(base, port, name, true, user_ca);
+local make_listen_ufs(base, port, name) = 
+    make_listen(base, port, name, true);
 
 local make_db(nm) = base.db + { name : nm };
 local make_db_shard(nm, id, active) = 
@@ -135,20 +144,21 @@ post.final(pre.final({
 
     listen : {
         probe : make_listen_probe(base, 0),
-        beacon : make_listen(base, 1, "beacon", true, false) + {
+        beacon : make_listen(base, 1, "beacon", true) + {
             external_addr : base.beacon.hostname,
         },
-        reg : make_listen_ufs(base, 2, "reg", false),
-        user: make_listen_ufs(base, 3, "user", true),
-        kv_store : make_listen_ufs(base, 4, "kv_store", true),
-        merkle_query : make_listen_ufs(base, 5, "merkle_query", false),
-        internal_ca : make_listen(base, 0, "internal_ca", false, false),
-        merkle_batcher : make_listen(base, 1, "merkle_batcher", false, true),
-        merkle_builder : make_listen(base, 2, "merkle_builder", false, true),
-        merkle_signer : make_listen(base, 3, "merkle_signer", false, true),
-        queue : make_listen(base, 4, "queue", false, true),
-        quota : make_listen(base, 5, "quota", false, true),
-        autocert : make_listen(base, 6, "autocert", false, true),
+        reg : make_listen_ufs(base, 2, "reg"),
+        user: make_listen_ufs(base, 3, "user"),
+        kv_store : make_listen_ufs(base, 4, "kv_store"),
+        merkle_query : make_listen_ufs(base, 5, "merkle_query"),
+        internal_ca : make_listen(base, 0, "internal_ca", false),
+        merkle_batcher : make_listen(base, 1, "merkle_batcher", false),
+        merkle_builder : make_listen(base, 2, "merkle_builder", false),
+        merkle_signer : make_listen(base, 3, "merkle_signer", false),
+        queue : make_listen(base, 4, "queue", false),
+        quota : make_listen(base, 5, "quota", false),
+        autocert : make_listen(base, 6, "autocert", false)
+    } + if base.standalone then {} else {
         web : make_listen_web(base)
     },
 

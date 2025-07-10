@@ -20,7 +20,7 @@ local ret = {
             to : "localhost"
         },
         {
-            from : lcl.big_tent_hostname,
+            from : lcl.big_top_hostname,
             to : "localhost"
         },
         {

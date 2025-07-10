@@ -14,7 +14,12 @@ proxy_pair() {
     echo "${port}:localhost:${port}"
 }
 
-ssh -N -i ${SSH_KEY} \
+key=""
+if [ -n "${SSH_KEY}" ]; then
+    key="-i ${SSH_KEY}"
+fi
+
+ssh -N ${key} \
     -R $(proxy_pair reg) \
     -R $(proxy_pair probe) \
     -R $(proxy_pair user) \

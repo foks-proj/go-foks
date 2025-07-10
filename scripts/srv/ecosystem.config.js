@@ -47,9 +47,9 @@ function apps() {
     app('kv_store', 'kv-store'),
     app('quota', 'quota'),
     app('autocert', 'autocert'),
-    app('web', 'web'),
     bash_app('ssh-tun', 'ssh-tun.sh'),
   ].concat(lcl.beacon ? [app('beacon', 'beacon')] : [])
+   .concat(lcl.web ? [app('web', 'web')] : [])
 }
 
 module.exports = {

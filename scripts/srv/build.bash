@@ -2,18 +2,14 @@
 # Copyright (c) 2025 ne43, Inc.
 # Licensed under the MIT License. See LICENSE in the project root for details.
 
-
-set -e -o pipefail
+set -eou pipefail
 
 . ./env.sh
 
-is_env_bool_set() {
-    local var_name=$1
-    [[ -n "${!var_name}" && "${!var_name}" -eq 1 ]]
-}
-
-if (is_env_bool_set "TEST") || (is_env_bool_set "DEV"); then
-    ./build-go.bash
+# If we're running remotely, on a potentially different architecture, no need to build
+# Should run `deploy.sh` instead
+if [ "$RUN_REMOTE" -eq 0 ]; then
+    ${SCRIPTDIR}/build-go.bash
 fi
 
 ## constants
@@ -42,7 +38,14 @@ for service in "${services[@]}"; do
 done
 
 declare -a all_services_hyphenate=("${services_hyphenate[@]}")
-all_services_hyphenate+=("probe" "beacon" "web")
+all_services_hyphenate+=("probe")
+
+if [ "$RUN_BEACON" -eq 1 ]; then
+    all_servics_hyphenate+=("beacon")
+fi
+if [ "$SERVER_MODE" = "hosting_platform" ]; then
+    all_services_hyphenate+=("web")
+fi
 ##
 ## done setup
 ##
@@ -74,29 +77,59 @@ autocert() {
 ## work functions
 ##
 setup_tools() {
+    if [ "$RUN_REMOTE" -eq 1 ]; then
+        echo "Skipping setup_tools since running remotely"
+        return
+    fi
+    if [ "$SERVER_MODE" != "hosting_platform" ] ; then
+        echo "Skipping setup_tools since standalone doesn't need a web portal"
+        return
+    fi
     (cd ${SRCDIR} && make srv-setup)
 }
 
 make_web_assets() {
-    (cd ${SRCDIR} && make srv-assets)
+    if [ "$RUN_REMOTE" -eq 1 ]; then
+        echo "Skipping make_web_assets since running remotely"
+        return
+    fi
+    if [ "$SERVER_MODE" != "hosting_platform" ] ; then
+        (cd ${SRCDIR} && make srv-templ-build)
+    else
+        (cd ${SRCDIR} && make srv-assets)
+    fi
+}
+
+docker_arch() {
+    if [ "$(uname -m)" = "arm64" ]; then
+        echo "arm64v8/"
+    else
+        echo ""
+    fi
+}
+
+db_img() {
+    echo "$(docker_arch)postgres:17-alpine"
 }
 
 create_docker_db() {
-    if is_env_bool_set "USE_RDS"; then
+    if [ "$DB_BYO" -eq 1 ]; then
+        echo "Skipping create_docker_db since using BYO DB"
         return
     fi
     docker \
-        run -d --name foks-postgresql \
-        -v foks-db:/var/lib/postgresql/data \
-        -p ${DBPORT}:5432 \
-        -e POSTGRES_PASSWORD=${DBPW_ROOT} \
-        arm64v8/postgres:17-alpine
+        run -d --name foks-postgresql-${INSTANCE_ID} \
+        -v foks-db-${INSTANCE_ID}:/var/lib/postgresql/data \
+        -p ${DB_PORT}:5432 \
+        -e POSTGRES_PASSWORD=${DB_PW_POSTGRES} \
+        $(db_img)
+    sleep2
 }
 
 create_foks_user() {
-    PGPASSWORD=${DBPW_ROOT} psql \
-        -h ${DBHOST} -p ${DBPORT} -U postgres \
-        -c "CREATE USER foks WITH CREATEDB PASSWORD '${DBPW_FOKS}';"
+    PGPASSWORD=${DB_PW_POSTGRES} psql \
+        -h ${DB_HOST} -p ${DB_PORT} -U postgres \
+        -c "CREATE USER foks WITH CREATEDB PASSWORD '${DB_PW_FOKS}';"
 }
 
 init_db() {
@@ -104,19 +137,42 @@ init_db() {
 }
 
 make_host_chain() {
+    typ=''
+    if [ "$SERVER_MODE" = "standalone" ]; then
+        typ="--type standalone"
+    fi
     tool make-host-chain \
         --keys-dir ${TOPDIR}/keys \
-        --hostname ${PRIMARY_HOSTNAME}
+        --hostname ${BASE_HOSTNAME} \
+        ${typ}
 }
 
 noop() {
     echo "No operation"
 }
 
+list_services() {
+    local wanted_is_ext="$1"
+    ret=""
+    for svc in "${all_services_hyphenate[@]}"
+    do
+        unhyp="${svc//-/_}"
+        is_ext=$(jsonnet ${TOPDIR}/conf/foks.jsonnet | jq -r ".listen.${unhyp}.is_ext")
+        if [ "$is_ext" = "$wanted_is_ext" ]; then
+                ret="${ret},${unhyp}"
+        fi
+    done
+    echo "${ret}"
+}
+
 issue_backend_cert() {
-    hosts=${HOSTS}
-    if [ -z "${hosts}" ]; then 
-        hosts=127.0.0.1,localhost,::1,${PRIMARY_HOSTNAME}
+    hosts="127.0.0.1,localhost,::1,${BASE_HOSTNAME}"
+
+    # For docker-compose, the hostname is the name of the service, so has
+    # to appear as an SNI in the TLS cert
+    if [ "$RUN_MODE" = "docker_compose" ]; then
+        others=$(list_services false)
+        hosts="${hosts},${others}"
     fi
     tool issue-cert \
         --type backend-x509-cert \
@@ -124,13 +180,15 @@ issue_backend_cert() {
 }
 
 issue_frontend_cert() {
-    hosts=${HOSTS}
-    if [ -z "${hosts}" ]; then
-        if is_env_bool_set "TEST"; then
-            hosts=127.0.0.1,localhost,::1,${PRIMARY_HOSTNAME}
-        else 
-            hosts=${PRIMARY_HOSTNAME}
-        fi
+    hosts=""
+    if [ "$NETWORK_MODE" = "test" ]; then
+        hosts=127.0.0.1,localhost,::1,${BASE_HOSTNAME}
+    else 
+        hosts=${BASE_HOSTNAME}
+    fi
+    if [ "$RUN_MODE" = "docker_compose" ]; then
+        others=$(list_services true)
+        hosts="${hosts},${others}"
     fi
     tool issue-cert \
         --type hostchain-frontend-x509-cert \
@@ -138,7 +196,7 @@ issue_frontend_cert() {
 }
 
 issue_probe_and_beacon_certs_test() {
-    hosts=127.0.0.1,localhost,::1,${PRIMARY_HOSTNAME}
+    hosts=127.0.0.1,localhost,::1,${BASE_HOSTNAME}
 
     tool lets-encrypt \
         --ca-cert ${TLSDIR}/probe_ca.rootca.cert \
@@ -150,7 +208,7 @@ issue_probe_cert_prod() {
 }
 
 issue_beacon_cert_prod() {
-    if [[ -n "${BEACON}" && "${BEACON}" -eq 1 ]]; then
+    if [ "$RUN_BEACON" -eq 1 ]; then
         autocert beacon
     fi
 }
@@ -169,10 +227,10 @@ init_merkle_tree() {
 }
 
 make_invite_code() {
-    PGPASSWORD=${DBPW_FOKS} psql \
-        -h ${DBHOST} -p ${DBPORT} \
+    PGPASSWORD=${DB_PW_FOKS} psql \
+        -h ${DB_HOST} -p ${DB_PORT} \
         -U foks foks_users \
-        -c "INSERT INTO multiuse_invite_codes (short_host_id, code, num_uses, valid) VALUES (1, '${INVITECODE}', 0, TRUE);"
+        -c "INSERT INTO multiuse_invite_codes (short_host_id, code, num_uses, valid) VALUES (1, '${INVITE_CODE}', 0, TRUE);"
 }
 
 sleep2() {
@@ -181,6 +239,127 @@ sleep2() {
 
 write_dbkeys() {
     tool write-db-keys
+}
+
+make_docker_guest_conf() {
+    # docker-compose needs a slightly different configuration system, since processes
+    # are running as guests in the docker context
+    mkdir -p ${TOPDIR}/conf-guest
+    cp -f ${TOPDIR}/conf/* ${TOPDIR}/conf-guest/
+    echo "true" > ${TOPDIR}/conf-guest/local.is_docker_guest.libsonnet
+}
+
+make_docker_compose_db() {
+    local dcf="$1"
+    echo "DB_PW_POSTGRES=${DB_PW_POSTGRES}" > ${TOPDIR}/.env
+    cat <<EOF >> ${dcf}
+  postgresql:
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: \${DB_PW_POSTGRES}
+      POSTGRES_DB: postgres
+    env_file: 
+      - ${TOPDIR}/.env
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - pg_isready -U postgres -d postgres
+      timeout: 10s
+      interval: 30s
+      retries: 10
+      start_period: 20s
+    image: $(db_img)
+    ports:
+      - mode: host
+        target: 5432
+        published: ${DB_PORT}
+        protocol: tcp
+    restart: unless-stopped
+    volumes:
+      - type: volume
+        source: foks-db-${INSTANCE_ID}
+        target: /var/lib/postgresql/data
+volumes:
+  foks-db-${INSTANCE_ID}:
+    name: foks-db-${INSTANCE_ID}
+    external: true
+EOF
+}
+
+make_docker_compose_service() {
+    local dcf="$1"
+    local service="$2"
+    local unhyphenated_service="${service//-/_}"
+
+    cat <<EOF >> ${dcf}
+  ${unhyphenated_service}:
+    command:
+      - ${service}
+      - --config-path 
+      - /foks/conf/foks.jsonnet
+    image: ${DOCKER_FOKS_SERVER}
+    restart: unless-stopped
+    volumes:
+      - type: bind
+        source: ${TOPDIR}/conf-guest
+        target: /foks/conf
+      - type: bind
+        source: ${TOPDIR}/keys
+        target: /foks/keys
+EOF
+    port=$(jsonnet ${TOPDIR}/conf/foks.jsonnet \
+        | jq -r ".listen.${unhyphenated_service}.port")
+    is_ext=$(jsonnet ${TOPDIR}/conf/foks.jsonnet \
+        | jq -r ".listen.${unhyphenated_service}.is_ext")
+    if [ "$is_ext" = "true" ]; then
+        cat <<EOF >> ${dcf}
+    ports:
+      - mode: host
+        target: ${port}
+        published: "${port}"
+        protocol: tcp
+EOF
+    fi
+    if [ "$DB_BYO" -eq 0 ]; then
+        cat <<EOF >> ${dcf}
+    depends_on:
+      postgresql:
+        condition: service_healthy
+        required: false
+EOF
+    fi
+}
+
+make_docker_compose_file() {
+
+    make_docker_guest_conf
+    dcf="${TOPDIR}/docker-compose.yml"
+
+    cat <<EOF > ${dcf}
+services:
+EOF
+
+
+    for i in "${all_services_hyphenate[@]}"
+    do
+        make_docker_compose_service ${dcf} ${i}
+    done
+
+    if [ "$DB_BYO" -eq 0 ]; then
+        make_docker_compose_db ${dcf}
+    fi
+
+}
+
+make_prod_runmode_files() {
+    case "$RUN_MODE" in
+        "docker_compose") make_docker_compose_file ;;
+        "systemd") make_systemd_units ;;
+        *)
+            echo "Unknown run mode: $RUN_MODE"
+            exit 1
+            ;;
+    esac
 }
 
 make_systemd_units() {
@@ -196,10 +375,10 @@ Type=simple
 User=${USER}
 Group=${USER}
 WorkingDirectory=$(realpath ${TOPDIR}/tmp)
-ExecStart=${SERVER} --config-path $(realpath ${CONF}) --refork ${i}
+ExecStart=${SERVER} --config-path ${CONF} --refork ${i}
 SyslogIdentifier=foks-${i}
 EOF
-        if [[ "${i}" == "web" || "${i}" == "autocert" ]]; then
+        if [ "${i}" == "web" -o "${i}" == "autocert" ]; then
             cat <<EOF >> ${TOPDIR}/system/foks-${i}.service
 AmbientCapabilities=CAP_NET_BIND_SERVICE
 EOF
@@ -214,6 +393,17 @@ EOF
     done
 }
 
+install_prod_runmode_files() {
+    case "$RUN_MODE" in
+        "docker_compose") ;;
+        "systemd") install_systemd_units ;;
+        *)
+            echo "Unknown run mode: $RUN_MODE"
+            exit 1
+            ;;
+    esac
+}
+
 install_systemd_units() {
     (
         cd ${TOPDIR}/system
@@ -222,6 +412,26 @@ install_systemd_units() {
             sudo ln -sf $(realpath foks-${i}.service) /etc/systemd/system/
         done
     )
+}
+
+start_docker_compose() {
+    if [ "$DB_BYO" -eq 0 ] ; then
+        docker stop foks-postgresql-${INSTANCE_ID}
+        docker rm foks-postgresql-${INSTANCE_ID}
+
+    fi
+    (cd ${TOPDIR} && docker compose up -d)
+}
+
+start_prod_runmode() {
+    case "$RUN_MODE" in
+        "docker_compose") start_docker_compose ;;
+        "systemd") start_systemd ;;
+        *)
+            echo "Unknown run mode: $RUN_MODE"
+            exit 1
+            ;;
+    esac
 }
 
 start_systemd() {
@@ -240,24 +450,36 @@ beacon_register() {
 }
 
 init_mgmt_vhost() {
+    if [ "$SERVER_MODE" != "hosting_platform" ]; then
+        echo "Skipping init_mgmt_vhost since not in hosting platform mode"
+        return
+    fi
     tool init-vhost \
-    --vhost ${MGMT_HOSTNAME} \
-    --code ${VHOST_INVITECODE} \
-    --host-type vhost-management
+        --vhost ${MGMT_HOSTNAME} \
+        --code ${VHOST_INVITE_CODE} \
+        --host-type vhost-management
 }
 
 init_big_top_vhost() {
+    if [ "$SERVER_MODE" != "hosting_platform" ]; then
+        echo "Skipping init_big_top_vhost since not in hosting platform mode"
+        return
+    fi
     tool init-vhost \
-    --vhost ${BIG_TOP_HOSTNAME} \
-    --code ${VHOST_INVITECODE} \
-    --host-type big-top
+        --vhost ${BIG_TOP_HOSTNAME} \
+        --code ${VHOST_INVITE_CODE} \
+        --host-type big-top
 }
 
 init_plans() {
+    if [ "$SERVER_MODE" != "hosting_platform" ]; then
+        echo "Skipping init_plans since not in hosting platform mode"
+        return
+    fi
 
     # For testing webhooks and renewals, have a stupid option to refresh
     # once a day
-    if (is_env_bool_set "TEST") || (is_env_bool_set "DEV"); then
+    if [ "$NETWORK_MODE" = "test" -o "$NETWORK_MODE" = "dev" ]; then
         tool create-plan \
             --quota 100MB \
             --name "micro-1" \
@@ -349,10 +571,9 @@ init_plans() {
 ##
 
 declare -a sequence=(
-    "td:setup_tools p:noop"
-    "td:make_web_assets p:noop"
+    "setup_tools"
+    "make_web_assets"
     "create_docker_db"
-    "sleep2"
     "create_foks_user"
     "init_db"
     "t:gen_probe_ca pd:noop"
@@ -367,13 +588,14 @@ declare -a sequence=(
     "write_public_zone"
     "make_invite_code"
     "write_dbkeys"
-    "p:make_systemd_units dt:noop"
-    "p:install_systemd_units dt:noop"
-    "p:start_systemd dt:start_pm2"
+    "p:make_prod_runmode_files dt:noop"
+    "p:install_prod_runmode_files dt:noop"
+    "p:start_prod_runmode dt:start_pm2"
     "beacon_register"
     "init_mgmt_vhost"
     "init_big_top_vhost"
     "init_plans"
+    "eof"
 )
 
 get_raw_op() {
@@ -388,8 +610,8 @@ bad_op() {
 get_op() {
     raw=$(get_raw_op $1)
 
-    if [ -z "$raw" ]; then
-        echo ""
+    if [ "$raw" = "eof" ]; then
+        echo "eof"
         return
     fi
 
@@ -398,22 +620,22 @@ get_op() {
         return
     fi
 
-    if is_env_bool_set "TEST" ; then 
-        echo ${raw} | perl -ne '{ print "$1\n" if /t[pd]*:(\S+)/ }'
-        return
-    fi
+    case "$NETWORK_MODE" in
+        "test")
+            echo ${raw} | perl -ne '{ print "$1\n" if /t[pd]*:(\S+)/ }'
+            ;;
+        "prod")
+            echo ${raw} | perl -ne '{ print "$1\n" if /p[dt]*:(\S+)/ }'
+            ;;
+        "dev")
+            echo ${raw} | perl -ne '{ print "$1\n" if /d[pt]*:(\S+)/ }'
+            ;;
+        *)
+            echo "bad_op"
+            ;;
+    esac
 
-    if is_env_bool_set "PROD" ; then
-        echo ${raw} | perl -ne '{ print "$1\n" if /p[dt]*:(\S+)/ }'
-        return
-    fi
-
-    if is_env_bool_set "DEV" ; then
-        echo ${raw} | perl -ne '{ print "$1\n" if /d[pt]*:(\S+)/ }'
-        return
-    fi
-
-    echo "bad_op"
+    true
 }
 
 next() {
@@ -424,7 +646,7 @@ next() {
         next_op=$((last_op + 1))
     fi
     op=$(get_op $next_op)
-    if [ -z "$op" ]; then
+    if [ "$op" = "eof" ]; then
         echo eof
         return
     fi

@@ -63,10 +63,6 @@ srv-install: srv-assets
 			-ldflags="-X main.LinkerVersion=$$(git describe --tags --always)" \
 	)
 
-.PHONY: srv-dev
-srv-dev:
-	go tool air
-
 .PHONY: ghcr-login
 ghcr-login:
 	foks kv get --team build.server /secrets/github/classic-access-token-ghcr - | \

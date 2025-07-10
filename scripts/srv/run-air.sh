@@ -13,4 +13,4 @@ export GOBIN=${BINDIR}
 export PM2=${TOPDIR}/node_modules/.bin/pm2 
 
 # run `air` via `go tool`
-make srv-dev
+go tool air
