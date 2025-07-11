@@ -1020,7 +1020,7 @@ func newStatePickEmail() stateCheckedInput {
 		inputResetCount:  1,
 		validate:         func(s string) error { return core.ValidateEmail(proto.Email(s)) },
 		badInputMsg:      "Invalid email address",
-		goodInputMsg:     "Email accceped",
+		goodInputMsg:     "Email accepted",
 		checkingInputMsg: "Checking email address",
 		post: func(mctx libclient.MetaContext, state stateCheckedInput, mdl model) error {
 			err := mdl.cli.PutEmail(mctx.Ctx(), lcl.PutEmailArg{
@@ -1413,7 +1413,7 @@ func newStatePickDeviceName() stateCheckedInput {
 		},
 		inputResetCount:  1,
 		badInputMsg:      "Invalid device name",
-		goodInputMsg:     "Device name acccepted",
+		goodInputMsg:     "Device name accepted",
 		checkingInputMsg: "Checking device name",
 		post: func(mctx libclient.MetaContext, s stateCheckedInput, mdl model) error {
 			dn := core.FixDeviceName(s.acceptedInput)
