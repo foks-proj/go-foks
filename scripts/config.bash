@@ -311,7 +311,7 @@ bool_to_num() {
       echo 0
       ;;
     *)
-      echo "Error: Input must be 'true' or 'false'" >&2
+      echo "Error: Input must be 'true' or 'false'. Got $1" >&2
       return 1
       ;;
   esac
@@ -328,7 +328,7 @@ export INVITECODE=$(mkpw 5)
 export VHOST_INVITECODE=$(mkpw 5)
 export DBPORT=${dbport}
 export DBHOST=${dbhost}
-export DB_NO_TLS=$(bool_to_num db_no_tls)
+export DB_NO_TLS=$(bool_to_num $db_no_tls)
 export BINDIR=\${TOPDIR}/bin
 export BINDIR_CLI=\${TOPDIR_CLI}/bin
 export HOMEDIR_CLI=\${TOPDIR_CLI}/home
