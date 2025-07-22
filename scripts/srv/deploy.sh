@@ -25,4 +25,4 @@ ssh ${ROOT_PROD_SSH} "cd ${REMOTE_TOPDIR}/bin && \
     sudo setcap cap_net_bind_service=+ep foks-server.${rev} && \
     sudo setcap cap_net_bind_service=+ep foks-tool.${rev}"
 
-scp ${SRCDIR}/scripts/build.bash ${PROD_SSH}:${REMOTE_TOPDIR}/scripts/
+scp ${SRCDIR}/scripts/srv/build.bash ${PROD_SSH}:${REMOTE_TOPDIR}/scripts/

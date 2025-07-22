@@ -161,9 +161,13 @@ func (c *CKSStorage) Put(
 		return err
 	}
 
+	// we can get a conflict if we are refreshing a cert that already exists, as we
+	// do about once ever 2 months via Let's Encrypt.
 	tag, err := dbe.Exec(ctx,
 		`INSERT INTO x509_assets (short_host_id, typ, key_id, active, pri, ctime, etime, keybox, cert_chain)
-		 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+		 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+		 ON CONFLICT (short_host_id, typ, key_id) 
+		 DO UPDATE SET active=$4, pri=$5, ctime=$6, etime=$7, keybox=$8, cert_chain=$9`,
 		id.HostID.Short.ExportToDB(),
 		id.Type.String(),
 		data.KeyID.ExportToDB(),
