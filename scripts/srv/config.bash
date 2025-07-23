@@ -37,6 +37,12 @@ stripe_whsec=""          # Stripe webhook secret for payments
 canned_domains=()        # list of canned domains for hosting platform, in "<domain>,<zone_id>" pairs
 vanity_hosting_domain="" # a utility domain that user-supplied hostnames point to (in "<domain>,<zone_id>" form)
 
+# the following are used if we want to BYO CA, rather than using Let's Encrypt:
+probe_key=""            # path to the probe private key
+probe_cert_chain=""     # path to the probe certificate chain, leaf-first, in PEM format
+beacon_key=""           # path to the beacon private key
+beacon_cert_chain=""    # path to the beacon certificate chain, leaf-first, in PEM format
+
 # the following are used in network_mode=prod and run_remote=1:
 prod_ssh=""              # In <user>@<host> form
 prod_root_ssh=""         # In <user>@<host> form; someone who can run sudo on the prod_ssh host
@@ -200,6 +206,22 @@ getargs() {
             shift
             docker_foks_server="$1"
             ;;
+        --probe-key|--probe_key)
+            shift
+            probe_key="$1"
+            ;;
+        --probe-cert-chain|--probe_cert_chain)
+            shift
+            probe_cert_chain="$1"
+            ;;
+        --beacon-key|--beacon_key)
+            shift
+            beacon_key="$1"
+            ;;
+        --beacon-cert-chain|--beacon_cert_chain)
+            shift
+            beacon_cert_chain="$1"
+            ;;
         -*=*)
             echo "Cannot use --a=b style arguments; use --a b instead"
             exit 1
@@ -262,6 +284,11 @@ check_config() {
         [ "$run_mode" != "docker_compose" ] && whoops "no-compile mode only works with run_mode=docker_compose"
     fi
 
+    [ "$probe_key" != "" -a "$probe_cert_chain" == "" ] && whoops "Both --probe-key and --probe-cert-chain must be specified, or neither"
+    [ "$probe_key" == "" -a "$probe_cert_chain" != "" ] && whoops "Both --probe-key and --probe-cert-chain must be specified, or neither"
+    [ "$beacon_key" != "" -a "$beacon_cert_chain" == "" ] && whoops "Both --beacon-key and --beacon-cert-chain must be specified, or neither"
+    [ "$beacon_key" == "" -a "$beacon_cert_chain" != "" ] && whoops "Both --beacon-key and --beacon-cert-chain must be specified, or neither"
+
     true
 }
 
@@ -291,6 +318,12 @@ set_beacon() {
             beacon_hostname="$base_hostname"
         fi
     fi
+
+    if [ "$run_beacon" -eq 0 -a -n "$beacon_key" ]; then
+        whoops "Cannot use --beacon-key and --beacon-cert-chain in run_beacon=0 mode"
+    fi
+
+    true
 }
 
 #----------------------------------
@@ -481,6 +514,10 @@ export COMPILE_SERVER=${do_compile}
 export HTTP_LOCAL_PORT=${http_internal_port}
 export HTTPS_LOCAL_PORT=${https_internal_port}
 export DOCKER_FOKS_SERVER=${docker_foks_server}
+export PROBE_KEY="${probe_key}"
+export PROBE_CERT_CHAIN="${probe_cert_chain}"
+export BEACON_KEY="${beacon_key}"
+export BEACON_CERT_CHAIN="${beacon_cert_chain}"
 EOF
 
     if [ "$server_mode" = "hosting_platform" ]; then

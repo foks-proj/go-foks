@@ -20,11 +20,11 @@ import (
 )
 
 type CertPackage struct {
-	Priv       crypto.PrivateKey
-	Pub        crypto.PublicKey
-	X509CertID proto.X509CertID
-	Cert       *x509.Certificate
-	CertRaw    []byte
+	Priv    crypto.PrivateKey
+	Pub     crypto.PublicKey
+	CertID  proto.PKIXCertID
+	Certs   []*x509.Certificate
+	CertRaw [][]byte
 }
 
 type CAScope int
@@ -49,13 +49,21 @@ func (c CAScope) String() string {
 	}
 }
 
-func readX509Bytes(f core.Path) ([]byte, error) {
+func readX509Bytes(f core.Path) ([][]byte, error) {
 	raw, err := f.ReadFile()
 	if err != nil {
 		return nil, err
 	}
-	block, _ := pem.Decode(raw)
-	return block.Bytes, nil
+	var ret [][]byte
+	for {
+		block, rest := pem.Decode(raw)
+		if block == nil {
+			break
+		}
+		ret = append(ret, block.Bytes)
+		raw = rest
+	}
+	return ret, nil
 }
 
 func ReadCertPackageFromFiles(kc core.KeyCertFilePair) (*CertPackage, error) {
@@ -64,38 +72,41 @@ func ReadCertPackageFromFiles(kc core.KeyCertFilePair) (*CertPackage, error) {
 	if err != nil {
 		return nil, err
 	}
-	key, err := x509.ParsePKCS8PrivateKey(raw)
+	if len(raw) != 1 {
+		return nil, core.X509Error("expected exactly one key in the key file")
+	}
+	key, err := x509.ParsePKCS8PrivateKey(raw[0])
 	if err != nil {
 		return nil, err
 	}
-
-	privKey, ok := key.(ed25519.PrivateKey)
+	pubber, ok := key.(interface{ Public() crypto.PublicKey })
 	if !ok {
-		return nil, core.X509Error("did not get an Ed25519 private key")
+		return nil, core.X509Error("key is not a public key")
+	}
+	pub := pubber.Public()
+	keyId, err := core.ComputePKIXCertID(pub)
+	if err != nil {
+		return nil, err
 	}
 
 	certRaw, err := readX509Bytes(kc.Cert)
 	if err != nil {
 		return nil, err
 	}
-	cert, err := x509.ParseCertificate(certRaw)
-	if err != nil {
-		return nil, err
+	var flat []byte
+	for _, b := range certRaw {
+		flat = append(flat, b...)
 	}
-	pubKey, ok := cert.PublicKey.(ed25519.PublicKey)
-	if !ok {
-		return nil, core.X509Error("did not get an Ed25519 public key")
-	}
-	keyId, err := proto.EntityType_X509Cert.MakeEntityID(pubKey)
+	certs, err := x509.ParseCertificates(flat)
 	if err != nil {
 		return nil, err
 	}
 	return &CertPackage{
-		Pub:        pubKey,
-		Priv:       privKey,
-		Cert:       cert,
-		CertRaw:    certRaw,
-		X509CertID: proto.X509CertID(keyId),
+		Pub:     pub,
+		Priv:    key,
+		Certs:   certs,
+		CertRaw: certRaw,
+		CertID:  keyId,
 	}, nil
 }
 

@@ -204,11 +204,25 @@ issue_probe_and_beacon_certs_test() {
 }
 
 issue_probe_cert_prod() {
-    autocert probe
+    if [ -n "$PROBE_KEY" -a -n "$PROBE_CERT_CHAIN" ]; then
+        tool import-cert \
+            --cert ${PROBE_CERT_CHAIN} \
+            --key ${PROBE_KEY} \
+            --type probe
+    else 
+        autocert probe
+    fi
 }
 
 issue_beacon_cert_prod() {
-    if [ "$RUN_BEACON" -eq 1 ]; then
+    if [ "$RUN_BEACON" -eq 0 ]; then
+        return
+    elif [ -n "$BEACON_KEY" -a -n "$BEACON_CERT_CHAIN" ]; then
+        tool import-cert \
+            --cert ${BEACON_CERT_CHAIN} \
+            --key ${BEACON_KEY} \
+            --type beacon
+    else
         autocert beacon
     fi
 }

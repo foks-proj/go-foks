@@ -693,12 +693,18 @@ func (c *CertVaultCKS) MakeGetConfigForClient(
 	}
 }
 
-func storeAutocert(
+// StoreToCertMgr stores the cert to the DB-backed cert manager, encrypting the private key
+// as necessary. It uses the cert.PrivateKey cert.Certificate, and cert.Leaf fields of the
+// tls.Certificate struct but ignore the rest. The cert.Certificate field should contain a
+// cert chain from the Root CAs, including the leaf cert. This function does not check
+// the correspondence between the given hostname from the Cert, and that implied by
+// the given HostID.
+func StoreCertToCertMgr(
 	m MetaContext,
-	pkg AutocertPackage,
+	hostId proto.HostID,
+	typ proto.CKSAssetType,
 	cert *tls.Certificate,
 ) error {
-
 	rawkey, err := x509.MarshalPKCS8PrivateKey(cert.PrivateKey)
 	if err != nil {
 		return err
@@ -721,13 +727,12 @@ func storeAutocert(
 		KeyID:   keyid.EntityID(),
 	}
 
-	hostid, err := m.G().HostIDMap().LookupByHostID(m, pkg.HostID)
+	coreHostID, err := m.G().HostIDMap().LookupByHostID(m, hostId)
 	if err != nil {
 		return err
 	}
-	m = m.WithHostID(hostid)
 
-	typ := pkg.ServerType.ServerCertType()
+	m = m.WithHostID(coreHostID)
 
 	err = m.G().CertMgr().PutExternallyGeneratedCert(
 		m,
@@ -739,5 +744,12 @@ func storeAutocert(
 		return err
 	}
 	return nil
+}
 
+func storeAutocert(
+	m MetaContext,
+	pkg AutocertPackage,
+	cert *tls.Certificate,
+) error {
+	return StoreCertToCertMgr(m, pkg.HostID, pkg.ServerType.ServerCertType(), cert)
 }
