@@ -9,6 +9,7 @@ import (
 
 	"github.com/foks-proj/go-foks/client/libclient"
 	"github.com/foks-proj/go-foks/client/libgit"
+	"github.com/foks-proj/go-foks/lib/core"
 	"github.com/foks-proj/go-foks/proto/lcl"
 	"github.com/spf13/cobra"
 )
@@ -112,9 +113,17 @@ func gitLs(m libclient.MetaContext, top *cobra.Command) {
 				return ArgsError("expected 0 arguments")
 			}
 			urls, err := cli.GitLs(m.Ctx(), cfg)
+
+			// If we don't have a /, /apps, or /app/git directory,
+			// we are still OK and return an empty list.
+			if _, ok := err.(core.KVNoentError); ok {
+				err = nil
+				urls = nil
+			}
 			if err != nil {
 				return err
 			}
+
 			for _, url := range urls {
 				s, err := url.StringErr()
 				if err != nil {
