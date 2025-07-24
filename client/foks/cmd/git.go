@@ -114,7 +114,7 @@ func gitLs(m libclient.MetaContext, top *cobra.Command) {
 			}
 			urls, err := cli.GitLs(m.Ctx(), cfg)
 
-			// If we don't have a /, /apps, or /app/git directory,
+			// If we don't have a /, /app, or /app/git directory,
 			// we are still OK and return an empty list.
 			if _, ok := err.(core.KVNoentError); ok {
 				err = nil
