@@ -862,14 +862,6 @@ func IsKVNoentError(e error) bool {
 	return ok
 }
 
-func IsKVNoentOnWriteError(e error) bool {
-	if e == nil {
-		return false
-	}
-	_, ok := e.(KVNoentOnWriteError)
-	return ok
-}
-
 type TooBigError struct {
 	Limit  int
 	Actual int
