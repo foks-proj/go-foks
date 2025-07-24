@@ -862,6 +862,14 @@ func IsKVNoentError(e error) bool {
 	return ok
 }
 
+func IsKVNoentOnWriteError(e error) bool {
+	if e == nil {
+		return false
+	}
+	_, ok := e.(KVNoentOnWriteError)
+	return ok
+}
+
 type TooBigError struct {
 	Limit  int
 	Actual int
@@ -987,6 +995,30 @@ func (e KVNoentError) Error() string {
 		rest = ": " + string(e.Path)
 	}
 	return fmt.Sprintf("no such file or directory%s", rest)
+}
+
+type KVNoentOnWriteError struct {
+	Path proto.KVPath
+}
+
+// ErrorAsWriteError takes an error and sees if we can turn it into an error that
+// pertains to KVWrites. If so, it will transform the error. Currently works for:
+//
+//	KVNoentError -> KVNoentOnWriteError
+func ErrorAsWriteError(e error) error {
+	if e == nil {
+		return nil
+	}
+	switch e := e.(type) {
+	case KVNoentError:
+		return KVNoentOnWriteError(e)
+	default:
+		return e
+	}
+}
+
+func (e KVNoentOnWriteError) Error() string {
+	return fmt.Sprintf("no such file or directory (on write): %s", e.Path)
 }
 
 type KVUploadInProgressError struct{}

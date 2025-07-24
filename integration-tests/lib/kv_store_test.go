@@ -776,10 +776,11 @@ func TestList(t *testing.T) {
 	slices.Sort(gotFiles)
 	require.Equal(t, files, gotFiles)
 
-	_, err = dev.kvm.List(mc, lcl.KVConfig{}, dev.pathify("/a/404"), nil,
+	missing := dev.pathify("/a/404")
+	_, err = dev.kvm.List(mc, lcl.KVConfig{}, missing, nil,
 		rem.KVListOpts{Start: nxt, Num: 5})
 	require.Error(t, err)
-	require.Equal(t, core.KVNoentError{}, err)
+	require.Equal(t, core.KVNoentError{Path: missing}, err)
 
 	_, err = dev.kvm.List(mc, lcl.KVConfig{}, proto.KVPath(files[0]), nil,
 		rem.KVListOpts{Start: nxt, Num: 5})

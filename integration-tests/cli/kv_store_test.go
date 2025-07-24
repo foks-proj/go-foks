@@ -170,3 +170,34 @@ func TestKVListRoot(t *testing.T) {
 	require.Equal(t, ret.Ents[0].Name, proto.KVPathComponent(rs))
 	require.True(t, ret.Ents[0].Value.IsDir())
 }
+
+func TestMakeRootOnFirstWrite(t *testing.T) {
+	bob := makeBobAndHisAgent(t)
+	merklePoke(t)
+	rs := fsRandomString(t, 8)
+	path := "/" + rs
+	b := bob.agent
+	b.runCmd(t, nil, "kv", "put", path, "foooo")
+}
+
+func TestMkdirRoot(t *testing.T) {
+	bob := makeBobAndHisAgent(t)
+	merklePoke(t)
+	b := bob.agent
+	b.runCmd(t, nil, "kv", "mkdir", "/")
+	err := b.runCmdErr(nil, "kv", "mkdir", "/")
+	require.Error(t, err)
+	require.Equal(t, core.KVExistsError{}, err)
+	b.runCmd(t, nil, "kv", "put", "/aaa", "foooo")
+}
+
+func TestKVTestPut404(t *testing.T) {
+	bob := makeBobAndHisAgent(t)
+	merklePoke(t)
+	rs := fsRandomString(t, 8)
+	parentPath := "/" + rs
+	b := bob.agent
+	err := b.runCmdErr(nil, "kv", "put", parentPath+"/xxx", "foooo")
+	require.Error(t, err)
+	require.Equal(t, core.KVNoentOnWriteError{Path: proto.KVPath(parentPath)}, err)
+}

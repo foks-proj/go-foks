@@ -36,6 +36,19 @@ func (k *KVParty) isLocal() bool {
 	return k.au.HostID.Eq(k.id.Host)
 }
 
+func (k *KVParty) DefaultRootPerms() *proto.RolePair {
+	if k.IsUser() {
+		return &proto.RolePair{
+			Write: proto.OwnerRole,
+			Read:  proto.OwnerRole,
+		}
+	}
+	return &proto.RolePair{
+		Write: proto.AdminRole,
+		Read:  proto.MinKVRole,
+	}
+}
+
 func (k *KVParty) isTeamFresh(m MetaContext) (bool, error) {
 	if k.voTok == nil || k.skm == nil {
 		return false, nil
@@ -1425,6 +1438,35 @@ func (k *Minder) putDirent(
 	return nil
 }
 
+// mkdirRoot special-cases making the root directory as an active effect (as
+// opposed to a passive side effect).
+func (k *Minder) mkdirRoot(
+	m MetaContext,
+	kvp *KVParty,
+	rp *proto.RolePair,
+) (
+	*proto.DirID,
+	error,
+) {
+	root, err := k.getRoot(m, kvp)
+	if err != nil {
+		return nil, err
+	}
+	if root != nil {
+		return nil, core.KVExistsError{}
+	}
+	if rp == nil {
+		rp = kvp.DefaultRootPerms()
+	}
+	wd, err := k.mkRoot(m, kvp, *rp)
+	if err != nil {
+		return nil, err
+	}
+	ret := wd.Id()
+	m.Infow("created root directory", "id", ret, "fqp", kvp.id)
+	return &ret, nil
+}
+
 func (k *Minder) Mkdir(
 	m MetaContext,
 	cfg lcl.KVConfig,
@@ -1440,11 +1482,22 @@ func (k *Minder) Mkdir(
 		return nil, err
 	}
 
+	if len(pap.Components) == 0 {
+		return k.mkdirRoot(m, kvp, rp)
+	}
+
 	var ret *proto.DirID
 
 	err = k.retryCacheLoop(m, kvp, func(m MetaContext) error {
 
-		dp, err := k.walkFromRoot(m, kvp, pap, walkOpts{mkdirP: cfg.MkdirP, writePerms: rp, needCreate: true})
+		dp, err := k.walkFromRoot(m, kvp, pap,
+			walkOpts{
+				mkdirP:         cfg.MkdirP,
+				writePerms:     rp,
+				needCreate:     true,
+				writePermsRoot: kvp.DefaultRootPerms(),
+			},
+		)
 		if err != nil {
 			return err
 		}

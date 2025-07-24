@@ -19,7 +19,7 @@ COPY client client
 RUN (cd client/foks && \
       go build \
          -trimpath \
-         -ldflags "-w  -s \
+         -ldflags "-w -s \
             -X github.com/foks-proj/go-foks/client/libclient.LinkerVersion=${VERSION} \
             -X github.com/foks-proj/go-foks/client/libclient.LinkerPackaging=${PACKAGING} \
          " -o /foks/foks . \

@@ -1,4 +1,3 @@
-
 CREATE TYPE reservation_state as ENUM('reserved', 'in_use', 'dead');
 
 CREATE TYPE name_state as ENUM('in_use', 'dead');

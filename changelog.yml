@@ -2,6 +2,13 @@ project: foks
 maintaner: Maxwell Krohn <max@ne43.com>
 
 changelog:
+  - version: 0.1.2
+    urgency: low
+    stable: true
+    date: none-yet
+    changes:
+      - desc: improve error conditions and messages w/r/t `kv mkdir root`
+        closes: ["#163"]
   - version: 0.1.1
     urgency: low
     stable: true

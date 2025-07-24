@@ -18,15 +18,17 @@ type walkRes struct {
 }
 
 type walkOpts struct {
-	mkdirP     bool            // if true, can create all parent dirs; needs writePerms != nil
-	writePerms *proto.RolePair // if true, can create dirs with these write perms
-	needCreate bool            // a mkdir must make a directory at the leaf (but a PutFile need not)
-	endAtFile  bool            // on if a walk needs to end at a file
-	readlink   bool            // for a readlink call, we don't follow the last component if it's a symlink
-	mvSrc      bool            // walk down to a source for a mv operation
-	mvDst      bool            // walk down to a target for a mv operation
-	stat       bool            // walk down for a stat call; if ending a dir, don't open the dir, just return the dirent
-	unlink     bool            // walk down for an unlink; can't end at a dir or somethhing not there
+	mkdirP         bool            // if true, can create all parent dirs; needs writePerms != nil
+	writePerms     *proto.RolePair // if true, can create dirs with these write perms
+	needCreate     bool            // a mkdir must make a directory at the leaf (but a PutFile need not)
+	endAtFile      bool            // on if a walk needs to end at a file
+	readlink       bool            // for a readlink call, we don't follow the last component if it's a symlink
+	mvSrc          bool            // walk down to a source for a mv operation
+	mvDst          bool            // walk down to a target for a mv operation
+	stat           bool            // walk down for a stat call; if ending a dir, don't open the dir, just return the dirent
+	unlink         bool            // walk down for an unlink; can't end at a dir or somethhing not there
+	writePermsRoot *proto.RolePair // if non-nil, we can create root with these write perms
+
 }
 
 func (wo walkOpts) forLast(last bool) walkOpts {
@@ -133,8 +135,8 @@ func (k *Minder) walkFromRoot(
 	var wd *DirPair
 
 	switch {
-	case root == nil && wo.writePerms != nil && (wo.mkdirP || len(pap.Components) == 0):
-		wd, err = k.mkRoot(m, kvp, *wo.writePerms)
+	case root == nil && wo.writePermsRoot != nil:
+		wd, err = k.mkRoot(m, kvp, *wo.writePermsRoot)
 		if err != nil {
 			return nil, err
 		}
@@ -168,6 +170,7 @@ type walkOneRes struct {
 type walkStackFrame struct {
 	dir *DirPair
 	de  *Dirent
+	nm  proto.KVPathComponent // the plaintext name of the path component, for error messages
 }
 
 func (k *Minder) walkOne(
@@ -193,6 +196,16 @@ func (k *Minder) walkOne(
 	wd := core.Last(stk)
 	forPut := (opts.writePerms != nil)
 
+	// explain where we are in the current path traversal, only used on errors
+	currentPath := func() proto.KVPath {
+		var comps []proto.KVPathComponent
+		for _, frame := range stk {
+			comps = append(comps, frame.nm)
+		}
+		comps = append(comps, comp)
+		return proto.PathComponentJoinAbsolute(comps)
+	}
+
 	switch {
 	case len(comp) == 0:
 		return nil, core.InternalError("empty component")
@@ -212,6 +225,14 @@ func (k *Minder) walkOne(
 	}
 
 	lde, err := k.lookupDirent(m, kvp, wd.dir, comp, lookupDirentOpts{forPut: forPut})
+
+	// If we get back a not-found error, and we're about to return it, and it
+	// doesn't contain our current path, insert it back.
+	if noEntErr, ok := err.(core.KVNoentError); ok && noEntErr.Path.IsEmpty() {
+		noEntErr.Path = currentPath()
+		err = noEntErr
+	}
+
 	if err != nil {
 		return nil, err
 	}
@@ -276,7 +297,7 @@ func (k *Minder) walkOne(
 			if opts.endAtFile || opts.unlink {
 				return nil, core.KVNeedFileError{}
 			}
-			stk = append(stk, walkStackFrame{dir: dir, de: found})
+			stk = append(stk, walkStackFrame{dir: dir, de: found, nm: comp})
 			return &walkOneRes{stk: stk, path: rest}, nil
 
 		case proto.KVNodeType_None:
@@ -356,7 +377,7 @@ func (k *Minder) walkOne(
 		return nil, err
 	}
 
-	stk = append(stk, walkStackFrame{dir: newDir, de: newDirent})
+	stk = append(stk, walkStackFrame{dir: newDir, de: newDirent, nm: comp})
 
 	return &walkOneRes{stk: stk, path: rest, didMkdir: true}, nil
 }

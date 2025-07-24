@@ -24,6 +24,9 @@ func ErrToStringCLI(e error) string {
 	default:
 
 		switch te := e.(type) {
+		case core.KVNoentOnWriteError:
+			return fmt.Sprintf("directory '%s' not found in path traversal; try the --mkdir-p flag to create parent directories along path",
+				te.Path.String())
 		case core.AgentConnectError:
 			return fmt.Sprintf(
 				"could not connect to the FOKS agent; start it via `foks ctl start` (socket file: %s)",

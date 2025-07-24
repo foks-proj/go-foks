@@ -399,6 +399,11 @@ stored under the given key.`,
 			}
 			path := makeKVPath(arg[0])
 			err := kvPutWithArgs(m, cfg, cli, path, val, isFile)
+
+			// Transform the error to a write error for better online eduction / documentation
+			// for remediation (since it might seem weird that a write fails with a read error)
+			err = core.ErrorAsWriteError(err)
+
 			if err != nil {
 				return err
 			}
@@ -659,6 +664,9 @@ func kvMkdir(m libclient.MetaContext, top *cobra.Command) {
 				Cfg:  cfg,
 				Path: path,
 			})
+
+			// See comment in kvPut for why we do this
+			err = core.ErrorAsWriteError(err)
 			if err != nil {
 				return err
 			}

@@ -201,7 +201,13 @@ func (k *Minder) putFile(
 	var ret *PutFileRes
 	err = k.retryCacheLoop(m, kvp, func(m MetaContext) error {
 
-		dp, err := k.walkFromRoot(m, kvp, parentDir, walkOpts{mkdirP: cfg.MkdirP, writePerms: rp})
+		writePerms := core.Sel(cfg.MkdirP, rp, nil)
+		wos := walkOpts{
+			mkdirP:         cfg.MkdirP,
+			writePerms:     writePerms,
+			writePermsRoot: kvp.DefaultRootPerms(),
+		}
+		dp, err := k.walkFromRoot(m, kvp, parentDir, wos)
 		if err != nil {
 			return err
 		}

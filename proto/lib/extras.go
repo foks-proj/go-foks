@@ -449,7 +449,7 @@ func ImportRoleFromDB(t int, l int) (*Role, error) {
 		}
 		ret = NewRoleDefault(RoleType(t))
 	case RoleType_MEMBER:
-		if l < 0 || l > 0xffff {
+		if l < -0xffff || l > 0xffff {
 			return nil, DataError("invalid level for member")
 		}
 		ret = NewRoleWithMember(VizLevel(l))
@@ -3814,6 +3814,10 @@ func PathComponentJoin(p []KVPathComponent) KVPath {
 	return KVPathJoin(v...)
 }
 
+func PathComponentJoinAbsolute(p []KVPathComponent) KVPath {
+	return KVPath(KVPathSeparator) + PathComponentJoin(p)
+}
+
 func PathJoin(p []KVPath) KVPath {
 	v := make([]string, len(p))
 	for i, c := range p {
@@ -3869,6 +3873,10 @@ func (k KVPath) Append(p ...KVPathComponent) KVPath {
 		string(k),
 		string(KVPathJoin(sv...)),
 	)
+}
+
+func (k KVPath) IsEmpty() bool {
+	return len(k) == 0
 }
 
 func (k KVPathComponent) ToPath() KVPath {
