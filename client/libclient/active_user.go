@@ -197,7 +197,7 @@ func SwitchActiveUserFallbackToLoad(m MetaContext, ui proto.UserInfo) error {
 func LookupAndSwitchUserWithFallback(
 	m MetaContext,
 	u lcl.LocalUserIndexParsed,
-	getDefaultHostID func() (proto.HostID, error),
+	getDefaultHostID func(m MetaContext) (proto.HostID, error),
 ) error {
 
 	found, err := LookupUserInAllUsers(m, u, getDefaultHostID)
@@ -210,6 +210,45 @@ func LookupAndSwitchUserWithFallback(
 		return err
 	}
 
+	return nil
+}
+
+func RemoveKey(
+	m MetaContext,
+	u lcl.LocalUserIndexParsed,
+	getDefaultHostID func(m MetaContext) (proto.HostID, error),
+) error {
+	found, err := LookupUserInAllUsers(m, u, getDefaultHostID)
+	if err != nil {
+		return err
+	}
+	if found == nil {
+		return core.KeyNotFoundError{Which: "yubikey or backup"}
+	}
+	return RemoveKeyByInfo(m, *found)
+}
+
+func RemoveKeyByInfo(m MetaContext, found proto.UserInfo) error {
+
+	if found.KeyGenus == proto.KeyGenus_Device {
+		return core.BadArgsError("cannot remove device key")
+	}
+	lui, err := core.ImportLocalUserIndexFromInfo(found)
+	if err != nil {
+		return err
+	}
+	err = cleanKeyDeleteError(
+		m.DeleteUserWithLocalUserIndex(*lui, found.Key),
+	)
+	if err != nil {
+		return err
+	}
+	err = cleanKeyDeleteError(
+		DeleteUserFromDB(m, lui.Export(), found.Key),
+	)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 

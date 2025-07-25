@@ -94,9 +94,8 @@ func (c *AgentConn) ActiveUserCheckLocked(ctx context.Context) (lcl.ActiveUserCh
 	}, nil
 }
 
-func (c *AgentConn) SwitchUser(ctx context.Context, u lcl.LocalUserIndexParsed) error {
-	m := c.MetaContext(ctx)
-	getDefaultHostID := func() (proto.HostID, error) {
+func getDefaultHostID(c *AgentConn) func(m libclient.MetaContext) (proto.HostID, error) {
+	return func(m libclient.MetaContext) (proto.HostID, error) {
 		var zed proto.HostID
 		var def proto.TCPAddr
 		pr, err := c.probe(m, def, 0)
@@ -105,7 +104,11 @@ func (c *AgentConn) SwitchUser(ctx context.Context, u lcl.LocalUserIndexParsed) 
 		}
 		return pr.Chain().HostID(), nil
 	}
-	return libclient.LookupAndSwitchUserWithFallback(m, u, getDefaultHostID)
+}
+
+func (c *AgentConn) SwitchUser(ctx context.Context, u lcl.LocalUserIndexParsed) error {
+	m := c.MetaContext(ctx)
+	return libclient.LookupAndSwitchUserWithFallback(m, u, getDefaultHostID(c))
 }
 
 func (c *AgentConn) SwitchUserByInfo(ctx context.Context, i proto.UserInfo) error {
@@ -385,6 +388,16 @@ func (c *AgentConn) LoginWaitForSsoLogin(
 	ret.Issuer = idtok.Issuer
 
 	return ret, nil
+}
+
+func (c *AgentConn) RemoveKey(ctx context.Context, u lcl.LocalUserIndexParsed) error {
+	m := c.MetaContext(ctx)
+	return libclient.RemoveKey(m, u, getDefaultHostID(c))
+}
+
+func (c *AgentConn) RemoveKeyByInfo(ctx context.Context, info proto.UserInfo) error {
+	m := c.MetaContext(ctx)
+	return libclient.RemoveKeyByInfo(m, info)
 }
 
 var _ lcl.UserInterface = (*AgentConn)(nil)

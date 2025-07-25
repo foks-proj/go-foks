@@ -199,6 +199,17 @@ func (r *rotateMgr) clearUser(m MetaContext) error {
 	return clearUserFromLocalStores(m, r.uw.fqu, r.target)
 }
 
+func cleanKeyDeleteError(err error) error {
+	if err == nil {
+		return nil
+	}
+	switch err.(type) {
+	case core.NotFoundError, core.KeyMismatchError, core.RowNotFoundError:
+		return nil
+	}
+	return err
+}
+
 func clearUserFromLocalStores(m MetaContext, fqu proto.FQUser, target core.PublicSuiter) error {
 
 	targetKeyID := target.GetEntityID()
@@ -212,18 +223,7 @@ func clearUserFromLocalStores(m MetaContext, fqu proto.FQUser, target core.Publi
 		return err
 	}
 
-	cleanErr := func(err error) error {
-		if err == nil {
-			return nil
-		}
-		switch err.(type) {
-		case core.NotFoundError, core.KeyMismatchError, core.RowNotFoundError:
-			return nil
-		}
-		return err
-	}
-
-	err = cleanErr(
+	err = cleanKeyDeleteError(
 		m.DeleteUserWithLocalUserIndex(*lui, targetKeyID),
 	)
 	if err != nil {
@@ -234,7 +234,7 @@ func clearUserFromLocalStores(m MetaContext, fqu proto.FQUser, target core.Publi
 		return nil
 	}
 
-	err = cleanErr(
+	err = cleanKeyDeleteError(
 		DeleteUserDevkey(
 			m,
 			fqu,
@@ -246,7 +246,7 @@ func clearUserFromLocalStores(m MetaContext, fqu proto.FQUser, target core.Publi
 		return err
 	}
 
-	err = cleanErr(
+	err = cleanKeyDeleteError(
 		DeleteUserFromDB(m, lui.Export(), targetKeyID),
 	)
 	if err != nil {

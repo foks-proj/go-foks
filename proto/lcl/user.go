@@ -664,6 +664,84 @@ func (l *LoginWaitForSsoLoginArg) Decode(dec rpc.Decoder) error {
 
 func (l *LoginWaitForSsoLoginArg) Bytes() []byte { return nil }
 
+type RemoveKeyArg struct {
+	Key LocalUserIndexParsed
+}
+type RemoveKeyArgInternal__ struct {
+	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
+	Key     *LocalUserIndexParsedInternal__
+}
+
+func (r RemoveKeyArgInternal__) Import() RemoveKeyArg {
+	return RemoveKeyArg{
+		Key: (func(x *LocalUserIndexParsedInternal__) (ret LocalUserIndexParsed) {
+			if x == nil {
+				return ret
+			}
+			return x.Import()
+		})(r.Key),
+	}
+}
+func (r RemoveKeyArg) Export() *RemoveKeyArgInternal__ {
+	return &RemoveKeyArgInternal__{
+		Key: r.Key.Export(),
+	}
+}
+func (r *RemoveKeyArg) Encode(enc rpc.Encoder) error {
+	return enc.Encode(r.Export())
+}
+
+func (r *RemoveKeyArg) Decode(dec rpc.Decoder) error {
+	var tmp RemoveKeyArgInternal__
+	err := dec.Decode(&tmp)
+	if err != nil {
+		return err
+	}
+	*r = tmp.Import()
+	return nil
+}
+
+func (r *RemoveKeyArg) Bytes() []byte { return nil }
+
+type RemoveKeyByInfoArg struct {
+	Info lib.UserInfo
+}
+type RemoveKeyByInfoArgInternal__ struct {
+	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
+	Info    *lib.UserInfoInternal__
+}
+
+func (r RemoveKeyByInfoArgInternal__) Import() RemoveKeyByInfoArg {
+	return RemoveKeyByInfoArg{
+		Info: (func(x *lib.UserInfoInternal__) (ret lib.UserInfo) {
+			if x == nil {
+				return ret
+			}
+			return x.Import()
+		})(r.Info),
+	}
+}
+func (r RemoveKeyByInfoArg) Export() *RemoveKeyByInfoArgInternal__ {
+	return &RemoveKeyByInfoArgInternal__{
+		Info: r.Info.Export(),
+	}
+}
+func (r *RemoveKeyByInfoArg) Encode(enc rpc.Encoder) error {
+	return enc.Encode(r.Export())
+}
+
+func (r *RemoveKeyByInfoArg) Decode(dec rpc.Decoder) error {
+	var tmp RemoveKeyByInfoArgInternal__
+	err := dec.Decode(&tmp)
+	if err != nil {
+		return err
+	}
+	*r = tmp.Import()
+	return nil
+}
+
+func (r *RemoveKeyByInfoArg) Bytes() []byte { return nil }
+
 type UserInterface interface {
 	Clear(context.Context) error
 	AgentStatus(context.Context) (AgentStatus, error)
@@ -679,6 +757,8 @@ type UserInterface interface {
 	Ping(context.Context) (lib.FQUser, error)
 	LoginStartSsoLoginFlow(context.Context, lib.UISessionID) (SsoLoginFlow, error)
 	LoginWaitForSsoLogin(context.Context, lib.UISessionID) (lib.SSOLoginRes, error)
+	RemoveKey(context.Context, LocalUserIndexParsed) error
+	RemoveKeyByInfo(context.Context, lib.UserInfo) error
 	ErrorWrapper() func(error) lib.Status
 	CheckArgHeader(ctx context.Context, h Header) error
 	MakeResHeader() Header
@@ -1052,6 +1132,52 @@ func (c UserClient) LoginWaitForSsoLogin(ctx context.Context, sessionId lib.UISe
 		}
 	}
 	res = tmp.Data.Import()
+	return
+}
+func (c UserClient) RemoveKey(ctx context.Context, key LocalUserIndexParsed) (err error) {
+	arg := RemoveKeyArg{
+		Key: key,
+	}
+	warg := &rpc.DataWrap[Header, *RemoveKeyArgInternal__]{
+		Data: arg.Export(),
+	}
+	if c.MakeArgHeader != nil {
+		warg.Header = c.MakeArgHeader()
+	}
+	var tmp rpc.DataWrap[Header, interface{}]
+	err = c.Cli.Call2(ctx, rpc.NewMethodV2(UserProtocolID, 14, "User.removeKey"), warg, &tmp, 0*time.Millisecond, userErrorUnwrapperAdapter{h: c.ErrorUnwrapper})
+	if err != nil {
+		return
+	}
+	if c.CheckResHeader != nil {
+		err = c.CheckResHeader(ctx, tmp.Header)
+		if err != nil {
+			return
+		}
+	}
+	return
+}
+func (c UserClient) RemoveKeyByInfo(ctx context.Context, info lib.UserInfo) (err error) {
+	arg := RemoveKeyByInfoArg{
+		Info: info,
+	}
+	warg := &rpc.DataWrap[Header, *RemoveKeyByInfoArgInternal__]{
+		Data: arg.Export(),
+	}
+	if c.MakeArgHeader != nil {
+		warg.Header = c.MakeArgHeader()
+	}
+	var tmp rpc.DataWrap[Header, interface{}]
+	err = c.Cli.Call2(ctx, rpc.NewMethodV2(UserProtocolID, 15, "User.removeKeyByInfo"), warg, &tmp, 0*time.Millisecond, userErrorUnwrapperAdapter{h: c.ErrorUnwrapper})
+	if err != nil {
+		return
+	}
+	if c.CheckResHeader != nil {
+		err = c.CheckResHeader(ctx, tmp.Header)
+		if err != nil {
+			return
+		}
+	}
 	return
 }
 func UserProtocol(i UserInterface) rpc.ProtocolV2 {
@@ -1462,6 +1588,62 @@ func UserProtocol(i UserInterface) rpc.ProtocolV2 {
 					},
 				},
 				Name: "loginWaitForSsoLogin",
+			},
+			14: {
+				ServeHandlerDescription: rpc.ServeHandlerDescription{
+					MakeArg: func() interface{} {
+						var ret rpc.DataWrap[Header, *RemoveKeyArgInternal__]
+						return &ret
+					},
+					Handler: func(ctx context.Context, args interface{}) (interface{}, error) {
+						typedWrappedArg, ok := args.(*rpc.DataWrap[Header, *RemoveKeyArgInternal__])
+						if !ok {
+							err := rpc.NewTypeError((*rpc.DataWrap[Header, *RemoveKeyArgInternal__])(nil), args)
+							return nil, err
+						}
+						if err := i.CheckArgHeader(ctx, typedWrappedArg.Header); err != nil {
+							return nil, err
+						}
+						typedArg := typedWrappedArg.Data
+						err := i.RemoveKey(ctx, (typedArg.Import()).Key)
+						if err != nil {
+							return nil, err
+						}
+						ret := rpc.DataWrap[Header, interface{}]{
+							Header: i.MakeResHeader(),
+						}
+						return &ret, nil
+					},
+				},
+				Name: "removeKey",
+			},
+			15: {
+				ServeHandlerDescription: rpc.ServeHandlerDescription{
+					MakeArg: func() interface{} {
+						var ret rpc.DataWrap[Header, *RemoveKeyByInfoArgInternal__]
+						return &ret
+					},
+					Handler: func(ctx context.Context, args interface{}) (interface{}, error) {
+						typedWrappedArg, ok := args.(*rpc.DataWrap[Header, *RemoveKeyByInfoArgInternal__])
+						if !ok {
+							err := rpc.NewTypeError((*rpc.DataWrap[Header, *RemoveKeyByInfoArgInternal__])(nil), args)
+							return nil, err
+						}
+						if err := i.CheckArgHeader(ctx, typedWrappedArg.Header); err != nil {
+							return nil, err
+						}
+						typedArg := typedWrappedArg.Data
+						err := i.RemoveKeyByInfo(ctx, (typedArg.Import()).Info)
+						if err != nil {
+							return nil, err
+						}
+						ret := rpc.DataWrap[Header, interface{}]{
+							Header: i.MakeResHeader(),
+						}
+						return &ret, nil
+					},
+				},
+				Name: "removeKeyByInfo",
 			},
 		},
 		WrapError: UserMakeGenericErrorWrapper(i.ErrorWrapper()),

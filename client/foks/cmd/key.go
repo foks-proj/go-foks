@@ -10,6 +10,8 @@ import (
 	"github.com/foks-proj/go-foks/client/foks/cmd/common_ui"
 	"github.com/foks-proj/go-foks/client/foks/cmd/ui"
 	"github.com/foks-proj/go-foks/client/libclient"
+	"github.com/foks-proj/go-foks/lib/core"
+	"github.com/foks-proj/go-foks/lib/libterm"
 	"github.com/foks-proj/go-foks/proto/lcl"
 	proto "github.com/foks-proj/go-foks/proto/lib"
 	"github.com/spf13/cobra"
@@ -20,7 +22,19 @@ type switchCmdCfg struct {
 	role   string
 	yubi   bool
 	device bool
+	backup bool
 	keyID  string
+}
+
+func (s *switchCmdCfg) flagCommand(c *cobra.Command, verb string, devFlag bool) {
+	c.Flags().StringVarP(&s.fqu, "user", "u", "", "fully qualified user (via ID or name)")
+	c.Flags().StringVarP(&s.role, "role", "", "", "role (e.g., 'o', 'a', or 'm0' or 'm-30')")
+	c.Flags().BoolVarP(&s.yubi, "yubi", "", false, fmt.Sprintf("%s yubikey", verb))
+	if devFlag {
+		c.Flags().BoolVarP(&s.device, "device", "", false, fmt.Sprintf("%s device", verb))
+	}
+	c.Flags().BoolVarP(&s.backup, "backup", "", false, fmt.Sprintf("%s backup key", verb))
+	c.Flags().StringVarP(&s.keyID, "key-id", "", "", fmt.Sprintf("key ID to %s", verb))
 }
 
 func switchCmd(m libclient.MetaContext) *cobra.Command {
@@ -34,11 +48,30 @@ func switchCmd(m libclient.MetaContext) *cobra.Command {
 			return runSwitch(m, cmd, &cfg, arg)
 		},
 	}
-	cmd.Flags().StringVarP(&cfg.fqu, "user", "u", "", "fully qualified username")
-	cmd.Flags().StringVarP(&cfg.role, "role", "", "", "role (e.g., 'o', 'a', or 'm0' or 'm-30')")
-	cmd.Flags().BoolVarP(&cfg.yubi, "yubi", "", false, "switch to yubikey-based user account")
-	cmd.Flags().BoolVarP(&cfg.device, "device", "", false, "switch to device-based user account")
-	cmd.Flags().StringVarP(&cfg.keyID, "key-id", "", "", "key ID to switch to (optional)")
+	cfg.flagCommand(cmd, "switch to", true)
+	return cmd
+}
+
+func removeCmd(m libclient.MetaContext) *cobra.Command {
+	var cfg switchCmdCfg
+	cmd := &cobra.Command{
+		Use:   "remove",
+		Short: "remove a key from the local database, without revoking it",
+		Long: libterm.MustRewrapSense(`Remove a YubiKey or backup key from the local database, but do
+not revoke the key.
+
+When you sign up with a Yubikey, FOKS writes some basic information about the key to its
+local database, so the software can find the key and the correct parameters later. The database
+entry is reflected in 'foks key list'. This command removes that entry.
+
+This command has two modes of operations. Either you can specify a key exactly via the 
+flags and options; or provide no flags and options, in which case the command will
+interactively prompt you to select a key to remove.`, 0),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return runRemove(m, cmd, &cfg, args)
+		},
+	}
+	cfg.flagCommand(cmd, "remove", false)
 	return cmd
 }
 
@@ -137,6 +170,9 @@ func keyCmd(m libclient.MetaContext) *cobra.Command {
 
 	sw := switchCmd(m)
 	top.AddCommand(sw)
+
+	remove := removeCmd(m)
+	top.AddCommand(remove)
 
 	lock := keyLockCmd(m)
 	top.AddCommand(lock)
@@ -259,58 +295,88 @@ func runRevoke(m libclient.MetaContext, cmd *cobra.Command, arg []string) error 
 	)
 }
 
+func (s *switchCmdCfg) parse() (*lcl.LocalUserIndexParsed, error) {
+	var eid proto.EntityID
+	if s.keyID != "" {
+		tmp, err := proto.ImportEntityIDFromString(s.keyID)
+		if err != nil {
+			return nil, err
+		}
+		eid = tmp
+	}
+
+	fqu, err := parseFqu(s.fqu)
+	if err != nil {
+		return nil, err
+	}
+	if fqu == nil {
+		if len(s.role) > 0 {
+			return nil, ArgsError("can only use -r flag with -u flag")
+		}
+		if eid != nil {
+			return nil, ArgsError("can only use --key-id flag with -u flag")
+		}
+		return nil, nil
+	}
+
+	role, err := parseRole(s.role, &proto.OwnerRole)
+	if err != nil {
+		return nil, err
+	}
+	var kg *proto.KeyGenus
+	switch {
+	case s.yubi:
+		tmp := proto.KeyGenus_Yubi
+		kg = &tmp
+	case s.device:
+		tmp := proto.KeyGenus_Device
+		kg = &tmp
+	case s.backup:
+		tmp := proto.KeyGenus_Backup
+		kg = &tmp
+	}
+
+	ret := lcl.LocalUserIndexParsed{
+		Fqu:      *fqu,
+		Role:     *role,
+		KeyGenus: kg,
+		KeyID:    eid,
+	}
+	return &ret, nil
+}
+
+func runRemove(m libclient.MetaContext, cmd *cobra.Command, cfg *switchCmdCfg, args []string) error {
+	cli, clean, err := quickStart[lcl.UserClient](m, nil)
+	if err != nil {
+		return err
+	}
+	defer clean()
+	swarg, err := cfg.parse()
+	if err != nil {
+		return err
+	}
+	if swarg == nil {
+		return ui.RunRemove(m, cli)
+	}
+	if swarg.KeyGenus != nil && *swarg.KeyGenus == proto.KeyGenus_Device {
+		return core.BadArgsError("cannot remove a device key; use `foks key revoke` instead")
+	}
+	return cli.RemoveKey(m.Ctx(), *swarg)
+}
+
 func runSwitch(m libclient.MetaContext, cmd *cobra.Command, cfg *switchCmdCfg, arg []string) error {
 	cli, clean, err := quickStart[lcl.UserClient](m, nil)
 	if err != nil {
 		return err
 	}
 	defer clean()
-
-	var eid proto.EntityID
-	if cfg.keyID != "" {
-		tmp, err := proto.ImportEntityIDFromString(cfg.keyID)
-		if err != nil {
-			return err
-		}
-		eid = tmp
-	}
-
-	fqu, err := parseFqu(cfg.fqu)
+	swarg, err := cfg.parse()
 	if err != nil {
 		return err
 	}
-
-	if fqu != nil {
-		role, err := parseRole(cfg.role, &proto.OwnerRole)
-		if err != nil {
-			return err
-		}
-		var kg *proto.KeyGenus
-		switch {
-		case cfg.yubi:
-			tmp := proto.KeyGenus_Yubi
-			kg = &tmp
-		case cfg.device:
-			tmp := proto.KeyGenus_Device
-			kg = &tmp
-		}
-
-		err = cli.SwitchUser(m.Ctx(), lcl.LocalUserIndexParsed{
-			Fqu:      *fqu,
-			Role:     *role,
-			KeyGenus: kg,
-			KeyID:    eid,
-		})
-		return err
+	if swarg != nil {
+		return cli.SwitchUser(m.Ctx(), *swarg)
 	}
-
-	if len(cfg.role) > 0 {
-		return ArgsError("can only use -r flag with -u flag")
-	}
-	if eid != nil {
-		return ArgsError("can only use --key-id flag with -u flag")
-	}
-
 	err = ui.RunSwitch(m, cli)
 	if err != nil {
 		return err

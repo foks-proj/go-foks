@@ -25,6 +25,13 @@ const (
 	switchStateDone      switchState = iota
 )
 
+type switchModality int
+
+const (
+	switchModalitySwitch switchModality = iota
+	switchModalityRemove
+)
+
 type switchModel struct {
 	g         *libclient.GlobalContext
 	usercli   lcl.UserClient
@@ -36,6 +43,7 @@ type switchModel struct {
 	picker    list.Model
 	choice    int
 	choiceStr string
+	modality  switchModality
 }
 
 type switchGetExistingMsg struct {
@@ -66,16 +74,28 @@ func (m switchModel) View() string {
 	case switchStateLoading:
 		fmt.Fprintf(&b, "\n\n %s Loading users...\n", m.spinner.View())
 	case switchStateSwitching:
-		fmt.Fprintf(&b, "\n\n %s Switching to %s\n", m.spinner.View(), m.choiceStr)
+		if m.modality == switchModalitySwitch {
+			fmt.Fprintf(&b, "\n\n %s Switching to %s\n", m.spinner.View(), m.choiceStr)
+		} else {
+			fmt.Fprintf(&b, "\n\n %s Removing %s\n", m.spinner.View(), m.choiceStr)
+		}
 	case switchStateDone:
 		switch {
 		case m.err != nil:
 			fmt.Fprintf(&b, "\n\n  %s\n\n", ErrorStyle.Render("Error"))
 			fmt.Fprintf(&b, "  %s\n\n", RenderError(m.err))
 		case len(m.users) == 0:
-			fmt.Fprintf(&b, "\n\n  %s\n\n", ErrorStyle.Render("No inactive users found"))
+			if m.modality == switchModalityRemove {
+				fmt.Fprintf(&b, "\n\n  %s\n\n", ErrorStyle.Render("No eligible keys found"))
+			} else {
+				fmt.Fprintf(&b, "\n\n  %s\n\n", ErrorStyle.Render("No inactive users found"))
+			}
 		default:
-			fmt.Fprintf(&b, "\n\n ✅ %s Switched to %s\n\n", HappyStyle.Render("Success!"), m.choiceStr)
+			if m.modality == switchModalityRemove {
+				fmt.Fprintf(&b, "\n\n ✅ %s Removed %s\n\n", HappyStyle.Render("Success!"), m.choiceStr)
+			} else {
+				fmt.Fprintf(&b, "\n\n ✅ %s Switched to %s\n\n", HappyStyle.Render("Success!"), m.choiceStr)
+			}
 		}
 		fmt.Fprint(&b, " ✌  Press any key to exit\n")
 	case switchStateUIGo:
@@ -93,6 +113,28 @@ func (m switchModel) View() string {
 	default:
 	}
 	return b.String()
+}
+
+func filterOutDevices(users []proto.UserInfo) (*proto.UserInfo, []proto.UserInfo) {
+	var active *proto.UserInfo
+	ret := make([]proto.UserInfo, 0, len(users))
+	sortUserList(users)
+	for _, u := range users {
+		if u.KeyGenus == proto.KeyGenus_Device {
+			continue
+		}
+		if u.Active {
+			tmp := u
+			active = &tmp
+		} else {
+			ret = append(ret, u)
+		}
+	}
+	if active == nil {
+		return nil, ret
+	}
+	return active, ret
+
 }
 
 func filterActive(users []proto.UserInfo) (*proto.UserInfo, []proto.UserInfo) {
@@ -142,7 +184,12 @@ func (m switchModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.spinner.Tick,
 				func() tea.Msg {
 					debugSpinners(mctx)
-					err := m.usercli.SwitchUserByInfo(mctx.Ctx(), m.users[m.choice])
+					var err error
+					if m.modality == switchModalitySwitch {
+						err = m.usercli.SwitchUserByInfo(mctx.Ctx(), m.users[m.choice])
+					} else {
+						err = m.usercli.RemoveKeyByInfo(mctx.Ctx(), m.users[m.choice])
+					}
 					return switchSwitchMsg{err: err}
 				},
 			)
@@ -155,7 +202,11 @@ func (m switchModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.err = msg.err
 		m.state = switchStateDone
 	case switchGetExistingMsg:
-		m.active, m.users = filterActive(msg.users)
+		if m.modality == switchModalitySwitch {
+			m.active, m.users = filterActive(msg.users)
+		} else {
+			m.active, m.users = filterOutDevices(msg.users)
+		}
 		m.err = msg.err
 		if m.err != nil || len(m.users) == 0 {
 			m.state = switchStateDone
@@ -174,7 +225,12 @@ func (m switchModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			l := list.New(items, dlg, defaultWidth, listHeight)
 			styleList(&l)
-			prompt := "Select user to switch to: "
+			var prompt string
+			if m.modality == switchModalitySwitch {
+				prompt = "Select user to switch to: "
+			} else {
+				prompt = "Select key to remove: "
+			}
 			l.Title = prompt
 			m.picker = l
 		}
@@ -191,17 +247,31 @@ func (m switchModel) init(mctx libclient.MetaContext) (switchModel, error) {
 	return m, nil
 }
 
-func RunSwitch(m libclient.MetaContext, cli lcl.UserClient) error {
-	model := switchModel{
-		g:       m.G(),
-		usercli: cli,
-	}
-	model, err := model.init(m)
+func (m switchModel) run(mctx libclient.MetaContext) error {
+	m, err := m.init(mctx)
 	if err != nil {
 		return err
 	}
-	_, err = tea.NewProgram(model).Run()
+	_, err = tea.NewProgram(m).Run()
 	return err
+}
+
+func RunSwitch(m libclient.MetaContext, cli lcl.UserClient) error {
+	model := switchModel{
+		g:        m.G(),
+		usercli:  cli,
+		modality: switchModalitySwitch,
+	}
+	return model.run(m)
+}
+
+func RunRemove(m libclient.MetaContext, cli lcl.UserClient) error {
+	model := switchModel{
+		g:        m.G(),
+		usercli:  cli,
+		modality: switchModalityRemove,
+	}
+	return model.run(m)
 }
 
 var _ tea.Model = &switchModel{}

@@ -415,7 +415,7 @@ func LookupSimpleInAllUsers(
 func LookupUserInAllUsers(
 	m MetaContext,
 	u lcl.LocalUserIndexParsed,
-	getDefaultHostID func() (proto.HostID, error),
+	getDefaultHostID func(MetaContext) (proto.HostID, error),
 ) (*proto.UserInfo, error) {
 	users, err := ReadAllUsers(m)
 	if err != nil {
@@ -428,7 +428,7 @@ func LookupUserInAllUsers(
 		if !defHostID.IsZero() {
 			return defHostID, nil
 		}
-		tmp, err := getDefaultHostID()
+		tmp, err := getDefaultHostID(m)
 		if err != nil {
 			return defHostID, err
 		}

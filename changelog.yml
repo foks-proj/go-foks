@@ -9,6 +9,8 @@ changelog:
     changes:
       - desc: improve error conditions and messages w/r/t `kv mkdir root`
         closes: ["#163"]
+      - desc: add CLI command `foks key remove` 
+        closes: ["#167"]
   - version: 0.1.1
     urgency: low
     stable: true

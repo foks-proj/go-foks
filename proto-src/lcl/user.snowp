@@ -51,4 +51,6 @@ protocol User
         sessionId @0 : lib.UISessionID
     ) -> lib.SSOLoginRes;
 
+    removeKey @14 ( key @0 : LocalUserIndexParsed );
+    removeKeyByInfo @15 ( info @0 : lib.UserInfo );
 }
