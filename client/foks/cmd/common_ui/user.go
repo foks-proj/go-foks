@@ -61,7 +61,7 @@ func FormatUserInfoAsPromptItem(u proto.UserInfo, opts *FormatUserInfoOpts) (str
 	}
 
 	if u.YubiInfo != nil && (opts == nil || !opts.NoDeviceName) {
-		s := fmt.Sprintf("<🔑 %s / serial=0x%x / slot=%d>", u.YubiInfo.Card.Name, u.YubiInfo.Card.Serial, u.YubiInfo.Key.Slot)
+		s := fmt.Sprintf("<🔑 %s / serial=%d / slot=%d>", u.YubiInfo.Card.Name, u.YubiInfo.Card.Serial, u.YubiInfo.Key.Slot)
 		parts = append(parts, s)
 	}
 

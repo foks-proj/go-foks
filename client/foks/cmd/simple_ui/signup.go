@@ -300,7 +300,7 @@ func (s *SignupUI) ShowWaitListID(m libclient.MetaContext, wlid proto.WaitListID
 func (s *SignupUI) PickYubiDevice(m libclient.MetaContext, v []proto.YubiCardID) (int, error) {
 	var items []string
 	for _, k := range v {
-		items = append(items, fmt.Sprintf("🔑 %s 0x%x", string(k.Name), uint(k.Serial)))
+		items = append(items, fmt.Sprintf("🔑 %s (S/N: %d)", string(k.Name), uint(k.Serial)))
 	}
 	noYubiIdx := len(v)
 	items = append(items, "🖥️  Use local device keys instead")

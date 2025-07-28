@@ -76,7 +76,7 @@ func (y yubiDeviceItemDelegate) Render(w io.Writer, m list.Model, index int, lis
 	}
 	var s string
 	if i.YubiCardID != nil {
-		s = fmt.Sprintf("🔑 %s 0x%x", string(i.YubiCardID.Name), uint(i.YubiCardID.Serial))
+		s = fmt.Sprintf("🔑 %s (S/N: %d)", string(i.YubiCardID.Name), uint(i.YubiCardID.Serial))
 	} else {
 		s = "🖥️  Use local device keys instead"
 	}

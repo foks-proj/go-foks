@@ -267,7 +267,7 @@ func outputUserListTable(
 			dev = "YubiKey"
 			if u.Info.YubiInfo != nil {
 				x := *u.Info.YubiInfo
-				ret.yubiInfo = fmt.Sprintf("%s <0x%x/%d>", x.Card.Name, x.Card.Serial, x.Key.Slot)
+				ret.yubiInfo = fmt.Sprintf("%s <%d/%d>", x.Card.Name, x.Card.Serial, x.Key.Slot)
 			} else {
 				dev = "YubiKey"
 			}
