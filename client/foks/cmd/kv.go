@@ -162,7 +162,7 @@ func kvCmd(m libclient.MetaContext) *cobra.Command {
 		Long:         "key-value store put/get and management commands",
 		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return cmd.Usage()
+			return subcommandHelp(cmd, args)
 		},
 	}
 	kvMkdir(m, top)
