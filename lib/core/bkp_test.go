@@ -14,7 +14,6 @@ func TestBackupKey(t *testing.T) {
 	var bk BackupKey
 	seed, err := GenerateBackupSeed()
 	require.NoError(t, err)
-	require.NoError(t, err)
 	err = bk.FromSeed(*seed)
 	require.NoError(t, err)
 	words, err := bk.Export()

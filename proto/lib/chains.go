@@ -1839,6 +1839,7 @@ const (
 	DeviceType_Mobile   DeviceType = 1
 	DeviceType_YubiKey  DeviceType = 2
 	DeviceType_Backup   DeviceType = 3
+	DeviceType_BotToken DeviceType = 4
 )
 
 var DeviceTypeMap = map[string]DeviceType{
@@ -1846,12 +1847,14 @@ var DeviceTypeMap = map[string]DeviceType{
 	"Mobile":   1,
 	"YubiKey":  2,
 	"Backup":   3,
+	"BotToken": 4,
 }
 var DeviceTypeRevMap = map[DeviceType]string{
 	0: "Computer",
 	1: "Mobile",
 	2: "YubiKey",
 	3: "Backup",
+	4: "BotToken",
 }
 
 type DeviceTypeInternal__ DeviceType

@@ -13,6 +13,8 @@ changelog:
         closes: ["#167"]
       - desc: change yubikey serial number to be displayed in decimal rather than hex
         closes: ["#173"]
+      - desc: add bot-token keys, which are like backup keys, but special-cased for bots
+        closes: ["#172"]
   - version: 0.1.1
     urgency: low
     stable: true

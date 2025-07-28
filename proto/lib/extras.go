@@ -558,6 +558,8 @@ func (d DeviceType) ExportToDB() string {
 		return "yubikey"
 	case DeviceType_Backup:
 		return "backup"
+	case DeviceType_BotToken:
+		return "bot_token"
 	default:
 		return "none"
 	}
@@ -569,7 +571,7 @@ func (t EntityType) IsEd25519() bool {
 		EntityType_X509Cert, EntityType_LocationVRF, EntityType_Service,
 		EntityType_HostMerkleSigner, EntityType_HostMetadataSigner, EntityType_HostTLSCA,
 		EntityType_Subkey, EntityType_Team, EntityType_PTKVerify, EntityType_PUKVerify,
-		EntityType_BackupKey, EntityType_PassphraseKey:
+		EntityType_BackupKey, EntityType_PassphraseKey, EntityType_BotTokenKey:
 		return true
 	default:
 		return false

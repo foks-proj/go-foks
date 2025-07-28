@@ -58,7 +58,7 @@ func InsertSubkeyCheckSanity(
 	box *proto.Box,
 ) error {
 	switch parent.Type() {
-	case proto.EntityType_Device, proto.EntityType_BackupKey:
+	case proto.EntityType_Device, proto.EntityType_BackupKey, proto.EntityType_BotTokenKey:
 		if subkey != nil || box != nil {
 			return core.ValidationError("cannot post subkey for regular or backup device")
 		}

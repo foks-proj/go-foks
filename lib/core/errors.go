@@ -461,6 +461,12 @@ func (k HESPError) Error() string {
 	return "high entropy secret phrase error: " + string(k)
 }
 
+type BotTokenError string
+
+func (b BotTokenError) Error() string {
+	return "bot token error: " + string(b)
+}
+
 type CannotRotateError struct{}
 
 func (c CannotRotateError) Error() string {
@@ -1573,6 +1579,8 @@ func ErrorToStatus(e error) proto.Status {
 		return proto.NewStatusWithKvAbsPathError(te.Path.String())
 	case StripeSessionExistsError:
 		return proto.NewStatusWithStripeSessionExistsError()
+	case BotTokenError:
+		return proto.NewStatusWithBotTokenError(string(te))
 	case NonRetriableError:
 		return ErrorToStatus(te.Err)
 	case GitGenericError:
@@ -1886,6 +1894,8 @@ func StatusToError(s proto.Status) error {
 		return KVAbsPathError{Path: proto.KVPath(s.KvAbsPathError())}
 	case proto.StatusCode_STRIPE_SESSION_EXISTS_ERROR:
 		return StripeSessionExistsError{}
+	case proto.StatusCode_BOT_TOKEN_ERROR:
+		return BotTokenError(s.BotTokenError())
 	case proto.StatusCode_CHAIN_LOADER_ERROR:
 		cle := s.ChainLoaderError()
 		return ChainLoaderError{

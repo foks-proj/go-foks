@@ -212,6 +212,8 @@ func deviceTypeToString(t proto.DeviceType) string {
 		return "device"
 	case proto.DeviceType_Backup:
 		return "backup"
+	case proto.DeviceType_BotToken:
+		return "bot-token"
 	default:
 		return "other"
 	}
@@ -275,6 +277,8 @@ func outputUserListTable(
 			dev = "device"
 		case proto.KeyGenus_Backup:
 			dev = "backup"
+		case proto.KeyGenus_BotToken:
+			dev = "bot-token"
 		}
 		ret.dev = dev
 

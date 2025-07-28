@@ -18,23 +18,25 @@ import (
 )
 
 type switchCmdCfg struct {
-	fqu    string
-	role   string
-	yubi   bool
-	device bool
-	backup bool
-	keyID  string
+	fqu      string
+	role     string
+	yubi     bool
+	device   bool
+	backup   bool
+	botToken bool
+	keyID    string
 }
 
 func (s *switchCmdCfg) flagCommand(c *cobra.Command, verb string, devFlag bool) {
 	c.Flags().StringVarP(&s.fqu, "user", "u", "", "fully qualified user (via ID or name)")
-	c.Flags().StringVarP(&s.role, "role", "", "", "role (e.g., 'o', 'a', or 'm0' or 'm-30')")
-	c.Flags().BoolVarP(&s.yubi, "yubi", "", false, fmt.Sprintf("%s yubikey", verb))
+	c.Flags().StringVar(&s.role, "role", "", "role (e.g., 'o', 'a', or 'm0' or 'm-30')")
+	c.Flags().BoolVar(&s.yubi, "yubi", false, fmt.Sprintf("%s yubikey", verb))
 	if devFlag {
-		c.Flags().BoolVarP(&s.device, "device", "", false, fmt.Sprintf("%s device", verb))
+		c.Flags().BoolVar(&s.device, "device", false, fmt.Sprintf("%s device", verb))
 	}
-	c.Flags().BoolVarP(&s.backup, "backup", "", false, fmt.Sprintf("%s backup key", verb))
-	c.Flags().StringVarP(&s.keyID, "key-id", "", "", fmt.Sprintf("key ID to %s", verb))
+	c.Flags().BoolVar(&s.backup, "backup", false, fmt.Sprintf("%s backup key", verb))
+	c.Flags().BoolVar(&s.botToken, "bot-token", false, fmt.Sprintf("%s bot token", verb))
+	c.Flags().StringVar(&s.keyID, "key-id", "", fmt.Sprintf("key ID to %s", verb))
 }
 
 func switchCmd(m libclient.MetaContext) *cobra.Command {
@@ -333,6 +335,9 @@ func (s *switchCmdCfg) parse() (*lcl.LocalUserIndexParsed, error) {
 		kg = &tmp
 	case s.backup:
 		tmp := proto.KeyGenus_Backup
+		kg = &tmp
+	case s.botToken:
+		tmp := proto.KeyGenus_BotToken
 		kg = &tmp
 	}
 

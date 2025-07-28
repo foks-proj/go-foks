@@ -66,7 +66,7 @@ func bkpNewCmd(m libclient.MetaContext, top *cobra.Command) {
 			})
 		},
 	}
-	bkpNew.Flags().StringVarP(&role, "role", "", "o", "role to add the backup key as (defualts to 'owner')")
+	bkpNew.Flags().StringVar(&role, "role", "o", "role to add the backup key as (defualts to 'owner')")
 	top.AddCommand(bkpNew)
 }
 

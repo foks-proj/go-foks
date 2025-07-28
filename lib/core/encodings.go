@@ -71,6 +71,10 @@ func B62Decode(s string) ([]byte, error) {
 	return basex.Base62StdEncodingStrict.DecodeString(s)
 }
 
+func B36Decode(s string) ([]byte, error) {
+	return Base36Encoding.DecodeString(s)
+}
+
 func ExportShortID(id proto.ShortID) (string, error) {
 	b, err := EncodeToBytes(&id)
 	if err != nil {

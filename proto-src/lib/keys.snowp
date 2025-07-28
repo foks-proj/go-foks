@@ -52,6 +52,7 @@ enum KeyGenus {
     Device @0;
     Yubi @1;
     Backup @2;
+    BotToken @3;
 }
 
 struct SharedKeyParcel {

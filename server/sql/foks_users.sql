@@ -246,7 +246,7 @@ CREATE TABLE team_removal_keys (
 );
 CREATE UNIQUE INDEX team_removal_keys_hash_idx ON team_removal_keys(short_host_id, rk_comm);
 
-CREATE TYPE device_type as ENUM('computer', 'mobile', 'yubikey', 'backup', 'yubibackup', 'none');
+CREATE TYPE device_type as ENUM('computer', 'mobile', 'yubikey', 'backup', 'yubibackup', 'none', 'bot_token');
 
 CREATE TABLE device_keys (
     short_host_id SMALLINT NOT NULL,
@@ -969,3 +969,4 @@ CREATE TABLE schema_patches (
 INSERT INTO schema_patches (id, ctime) VALUES (1, NOW());
 INSERT INTO schema_patches (id, ctime) VALUES (2, NOW());
 INSERT INTO schema_patches (id, ctime) VALUES (3, NOW());
+INSERT INTO schema_patches (id, ctime) VALUES (4, NOW());

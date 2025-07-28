@@ -30,6 +30,18 @@ func (t *TerminalUI) IsOutputTTY() bool {
 	return isatty.IsTerminal(os.Stdout.Fd())
 }
 
+func (t *TerminalUI) ReadLine(prompt string) (string, error) {
+	if len(prompt) > 0 {
+		fmt.Print(prompt)
+	}
+	var line string
+	_, err := fmt.Scanln(&line)
+	if err != nil {
+		return "", fmt.Errorf("failed to read line: %w", err)
+	}
+	return line, nil
+}
+
 func SetUIs(m libclient.MetaContext) {
 	uis := simple_ui.Setup()
 	uis.Terminal = &TerminalUI{}

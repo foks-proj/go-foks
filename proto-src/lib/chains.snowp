@@ -197,6 +197,7 @@ enum DeviceType {
     Mobile @1;
     YubiKey @2;
     Backup @3;
+    BotToken @4;
 }
 
 struct SharedKeySeed @0xa9998e7a59e8ae25 {

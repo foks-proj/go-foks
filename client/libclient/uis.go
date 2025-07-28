@@ -73,6 +73,7 @@ type TerminalUIer interface {
 	OutputStream() io.WriteCloser
 	ErrorStream() IOStreamer
 	IsOutputTTY() bool
+	ReadLine(string) (string, error)
 }
 
 type GetPassphraseFlags struct {

@@ -1,10 +1,8 @@
-// Copyright (c) 2025 ne43, Inc.
-// Licensed under the MIT License. See LICENSE in the project root for details.
-
 package agent
 
 import (
 	"context"
+	"time"
 
 	"github.com/foks-proj/go-foks/client/libclient"
 	"github.com/foks-proj/go-foks/lib/core"
@@ -12,31 +10,20 @@ import (
 	proto "github.com/foks-proj/go-foks/proto/lib"
 )
 
-type LoadBackupSession struct {
-	SessionBase
-}
-
-func (l *LoadBackupSession) Init(id proto.UISessionID) {
-	l.SessionBase.Init()
-}
-
-var _ Sessioner = (*LoadBackupSession)(nil)
-
-func (a *AgentConn) BackupNew(
+func (a *AgentConn) BotTokenNew(
 	ctx context.Context,
 	role proto.Role,
 ) (
-	lcl.BackupHESP,
+	lcl.BotTokenString,
 	error,
 ) {
-	var zed lcl.BackupHESP
+	var zed lcl.BotTokenString
 	m := a.MetaContext(ctx)
 	r, err := a.prepareNewDevice(m, role)
 	if err != nil {
 		return zed, err
 	}
-
-	bkp, err := core.NewBackupKey()
+	bkp, err := core.NewBotToken()
 	if err != nil {
 		return zed, err
 	}
@@ -48,7 +35,6 @@ func (a *AgentConn) BackupNew(
 	if err != nil {
 		return zed, err
 	}
-
 	lkr := libclient.NewLoopbackKexRunner(
 		m.G(),
 		r.devKey,
@@ -70,37 +56,40 @@ func (a *AgentConn) BackupNew(
 	return ret, nil
 }
 
-func (a *AgentConn) BackupLoadPutHESP(
+func (a *AgentConn) BotTokenLoad(
 	ctx context.Context,
-	arg lcl.BackupLoadPutHESPArg,
+	arg lcl.BotTokenLoadArg,
 ) error {
 	m := a.MetaContext(ctx)
-	sess, err := a.agent.sessions.LoadBackup(arg.SessionId)
+	var tok core.BotToken
+	err := tok.Import(arg.Tok)
 	if err != nil {
 		return err
 	}
-	var bk core.BackupKey
-	err = bk.Import(arg.Hesp)
+	prb, err := a.probe(m, arg.Host, 30*time.Second)
 	if err != nil {
 		return err
 	}
-	ks, err := bk.KeySuite(proto.OwnerRole, sess.homeServer.Chain().HostID())
-	if err != nil {
-		return err
-	}
-	lres, err := a.lookupDeviceOnServer(m, &sess.SessionBase, ks)
-	if err != nil {
-		return err
-	}
-
-	uctx, err := populateUserContext(lres, sess.homeServer, ks, proto.KeyGenus_Backup, nil)
+	hostID := prb.Chain().HostID()
+	ks, err := tok.KeySuite(proto.OwnerRole, hostID)
 	if err != nil {
 		return err
 	}
 
-	// Fill in device name based on the HESP (the first two tokens in it)
-	uctx.Devname = bk.Name()
+	regCli, err := prb.RegCli(m)
+	if err != nil {
+		return err
+	}
+	lures, err := lookupDeviceOnServer(m, ks, *regCli, hostID)
+	if err != nil {
+		return err
+	}
+	uctx, err := populateUserContext(lures, prb, ks, proto.KeyGenus_BotToken, nil)
+	if err != nil {
+		return err
+	}
 
+	uctx.Devname = tok.Name()
 	err = libclient.SetActiveUser(m, uctx)
 	if err != nil {
 		return err
@@ -112,4 +101,4 @@ func (a *AgentConn) BackupLoadPutHESP(
 	return nil
 }
 
-var _ lcl.BackupInterface = (*AgentConn)(nil)
+var _ lcl.BotTokenInterface = (*AgentConn)(nil)

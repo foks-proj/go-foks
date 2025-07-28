@@ -428,20 +428,23 @@ func (k *KVKeyDerivation) Bytes() []byte { return nil }
 type KeyGenus int
 
 const (
-	KeyGenus_Device KeyGenus = 0
-	KeyGenus_Yubi   KeyGenus = 1
-	KeyGenus_Backup KeyGenus = 2
+	KeyGenus_Device   KeyGenus = 0
+	KeyGenus_Yubi     KeyGenus = 1
+	KeyGenus_Backup   KeyGenus = 2
+	KeyGenus_BotToken KeyGenus = 3
 )
 
 var KeyGenusMap = map[string]KeyGenus{
-	"Device": 0,
-	"Yubi":   1,
-	"Backup": 2,
+	"Device":   0,
+	"Yubi":     1,
+	"Backup":   2,
+	"BotToken": 3,
 }
 var KeyGenusRevMap = map[KeyGenus]string{
 	0: "Device",
 	1: "Yubi",
 	2: "Backup",
+	3: "BotToken",
 }
 
 type KeyGenusInternal__ KeyGenus

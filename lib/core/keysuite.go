@@ -447,7 +447,8 @@ func importPublicSuiteHelper(
 	}
 	switch eid.Type() {
 	case proto.EntityType_Device, proto.EntityType_User, proto.EntityType_Team,
-		proto.EntityType_BackupKey, proto.EntityType_PassphraseKey:
+		proto.EntityType_BackupKey, proto.EntityType_PassphraseKey,
+		proto.EntityType_BotTokenKey:
 		if dhtyp != proto.DHType_Curve25519 {
 			return nil, KeyImportError("wrong type of DH key in key import")
 		}

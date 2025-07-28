@@ -1,0 +1,21 @@
+@0xb33f6d71e0d0df80;
+
+go:import "github.com/foks-proj/go-foks/proto/lib" as lib;
+
+typedef BotTokenString = Text;
+
+protocol BotToken
+    errors lib.Status 
+    argHeader Header 
+    resHeader Header @0xe289e233 {
+
+    // Create a new backup key
+    botTokenNew @0 (
+        role @0 : lib.Role
+    ) -> BotTokenString;
+
+    botTokenLoad @1 (
+        host @0 : lib.TCPAddr,
+        tok @1 : BotTokenString
+    );
+}

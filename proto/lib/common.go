@@ -709,6 +709,41 @@ func (p PKIXCertID) Bytes() []byte {
 	return ((EntityID)(p)).Bytes()
 }
 
+type BotTokenKeyID EntityID
+type BotTokenKeyIDInternal__ EntityIDInternal__
+
+func (b BotTokenKeyID) Export() *BotTokenKeyIDInternal__ {
+	tmp := ((EntityID)(b))
+	return ((*BotTokenKeyIDInternal__)(tmp.Export()))
+}
+func (b BotTokenKeyIDInternal__) Import() BotTokenKeyID {
+	tmp := (EntityIDInternal__)(b)
+	return BotTokenKeyID((func(x *EntityIDInternal__) (ret EntityID) {
+		if x == nil {
+			return ret
+		}
+		return x.Import()
+	})(&tmp))
+}
+
+func (b *BotTokenKeyID) Encode(enc rpc.Encoder) error {
+	return enc.Encode(b.Export())
+}
+
+func (b *BotTokenKeyID) Decode(dec rpc.Decoder) error {
+	var tmp BotTokenKeyIDInternal__
+	err := dec.Decode(&tmp)
+	if err != nil {
+		return err
+	}
+	*b = tmp.Import()
+	return nil
+}
+
+func (b BotTokenKeyID) Bytes() []byte {
+	return ((EntityID)(b)).Bytes()
+}
+
 type HostID EntityID33
 type HostIDInternal__ EntityID33Internal__
 
@@ -910,6 +945,7 @@ const (
 	EntityType_BackupKey          EntityType = 16
 	EntityType_PassphraseKey      EntityType = 17
 	EntityType_PKIXCert           EntityType = 18
+	EntityType_BotTokenKey        EntityType = 19
 )
 
 var EntityTypeMap = map[string]EntityType{
@@ -931,6 +967,7 @@ var EntityTypeMap = map[string]EntityType{
 	"BackupKey":          16,
 	"PassphraseKey":      17,
 	"PKIXCert":           18,
+	"BotTokenKey":        19,
 }
 var EntityTypeRevMap = map[EntityType]string{
 	1:  "User",
@@ -951,6 +988,7 @@ var EntityTypeRevMap = map[EntityType]string{
 	16: "BackupKey",
 	17: "PassphraseKey",
 	18: "PKIXCert",
+	19: "BotTokenKey",
 }
 
 type EntityTypeInternal__ EntityType
@@ -6048,6 +6086,46 @@ func (b BackupSeed) Bytes() []byte {
 	return (b)[:]
 }
 
+type BotTokenSeed [26]byte
+type BotTokenSeedInternal__ [26]byte
+
+func (b BotTokenSeed) Export() *BotTokenSeedInternal__ {
+	tmp := (([26]byte)(b))
+	return ((*BotTokenSeedInternal__)(&tmp))
+}
+func (b BotTokenSeedInternal__) Import() BotTokenSeed {
+	tmp := ([26]byte)(b)
+	return BotTokenSeed((func(x *[26]byte) (ret [26]byte) {
+		if x == nil {
+			return ret
+		}
+		return *x
+	})(&tmp))
+}
+
+func (b *BotTokenSeed) Encode(enc rpc.Encoder) error {
+	return enc.Encode(b.Export())
+}
+
+func (b *BotTokenSeed) Decode(dec rpc.Decoder) error {
+	var tmp BotTokenSeedInternal__
+	err := dec.Decode(&tmp)
+	if err != nil {
+		return err
+	}
+	*b = tmp.Import()
+	return nil
+}
+
+var BotTokenSeedTypeUniqueID = rpc.TypeUniqueID(0xe701048d6c6ba4ba)
+
+func (b *BotTokenSeed) GetTypeUniqueID() rpc.TypeUniqueID {
+	return BotTokenSeedTypeUniqueID
+}
+func (b BotTokenSeed) Bytes() []byte {
+	return (b)[:]
+}
+
 type BackupKeyVersion int
 
 const (
@@ -7365,6 +7443,7 @@ func init() {
 	rpc.AddUnique(HEPKTypeUniqueID)
 	rpc.AddUnique(HybridSecretKeySHA3PayloadTypeUniqueID)
 	rpc.AddUnique(BackupSeedTypeUniqueID)
+	rpc.AddUnique(BotTokenSeedTypeUniqueID)
 	rpc.AddUnique(NameHashPreimageTypeUniqueID)
 	rpc.AddUnique(RSAPubTypeUniqueID)
 	rpc.AddUnique(CKSEncKeyTypeUniqueID)

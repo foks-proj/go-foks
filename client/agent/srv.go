@@ -256,6 +256,7 @@ func (c *AgentConn) Serve(m libclient.MetaContext) {
 		lcl.UtilProtocol(c),
 		lcl.KeyProtocol(c),
 		lcl.LogSendProtocol(c),
+		lcl.BotTokenProtocol(c),
 	}
 	otherProtocols := OtherProtocols(c)
 	protocols = append(protocols, otherProtocols...)

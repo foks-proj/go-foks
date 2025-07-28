@@ -292,8 +292,10 @@ func (b *bufCloser) Close() error {
 }
 
 type terminalUI struct {
-	b   bytes.Buffer
-	err bufCloser
+	b         bytes.Buffer
+	err       bufCloser
+	inputLine string
+	inputEOF  bool
 }
 
 func (t *terminalUI) Write(p []byte) (n int, err error) {
@@ -340,6 +342,18 @@ func (t *terminalUI) reset() {
 
 func (t *terminalUI) IsOutputTTY() bool {
 	return true
+}
+
+func (t *terminalUI) ReadLine(string) (string, error) {
+	if t.inputEOF {
+		return "", io.EOF
+	}
+	if t.inputLine != "" {
+		ret := t.inputLine
+		t.inputLine = ""
+		return ret, nil
+	}
+	return "", core.InternalError("blocking indefinitely since we asked for a line but didn't set one")
 }
 
 var _ libclient.TerminalUIer = (*terminalUI)(nil)

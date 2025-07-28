@@ -43,6 +43,7 @@ typedef PTKVerifyID = EntityID;          // Leading byte 0xf -- 33 Bytes (EdDSA)
 typedef BackupKeyID = EntityID;          // Leading byte 0x10 -- 33 Bytes (EdDSA)
 typedef PassphraseKeyID = EntityID;      // Leading byte 0x11 -- 33 Bytes (EdDSA, derived from passphrase)
 typedef PKIXCertID = EntityID;           // Leading byte 0x12 -- 33 Bytes (ECDSA or RSA) - Unspecified PKIX key from crypto.Public
+typedef BotTokenKeyID = EntityID;        // Leading byte 0x13 -- 33 Bytes (EdDSA) -- for bot tokens
 
 // HostID has a type ID since sometimes we store it directly as a value
 // in local client DBs. (See Probe::checkPin).
@@ -73,6 +74,7 @@ enum EntityType {
     BackupKey @16;
     PassphraseKey @17;
     PKIXCert @18;
+    BotTokenKey @19;
 }
 
 enum DHType {
@@ -431,10 +433,14 @@ struct BoxHybridV1 {
     sbox @3 : SecretBox;
 }
 
-// Prefix-hash one of these to get a SecretSeet32. Input is ~190 bits of
+// Prefix-hash one of these to get a SecretSeed32. Input is ~190 bits of
 // entropy. but stretched out via SHA2.
 // For derivation of the 26-byte size, see lib/core/bkp.go
 typedef BackupSeed @0xf4c4fe8dff61a6dc = Blob(26);
+
+// Prefix-hash one of these to get a BotTokenSeed. Use the same parameters
+// as BackupSeed, but with a different encoding scheme.
+typedef BotTokenSeed @0xe701048d6c6ba4ba = Blob(26);
 
 enum BackupKeyVersion {
     V1 @1;
