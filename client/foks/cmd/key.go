@@ -166,6 +166,10 @@ func keyCmd(m libclient.MetaContext) *cobra.Command {
 		"This command is a synonym for `foks bkp use`.")
 	top.AddCommand(useBkp)
 
+	useBotKey := botTokenUseCmd(m, "use-bot-token", []string{"use-bot"},
+		"This command is a synonym for `foks bot-token use`.")
+	top.AddCommand(useBotKey)
+
 	// Add device commands as subcommands
 	dev := deviceCmd(m)
 	top.AddCommand(dev)

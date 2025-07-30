@@ -90,7 +90,7 @@ func TestBotTokenNewAndLoad(t *testing.T) {
 		Terminal: &termui,
 	}
 
-	d.runCmdWithUIs(t, uis, "bot-token", "load",
+	d.runCmdWithUIs(t, uis, "key", "use-bot-token",
 		"--host", host.String(),
 	)
 	require.Equal(t, 0, len(termui.inputLine))
