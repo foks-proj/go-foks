@@ -15,6 +15,8 @@ changelog:
         closes: ["#173"]
       - desc: add bot-token keys, which are like backup keys, but special-cased for bots
         closes: ["#172"]
+      - desc: wrap backup keys on narrow terminals in `key new`
+        closes: ["#148"]
   - version: 0.1.1
     urgency: low
     stable: true

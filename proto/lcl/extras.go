@@ -188,6 +188,10 @@ func (s BackupHESP) Flatten() BackupHESPString {
 	return BackupHESPString(strings.Join(s, " "))
 }
 
+func (s BackupHESPString) String() string {
+	return string(s)
+}
+
 func (s SKMWK) String() string                  { return lib.B62Encode(s[:]) }
 func (s SKMWK) MarshalJSON() ([]byte, error)    { return json.Marshal(s.String()) }
 func (s *SKMWK) UnmarshalJSON(dat []byte) error { return lib.UnmarshalJsonFixed((*s)[:], dat) }

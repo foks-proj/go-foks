@@ -21,6 +21,7 @@ import (
 	"github.com/foks-proj/go-foks/client/libclient"
 	"github.com/foks-proj/go-foks/client/libyubi"
 	"github.com/foks-proj/go-foks/lib/core"
+	"github.com/foks-proj/go-foks/lib/libterm"
 	"github.com/foks-proj/go-foks/proto/lcl"
 	proto "github.com/foks-proj/go-foks/proto/lib"
 )
@@ -1568,10 +1569,17 @@ func (s stateFinishNKWNewBackupKey) view(sfb stateFinishBase) string {
 		return fmt.Sprintf("\n %s\n", ErrorStyle.Render("Unexpected state: no backup key"))
 	}
 
+	hespFlat := hesp.Flatten()
+	hespFlatWrapped := libterm.MustRewrapSense(hespFlat.String(), 6)
+
+	instr := libterm.MustRewrapSense(
+		"Here is your key. Please write it down and keep it in a safe place:",
+		2)
+
 	var b strings.Builder
 	fmt.Fprintf(&b, "%s\n", h2Style.Render("💾 New Backup Key Activated 💾"))
-	fmt.Fprintf(&b, " Here is your key. Please write it down and keep it in a safe place:\n")
-	fmt.Fprintf(&b, "\n   %s\n\n", strings.Join(*hesp, " "))
+	fmt.Fprintf(&b, "%s\n", instr)
+	fmt.Fprintf(&b, "\n%s\n\n", hespFlatWrapped)
 	fmt.Fprintf(&b, "\n%s\n\n", pushAnyKeyToExit())
 	return b.String()
 }
