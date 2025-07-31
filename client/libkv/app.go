@@ -8,6 +8,7 @@ import (
 
 	"github.com/foks-proj/go-foks/client/libclient"
 	"github.com/foks-proj/go-foks/lib/core"
+	"github.com/foks-proj/go-foks/proto/lcl"
 	proto "github.com/foks-proj/go-foks/proto/lib"
 )
 
@@ -21,7 +22,7 @@ type App struct {
 	parent *libclient.UserContext
 	user   *Minder
 	teams  map[proto.FQTeam]*Minder
-	rest   *RestServer
+	rest   *RESTServer
 }
 
 func NewApp(u *libclient.UserContext) *App {
@@ -80,4 +81,15 @@ func InitReq(m MetaContext, actingAs *proto.FQTeamParsed) (*Minder, error) {
 		return nil, err
 	}
 	return ret, nil
+}
+
+func StartRestServer(
+	m MetaContext,
+	arg lcl.ClientKVRestStartArg,
+) error {
+	minder, err := InitReq(m, arg.Cfg.ActingAs)
+	if err != nil {
+		return err
+	}
+	return minder.StartRESTServer(m, arg)
 }

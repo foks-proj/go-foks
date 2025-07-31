@@ -999,6 +999,12 @@ type KVNoentOnWriteError struct {
 	Path proto.KVPath
 }
 
+type KVRestAlreadyRunningError struct{}
+
+func (k KVRestAlreadyRunningError) Error() string {
+	return "REST API server already running"
+}
+
 // ErrorAsWriteError takes an error and sees if we can turn it into an error that
 // pertains to KVWrites. If so, it will transform the error. Currently works for:
 //
