@@ -21,6 +21,7 @@ type App struct {
 	parent *libclient.UserContext
 	user   *Minder
 	teams  map[proto.FQTeam]*Minder
+	rest   *RestServer
 }
 
 func NewApp(u *libclient.UserContext) *App {
