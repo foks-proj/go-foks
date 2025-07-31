@@ -5,7 +5,7 @@ tmp_dir = "tmp"
 [build]
   bin = "none"
   cmd = "make srv-install"
-  full_bin = "scripts/pm2.sh restart web"
+  full_bin = "scripts/srv/pm2.sh restart web"
   delay = 0
   exclude_dir = [ "server/web/frontend/node_modules", "test/", "integration-tests", "client", "play"]
   exclude_file = [ "server/web/static/js/foks.min.js" ]

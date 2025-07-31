@@ -165,11 +165,11 @@ templ vhostStage1or2(a *lib.AdminPageData, r *lib.VHostRow) {
 					<div class="text-left">
 						Please set a CNAME mapping from:
 					</div>
-					<div class="text-center my-1 py-2 bg-white">
+					<div class="text-center my-1 py-2 bg-white dark:bg-slate-700">
 						<span class="font-mono">{ r.Name.String() }</span>
 					</div>
 					<div class="text-left">to:</div>
-					<div class="text-center my-1 py-2 bg-white">
+					<div class="text-center my-1 py-2 bg-white dark:bg-slate-700">
 						<span class="font-mono" id="hosting-cname">{ r.Stem.String() }</span>
 					</div>
 					<div class="text-left">
@@ -200,7 +200,7 @@ templ vhostStage1or2(a *lib.AdminPageData, r *lib.VHostRow) {
 			<div class="text-center">
 				<button
 					id="button-check-vhost"
-					class="rounded-sm border border-green-500 bg-green-100 p-1 text-center px-3 text-sm mb-1 w-32 h-8 responsive-button plan-button whitespace-nowrap"
+					class="rounded-sm border border-green-500 bg-green-100 dark:bg-green-700 p-1 text-center px-3 text-sm mb-1 w-32 h-8 responsive-button plan-button whitespace-nowrap"
 					hx-get={ "/admin/vhost/" + r.VHostID.String() + "/check" }
 					hx-swap="innerHTML"
 					hx-target="main#admin-main"

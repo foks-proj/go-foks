@@ -426,7 +426,7 @@ func vhostStage1or2(a *lib.AdminPageData, r *lib.VHostRow) templ.Component {
 		}
 		switch {
 		case r.Stage == proto.HostBuildStage_Stage1 && !r.IsCanned:
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 29, "<div class=\"text-left\">Please set a CNAME mapping from:</div><div class=\"text-center my-1 py-2 bg-white\"><span class=\"font-mono\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 29, "<div class=\"text-left\">Please set a CNAME mapping from:</div><div class=\"text-center my-1 py-2 bg-white dark:bg-slate-700\"><span class=\"font-mono\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -439,7 +439,7 @@ func vhostStage1or2(a *lib.AdminPageData, r *lib.VHostRow) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 30, "</span></div><div class=\"text-left\">to:</div><div class=\"text-center my-1 py-2 bg-white\"><span class=\"font-mono\" id=\"hosting-cname\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 30, "</span></div><div class=\"text-left\">to:</div><div class=\"text-center my-1 py-2 bg-white dark:bg-slate-700\"><span class=\"font-mono\" id=\"hosting-cname\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -493,7 +493,7 @@ func vhostStage1or2(a *lib.AdminPageData, r *lib.VHostRow) templ.Component {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 36, "</div><div class=\"grid grid-cols-2 gap-3 text-sm\"><div class=\"text-center\"><button id=\"button-check-vhost\" class=\"rounded-sm border border-green-500 bg-green-100 p-1 text-center px-3 text-sm mb-1 w-32 h-8 responsive-button plan-button whitespace-nowrap\" hx-get=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 36, "</div><div class=\"grid grid-cols-2 gap-3 text-sm\"><div class=\"text-center\"><button id=\"button-check-vhost\" class=\"rounded-sm border border-green-500 bg-green-100 dark:bg-green-700 p-1 text-center px-3 text-sm mb-1 w-32 h-8 responsive-button plan-button whitespace-nowrap\" hx-get=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

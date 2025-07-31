@@ -92,6 +92,8 @@ getargs() {
             shift
             server_mode="$1"
             case "$server_mode" in
+                hosting-platform)
+                    server_mode="hosting_platform" ;;
                 standalone|hosting_platform) ;;
                 *) whoops "Invalid server mode: $server_mode" ;;
             esac
@@ -225,6 +227,11 @@ getargs() {
         -*=*)
             echo "Cannot use --a=b style arguments; use --a b instead"
             exit 1
+            ;;
+        *)
+            echo "Unknown argument: $1"
+            exit 1
+            ;;
         esac
         shift
     done
@@ -249,15 +256,18 @@ check_config() {
         [ -z "$stripe_pk" ] && whoops "stripe_pk must be specified in server_mode=hosting_platform"
         [ -z "$stripe_sk" ] && whoops "stripe_sk must be specified in server_mode=hosting_platform"
         [ -z "$stripe_whsec" ] && whoops "stripe_whsec must be specified in server_mode=hosting_platform"
-        [ ${#canned_domains[@]} -eq 0 ] && whoops "canned_domains must be specified in server_mode=hosting_platform"
+        [ ${#canned_domains[@]} -eq 0 ] && whoops "canned_domain must be specified in server_mode=hosting_platform"
         [ -z "$vanity_hosting_domain" ] && whoops "vanity_hosting_domain must be specified in server_mode=hosting_platform"
+        [ "$big_top_hostname" == "$mgmt_hostname" ] && whoops "big_top_hostname and mgmt_hostname must be different in server_mode=hosting_platform"
+        [ "$big_top_hostname" == "$base_hostname" ] && whoops "big_top_hostname and base_hostname must be different in server_mode=hosting_platform"
+        [ "$mgmt_hostname" == "$base_hostname" ] && whoops "mgmt_hostname and base_hostname must be different in server_mode=hosting_platform"
     else
         [ -n "$big_top_hostname" ] && whoops "big_top_hostname only needed in server_mode=hosting_platform"
         [ -n "$mgmt_hostname" ] && whoops "mgmt_hostname only needed in server_mode=hosting_platform"
         [ -n "$stripe_pk" ] && whoops "stripe_pk only needed in server_mode=hosting_platform"
         [ -n "$stripe_sk" ] && whoops "stripe_sk only needed in server_mode=hosting_platform"
         [ -n "$stripe_whsec" ] && whoops "stripe_whsec only needed in server_mode=hosting_platform"
-        [ ${#canned_domains[@]} -ne 0 ] && whoops "canned_domains only needed in server_mode=hosting_platform"
+        [ ${#canned_domains[@]} -ne 0 ] && whoops "canned_domain only needed in server_mode=hosting_platform"
         [ -n "$vanity_hosting_domain" ] && whoops "vanity_hosting_domain only needed in server_mode=hosting_platform"
     fi
     if [ "$network_mode" != "dev" ]; then 
@@ -699,8 +709,7 @@ make_server_local() {
         # in dev or test, we might want local changes made here to be committed
         ln -fs $(realpath ${srcdir}/conf/srv/foks.jsonnet) ${topdir_srv}/conf/
         ln -fs $(realpath ${srcdir}/scripts/srv/ecosystem.config.js) ${topdir_srv}/
-        ln -fs $(realpath ${srcdir}/scripts/srv/run-air.sh) ${topdir_srv}/
-        ln -fs $(realpath ${srcdir}/scripts/srv/pm2.sh) ${topdir_srv}/
+        ln -fs $(realpath ${srcdir}/scripts/srv/run-air.sh) ${topdir_srv}/scripts/
     fi
 
     if [ "$network_mode" = "dev" ]; then
