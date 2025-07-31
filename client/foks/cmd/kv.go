@@ -155,6 +155,56 @@ func quickKVCmd(
 	top.AddCommand(cmd)
 }
 
+func kvRest(m libclient.MetaContext, top *cobra.Command) {
+	var port int
+	var bindIP string
+	var authToken string
+	quickKVCmd(m, top,
+		"rest", nil,
+		"key-value store REST API",
+		libterm.MustRewrapSense(`Run a local loopback server that serves a REST API
+into the key-value store.
+
+Via options, specify a local port to bind to, an IP address to bind to,
+and if desired, an authentication token to require of clients. This token
+can be specified on the command line with the --auth-token flag, 
+via the environment variable FOKS_KV_REST_AUTH_TOKEN, or with a file
+via the --auth-token-file flag. If no token is specified, no authentication
+is required.
+
+The KV workspace exposed is dictated by the currently logged-in user,
+and via the --team flag if it should act on beahlf of a team. If the
+logged-in user changes, the KV workspace does not change.
+
+Rest commands are:
+
+   GET /v0/path/to/a/key -- get a key-value store entry
+   PUT /v0/path/to/a/key -- put a key-value store entry (value is in the body)
+   DELETE /v0/path/to/a/key -- delete a key-value store entry
+
+Specify '/v0' in all cases to version the API and to pin the API
+to Version 0 (the current version). Future versions of the API
+may change the semantics of the API.
+
+For commands like PUT that do mutations, the --mkdir-p flag is assumed,
+so all parent directories are created if they do not exist.
+`, 0),
+		quickKVOpts{},
+		func(cmd *cobra.Command) {
+			cmd.Flags().IntVarP(&port, "port", "p", 8080, "port to bind to (default 8080)")
+			cmd.Flags().StringVarP(&bindIP, "bind-ip", "b", "127.0.0.1", "address to bind to (default 127.0.0.1)")
+			cmd.Flags().StringVar(&authToken, "auth-token", "", "authentication token to require of clients (default is no authentication)")
+		},
+		func(arg []string, cfg lcl.KVConfig, cli lcl.KVClient) error {
+			err := PartingConsoleMessage(m)
+			if err != nil {
+				return err
+			}
+			return core.NotImplementedError{}
+		},
+	)
+}
+
 func kvCmd(m libclient.MetaContext) *cobra.Command {
 	top := &cobra.Command{
 		Use:          "kv",
@@ -174,6 +224,7 @@ func kvCmd(m libclient.MetaContext) *cobra.Command {
 	kvRm(m, top)
 	kvReadlink(m, top)
 	kvGetUsage(m, top)
+	kvRest(m, top)
 	return top
 }
 
