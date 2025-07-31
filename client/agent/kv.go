@@ -7,6 +7,7 @@ import (
 	"context"
 
 	"github.com/foks-proj/go-foks/client/libkv"
+	"github.com/foks-proj/go-foks/lib/core"
 	"github.com/foks-proj/go-foks/proto/lcl"
 	proto "github.com/foks-proj/go-foks/proto/lib"
 	"github.com/foks-proj/go-foks/proto/rem"
@@ -244,6 +245,19 @@ func (c *AgentConn) ClientKVUsage(
 		return ret, err
 	}
 	return *tmp, nil
+}
+
+func (c *AgentConn) ClientKVRestStart(
+	ctx context.Context,
+	arg lcl.ClientKVRestStartArg,
+) error {
+	return core.NotImplementedError{}
+}
+
+func (c *AgentConn) ClientKVRestStop(
+	ctx context.Context,
+) error {
+	return core.NotImplementedError{}
 }
 
 var _ lcl.KVInterface = (*AgentConn)(nil)

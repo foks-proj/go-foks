@@ -6,6 +6,7 @@ package cmd
 import (
 	"bytes"
 	"io"
+	"net"
 	"os"
 	"time"
 	"unicode/utf8"
@@ -156,13 +157,11 @@ func quickKVCmd(
 }
 
 func kvRest(m libclient.MetaContext, top *cobra.Command) {
-	var port int
-	var bindIP string
-	var authToken string
-	quickKVCmd(m, top,
-		"rest", nil,
-		"key-value store REST API",
-		libterm.MustRewrapSense(`Run a local loopback server that serves a REST API
+
+	restTop := &cobra.Command{
+		Use:   "rest",
+		Short: "key-value store REST API commands",
+		Long: libterm.MustRewrapSense(`Run a local loopback server that serves a REST API
 into the key-value store.
 
 Via options, specify a local port to bind to, an IP address to bind to,
@@ -174,7 +173,7 @@ is required.
 
 The KV workspace exposed is dictated by the currently logged-in user,
 and via the --team flag if it should act on beahlf of a team. If the
-logged-in user changes, the KV workspace does not change.
+logged-in user changes, the REST loopback server will shutdown.
 
 Rest commands are:
 
@@ -189,12 +188,65 @@ may change the semantics of the API.
 For commands like PUT that do mutations, the --mkdir-p flag is assumed,
 so all parent directories are created if they do not exist.
 `, 0),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return subcommandHelp(cmd, args)
+		},
+	}
+
+	var port int
+	var bindIP string
+	var authToken string
+	quickKVCmd(m, restTop,
+		"start", nil,
+		"start key-value store REST API",
+		`Start a key-value store REST API server; the FOKS agent will run 
+the server in the background, and this command will return immediately.`,
 		quickKVOpts{},
 		func(cmd *cobra.Command) {
 			cmd.Flags().IntVarP(&port, "port", "p", 8080, "port to bind to (default 8080)")
 			cmd.Flags().StringVarP(&bindIP, "bind-ip", "b", "127.0.0.1", "address to bind to (default 127.0.0.1)")
 			cmd.Flags().StringVar(&authToken, "auth-token", "", "authentication token to require of clients (default is no authentication)")
 		},
+		func(arg []string, cfg lcl.KVConfig, cli lcl.KVClient) error {
+			if len(arg) != 0 {
+				return ArgsError("expected no arguments")
+			}
+			err := PartingConsoleMessage(m)
+			if err != nil {
+				return err
+			}
+			if bindIP != "" {
+				ip := net.ParseIP(bindIP)
+				if ip == nil {
+					return ArgsError("invalid bind IP address")
+				}
+			}
+			startArg := lcl.ClientKVRestStartArg{
+				Cfg:  cfg,
+				Port: proto.Port(port),
+			}
+			if bindIP != "" {
+				tmp := proto.TCPAddr(bindIP)
+				startArg.BindIP = &tmp
+			}
+			if authToken != "" {
+				tmp := lcl.KVRestAuthToken(authToken)
+				startArg.AuthToken = &tmp
+			}
+			err = cli.ClientKVRestStart(m.Ctx(), startArg)
+			if err != nil {
+				return err
+			}
+			return PartingConsoleMessage(m)
+		},
+	)
+
+	quickKVCmd(m, restTop,
+		"stop", nil,
+		"stop key-value store REST API",
+		`Stop the key-value store REST API server`,
+		quickKVOpts{},
+		nil,
 		func(arg []string, cfg lcl.KVConfig, cli lcl.KVClient) error {
 			err := PartingConsoleMessage(m)
 			if err != nil {
@@ -203,6 +255,8 @@ so all parent directories are created if they do not exist.
 			return core.NotImplementedError{}
 		},
 	)
+
+	top.AddCommand(restTop)
 }
 
 func kvCmd(m libclient.MetaContext) *cobra.Command {
