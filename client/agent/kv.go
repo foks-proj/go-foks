@@ -246,4 +246,29 @@ func (c *AgentConn) ClientKVUsage(
 	return *tmp, nil
 }
 
+func (c *AgentConn) ClientKVRestStart(
+	ctx context.Context,
+	arg lcl.ClientKVRestStartArg,
+) (
+	lcl.KVRestListenInfo,
+	error,
+) {
+	var zed lcl.KVRestListenInfo
+	ret, err := libkv.StartRestServer(
+		libkv.NewMetaContext(c.MetaContext(ctx)),
+		arg,
+	)
+	if err != nil {
+		return zed, err
+	}
+	return *ret, nil
+}
+
+func (c *AgentConn) ClientKVRestStop(
+	ctx context.Context,
+) error {
+	return libkv.StopRestServer(
+		libkv.NewMetaContext(c.MetaContext(ctx)))
+}
+
 var _ lcl.KVInterface = (*AgentConn)(nil)

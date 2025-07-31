@@ -195,3 +195,7 @@ func (s BackupHESPString) String() string {
 func (s SKMWK) String() string                  { return lib.B62Encode(s[:]) }
 func (s SKMWK) MarshalJSON() ([]byte, error)    { return json.Marshal(s.String()) }
 func (s *SKMWK) UnmarshalJSON(dat []byte) error { return lib.UnmarshalJsonFixed((*s)[:], dat) }
+
+func (a KVRestAuthToken) String() string {
+	return string(a)
+}

@@ -1228,6 +1228,80 @@ func (c *ChunkNoncePayload) GetTypeUniqueID() rpc.TypeUniqueID {
 }
 func (c *ChunkNoncePayload) Bytes() []byte { return nil }
 
+type KVRestListenInfo struct {
+	Port lib.Port
+}
+type KVRestListenInfoInternal__ struct {
+	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
+	Port    *lib.PortInternal__
+}
+
+func (k KVRestListenInfoInternal__) Import() KVRestListenInfo {
+	return KVRestListenInfo{
+		Port: (func(x *lib.PortInternal__) (ret lib.Port) {
+			if x == nil {
+				return ret
+			}
+			return x.Import()
+		})(k.Port),
+	}
+}
+func (k KVRestListenInfo) Export() *KVRestListenInfoInternal__ {
+	return &KVRestListenInfoInternal__{
+		Port: k.Port.Export(),
+	}
+}
+func (k *KVRestListenInfo) Encode(enc rpc.Encoder) error {
+	return enc.Encode(k.Export())
+}
+
+func (k *KVRestListenInfo) Decode(dec rpc.Decoder) error {
+	var tmp KVRestListenInfoInternal__
+	err := dec.Decode(&tmp)
+	if err != nil {
+		return err
+	}
+	*k = tmp.Import()
+	return nil
+}
+
+func (k *KVRestListenInfo) Bytes() []byte { return nil }
+
+type KVRestAuthToken string
+type KVRestAuthTokenInternal__ string
+
+func (k KVRestAuthToken) Export() *KVRestAuthTokenInternal__ {
+	tmp := ((string)(k))
+	return ((*KVRestAuthTokenInternal__)(&tmp))
+}
+func (k KVRestAuthTokenInternal__) Import() KVRestAuthToken {
+	tmp := (string)(k)
+	return KVRestAuthToken((func(x *string) (ret string) {
+		if x == nil {
+			return ret
+		}
+		return *x
+	})(&tmp))
+}
+
+func (k *KVRestAuthToken) Encode(enc rpc.Encoder) error {
+	return enc.Encode(k.Export())
+}
+
+func (k *KVRestAuthToken) Decode(dec rpc.Decoder) error {
+	var tmp KVRestAuthTokenInternal__
+	err := dec.Decode(&tmp)
+	if err != nil {
+		return err
+	}
+	*k = tmp.Import()
+	return nil
+}
+
+func (k KVRestAuthToken) Bytes() []byte {
+	return nil
+}
+
 var KVProtocolID rpc.ProtocolUniqueID = rpc.ProtocolUniqueID(0xddf3c319)
 
 type ClientKVMkdirArg struct {
@@ -1955,6 +2029,133 @@ func (c *ClientKVUsageArg) Decode(dec rpc.Decoder) error {
 
 func (c *ClientKVUsageArg) Bytes() []byte { return nil }
 
+type ClientKVRestStartArg struct {
+	Cfg       KVConfig
+	Port      *lib.Port
+	BindIP    *lib.TCPAddr
+	AuthToken *KVRestAuthToken
+}
+type ClientKVRestStartArgInternal__ struct {
+	_struct   struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
+	Cfg       *KVConfigInternal__
+	Port      *lib.PortInternal__
+	BindIP    *lib.TCPAddrInternal__
+	AuthToken *KVRestAuthTokenInternal__
+}
+
+func (c ClientKVRestStartArgInternal__) Import() ClientKVRestStartArg {
+	return ClientKVRestStartArg{
+		Cfg: (func(x *KVConfigInternal__) (ret KVConfig) {
+			if x == nil {
+				return ret
+			}
+			return x.Import()
+		})(c.Cfg),
+		Port: (func(x *lib.PortInternal__) *lib.Port {
+			if x == nil {
+				return nil
+			}
+			tmp := (func(x *lib.PortInternal__) (ret lib.Port) {
+				if x == nil {
+					return ret
+				}
+				return x.Import()
+			})(x)
+			return &tmp
+		})(c.Port),
+		BindIP: (func(x *lib.TCPAddrInternal__) *lib.TCPAddr {
+			if x == nil {
+				return nil
+			}
+			tmp := (func(x *lib.TCPAddrInternal__) (ret lib.TCPAddr) {
+				if x == nil {
+					return ret
+				}
+				return x.Import()
+			})(x)
+			return &tmp
+		})(c.BindIP),
+		AuthToken: (func(x *KVRestAuthTokenInternal__) *KVRestAuthToken {
+			if x == nil {
+				return nil
+			}
+			tmp := (func(x *KVRestAuthTokenInternal__) (ret KVRestAuthToken) {
+				if x == nil {
+					return ret
+				}
+				return x.Import()
+			})(x)
+			return &tmp
+		})(c.AuthToken),
+	}
+}
+func (c ClientKVRestStartArg) Export() *ClientKVRestStartArgInternal__ {
+	return &ClientKVRestStartArgInternal__{
+		Cfg: c.Cfg.Export(),
+		Port: (func(x *lib.Port) *lib.PortInternal__ {
+			if x == nil {
+				return nil
+			}
+			return (*x).Export()
+		})(c.Port),
+		BindIP: (func(x *lib.TCPAddr) *lib.TCPAddrInternal__ {
+			if x == nil {
+				return nil
+			}
+			return (*x).Export()
+		})(c.BindIP),
+		AuthToken: (func(x *KVRestAuthToken) *KVRestAuthTokenInternal__ {
+			if x == nil {
+				return nil
+			}
+			return (*x).Export()
+		})(c.AuthToken),
+	}
+}
+func (c *ClientKVRestStartArg) Encode(enc rpc.Encoder) error {
+	return enc.Encode(c.Export())
+}
+
+func (c *ClientKVRestStartArg) Decode(dec rpc.Decoder) error {
+	var tmp ClientKVRestStartArgInternal__
+	err := dec.Decode(&tmp)
+	if err != nil {
+		return err
+	}
+	*c = tmp.Import()
+	return nil
+}
+
+func (c *ClientKVRestStartArg) Bytes() []byte { return nil }
+
+type ClientKVRestStopArg struct {
+}
+type ClientKVRestStopArgInternal__ struct {
+	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
+}
+
+func (c ClientKVRestStopArgInternal__) Import() ClientKVRestStopArg {
+	return ClientKVRestStopArg{}
+}
+func (c ClientKVRestStopArg) Export() *ClientKVRestStopArgInternal__ {
+	return &ClientKVRestStopArgInternal__{}
+}
+func (c *ClientKVRestStopArg) Encode(enc rpc.Encoder) error {
+	return enc.Encode(c.Export())
+}
+
+func (c *ClientKVRestStopArg) Decode(dec rpc.Decoder) error {
+	var tmp ClientKVRestStopArgInternal__
+	err := dec.Decode(&tmp)
+	if err != nil {
+		return err
+	}
+	*c = tmp.Import()
+	return nil
+}
+
+func (c *ClientKVRestStopArg) Bytes() []byte { return nil }
+
 type KVInterface interface {
 	ClientKVMkdir(context.Context, ClientKVMkdirArg) (lib.DirID, error)
 	ClientKVPutFirst(context.Context, ClientKVPutFirstArg) (lib.KVNodeID, error)
@@ -1969,6 +2170,8 @@ type KVInterface interface {
 	ClientKVList(context.Context, ClientKVListArg) (CliKVListRes, error)
 	ClientKVRm(context.Context, ClientKVRmArg) error
 	ClientKVUsage(context.Context, KVConfig) (lib.KVUsage, error)
+	ClientKVRestStart(context.Context, ClientKVRestStartArg) (KVRestListenInfo, error)
+	ClientKVRestStop(context.Context) error
 	ErrorWrapper() func(error) lib.Status
 	CheckArgHeader(ctx context.Context, h Header) error
 	MakeResHeader() Header
@@ -2284,6 +2487,48 @@ func (c KVClient) ClientKVUsage(ctx context.Context, cfg KVConfig) (res lib.KVUs
 		}
 	}
 	res = tmp.Data.Import()
+	return
+}
+func (c KVClient) ClientKVRestStart(ctx context.Context, arg ClientKVRestStartArg) (res KVRestListenInfo, err error) {
+	warg := &rpc.DataWrap[Header, *ClientKVRestStartArgInternal__]{
+		Data: arg.Export(),
+	}
+	if c.MakeArgHeader != nil {
+		warg.Header = c.MakeArgHeader()
+	}
+	var tmp rpc.DataWrap[Header, KVRestListenInfoInternal__]
+	err = c.Cli.Call2(ctx, rpc.NewMethodV2(KVProtocolID, 13, "KV.clientKVRestStart"), warg, &tmp, 0*time.Millisecond, kVErrorUnwrapperAdapter{h: c.ErrorUnwrapper})
+	if err != nil {
+		return
+	}
+	if c.CheckResHeader != nil {
+		err = c.CheckResHeader(ctx, tmp.Header)
+		if err != nil {
+			return
+		}
+	}
+	res = tmp.Data.Import()
+	return
+}
+func (c KVClient) ClientKVRestStop(ctx context.Context) (err error) {
+	var arg ClientKVRestStopArg
+	warg := &rpc.DataWrap[Header, *ClientKVRestStopArgInternal__]{
+		Data: arg.Export(),
+	}
+	if c.MakeArgHeader != nil {
+		warg.Header = c.MakeArgHeader()
+	}
+	var tmp rpc.DataWrap[Header, interface{}]
+	err = c.Cli.Call2(ctx, rpc.NewMethodV2(KVProtocolID, 14, "KV.clientKVRestStop"), warg, &tmp, 0*time.Millisecond, kVErrorUnwrapperAdapter{h: c.ErrorUnwrapper})
+	if err != nil {
+		return
+	}
+	if c.CheckResHeader != nil {
+		err = c.CheckResHeader(ctx, tmp.Header)
+		if err != nil {
+			return
+		}
+	}
 	return
 }
 func KVProtocol(i KVInterface) rpc.ProtocolV2 {
@@ -2663,6 +2908,62 @@ func KVProtocol(i KVInterface) rpc.ProtocolV2 {
 					},
 				},
 				Name: "clientKVUsage",
+			},
+			13: {
+				ServeHandlerDescription: rpc.ServeHandlerDescription{
+					MakeArg: func() interface{} {
+						var ret rpc.DataWrap[Header, *ClientKVRestStartArgInternal__]
+						return &ret
+					},
+					Handler: func(ctx context.Context, args interface{}) (interface{}, error) {
+						typedWrappedArg, ok := args.(*rpc.DataWrap[Header, *ClientKVRestStartArgInternal__])
+						if !ok {
+							err := rpc.NewTypeError((*rpc.DataWrap[Header, *ClientKVRestStartArgInternal__])(nil), args)
+							return nil, err
+						}
+						if err := i.CheckArgHeader(ctx, typedWrappedArg.Header); err != nil {
+							return nil, err
+						}
+						typedArg := typedWrappedArg.Data
+						tmp, err := i.ClientKVRestStart(ctx, (typedArg.Import()))
+						if err != nil {
+							return nil, err
+						}
+						ret := rpc.DataWrap[Header, *KVRestListenInfoInternal__]{
+							Data:   tmp.Export(),
+							Header: i.MakeResHeader(),
+						}
+						return &ret, nil
+					},
+				},
+				Name: "clientKVRestStart",
+			},
+			14: {
+				ServeHandlerDescription: rpc.ServeHandlerDescription{
+					MakeArg: func() interface{} {
+						var ret rpc.DataWrap[Header, *ClientKVRestStopArgInternal__]
+						return &ret
+					},
+					Handler: func(ctx context.Context, args interface{}) (interface{}, error) {
+						typedWrappedArg, ok := args.(*rpc.DataWrap[Header, *ClientKVRestStopArgInternal__])
+						if !ok {
+							err := rpc.NewTypeError((*rpc.DataWrap[Header, *ClientKVRestStopArgInternal__])(nil), args)
+							return nil, err
+						}
+						if err := i.CheckArgHeader(ctx, typedWrappedArg.Header); err != nil {
+							return nil, err
+						}
+						err := i.ClientKVRestStop(ctx)
+						if err != nil {
+							return nil, err
+						}
+						ret := rpc.DataWrap[Header, interface{}]{
+							Header: i.MakeResHeader(),
+						}
+						return &ret, nil
+					},
+				},
+				Name: "clientKVRestStop",
 			},
 		},
 		WrapError: KVMakeGenericErrorWrapper(i.ErrorWrapper()),

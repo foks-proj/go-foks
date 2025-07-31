@@ -10,7 +10,7 @@ typedef DirKeySeed @0x8aece6566b244356  = SecretSeed32;    // a per-directory ke
 typedef ShortPartyID = Blob(17); // First 17 bytes of a PartyID, shortened to save space in the DB
 
 typedef KVMacKey = HMACKey;                       // derived from one of the two seeds above, for HMAC
-typedef KVBoxKey = SecretBoxKey;                  // derived from one fo the two seeds above, for SecretBox
+typedef KVBoxKey = SecretBoxKey;                  // derived from one of the two seeds above, for SecretBox
 
 typedef KVNamePlaintext @0x9f9fe83fe9f0d475 = Text;
 

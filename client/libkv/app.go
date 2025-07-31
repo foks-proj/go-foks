@@ -8,6 +8,7 @@ import (
 
 	"github.com/foks-proj/go-foks/client/libclient"
 	"github.com/foks-proj/go-foks/lib/core"
+	"github.com/foks-proj/go-foks/proto/lcl"
 	proto "github.com/foks-proj/go-foks/proto/lib"
 )
 
@@ -21,6 +22,7 @@ type App struct {
 	parent *libclient.UserContext
 	user   *Minder
 	teams  map[proto.FQTeam]*Minder
+	rest   *RESTServer
 }
 
 func NewApp(u *libclient.UserContext) *App {
@@ -65,7 +67,7 @@ func (a *App) Minder(m MetaContext, actingAs *proto.FQTeamParsed) (*Minder, erro
 	return ret, nil
 }
 
-func InitReq(m MetaContext, actingAs *proto.FQTeamParsed) (*Minder, error) {
+func appFromMeta(m MetaContext) (*App, error) {
 	au := m.G().ActiveUser()
 	if au == nil {
 		return nil, core.NoActiveUserError{}
@@ -74,9 +76,41 @@ func InitReq(m MetaContext, actingAs *proto.FQTeamParsed) (*Minder, error) {
 	if err != nil {
 		return nil, err
 	}
+	return app, nil
+}
+
+func InitReq(m MetaContext, actingAs *proto.FQTeamParsed) (*Minder, error) {
+	app, err := appFromMeta(m)
+	if err != nil {
+		return nil, err
+	}
 	ret, err := app.Minder(m, actingAs)
 	if err != nil {
 		return nil, err
 	}
 	return ret, nil
+}
+
+func StartRestServer(
+	m MetaContext,
+	arg lcl.ClientKVRestStartArg,
+) (
+	*lcl.KVRestListenInfo,
+	error,
+) {
+	app, err := appFromMeta(m)
+	if err != nil {
+		return nil, err
+	}
+	return app.StartRESTServer(m, arg)
+}
+
+func StopRestServer(
+	m MetaContext,
+) error {
+	app, err := appFromMeta(m)
+	if err != nil {
+		return err
+	}
+	return app.StopRESTServer(m)
 }
