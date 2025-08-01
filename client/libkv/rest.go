@@ -16,6 +16,7 @@ import (
 type RESTArgs struct {
 	ActingAs *proto.FQTeamParsed
 	Path     proto.KVPath
+	Roles    proto.RolePairOpt
 }
 
 type RESTer interface {
@@ -33,6 +34,186 @@ type RESTServer struct {
 	srv *http.Server
 }
 
+type httpError struct {
+	code int
+	msg  string
+	err  error
+}
+
+func (e httpError) Error() string {
+	return fmt.Sprintf("HTTP error %d: %s", e.code, e.msg)
+}
+
+type restReqV0 struct {
+	path string
+	srv  *RESTServer
+	w    http.ResponseWriter
+	req  *http.Request
+	arg  lcl.ClientKVRestStartArg
+	eng  RESTer
+	ra   RESTArgs
+}
+
+func (r *restReqV0) auth(m libclient.MetaContext) error {
+	if r.arg.AuthToken == nil {
+		return nil
+	}
+	auth := r.req.Header.Get("Authorization")
+	expected := "Basic " + r.arg.AuthToken.String()
+	if auth != expected {
+		return &httpError{
+			code: http.StatusUnauthorized,
+			msg:  "unauthorized",
+		}
+	}
+	return nil
+}
+
+func (r *restReqV0) parsePath(m libclient.MetaContext) error {
+	unversionedPath := r.path
+	teamOrBlank, targetPath, found := strings.Cut(unversionedPath, "/")
+	if !found {
+		return httpError{
+			code: http.StatusBadRequest,
+			msg:  "invalid path; no target specified",
+		}
+	}
+	var actingAs *proto.FQTeamParsed
+	switch teamOrBlank {
+	case "":
+		return httpError{
+			code: http.StatusBadRequest,
+			msg:  "invalid path; no user or team specified",
+		}
+	case "-":
+		// acting as the current user, noop
+	default:
+		// parse the team etc
+		fqt, err := core.ParseFQTeam(proto.FQTeamString(teamOrBlank))
+		if err != nil {
+			return httpError{msg: "invalid team specified, failed to parse", code: http.StatusBadRequest}
+		}
+		actingAs = fqt
+	}
+	r.ra.ActingAs = actingAs
+	r.ra.Path = proto.KVPath("/" + targetPath)
+
+	parseRole := func(paramKey string) (*proto.Role, error) {
+		raw := r.req.URL.Query().Get(paramKey)
+		if len(raw) == 0 {
+			return nil, nil // no role specified
+		}
+		p := proto.RoleString(raw)
+		role, err := p.Parse()
+		if err != nil {
+			return nil, httpError{
+				msg:  fmt.Sprintf("invalid role specified for %s", paramKey),
+				code: http.StatusBadRequest,
+			}
+		}
+		return role, nil
+	}
+	var err error
+	r.ra.Roles.Read, err = parseRole("read")
+	if err != nil {
+		return err
+	}
+	r.ra.Roles.Write, err = parseRole("write")
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (r *restReqV0) dispatch(m libclient.MetaContext) error {
+
+	switch r.req.Method {
+	case "GET":
+		rc, err := r.eng.Get(m, r.ra)
+		if err != nil {
+			return httpError{
+				err:  err,
+				code: http.StatusInternalServerError,
+			}
+		}
+		defer rc.Close()
+		io.Copy(r.w, rc)
+
+	case "PUT":
+		err := r.eng.Put(m, r.ra, r.req.Body)
+		if err != nil {
+			return httpError{
+				err:  err,
+				code: http.StatusInternalServerError,
+			}
+		}
+		r.w.WriteHeader(http.StatusNoContent)
+	case "DELETE":
+		err := r.eng.Delete(m, r.ra)
+		if err != nil {
+			return httpError{
+				err:  err,
+				code: http.StatusInternalServerError,
+			}
+		}
+		r.w.WriteHeader(http.StatusNoContent)
+	default:
+		return httpError{
+			msg:  "method not allowed",
+			code: http.StatusMethodNotAllowed,
+		}
+	}
+	return nil
+}
+
+func (r *restReqV0) handleWithError(m libclient.MetaContext) error {
+	err := r.auth(m)
+	if err != nil {
+		return err
+	}
+
+	err = r.parsePath(m)
+	if err != nil {
+		return err
+	}
+
+	err = r.dispatch(m)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (r *restReqV0) handle(m libclient.MetaContext) {
+	err := r.handleWithError(m)
+	if err == nil {
+		return
+	}
+
+	if httpErr, ok := err.(*httpError); ok {
+		msg := httpErr.msg
+		if httpErr.err != nil {
+			msg = httpErr.err.Error()
+		}
+		if msg == "" {
+			msg = "internal server error"
+		}
+		http.Error(r.w, msg, httpErr.code)
+		return
+	}
+
+	m.Errorw("KV REST server error",
+		"stage", "error",
+		"error", err,
+		"method", r.req.Method,
+		"path", r.req.URL.Path,
+	)
+	http.Error(r.w, "internal server error", http.StatusInternalServerError)
+
+}
+
 func (r *RESTServer) Start(
 	m libclient.MetaContext,
 	arg lcl.ClientKVRestStartArg,
@@ -40,74 +221,16 @@ func (r *RESTServer) Start(
 ) error {
 	mux := http.NewServeMux()
 
-	versionPrefix := "/v0/"
-
-	mux.HandleFunc(versionPrefix, func(w http.ResponseWriter, req *http.Request) {
-
-		if arg.AuthToken != nil {
-			auth := req.Header.Get("Authorization")
-			expected := "Basic " + arg.AuthToken.String()
-			if auth != expected {
-				http.Error(w, "unauthorized", http.StatusUnauthorized)
-				return
-			}
-		}
-
-		unversionedPath := req.URL.Path[len(versionPrefix):]
-		teamOrBlank, targetPath, found := strings.Cut(unversionedPath, "/")
-		if !found {
-			http.Error(w, "invalid path; no user or team specified", http.StatusBadRequest)
-			return
-		}
-
-		var actingAs *proto.FQTeamParsed
-		switch teamOrBlank {
-		case "":
-			http.Error(w, "invalid path; no user or team specified", http.StatusBadRequest)
-			return
-		case "-":
-			// acting as the current user, noop
-		default:
-			// parse the team etc
-			fqt, err := core.ParseFQTeam(proto.FQTeamString(teamOrBlank))
-			if err != nil {
-				http.Error(w, "invalid team specified, failed to parse", http.StatusBadRequest)
-				return
-			}
-			actingAs = fqt
-		}
-
-		path := proto.KVPath("/" + targetPath)
-		restArgs := RESTArgs{
-			ActingAs: actingAs,
-			Path:     path,
-		}
-		switch req.Method {
-		case "GET":
-			rc, err := eng.Get(m, restArgs)
-			if err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-				return
-			}
-			defer rc.Close()
-			io.Copy(w, rc)
-		case "PUT":
-			err := eng.Put(m, restArgs, req.Body)
-			if err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-				return
-			}
-			w.WriteHeader(http.StatusNoContent)
-		case "DELETE":
-			err := eng.Delete(m, restArgs)
-			if err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-				return
-			}
-			w.WriteHeader(http.StatusNoContent)
-		default:
-			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
-		}
+	v0prefix := "/v0/"
+	mux.HandleFunc(v0prefix, func(w http.ResponseWriter, req *http.Request) {
+		(&restReqV0{
+			path: req.URL.Path[len(v0prefix):],
+			srv:  r,
+			w:    w,
+			req:  req,
+			arg:  arg,
+			eng:  eng,
+		}).handle(m)
 	})
 
 	ip := "127.0.0.1"
@@ -155,6 +278,8 @@ func (a *App) StartRESTServer(
 }
 
 func (a *App) StopRESTServer(mc MetaContext) error {
+	mc.Infow("KV REST server", "stage", "stopping")
+
 	a.Lock()
 	defer a.Unlock()
 
@@ -163,6 +288,7 @@ func (a *App) StopRESTServer(mc MetaContext) error {
 	}
 	err := a.rest.srv.Close()
 	if err != nil {
+		mc.Errorw("KV REST server", "stage", "stopping", "err", err)
 		return err
 	}
 	a.rest = nil
