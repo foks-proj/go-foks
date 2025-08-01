@@ -1005,6 +1005,12 @@ func (k KVRestAlreadyRunningError) Error() string {
 	return "REST API server already running"
 }
 
+type KVRestNotRunningError struct{}
+
+func (k KVRestNotRunningError) Error() string {
+	return "REST API server not running"
+}
+
 // ErrorAsWriteError takes an error and sees if we can turn it into an error that
 // pertains to KVWrites. If so, it will transform the error. Currently works for:
 //

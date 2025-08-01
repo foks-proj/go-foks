@@ -185,6 +185,17 @@ Specify '/v0' in all cases to version the API and to pin the API
 to Version 0 (the current version). Future versions of the API
 may change the semantics of the API.
 
+For the case of GET, provide a trailing slash to get a directory listing,
+and without a trailing slash, require that the key is a file. Directory
+listings are returned in JSON format, with each entry having the following fields:
+
+		- Id : DirentID, encoded in base62-encoding
+		- Name : string, the name of the directory entry
+		- Write : role, the write role for the entry
+		- Value : KVNodeID, encoded in base62-encoding, the node ID of the entry.
+		- Mtime : TimeMicro, the modification time of the entry
+		- Ctime : TimeMicro, the creation time of the entry
+
 For commands like PUT that do mutations, the --mkdir-p flag is assumed,
 so all parent directories are created if they do not exist.
 `, 0),

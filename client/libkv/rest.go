@@ -19,7 +19,8 @@ type RESTer interface {
 }
 
 type MinderRESTWrapper struct {
-	m *Minder
+	m   *Minder
+	cfg lcl.KVConfig
 }
 
 type RESTServer struct {
@@ -109,11 +110,26 @@ func (m *Minder) StartRESTServer(
 		return core.KVRestAlreadyRunningError{}
 	}
 	srv := &RESTServer{}
-	err := srv.Start(mc.MetaContext, arg, &MinderRESTWrapper{m: m})
+	err := srv.Start(mc.MetaContext, arg, &MinderRESTWrapper{m: m, cfg: arg.Cfg})
 	if err != nil {
 		return err
 	}
 	m.rest = srv
+	return nil
+}
+
+func (m *Minder) StopRESTServer(mc MetaContext) error {
+	m.Lock()
+	defer m.Unlock()
+
+	if m.rest == nil {
+		return core.KVRestNotRunningError{}
+	}
+	err := m.rest.srv.Close()
+	if err != nil {
+		return err
+	}
+	m.rest = nil
 	return nil
 }
 
@@ -122,7 +138,24 @@ func (m *MinderRESTWrapper) Put(
 	path proto.KVPath,
 	rdr io.Reader,
 ) error {
-	return core.NotImplementedError{}
+	kvmc := NewMetaContext(mc).SetActiveUser(m.m.au)
+	return PutFile(rdr,
+		func(data []byte, isFinal bool) (proto.KVNodeID, error) {
+			cfg := m.cfg
+			cfg.MkdirP = true
+			cfg.OverwriteOk = true
+			prf, err := m.m.PutFileFirst(kvmc, cfg, path, data, isFinal)
+			if err != nil {
+				var zed proto.KVNodeID
+				return zed, err
+			}
+			return prf.NodeID, nil
+		},
+		func(id proto.FileID, data []byte, offset proto.Offset, final bool) error {
+			return m.m.PutFileChunk(kvmc, m.cfg, id, data, offset, final)
+		},
+		0,
+	)
 }
 
 func (m *MinderRESTWrapper) Get(
