@@ -67,12 +67,20 @@ func (a *App) Minder(m MetaContext, actingAs *proto.FQTeamParsed) (*Minder, erro
 	return ret, nil
 }
 
-func InitReq(m MetaContext, actingAs *proto.FQTeamParsed) (*Minder, error) {
+func appFromMeta(m MetaContext) (*App, error) {
 	au := m.G().ActiveUser()
 	if au == nil {
 		return nil, core.NoActiveUserError{}
 	}
 	app, err := GetApp(au)
+	if err != nil {
+		return nil, err
+	}
+	return app, nil
+}
+
+func InitReq(m MetaContext, actingAs *proto.FQTeamParsed) (*Minder, error) {
+	app, err := appFromMeta(m)
 	if err != nil {
 		return nil, err
 	}
@@ -87,9 +95,9 @@ func StartRestServer(
 	m MetaContext,
 	arg lcl.ClientKVRestStartArg,
 ) error {
-	minder, err := InitReq(m, arg.Cfg.ActingAs)
+	app, err := appFromMeta(m)
 	if err != nil {
 		return err
 	}
-	return minder.StartRESTServer(m, arg)
+	return app.StartRESTServer(m, arg)
 }

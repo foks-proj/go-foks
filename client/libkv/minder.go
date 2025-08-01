@@ -118,7 +118,6 @@ type Minder struct {
 
 	localCliMu sync.Mutex
 	localCli   *rem.KVStoreClient
-	rest       *RESTServer
 }
 
 func NewMinder(au *libclient.UserContext) *Minder {
