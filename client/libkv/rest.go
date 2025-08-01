@@ -21,7 +21,7 @@ type RESTArgs struct {
 
 type RESTer interface {
 	Put(m libclient.MetaContext, args RESTArgs, rdr io.Reader) error
-	Get(m libclient.MetaContext, args RESTArgs) (io.ReadCloser, error)
+	Get(m libclient.MetaContext, args RESTArgs, targ io.Writer) error
 	Delete(m libclient.MetaContext, args RESTArgs) error
 }
 
@@ -130,16 +130,13 @@ func (r *restReqV0) dispatch(m libclient.MetaContext) error {
 
 	switch r.req.Method {
 	case "GET":
-		rc, err := r.eng.Get(m, r.ra)
+		err := r.eng.Get(m, r.ra, r.w)
 		if err != nil {
 			return httpError{
 				err:  err,
 				code: http.StatusInternalServerError,
 			}
 		}
-		defer rc.Close()
-		io.Copy(r.w, rc)
-
 	case "PUT":
 		err := r.eng.Put(m, r.ra, r.req.Body)
 		if err != nil {
@@ -301,10 +298,13 @@ func (m *MinderRESTWrapper) Put(
 	rdr io.Reader,
 ) error {
 	kvmc := NewMetaContext(mc).SetActiveUser(m.m.au)
-	cfg := m.cfg
-	cfg.MkdirP = true
-	cfg.OverwriteOk = true
-	cfg.ActingAs = args.ActingAs
+	cfg := lcl.KVConfig{
+		MkdirP:      true,
+		OverwriteOk: true,
+		ActingAs:    args.ActingAs,
+		Roles:       args.Roles,
+	}
+
 	return PutFile(rdr,
 		func(data []byte, isFinal bool) (proto.KVNodeID, error) {
 			prf, err := m.m.PutFileFirst(kvmc, cfg, args.Path, data, isFinal)
@@ -321,11 +321,46 @@ func (m *MinderRESTWrapper) Put(
 	)
 }
 
+func (m *MinderRESTWrapper) list(
+	mc libclient.MetaContext,
+	args RESTArgs,
+	targ io.Writer,
+) error {
+	return core.NotImplementedError{}
+}
+
 func (m *MinderRESTWrapper) Get(
 	mc libclient.MetaContext,
 	args RESTArgs,
-) (io.ReadCloser, error) {
-	return nil, core.NotImplementedError{}
+	targ io.Writer,
+) error {
+	if strings.HasSuffix(args.Path.String(), "/") {
+		return m.list(mc, args, targ)
+	}
+
+	kvmc := NewMetaContext(mc).SetActiveUser(m.m.au)
+	cfg := lcl.KVConfig{
+		ActingAs: args.ActingAs,
+	}
+	return GetFile(
+		targ,
+		func() (lcl.GetFileRes, error) {
+			tmp, err := m.m.GetFile(kvmc, cfg, args.Path)
+			if err != nil {
+				var zed lcl.GetFileRes
+				return zed, err
+			}
+			return *tmp, nil
+		},
+		func(id proto.FileID, offset proto.Offset) (lcl.GetFileChunkRes, error) {
+			tmp, err := m.m.GetFileChunk(kvmc, cfg, id, offset)
+			if err != nil {
+				var zed lcl.GetFileChunkRes
+				return zed, err
+			}
+			return *tmp, nil
+		},
+	)
 }
 
 func (m *MinderRESTWrapper) Delete(
