@@ -113,7 +113,7 @@ getargs() {
             shift
             arg_run_mode="$1"
             case "$arg_run_mode" in
-                docker_compose|docker-composesystemd|pm2) ;;
+                docker_compose|docker-compose|systemd|pm2) ;;
                 *) whoops "Invalid run mode: $arg_run_mode" ;;
             esac
             ;;
