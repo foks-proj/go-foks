@@ -17,6 +17,8 @@ changelog:
         closes: ["#172"]
       - desc: wrap backup keys on narrow terminals in `key new`
         closes: ["#148"]
+      - desc: KV REST server support via `foks kv rest {start|stop}`
+        closes: ["#180"]
   - version: 0.1.1
     urgency: low
     stable: true

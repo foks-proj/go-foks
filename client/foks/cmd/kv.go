@@ -6,6 +6,7 @@ package cmd
 import (
 	"bytes"
 	"io"
+	"net"
 	"os"
 	"time"
 	"unicode/utf8"
@@ -155,6 +156,149 @@ func quickKVCmd(
 	top.AddCommand(cmd)
 }
 
+func kvRest(m libclient.MetaContext, top *cobra.Command) {
+
+	restTop := &cobra.Command{
+		Use:   "rest",
+		Short: "key-value store REST API commands",
+		Long: libterm.MustRewrapSense(`Run a local loopback server that serves a REST API
+into the key-value store.
+
+Via options, specify a local port to bind to, an IP address to bind to,
+and if desired, an authentication token to require of clients. This token
+can be specified on the command line with the --auth-token flag, 
+via the environment variable FOKS_KV_REST_AUTH_TOKEN, or with a file
+via the --auth-token-file flag. If no token is specified, no authentication
+is required.
+
+Clients should send the "Authorization" HTTP header with the value "Basic <token>"
+if using authentication.
+
+The KV workspace exposed is dictated by the currently logged-in user,
+and via the --team flag if it should act on beahlf of a team. If the
+logged-in user changes, the REST loopback server will shutdown.
+
+Rest commands are:
+
+   GET /v0/-/path/to/a/key -- get a key-value store entry
+   PUT /v0/-/path/to/a/key -- put a key-value store entry (value is in the body)
+   DELETE /v0/-/path/to/a/key -- delete a key-value store entry
+
+Specify '/v0' in all cases to version the API and to pin the API
+to Version 0 (the current version). Future versions of the API
+may change the semantics of the API.
+
+The "/-" prefix is used to indicate that the path is for the current user.
+You can specify a "t:<team-name>"-style identitifer to work on behalf of a team.
+For instance:
+
+   GET /v0/t:jets/mydir/file -- get a key-value store entry on behalf of team jets
+
+For the case of GET, provide a trailing slash to get a directory listing,
+and without a trailing slash, require that the key is a file. Directory
+listings are returned in JSON format, with the document structure:
+
+   { "entries" : entries, "next" : next, "parent" : parent }
+
+The entries are a list of objects, each with the following fields:
+
+	- name : the name of the directory entry
+	- write : the write role for the entry
+	- mtime : the modification time of the entry 
+	    (note the ctime isn't readily available and is not currently exposed)
+
+The next field is pagination information, which is null if there are no 
+more entries:
+
+	next : { "dir_id" : dir_id, "pagination" : { "hmac" : hmac } }
+
+To get the next page, issue the same GET request, but with
+the "page_dir_id" and "page_hmac" query parameters set to the values
+in the 'next' object. The "page_entries" query parameter can be used to
+limit the number of entries returned in a single page.
+
+For commands like PUT that do mutations, the --mkdir-p flag is assumed,
+so all parent directories are created if they do not exist.
+`, 0),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return subcommandHelp(cmd, args)
+		},
+	}
+
+	var port int
+	var bindIP string
+	var authToken string
+	quickKVCmd(m, restTop,
+		"start", nil,
+		"start key-value store REST API",
+		`Start a key-value store REST API server; the FOKS agent will run 
+the server in the background, and this command will return immediately.`,
+		quickKVOpts{},
+		func(cmd *cobra.Command) {
+			cmd.Flags().IntVar(&port, "port", -1, "port to bind to (default 0=auto-assign random port)")
+			cmd.Flags().StringVarP(&bindIP, "bind-ip", "b", "127.0.0.1", "address to bind to (default 127.0.0.1)")
+			cmd.Flags().StringVar(&authToken, "auth-token", "", "authentication token to require of clients (default is no authentication)")
+		},
+		func(arg []string, cfg lcl.KVConfig, cli lcl.KVClient) error {
+			if len(arg) != 0 {
+				return ArgsError("expected no arguments")
+			}
+			err := PartingConsoleMessage(m)
+			if err != nil {
+				return err
+			}
+			if bindIP != "" {
+				ip := net.ParseIP(bindIP)
+				if ip == nil {
+					return ArgsError("invalid bind IP address")
+				}
+			}
+
+			startArg := lcl.ClientKVRestStartArg{
+				Cfg: cfg,
+			}
+			if port >= 0 {
+				tmp := proto.Port(port)
+				startArg.Port = &tmp
+			}
+			if bindIP != "" {
+				tmp := proto.TCPAddr(bindIP)
+				startArg.BindIP = &tmp
+			}
+			if authToken != "" {
+				tmp := lcl.KVRestAuthToken(authToken)
+				startArg.AuthToken = &tmp
+			}
+			info, err := cli.ClientKVRestStart(m.Ctx(), startArg)
+			if err != nil {
+				return err
+			}
+			if m.G().Cfg().JSONOutput() {
+				return JSONOutput(m, info)
+			}
+			m.G().UIs().Terminal.Printf("Listening...\nPort: %d\n", info.Port)
+			return PartingConsoleMessage(m)
+		},
+	)
+
+	quickKVCmd(m, restTop,
+		"stop", nil,
+		"stop key-value store REST API",
+		`Stop the key-value store REST API server`,
+		quickKVOpts{},
+		nil,
+		func(arg []string, cfg lcl.KVConfig, cli lcl.KVClient) error {
+			err := PartingConsoleMessage(m)
+			if err != nil {
+				return err
+			}
+			return cli.ClientKVRestStop(m.Ctx())
+		},
+	)
+
+	top.AddCommand(restTop)
+}
+
 func kvCmd(m libclient.MetaContext) *cobra.Command {
 	top := &cobra.Command{
 		Use:          "kv",
@@ -174,6 +318,7 @@ func kvCmd(m libclient.MetaContext) *cobra.Command {
 	kvRm(m, top)
 	kvReadlink(m, top)
 	kvGetUsage(m, top)
+	kvRest(m, top)
 	return top
 }
 

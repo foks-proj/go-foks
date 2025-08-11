@@ -1669,12 +1669,28 @@ func (d DeviceID) StringErr() (string, error)                 { return d.EntityI
 func (d DeviceID) MarshalJSON() ([]byte, error)               { return marsh(d) }
 func (p PartyID) StringErr() (string, error)                  { return p.EntityID().StringErr() }
 func (p PartyID) MarshalJSON() ([]byte, error)                { return marsh(p) }
+func (d DirentID) MarshalJSON() ([]byte, error)               { return marsh(d) }
+func (i KVNodeID) MarshalJSON() ([]byte, error)               { return marsh(i) }
 
 func (d *DeviceID) UnmarshalJSON(data []byte) error {
 	return unmarshalJson(d, data, func(e EntityID) (DeviceID, error) { return e.ToDeviceID() })
 }
 func (p *PartyID) UnmarshalJSON(data []byte) error {
 	return unmarshalJson(p, data, func(e EntityID) (PartyID, error) { return e.ToPartyID() })
+}
+func (k *KVNodeID) UnmarshalJSON(data []byte) error {
+	var s string
+	err := json.Unmarshal(data, &s)
+	if err != nil {
+		return err
+	}
+	var tmp KVNodeID
+	err = tmp.ImportFromString(s)
+	if err != nil {
+		return err
+	}
+	*k = tmp
+	return nil
 }
 
 func (t *StdHash) UnmarshalJSON(dat []byte) error            { return UnmarshalJsonFixed((*t)[:], dat) }
@@ -1683,6 +1699,9 @@ func (m *MerkleRootHash) UnmarshalJSON(dat []byte) error     { return UnmarshalJ
 func (l *LinkHash) UnmarshalJSON(dat []byte) error           { return UnmarshalJsonFixed((*l)[:], dat) }
 func (t *TreeLocationCommitment) UnmarshalJSON(dat []byte) error {
 	return UnmarshalJsonFixed((*t)[:], dat)
+}
+func (d *DirentID) UnmarshalJSON(dat []byte) error {
+	return UnmarshalJsonFixed((*d)[:], dat)
 }
 
 func (s StatusCode) MarshalJSON() ([]byte, error) {
@@ -3024,6 +3043,11 @@ func (i *KVNodeID) ExportToDB() []byte {
 	return i[:]
 }
 
+func (d DirentID) StringErr() (string, error) {
+	ret := B62Encode(d[:])
+	return ret, nil
+}
+
 func (n *NaclNonce) ExportToDB() []byte {
 	return n[:]
 }
@@ -3350,6 +3374,28 @@ func (f *FileID) KVNodeID() KVNodeID {
 	ret[0] = byte(KVNodeType_File)
 	copy(ret[1:], f[:])
 	return ret
+}
+
+func (k *KVNodeID) ImportFromString(s string) error {
+	if len(s) < 2 {
+		return DataError("bad kv node id")
+	}
+	b, err := B62DecodeByte(s[0])
+	if err != nil {
+		return err
+	}
+	k[0] = b
+	if len(s) > 1 {
+		d, err := B62Decode(s[1:])
+		if err != nil {
+			return err
+		}
+		if len(d) != len(k)-1 {
+			return DataError("bad kv node id length")
+		}
+		copy(k[1:], d)
+	}
+	return nil
 }
 
 func (k KVNodeID) StringErr() (string, error) {

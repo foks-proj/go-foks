@@ -91,7 +91,7 @@ struct KVListEntry {
     write @2 : lib.Role;
     value @3 : lib.KVNodeID;
     mtime @4 : lib.TimeMicro;
-    ctime @5 : lib.TimeMicro;
+    // ctime @5 : lib.TimeMicro; -- retired since this is not easily knowable
 }
 
 struct ChunkNoncePayload @0xadba174b7e8dcc08 {
@@ -99,6 +99,12 @@ struct ChunkNoncePayload @0xadba174b7e8dcc08 {
     offset @1 : lib.Offset;
     final @2 : Bool;
 }
+
+struct KVRestListenInfo {
+    port @0 : lib.Port;
+}
+
+typedef KVRestAuthToken = Text; // a token to authenticate with the REST API
 
 protocol KV 
     argHeader Header
@@ -179,4 +185,14 @@ protocol KV
     clientKVUsage @12 (
         cfg @0 : KVConfig
     ) -> lib.KVUsage;
+
+    clientKVRestStart @13 (
+        cfg @0 : KVConfig,
+        port @1 : Option(lib.Port),
+        bindIP @2 : Option(lib.TCPAddr),
+        authToken @3 : Option(KVRestAuthToken)
+    ) -> KVRestListenInfo;
+
+    clientKVRestStop @14 (
+    );
 }
