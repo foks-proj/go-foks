@@ -441,7 +441,6 @@ func MarshalListToJSON(targ http.ResponseWriter, list *lcl.CliKVListRes) error {
 			Name:  e.Name.ToPath().String(),
 			Write: wr,
 			Mtime: e.Mtime.Import(),
-			Ctime: e.Ctime.Import(),
 		}
 		ents = append(ents, kvle)
 	}

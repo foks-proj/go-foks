@@ -204,8 +204,8 @@ The entries are a list of objects, each with the following fields:
 
 	- name : the name of the directory entry
 	- write : the write role for the entry
-	- mtime : the modification time of the entry
-	- ctime : the creation time of the entry
+	- mtime : the modification time of the entry 
+	    (note the ctime isn't readily available and is not currently exposed)
 
 The next field is pagination information, which is null if there are no 
 more entries:

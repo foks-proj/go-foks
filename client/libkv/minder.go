@@ -1878,7 +1878,7 @@ func openDirentToKVListEntry(
 		Name:  pyld.Name,
 		Write: de.WriteRole,
 		Value: de.Value,
-		Ctime: de.Ctime,
+		Mtime: de.Ctime, // The Mtime for this directory entry is the CTime of the most recent write
 	}
 	return pyld.Name, &kvle, nil
 }

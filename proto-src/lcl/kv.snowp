@@ -91,7 +91,7 @@ struct KVListEntry {
     write @2 : lib.Role;
     value @3 : lib.KVNodeID;
     mtime @4 : lib.TimeMicro;
-    ctime @5 : lib.TimeMicro;
+    // ctime @5 : lib.TimeMicro; -- retired since this is not easily knowable
 }
 
 struct ChunkNoncePayload @0xadba174b7e8dcc08 {
