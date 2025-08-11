@@ -112,16 +112,16 @@ darwin-zip: darwin-arm64-zip-release darwin-amd64-zip-release
 brew: brew-arm64 brew-amd64
 	@echo "Homebrew zip packages are ready in the build directory"
 
-.PHONY: choco
-choco: choco-amd64 choco-x86
-	@echo "Chocolatey windows packages are ready in the build directory"
+.PHONY: winget 
+winget: winget-amd64 winget-x86
+	@echo "Winget windows packages are ready in the build directory"
 
-.PHONY: choco-x86
-choco-x86: proto
+.PHONY: winget-x86
+winget-x86: proto
 	./scripts/cross-compile-win.bash -p win-x86 -sc
 
-.PHONY: choco-amd64
-choco-amd64: proto
+.PHONY: winget-amd64
+winget-amd64: proto
 	./scripts/cross-compile-win.bash -p win-amd64 -sc
 
 .PHONY: musl-arm64

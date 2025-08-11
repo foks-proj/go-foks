@@ -144,7 +144,10 @@ build() {
 pkgZip() {
     if [ $do_zip -eq 1 ]; then
         final=build/${output}
-        (cd ${tmpdir} && zip -r ${output} foks.exe)
+        (cd ${tmpdir} && \
+            cp foks.exe git-remote-foks.exe && \
+            zip -r ${output} foks.exe git-remote-foks.exe \
+        )
         mv ${tmpdir}/${output} ${final}
         rm -rf ${tmpdir}
         echo "Zipped build for ${plat} is complete: ${final}"
