@@ -69,9 +69,9 @@
   - git commit -a -m "Add foks-*.zip to public pool"
   - git push
   - cd ../../homebrew-cask/Casks/f
-  - git fetch upstream master
-  - git checkout master
-  - git reset --hard upstream/master
+  - git fetch upstream main
+  - git checkout main
+  - git reset --hard upstream/main
   - vim foks.rb
   - update version and sha256s
   - commit -a -m 'foks vX.Y.Z'
@@ -83,11 +83,13 @@
 
 - winget
   - make winget
+  - cd build && gh release upload vX.Y.Z foks-win-*.zip
   - cd ../winget-pkgs
   - get fetch upstream master
   - git checkout master
   - git reset --hard upstream/master
   - cd ../go-foks/scripts
+  - mark the GH release live via the web interface
   - ./winget-gen.bash ../../winget-pkgs
   - git commit -a -m "Add foks vX.Y.Z"
   - git push

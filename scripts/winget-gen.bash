@@ -76,13 +76,13 @@ EOF
 
 cat <<EOF >"$parent_dir/ne43.foks.yaml"
 # Created using go-foks/scripts/winget-gen.bash
-# yaml-language-server: \$schema=https://aka.ms/winget-manifest.1.10.0.schema.json
+# yaml-language-server: \$schema=https://aka.ms/winget-manifest.version.1.10.0.schema.json
 
 PackageIdentifier: ne43.foks
 PackageVersion: ${vers}
-ManifestType: installer
-ManifestVersion: 1.10.0
 DefaultLocale: en-US
+ManifestType: version
+ManifestVersion: 1.10.0
 EOF
 
 

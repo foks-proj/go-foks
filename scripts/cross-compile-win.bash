@@ -6,7 +6,7 @@ set -euo pipefail
 set -x 
 
 usage() {
-    echo "Usage: $0 -p {win-arm64|win-amd64|win-x86} [-sc]"
+    echo "Usage: $0 -p {win-arm64|win-amd64|win-x86} [-sw]"
     exit 1
 }
 
@@ -15,11 +15,12 @@ packaging="local"
 pkg_tag=""
 out_sffx="exe"
 do_zip=0
+winget=0
 
 # take two arguments: -p which can be arm64 or amd64, and also
 # -s, which is a boolean flag that means to strip the binary
 # use getopt to parse the arguments::
-while getopts ":p:sc" opt; do
+while getopts ":p:sw" opt; do
     case $opt in
         p)
             plat=$OPTARG
@@ -27,10 +28,10 @@ while getopts ":p:sc" opt; do
         s)
             strip=1
             ;;
-        c)
-            choco=1
-            packaging="choco"
-            pkg_tag="-choco"
+        w)
+            winget=1
+            packaging="winget"
+            pkg_tag="-winget"
             out_sffx="zip"
             do_zip=1
             ;;
