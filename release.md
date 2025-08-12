@@ -81,17 +81,15 @@
   - cd pkgs && git pull
   - go to github and open PR against homebrew/homebrew-cask
 
-- choco
-  - make choco
-  - cd build && gh release upload vX.Y.Z foks*win*.zip
-  - open windows laptop
-  - cd src/go-foks
-  - git pull
-  - bash -x scripts/make-choco.bash
-  - cd pkg/choco
-  - choco install foks --version=X.Y.Z --source=C:\Users/THEMA\src\go-foks\pkg\choco
-  - choco push ./foks.X.Y.Z.nupkg --source https://push.chocolatey.org/
-  - git commit -a -m "choco"
+- winget
+  - make winget
+  - cd ../winget-pkgs
+  - get fetch upstream master
+  - git checkout master
+  - git reset --hard upstream/master
+  - cd ../go-foks/scripts
+  - ./winget-gen.bash ../../winget-pkgs
+  - git commit -a -m "Add foks vX.Y.Z"
   - git push
 
 - Update server
