@@ -118,11 +118,11 @@ winget: winget-amd64 winget-x86
 
 .PHONY: winget-x86
 winget-x86: proto
-	./scripts/cross-compile-win.bash -p win-x86 -sc
+	./scripts/cross-compile-win.bash -p win-x86 -sw
 
 .PHONY: winget-amd64
 winget-amd64: proto
-	./scripts/cross-compile-win.bash -p win-amd64 -sc
+	./scripts/cross-compile-win.bash -p win-amd64 -sw
 
 .PHONY: musl-arm64
 musl-arm64:
