@@ -177,7 +177,7 @@ Some operations are later short-circuited, depending on other config options.
 For instance:
 
 ```bash
-reate_docker_db() {
+create_docker_db() {
     if [ "$DB_BYO" -eq 1 ]; then
         echo "Skipping create_docker_db since using BYO DB"
         return

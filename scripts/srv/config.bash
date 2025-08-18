@@ -353,7 +353,7 @@ setup_run_mode() {
             case "$arg_run_mode" in
                 pm2) run_mode="$arg_run_mode" ;;
                 '') run_mode="pm2" ;;
-                systemd|docker_compose) whoops "run_mode=systemd only works with network_mode=prod" ;;
+                systemd|docker_compose) whoops "run_mode=systemd and run_mode=docker_compose only works with network_mode=prod" ;;
                 *) whoops "Invalid run mode: $arg_run_mode" ;;
             esac
             ;;
