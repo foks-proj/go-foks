@@ -1088,14 +1088,17 @@ type KVListEntry struct {
 	Write lib.Role
 	Value lib.KVNodeID
 	Mtime lib.TimeMicro
+	Typ   lib.KVNodeType
 }
 type KVListEntryInternal__ struct {
-	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
-	De      *lib.DirentIDInternal__
-	Name    *lib.KVPathComponentInternal__
-	Write   *lib.RoleInternal__
-	Value   *lib.KVNodeIDInternal__
-	Mtime   *lib.TimeMicroInternal__
+	_struct     struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
+	De          *lib.DirentIDInternal__
+	Name        *lib.KVPathComponentInternal__
+	Write       *lib.RoleInternal__
+	Value       *lib.KVNodeIDInternal__
+	Mtime       *lib.TimeMicroInternal__
+	Deprecated5 *struct{}
+	Typ         *lib.KVNodeTypeInternal__
 }
 
 func (k KVListEntryInternal__) Import() KVListEntry {
@@ -1130,6 +1133,12 @@ func (k KVListEntryInternal__) Import() KVListEntry {
 			}
 			return x.Import()
 		})(k.Mtime),
+		Typ: (func(x *lib.KVNodeTypeInternal__) (ret lib.KVNodeType) {
+			if x == nil {
+				return ret
+			}
+			return x.Import()
+		})(k.Typ),
 	}
 }
 func (k KVListEntry) Export() *KVListEntryInternal__ {
@@ -1139,6 +1148,7 @@ func (k KVListEntry) Export() *KVListEntryInternal__ {
 		Write: k.Write.Export(),
 		Value: k.Value.Export(),
 		Mtime: k.Mtime.Export(),
+		Typ:   k.Typ.Export(),
 	}
 }
 func (k *KVListEntry) Encode(enc rpc.Encoder) error {

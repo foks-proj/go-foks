@@ -2,6 +2,13 @@ project: foks
 maintaner: Maxwell Krohn <max@ne43.com>
 
 changelog:
+  - version: 0.1.3
+    urgency: low
+    stable: true
+    date: not yet decided
+    changes:
+      - desc: improve directory listing in KV rest to include file type of entries
+        closes: ["#190"]
   - version: 0.1.2
     urgency: low
     stable: true
