@@ -3931,6 +3931,10 @@ func (k KVPathComponent) ToPath() KVPath {
 	return KVPath(string(k))
 }
 
+func (k KVPathComponent) String() string {
+	return string(k)
+}
+
 func (n NameUtf8) String() string {
 	return string(n)
 }

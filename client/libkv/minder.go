@@ -1869,9 +1869,13 @@ func openDirentToKVListEntry(
 		return name, nil, core.VerifyError("dirent binding mac")
 	}
 	// Tombstoned dirents are not included in the list,
-
 	if de.Value.IsTombstone() {
 		return pyld.Name, nil, nil
+	}
+
+	typ, err := de.Type()
+	if err != nil {
+		return name, nil, err
 	}
 	kvle := lcl.KVListEntry{
 		De:    de.Id,
@@ -1879,6 +1883,7 @@ func openDirentToKVListEntry(
 		Write: de.WriteRole,
 		Value: de.Value,
 		Mtime: de.Ctime, // The Mtime for this directory entry is the CTime of the most recent write
+		Typ:   typ,
 	}
 	return pyld.Name, &kvle, nil
 }

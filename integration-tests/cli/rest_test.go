@@ -60,9 +60,7 @@ func TestKVRest(t *testing.T) {
 	addAuth := func(req *http.Request) {
 		req.Header.Set("Authorization", fmt.Sprintf("Basic %s", tok))
 	}
-
-	list := func(n int, nxt *libkv.ListNextJSON, party string) *libkv.ListPageJSON {
-		// make a json request to info.Port on localhost using standard Go http client:
+	listWithPath := func(n int, nxt *libkv.ListNextJSON, parentPath string, party string) *libkv.ListPageJSON {
 		client := &http.Client{}
 
 		qry := fmt.Sprintf("%s/?page_entries=%d", mkPath(parentPath, party), n)
@@ -81,6 +79,10 @@ func TestKVRest(t *testing.T) {
 		err = json.NewDecoder(resp.Body).Decode(&list)
 		require.NoError(t, err)
 		return &list
+	}
+
+	list := func(n int, nxt *libkv.ListNextJSON, party string) *libkv.ListPageJSON {
+		return listWithPath(n, nxt, parentPath, party)
 	}
 
 	listUser := func(n int, nxt *libkv.ListNextJSON) *libkv.ListPageJSON {
@@ -131,10 +133,6 @@ func TestKVRest(t *testing.T) {
 	require.Equal(t, parentPath+"/", page.Parent)
 	require.Len(t, page.Entries, n)
 
-	jsonTmp, eTmp := json.Marshal(page)
-	require.NoError(t, eTmp)
-	fmt.Printf("XXXXX: %s\n", jsonTmp)
-
 	page2 := listUser(n, page.Next)
 	require.Nil(t, page2.Next)
 	require.Equal(t, parentPath+"/", page2.Parent)
@@ -144,6 +142,7 @@ func TestKVRest(t *testing.T) {
 	dat := fetchUser(ent)
 	expected := data[ent]
 	require.Equal(t, expected, string(dat))
+	require.Equal(t, "file", page2.Entries[3].Type)
 
 	dat, err := core.RandomBytes(1024 * 1024)
 	require.NoError(t, err)
@@ -153,6 +152,20 @@ func TestKVRest(t *testing.T) {
 
 	dat2 := b.runCmdToBytes(t, "kv", "get", "--force-output", path, "-")
 	require.Equal(t, dat, dat2)
+
+	// now make sure that when we ls and hit a dir, we get the right file type
+	dat, err = core.RandomBytes(1024 * 1024)
+	require.NoError(t, err)
+	totalPath := fsRandomString(t, 24)
+
+	totalPathParent := parentPath + "/" + totalPath[0:8]
+	totalPath = totalPathParent + "/" + totalPath[8:16] + "/" + totalPath[16:]
+
+	putUser(totalPath, dat)
+	page = listWithPath(10, nil, totalPathParent, "-")
+	require.Nil(t, page.Next)
+	require.Len(t, page.Entries, 1)
+	require.Equal(t, page.Entries[0].Type, "dir")
 
 	// Now do the same thing, but on behalf of a team...
 	tm := "t-" + strings.ToLower(fsRandomString(t, 10))

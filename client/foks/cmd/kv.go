@@ -5,9 +5,11 @@ package cmd
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"net"
 	"os"
+	"strings"
 	"time"
 	"unicode/utf8"
 
@@ -206,6 +208,7 @@ The entries are a list of objects, each with the following fields:
 	- write : the write role for the entry
 	- mtime : the modification time of the entry 
 	    (note the ctime isn't readily available and is not currently exposed)
+	- type : the entry type, one of: 'file', 'dir' or 'symlink'
 
 The next field is pagination information, which is null if there are no 
 more entries:
@@ -687,6 +690,9 @@ func kvLs(
 	m libclient.MetaContext,
 	top *cobra.Command,
 ) {
+	var optF bool // append '/' to directory names
+	var optL bool // long listing format (with mtime and type)
+	var optU bool // print time as unix time in milliseconds since epoch
 	quickKVCmd(m, top,
 		"ls <key>", []string{"list"},
 		"list a key-value store directory",
@@ -694,7 +700,11 @@ func kvLs(
 		quickKVOpts{
 			SupportMtimeLower: true,
 		},
-		nil,
+		func(cmd *cobra.Command) {
+			cmd.Flags().BoolVarP(&optF, "classify", "F", false, "append '/' to directory names")
+			cmd.Flags().BoolVarP(&optL, "long", "l", false, "use long listing format (with mtime and type)")
+			cmd.Flags().BoolVarP(&optU, "unix-time", "U", false, "print time as unix time in milliseconds since epoch")
+		},
 		func(arg []string, cfg lcl.KVConfig, cli lcl.KVClient) error {
 			if len(arg) != 1 {
 				return ArgsError("expected exactly one argument -- the directory to list")
@@ -727,7 +737,34 @@ func kvLs(
 					json = append(json, res.Ents...)
 				} else {
 					for _, ent := range res.Ents {
-						m.G().UIs().Terminal.Printf("%s%s\n", prefix, ent.Name)
+						out := ent.Name.String()
+						if optF && ent.Typ == proto.KVNodeType_Dir {
+							out += "/"
+						}
+						out = prefix.String() + out
+						if optL {
+							var typ string
+							switch ent.Typ {
+							case proto.KVNodeType_File, proto.KVNodeType_SmallFile:
+								typ = "f"
+							case proto.KVNodeType_Dir:
+								typ = "d"
+							case proto.KVNodeType_Symlink:
+								typ = "s"
+							default:
+								typ = "-"
+							}
+							var date string
+							if optU {
+								date = fmt.Sprintf("%d", ent.Mtime.Import().UnixMilli())
+							} else {
+								date = ent.Mtime.Import().Local().Format("2006-01-02 15:04:05")
+							}
+							parts := []string{typ, out, date}
+							out = strings.Join(parts, "\t")
+						}
+
+						m.G().UIs().Terminal.Printf("%s\n", out)
 					}
 				}
 				if res.Nxt != nil {

@@ -411,6 +411,7 @@ type ListEntryJSON struct {
 	Write string    `json:"write"`
 	Mtime time.Time `json:"mtime"`
 	Ctime time.Time `json:"ctime"`
+	Type  string    `json:"type"`
 }
 
 type PaginationJSON struct {
@@ -431,6 +432,19 @@ type ListPageJSON struct {
 
 func MarshalListToJSON(targ http.ResponseWriter, list *lcl.CliKVListRes) error {
 
+	typeToString := func(typ proto.KVNodeType) string {
+		switch typ {
+		case proto.KVNodeType_File, proto.KVNodeType_SmallFile:
+			return "file"
+		case proto.KVNodeType_Dir:
+			return "dir"
+		case proto.KVNodeType_Symlink:
+			return "symlink"
+		default:
+			return "unknown"
+		}
+	}
+
 	var ents []ListEntryJSON
 	for _, e := range list.Ents {
 		wr, err := e.Write.ShortStringErr()
@@ -441,6 +455,7 @@ func MarshalListToJSON(targ http.ResponseWriter, list *lcl.CliKVListRes) error {
 			Name:  e.Name.ToPath().String(),
 			Write: wr,
 			Mtime: e.Mtime.Import(),
+			Type:  typeToString(e.Typ),
 		}
 		ents = append(ents, kvle)
 	}
