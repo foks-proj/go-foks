@@ -35,6 +35,7 @@ type quickKVOpts struct {
 	SupportOverwrite  bool
 	SupportMtimeLower bool
 	SupportRecursive  bool
+	NoSupportTeam     bool
 }
 
 func (q quickKVOpts) SupportsRoles() bool {
@@ -133,7 +134,9 @@ func quickKVCmd(
 		SilenceUsage: true,
 		RunE:         run,
 	}
-	actAsTeamOpt(cmd, &teamStr)
+	if !opts.NoSupportTeam {
+		actAsTeamOpt(cmd, &teamStr)
+	}
 	if !opts.NoSupportMkdirP {
 		cmd.Flags().BoolVarP(&mkdirP, "mkdir-p", "p", false, "create parent directories if they do not exist")
 	}
@@ -236,7 +239,10 @@ so all parent directories are created if they do not exist.
 		"start key-value store REST API",
 		`Start a key-value store REST API server; the FOKS agent will run 
 the server in the background, and this command will return immediately.`,
-		quickKVOpts{},
+		quickKVOpts{
+			NoSupportMkdirP: true,
+			NoSupportTeam:   true,
+		},
 		func(cmd *cobra.Command) {
 			cmd.Flags().IntVar(&port, "port", -1, "port to bind to (default 0=auto-assign random port)")
 			cmd.Flags().StringVarP(&bindIP, "bind-ip", "b", "127.0.0.1", "address to bind to (default 127.0.0.1)")
@@ -288,7 +294,10 @@ the server in the background, and this command will return immediately.`,
 		"stop", nil,
 		"stop key-value store REST API",
 		`Stop the key-value store REST API server`,
-		quickKVOpts{},
+		quickKVOpts{
+			NoSupportMkdirP: true,
+			NoSupportTeam:   true,
+		},
 		nil,
 		func(arg []string, cfg lcl.KVConfig, cli lcl.KVClient) error {
 			err := PartingConsoleMessage(m)
