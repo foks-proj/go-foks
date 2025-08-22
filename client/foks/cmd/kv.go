@@ -225,6 +225,11 @@ limit the number of entries returned in a single page.
 
 For commands like PUT that do mutations, the --mkdir-p flag is assumed,
 so all parent directories are created if they do not exist.
+
+For now, the REST server will run as the same permissions as the 
+currently-active user. That is, the REST server will give the same
+read and write access to user and team KV-entries that the current
+user has via the 'foks kv' command line.
 `, 0),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return subcommandHelp(cmd, args)
