@@ -9,6 +9,8 @@ changelog:
     changes:
       - desc: improve directory listing in KV rest to include file type of entries
         closes: ["#190"]
+      - desc: cleaner flags for KV rest stop/start commands
+        closes: ["#191"] 
   - version: 0.1.2
     urgency: low
     stable: true
