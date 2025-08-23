@@ -144,7 +144,21 @@ func (r *restReqV0) dispatch(m libclient.MetaContext) error {
 	switch r.req.Method {
 	case "GET":
 		err := r.eng.Get(m, r.ra, r.w)
-		if err != nil {
+		if err == nil {
+			return nil
+		}
+		switch err.(type) {
+		case core.KVNoentError:
+			return httpError{
+				code: http.StatusNotFound,
+				msg:  "not found",
+			}
+		case core.KVTypeError:
+			return httpError{
+				code: http.StatusNotFound,
+				msg:  "resource of specified type not found",
+			}
+		default:
 			return httpError{
 				err:  err,
 				code: http.StatusInternalServerError,
@@ -253,7 +267,7 @@ func (r *restReqV0) handle(m libclient.MetaContext) {
 		return
 	}
 
-	if httpErr, ok := err.(*httpError); ok {
+	if httpErr, ok := err.(httpError); ok {
 		msg := httpErr.msg
 		if httpErr.err != nil {
 			msg = httpErr.err.Error()
