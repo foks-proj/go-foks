@@ -108,6 +108,22 @@ func TestKVRest(t *testing.T) {
 		return fetch(path, "-")
 	}
 
+	fetchGetErr := func(path string, party string, code int, msg string) {
+		client := &http.Client{}
+		qry := mkPath(path, party)
+		req, err := http.NewRequest("GET", qry, nil)
+		require.NoError(t, err)
+		addAuth(req)
+		resp, err := client.Do(req)
+		require.NoError(t, err)
+		defer resp.Body.Close()
+		require.Equal(t, code, resp.StatusCode)
+		var buf bytes.Buffer
+		_, err = buf.ReadFrom(resp.Body)
+		require.NoError(t, err)
+		require.Equal(t, msg, buf.String())
+	}
+
 	put := func(path string, dat []byte, party string) {
 		client := &http.Client{}
 		qry := mkPath(path, party)
@@ -143,6 +159,12 @@ func TestKVRest(t *testing.T) {
 	expected := data[ent]
 	require.Equal(t, expected, string(dat))
 	require.Equal(t, "file", page2.Entries[3].Type)
+
+	bad := ent + "XXXXX"
+	fetchGetErr(bad, "-", http.StatusNotFound, "not found\n")
+
+	// Asking to list a non-directory gets an error 400
+	fetchGetErr(ent+"/", "-", http.StatusNotFound, "resource of specified type not found\n")
 
 	dat, err := core.RandomBytes(1024 * 1024)
 	require.NoError(t, err)

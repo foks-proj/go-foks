@@ -229,7 +229,8 @@ so all parent directories are created if they do not exist.
 For now, the REST server will run as the same permissions as the 
 currently-active user. That is, the REST server will give the same
 read and write access to user and team KV-entries that the current
-user has via the 'foks kv' command line.
+user has via the 'foks kv' command line. We might allow finer-grained
+access control in the future.
 `, 0),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return subcommandHelp(cmd, args)
