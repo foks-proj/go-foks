@@ -13,6 +13,8 @@ changelog:
         closes: ["#191"] 
       - desc: improve HTTP error responses for KV store
         closes: ["#196"]
+      - desc: fix git checkout with no main brain
+        closes: ["#187"]
   - version: 0.1.2
     urgency: low
     stable: true

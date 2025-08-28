@@ -21,7 +21,7 @@ require (
 	github.com/docker/go-connections v0.5.0
 	github.com/fatih/color v1.18.0
 	github.com/foks-proj/go-ctxlog v0.0.0-20250303173751-8f2c09f6847f
-	github.com/foks-proj/go-git-remhelp v0.0.2
+	github.com/foks-proj/go-git-remhelp v0.0.3
 	github.com/foks-proj/go-snowpack-rpc v0.0.2
 	github.com/go-chi/chi/v5 v5.2.2
 	github.com/go-git/go-git/v5 v5.14.0
