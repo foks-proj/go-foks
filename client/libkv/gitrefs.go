@@ -299,7 +299,7 @@ func (g *gitRefSet) loadIn(inp []*gitRef) {
 	}
 	for i := len(inp) - 1; i >= 0; i-- {
 		e := inp[i]
-		if g.latest.IsZero() || g.latest == e.tm {
+		if g.latest.IsZero() || g.latest.Equal(e.tm) {
 			g.latest = e.tm
 			g.latestEntries[e.ei] = struct{}{}
 		}
