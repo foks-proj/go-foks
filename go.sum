@@ -307,10 +307,8 @@ github.com/firefart/nonamedreturns v1.0.5 h1:tM+Me2ZaXs8tfdDw3X6DOX++wMCOqzYUho6
 github.com/firefart/nonamedreturns v1.0.5/go.mod h1:gHJjDqhGM4WyPt639SOZs+G89Ko7QKH5R5BhnO6xJhw=
 github.com/foks-proj/go-ctxlog v0.0.0-20250303173751-8f2c09f6847f h1:+a3x6K1YmVrYeSlJNOarBA4I68NfWRaP4b5zPa8U5P4=
 github.com/foks-proj/go-ctxlog v0.0.0-20250303173751-8f2c09f6847f/go.mod h1:Krvn7SJOuBi1gZx2r40NBOAjftGg2j++3nHiAPis9Oo=
-github.com/foks-proj/go-git-remhelp v0.0.2 h1:DPAJAm26TdK2KOVdu66ZvleOLsQ1LlXCGiuZBf7i1bQ=
-github.com/foks-proj/go-git-remhelp v0.0.2/go.mod h1:64ubmkraJ8SDpgHcsnSyTapwpZgYF/NXZHN8Jx0f1FM=
-github.com/foks-proj/go-git-remhelp v0.0.3 h1:WWlSBjcfXD4znWtgF7g0Pkoi2cMYPjIHkjaM+eUGTxI=
-github.com/foks-proj/go-git-remhelp v0.0.3/go.mod h1:64ubmkraJ8SDpgHcsnSyTapwpZgYF/NXZHN8Jx0f1FM=
+github.com/foks-proj/go-git-remhelp v0.0.4 h1:E7byM5+olF+G7zF6IbFTaQHv2MwUDhBGgTn+sxzvpu8=
+github.com/foks-proj/go-git-remhelp v0.0.4/go.mod h1:UtVHzfALMU4OsX+lb2YgA9hJ1cPomqAiCIFxiZAVTBU=
 github.com/foks-proj/go-snowpack-compiler v0.0.5 h1:06u7A6/1LRV8B6Y16SXQRlg04V9NnCzEopXXT2snjPg=
 github.com/foks-proj/go-snowpack-compiler v0.0.5/go.mod h1:8XQT6+B9p0g3eluzp6L3ujtk6OuoFOMbkUXTVcytL+E=
 github.com/foks-proj/go-snowpack-rpc v0.0.2 h1:2aYoOTBMMRzvAAJdToEeAEjcNWzUVFHl1J1zpF2lPWI=

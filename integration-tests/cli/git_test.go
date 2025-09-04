@@ -341,7 +341,7 @@ func TestGitMainVsMaster(t *testing.T) {
 	sr2.ReadFile(t, "f1", "11111")
 }
 
-func TestIssue187(t *testing.T) {
+func TestNoMainBranch(t *testing.T) {
 	gte, cleanup := newGitTestEnv(t)
 	defer cleanup()
 	au := gte.newAgentAndUser(t)
@@ -358,11 +358,23 @@ func TestIssue187(t *testing.T) {
 	sr.Git(t, "commit", "-m", "commit 1")
 	sr.Git(t, "push", "-u", "origin", "dev")
 
+	// Clone works since we get the right default branch
 	sr2 := gte.NewScratchRepo(t)
-	sr2.Git(t, "clone", sr.Origin())
+	sr2.Git(t, "clone", sr.Origin(), ".")
+	sr2.ReadFile(t, "a", "11111")
+	err := sr2.InDir(t, func() error {
+		var out []byte
+		out, err := os.ReadFile(".git/HEAD")
+		require.NoError(t, err)
+		require.Equal(t, "ref: refs/heads/dev\n", string(out))
+		return nil
+	})
+	require.NoError(t, err)
 
+	// If you specify a branch, it all works.
 	sr3 := gte.NewScratchRepo(t)
-	sr3.Git(t, "clone", "-b", "dev", sr.Origin())
+	sr3.Git(t, "clone", "-b", "dev", sr.Origin(), ".")
+	sr3.ReadFile(t, "a", "11111")
 }
 
 func TestGitForcePush(t *testing.T) {
