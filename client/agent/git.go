@@ -4,7 +4,9 @@
 package agent
 
 import (
+	"bytes"
 	"context"
+	"fmt"
 	"slices"
 	"strings"
 
@@ -16,6 +18,7 @@ import (
 	"github.com/foks-proj/go-foks/proto/rem"
 	remhelp "github.com/foks-proj/go-git-remhelp"
 	"github.com/foks-proj/go-snowpack-rpc/rpc"
+	"github.com/go-git/go-git/v5/plumbing"
 )
 
 type GitTermLog struct {
@@ -197,6 +200,95 @@ func (c *AgentConn) GitLs(ctx context.Context, cfg lcl.KVConfig) ([]proto.GitURL
 	})
 
 	return ret, nil
+}
+
+func (c *AgentConn) GitGetDefaultBranch(
+	ctx context.Context,
+	arg lcl.GitGetDefaultBranchArg,
+) (lcl.GitReferenceName, error) {
+	var zed lcl.GitReferenceName
+	m, tm, err := c.kvInit(ctx, arg.Cfg)
+	if err != nil {
+		return zed, err
+	}
+	nm, err := libgit.NormalizedRepoName(string(arg.Nm))
+	if err != nil {
+		return zed, err
+	}
+	head := libgit.NewGitPath(nm).Head()
+	var buf bytes.Buffer
+	_, err = tm.GetFileWithHeader(m, arg.Cfg, head, &buf)
+	if err != nil {
+		return zed, err
+	}
+	raw := buf.String()
+	parts := strings.Fields(raw)
+
+	if len(parts) != 2 && len(parts) != 3 {
+		return zed, core.GitBadHeadError("must have either 2 or 3 parts")
+	}
+	if parts[0] != "ref:" {
+		return zed, core.GitBadHeadError("must start with 'ref:'")
+	}
+	if len(parts) == 3 && parts[2] != "HEAD" {
+		return zed, core.GitBadHeadError("third part must be HEAD")
+	}
+	refHeads := "refs/heads/"
+	if !strings.HasPrefix(parts[1], refHeads) {
+		return zed, core.GitBadHeadError("must start with 'ref/heads/'")
+	}
+	ret := lcl.GitReferenceName(parts[1][len(refHeads):])
+	return ret, nil
+}
+
+func (c *AgentConn) GitSetDefaultBranch(
+	ctx context.Context,
+	arg lcl.GitSetDefaultBranchArg,
+) error {
+	m, tm, err := c.kvInit(ctx, arg.Cfg)
+	if err != nil {
+		return err
+	}
+	nm, err := libgit.NormalizedRepoName(string(arg.Nm))
+	if err != nil {
+		return err
+	}
+
+	gp := libgit.NewGitPath(nm)
+
+	head := gp.Head()
+	fullRefName := plumbing.ReferenceName(fmt.Sprintf("refs/heads/%s", arg.Rn))
+	err = fullRefName.Validate()
+
+	if err != nil {
+		return core.GitBadRefNameError(err.Error())
+	}
+
+	_, err = tm.StatGitRef(m, arg.Cfg, gp.PrefixJoined(), proto.KVPath(fullRefName.String()))
+	isNoEnt := core.IsKVNoentError(err)
+	var retErr error
+	switch {
+	case err != nil && !isNoEnt:
+		return err
+	case isNoEnt && !arg.Force:
+		return core.GitDanglingRefError{Forced: false}
+	case isNoEnt && arg.Force:
+		retErr = core.GitDanglingRefError{Forced: true}
+	}
+
+	dat := fmt.Sprintf("ref: %s HEAD\n", fullRefName.String())
+
+	if !tm.IsSmallFile(m, len(dat)) {
+		return core.GitBadRefNameError("reference name too long")
+	}
+	cfg := arg.Cfg
+	cfg.OverwriteOk = true
+	_, err = tm.PutFileFirst(m, cfg, head, []byte(dat), true)
+	if err != nil {
+		return err
+	}
+
+	return retErr
 }
 
 var _ lcl.GitHelperInterface = (*AgentConn)(nil)

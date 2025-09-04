@@ -1073,6 +1073,30 @@ func (g GitGenericError) Error() string {
 	return "git error: " + string(g)
 }
 
+type GitBadHeadError string
+
+func (g GitBadHeadError) Error() string {
+	return "git bad HEAD error: " + string(g)
+}
+
+type GitBadRefNameError string
+
+func (g GitBadRefNameError) Error() string {
+	return "bad git reference name error: " + string(g)
+}
+
+type GitDanglingRefError struct {
+	Forced bool
+}
+
+func (g GitDanglingRefError) Error() string {
+	ret := "git dangling reference error"
+	if g.Forced {
+		ret += " (forced)"
+	}
+	return ret
+}
+
 type WebSessionNotFoundError struct{}
 
 func (w WebSessionNotFoundError) Error() string {
@@ -1597,6 +1621,12 @@ func ErrorToStatus(e error) proto.Status {
 		return ErrorToStatus(te.Err)
 	case GitGenericError:
 		return proto.NewStatusWithGitGenericError(string(te))
+	case GitBadHeadError:
+		return proto.NewStatusWithGitBadHeadError(string(te))
+	case GitBadRefNameError:
+		return proto.NewStatusWithGitBadRefNameError(string(te))
+	case GitDanglingRefError:
+		return proto.NewStatusWithGitDanglingRefError(te.Forced)
 	case remhelp.BadGitPathError:
 		return proto.NewStatusWithGitBadPathError(string(te.Path))
 	case PTKNotFound:
@@ -1916,10 +1946,16 @@ func StatusToError(s proto.Status) error {
 		}
 	case proto.StatusCode_GIT_GENERIC_ERROR:
 		return GitGenericError(s.GitGenericError())
+	case proto.StatusCode_GIT_BAD_HEAD_ERROR:
+		return GitBadHeadError(s.GitBadHeadError())
+	case proto.StatusCode_GIT_BAD_REF_NAME_ERROR:
+		return GitBadRefNameError(s.GitBadRefNameError())
 	case proto.StatusCode_GIT_BAD_PATH_ERROR:
 		return remhelp.BadGitPathError{
 			Path: remhelp.LocalPath(s.GitBadPathError()),
 		}
+	case proto.StatusCode_GIT_DANGLING_REF_ERROR:
+		return GitDanglingRefError{Forced: s.GitDanglingRefError()}
 	case proto.StatusCode_VERSION_NOT_SUPPORTED_ERROR:
 		return VersionNotSupportedError(s.VersionNotSupportedError())
 	default:

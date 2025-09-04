@@ -644,6 +644,23 @@ func (k *Minder) PutGitRef(
 	return nil
 }
 
+func (k *Minder) StatGitRef(
+	m MetaContext,
+	cfg lcl.KVConfig,
+	prefix proto.KVPath,
+	path proto.KVPath,
+) (
+	*lcl.KVStat,
+	error,
+) {
+	gp := gitRefPath{prefix: prefix, path: path}
+	final, err := gp.convert()
+	if err != nil {
+		return nil, err
+	}
+	return k.Stat(m, cfg, final)
+}
+
 func (k *Minder) GetGitRef(
 	m MetaContext,
 	cfg lcl.KVConfig,

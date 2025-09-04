@@ -15,6 +15,8 @@ changelog:
         closes: ["#196"]
       - desc: fix git checkout with no main brain, and also non-standard first pushed branch
         closes: ["#187"]
+      - desc: get/set default git branch
+        closes: ["#204"]  
   - version: 0.1.2
     urgency: low
     stable: true
