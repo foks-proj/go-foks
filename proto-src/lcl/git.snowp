@@ -39,7 +39,8 @@ protocol Git
     ) -> lib.GitURL;
 
     gitLs @1 (
-        cfg @0 : KVConfig
+        cfg @0 : KVConfig,
+        allTeams @1 : Bool
     ) -> List(lib.GitURL);
 
     gitGetDefaultBranch @2 (

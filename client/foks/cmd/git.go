@@ -184,16 +184,28 @@ func gitGetDefaultBranch(m libclient.MetaContext, top *cobra.Command) {
 
 func gitLs(m libclient.MetaContext, top *cobra.Command) {
 
+	var doAll bool
+
 	quickGitCmd(m, top,
 		"ls", []string{"list"},
 		"list remote git repositories",
 		"list remote git repositories",
-		quickKVOpts{}, nil,
+		quickKVOpts{},
+		func(cob *cobra.Command) {
+			cob.Flags().BoolVar(&doAll, "all-teams", false,
+				"list remote git repositories for all teams current user is a member of",
+			)
+		},
 		func(arg []string, cfg lcl.KVConfig, cli lcl.GitClient) error {
 			if len(arg) != 0 {
 				return ArgsError("expected 0 arguments")
 			}
-			urls, err := cli.GitLs(m.Ctx(), cfg)
+			urls, err := cli.GitLs(m.Ctx(),
+				lcl.GitLsArg{
+					Cfg:      cfg,
+					AllTeams: doAll,
+				},
+			)
 
 			// If we don't have a /, /app, or /app/git directory,
 			// we are still OK and return an empty list.
@@ -203,6 +215,10 @@ func gitLs(m libclient.MetaContext, top *cobra.Command) {
 			}
 			if err != nil {
 				return err
+			}
+
+			if m.G().Cfg().JSONOutput() {
+				return JSONOutput(m, urls)
 			}
 
 			for _, url := range urls {

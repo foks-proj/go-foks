@@ -426,11 +426,13 @@ func (g *GitCreateArg) Decode(dec rpc.Decoder) error {
 func (g *GitCreateArg) Bytes() []byte { return nil }
 
 type GitLsArg struct {
-	Cfg KVConfig
+	Cfg      KVConfig
+	AllTeams bool
 }
 type GitLsArgInternal__ struct {
-	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
-	Cfg     *KVConfigInternal__
+	_struct  struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
+	Cfg      *KVConfigInternal__
+	AllTeams *bool
 }
 
 func (g GitLsArgInternal__) Import() GitLsArg {
@@ -441,11 +443,18 @@ func (g GitLsArgInternal__) Import() GitLsArg {
 			}
 			return x.Import()
 		})(g.Cfg),
+		AllTeams: (func(x *bool) (ret bool) {
+			if x == nil {
+				return ret
+			}
+			return *x
+		})(g.AllTeams),
 	}
 }
 func (g GitLsArg) Export() *GitLsArgInternal__ {
 	return &GitLsArgInternal__{
-		Cfg: g.Cfg.Export(),
+		Cfg:      g.Cfg.Export(),
+		AllTeams: &g.AllTeams,
 	}
 }
 func (g *GitLsArg) Encode(enc rpc.Encoder) error {
@@ -580,7 +589,7 @@ func (g *GitSetDefaultBranchArg) Bytes() []byte { return nil }
 
 type GitInterface interface {
 	GitCreate(context.Context, GitCreateArg) (lib.GitURL, error)
-	GitLs(context.Context, KVConfig) ([]lib.GitURL, error)
+	GitLs(context.Context, GitLsArg) ([]lib.GitURL, error)
 	GitGetDefaultBranch(context.Context, GitGetDefaultBranchArg) (GitReferenceName, error)
 	GitSetDefaultBranch(context.Context, GitSetDefaultBranchArg) error
 	ErrorWrapper() func(error) lib.Status
@@ -649,10 +658,7 @@ func (c GitClient) GitCreate(ctx context.Context, arg GitCreateArg) (res lib.Git
 	res = tmp.Data.Import()
 	return
 }
-func (c GitClient) GitLs(ctx context.Context, cfg KVConfig) (res []lib.GitURL, err error) {
-	arg := GitLsArg{
-		Cfg: cfg,
-	}
+func (c GitClient) GitLs(ctx context.Context, arg GitLsArg) (res []lib.GitURL, err error) {
 	warg := &rpc.DataWrap[Header, *GitLsArgInternal__]{
 		Data: arg.Export(),
 	}
@@ -781,7 +787,7 @@ func GitProtocol(i GitInterface) rpc.ProtocolV2 {
 							return nil, err
 						}
 						typedArg := typedWrappedArg.Data
-						tmp, err := i.GitLs(ctx, (typedArg.Import()).Cfg)
+						tmp, err := i.GitLs(ctx, (typedArg.Import()))
 						if err != nil {
 							return nil, err
 						}

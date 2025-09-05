@@ -279,6 +279,36 @@ func TestGitTeamSimplePushFetch(t *testing.T) {
 	sr2.Git(t, "clone", sr.Origin(), ".")
 	sr2.ReadFile(t, "a/b/1", "11111")
 	sr2.ReadFile(t, "a/2", "2222")
+
+	// now we're going to test `git ls --all-teams` and to do so, let's at least
+	// have 2 repos to list --- one for the user and one for the user's team.
+	// then assert the user's repo is listed first.
+	r2, err := core.RandomBase36String(10)
+	require.NoError(t, err)
+	x.agent.runCmd(t, nil, "git", "create", r2)
+
+	var allRepos []proto.GitURL
+	x.agent.runCmdToJSON(t, &allRepos, "git", "ls", "--all-teams", "--json")
+
+	require.Len(t, allRepos, 2)
+
+	require.Equal(t, proto.GitRepo(r2), allRepos[0].Repo)
+	user, err := allRepos[0].Fqp.ToUser()
+	require.NoError(t, err)
+	require.NotNil(t, user)
+	isName, err := user.User.GetS()
+	require.NoError(t, err)
+	require.True(t, isName)
+	require.Equal(t, x.username, user.User.True())
+
+	require.Equal(t, proto.GitRepo(gte.Desc.RepoName), allRepos[1].Repo)
+	team, err := allRepos[1].Fqp.ToTeam()
+	require.NoError(t, err)
+	require.NotNil(t, team)
+	isName, err = team.Team.GetS()
+	require.NoError(t, err)
+	require.True(t, isName)
+	require.Equal(t, proto.NameUtf8(tm), team.Team.True())
 }
 
 func TestGitSimplePushFetchPack(t *testing.T) {
