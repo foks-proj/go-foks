@@ -26,6 +26,8 @@ protocol GitHelper
 
 }
 
+typedef GitReferenceName = Text;
+
 protocol Git 
     argHeader Header
     resHeader Header
@@ -39,6 +41,20 @@ protocol Git
     gitLs @1 (
         cfg @0 : KVConfig
     ) -> List(lib.GitURL);
+
+    gitGetDefaultBranch @2 (
+        cfg @0 : KVConfig,
+        nm @1 : lib.GitRepo
+    ) -> GitReferenceName;
+
+    // Can return GitDanglingRefError if the reference is dangling
+    // and force was specified. It still worked.
+    gitSetDefaultBranch @3 (
+        cfg @0 : KVConfig,
+        nm @1 : lib.GitRepo,
+        rn @2 : GitReferenceName,
+        force @3 : Bool
+    );
 }
 
 struct LogLine {

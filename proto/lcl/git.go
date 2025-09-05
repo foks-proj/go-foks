@@ -340,6 +340,41 @@ func GitHelperProtocol(i GitHelperInterface) rpc.ProtocolV2 {
 	}
 }
 
+type GitReferenceName string
+type GitReferenceNameInternal__ string
+
+func (g GitReferenceName) Export() *GitReferenceNameInternal__ {
+	tmp := ((string)(g))
+	return ((*GitReferenceNameInternal__)(&tmp))
+}
+func (g GitReferenceNameInternal__) Import() GitReferenceName {
+	tmp := (string)(g)
+	return GitReferenceName((func(x *string) (ret string) {
+		if x == nil {
+			return ret
+		}
+		return *x
+	})(&tmp))
+}
+
+func (g *GitReferenceName) Encode(enc rpc.Encoder) error {
+	return enc.Encode(g.Export())
+}
+
+func (g *GitReferenceName) Decode(dec rpc.Decoder) error {
+	var tmp GitReferenceNameInternal__
+	err := dec.Decode(&tmp)
+	if err != nil {
+		return err
+	}
+	*g = tmp.Import()
+	return nil
+}
+
+func (g GitReferenceName) Bytes() []byte {
+	return nil
+}
+
 var GitProtocolID rpc.ProtocolUniqueID = rpc.ProtocolUniqueID(0xe40a37b2)
 
 type GitCreateArg struct {
@@ -429,9 +464,125 @@ func (g *GitLsArg) Decode(dec rpc.Decoder) error {
 
 func (g *GitLsArg) Bytes() []byte { return nil }
 
+type GitGetDefaultBranchArg struct {
+	Cfg KVConfig
+	Nm  lib.GitRepo
+}
+type GitGetDefaultBranchArgInternal__ struct {
+	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
+	Cfg     *KVConfigInternal__
+	Nm      *lib.GitRepoInternal__
+}
+
+func (g GitGetDefaultBranchArgInternal__) Import() GitGetDefaultBranchArg {
+	return GitGetDefaultBranchArg{
+		Cfg: (func(x *KVConfigInternal__) (ret KVConfig) {
+			if x == nil {
+				return ret
+			}
+			return x.Import()
+		})(g.Cfg),
+		Nm: (func(x *lib.GitRepoInternal__) (ret lib.GitRepo) {
+			if x == nil {
+				return ret
+			}
+			return x.Import()
+		})(g.Nm),
+	}
+}
+func (g GitGetDefaultBranchArg) Export() *GitGetDefaultBranchArgInternal__ {
+	return &GitGetDefaultBranchArgInternal__{
+		Cfg: g.Cfg.Export(),
+		Nm:  g.Nm.Export(),
+	}
+}
+func (g *GitGetDefaultBranchArg) Encode(enc rpc.Encoder) error {
+	return enc.Encode(g.Export())
+}
+
+func (g *GitGetDefaultBranchArg) Decode(dec rpc.Decoder) error {
+	var tmp GitGetDefaultBranchArgInternal__
+	err := dec.Decode(&tmp)
+	if err != nil {
+		return err
+	}
+	*g = tmp.Import()
+	return nil
+}
+
+func (g *GitGetDefaultBranchArg) Bytes() []byte { return nil }
+
+type GitSetDefaultBranchArg struct {
+	Cfg   KVConfig
+	Nm    lib.GitRepo
+	Rn    GitReferenceName
+	Force bool
+}
+type GitSetDefaultBranchArgInternal__ struct {
+	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
+	Cfg     *KVConfigInternal__
+	Nm      *lib.GitRepoInternal__
+	Rn      *GitReferenceNameInternal__
+	Force   *bool
+}
+
+func (g GitSetDefaultBranchArgInternal__) Import() GitSetDefaultBranchArg {
+	return GitSetDefaultBranchArg{
+		Cfg: (func(x *KVConfigInternal__) (ret KVConfig) {
+			if x == nil {
+				return ret
+			}
+			return x.Import()
+		})(g.Cfg),
+		Nm: (func(x *lib.GitRepoInternal__) (ret lib.GitRepo) {
+			if x == nil {
+				return ret
+			}
+			return x.Import()
+		})(g.Nm),
+		Rn: (func(x *GitReferenceNameInternal__) (ret GitReferenceName) {
+			if x == nil {
+				return ret
+			}
+			return x.Import()
+		})(g.Rn),
+		Force: (func(x *bool) (ret bool) {
+			if x == nil {
+				return ret
+			}
+			return *x
+		})(g.Force),
+	}
+}
+func (g GitSetDefaultBranchArg) Export() *GitSetDefaultBranchArgInternal__ {
+	return &GitSetDefaultBranchArgInternal__{
+		Cfg:   g.Cfg.Export(),
+		Nm:    g.Nm.Export(),
+		Rn:    g.Rn.Export(),
+		Force: &g.Force,
+	}
+}
+func (g *GitSetDefaultBranchArg) Encode(enc rpc.Encoder) error {
+	return enc.Encode(g.Export())
+}
+
+func (g *GitSetDefaultBranchArg) Decode(dec rpc.Decoder) error {
+	var tmp GitSetDefaultBranchArgInternal__
+	err := dec.Decode(&tmp)
+	if err != nil {
+		return err
+	}
+	*g = tmp.Import()
+	return nil
+}
+
+func (g *GitSetDefaultBranchArg) Bytes() []byte { return nil }
+
 type GitInterface interface {
 	GitCreate(context.Context, GitCreateArg) (lib.GitURL, error)
 	GitLs(context.Context, KVConfig) ([]lib.GitURL, error)
+	GitGetDefaultBranch(context.Context, GitGetDefaultBranchArg) (GitReferenceName, error)
+	GitSetDefaultBranch(context.Context, GitSetDefaultBranchArg) error
 	ErrorWrapper() func(error) lib.Status
 	CheckArgHeader(ctx context.Context, h Header) error
 	MakeResHeader() Header
@@ -539,6 +690,47 @@ func (c GitClient) GitLs(ctx context.Context, cfg KVConfig) (res []lib.GitURL, e
 	})(&tmp.Data)
 	return
 }
+func (c GitClient) GitGetDefaultBranch(ctx context.Context, arg GitGetDefaultBranchArg) (res GitReferenceName, err error) {
+	warg := &rpc.DataWrap[Header, *GitGetDefaultBranchArgInternal__]{
+		Data: arg.Export(),
+	}
+	if c.MakeArgHeader != nil {
+		warg.Header = c.MakeArgHeader()
+	}
+	var tmp rpc.DataWrap[Header, GitReferenceNameInternal__]
+	err = c.Cli.Call2(ctx, rpc.NewMethodV2(GitProtocolID, 2, "Git.gitGetDefaultBranch"), warg, &tmp, 0*time.Millisecond, gitErrorUnwrapperAdapter{h: c.ErrorUnwrapper})
+	if err != nil {
+		return
+	}
+	if c.CheckResHeader != nil {
+		err = c.CheckResHeader(ctx, tmp.Header)
+		if err != nil {
+			return
+		}
+	}
+	res = tmp.Data.Import()
+	return
+}
+func (c GitClient) GitSetDefaultBranch(ctx context.Context, arg GitSetDefaultBranchArg) (err error) {
+	warg := &rpc.DataWrap[Header, *GitSetDefaultBranchArgInternal__]{
+		Data: arg.Export(),
+	}
+	if c.MakeArgHeader != nil {
+		warg.Header = c.MakeArgHeader()
+	}
+	var tmp rpc.DataWrap[Header, interface{}]
+	err = c.Cli.Call2(ctx, rpc.NewMethodV2(GitProtocolID, 3, "Git.gitSetDefaultBranch"), warg, &tmp, 0*time.Millisecond, gitErrorUnwrapperAdapter{h: c.ErrorUnwrapper})
+	if err != nil {
+		return
+	}
+	if c.CheckResHeader != nil {
+		err = c.CheckResHeader(ctx, tmp.Header)
+		if err != nil {
+			return
+		}
+	}
+	return
+}
 func GitProtocol(i GitInterface) rpc.ProtocolV2 {
 	return rpc.ProtocolV2{
 		Name: "Git",
@@ -613,6 +805,63 @@ func GitProtocol(i GitInterface) rpc.ProtocolV2 {
 					},
 				},
 				Name: "gitLs",
+			},
+			2: {
+				ServeHandlerDescription: rpc.ServeHandlerDescription{
+					MakeArg: func() interface{} {
+						var ret rpc.DataWrap[Header, *GitGetDefaultBranchArgInternal__]
+						return &ret
+					},
+					Handler: func(ctx context.Context, args interface{}) (interface{}, error) {
+						typedWrappedArg, ok := args.(*rpc.DataWrap[Header, *GitGetDefaultBranchArgInternal__])
+						if !ok {
+							err := rpc.NewTypeError((*rpc.DataWrap[Header, *GitGetDefaultBranchArgInternal__])(nil), args)
+							return nil, err
+						}
+						if err := i.CheckArgHeader(ctx, typedWrappedArg.Header); err != nil {
+							return nil, err
+						}
+						typedArg := typedWrappedArg.Data
+						tmp, err := i.GitGetDefaultBranch(ctx, (typedArg.Import()))
+						if err != nil {
+							return nil, err
+						}
+						ret := rpc.DataWrap[Header, *GitReferenceNameInternal__]{
+							Data:   tmp.Export(),
+							Header: i.MakeResHeader(),
+						}
+						return &ret, nil
+					},
+				},
+				Name: "gitGetDefaultBranch",
+			},
+			3: {
+				ServeHandlerDescription: rpc.ServeHandlerDescription{
+					MakeArg: func() interface{} {
+						var ret rpc.DataWrap[Header, *GitSetDefaultBranchArgInternal__]
+						return &ret
+					},
+					Handler: func(ctx context.Context, args interface{}) (interface{}, error) {
+						typedWrappedArg, ok := args.(*rpc.DataWrap[Header, *GitSetDefaultBranchArgInternal__])
+						if !ok {
+							err := rpc.NewTypeError((*rpc.DataWrap[Header, *GitSetDefaultBranchArgInternal__])(nil), args)
+							return nil, err
+						}
+						if err := i.CheckArgHeader(ctx, typedWrappedArg.Header); err != nil {
+							return nil, err
+						}
+						typedArg := typedWrappedArg.Data
+						err := i.GitSetDefaultBranch(ctx, (typedArg.Import()))
+						if err != nil {
+							return nil, err
+						}
+						ret := rpc.DataWrap[Header, interface{}]{
+							Header: i.MakeResHeader(),
+						}
+						return &ret, nil
+					},
+				},
+				Name: "gitSetDefaultBranch",
 			},
 		},
 		WrapError: GitMakeGenericErrorWrapper(i.ErrorWrapper()),

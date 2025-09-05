@@ -304,6 +304,13 @@ func boxChunk(
 	return ret, sz, nil
 }
 
+func (k *Minder) IsSmallFile(
+	m MetaContext,
+	dataLen int,
+) bool {
+	return dataLen+kv.SmallFileOverhead <= kv.SmallFileSize
+}
+
 func (k *Minder) PutFileFirst(
 	m MetaContext,
 	cfg lcl.KVConfig,
@@ -314,7 +321,7 @@ func (k *Minder) PutFileFirst(
 	*PutFileRes,
 	error,
 ) {
-	if len(data)+kv.SmallFileOverhead <= kv.SmallFileSize {
+	if k.IsSmallFile(m, len(data)) {
 		return k.putSmallFile(m, cfg, path, lcl.SmallFileData(data))
 	}
 

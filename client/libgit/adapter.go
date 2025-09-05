@@ -70,6 +70,10 @@ func (p GitPath) RefsPath() proto.KVPath {
 	return p.Path("refs")
 }
 
+func (p GitPath) Head() proto.KVPath {
+	return p.Path("HEAD")
+}
+
 type adapter struct {
 	fs         *libkv.Minder
 	g          *libclient.GlobalContext

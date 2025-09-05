@@ -22,9 +22,10 @@ func quickGitCmd(
 	short string,
 	long string,
 	quickKVOpts quickKVOpts,
+	setup func(cob *cobra.Command),
 	quickGitFn func(arg []string, cfg lcl.KVConfig, kvcli lcl.GitClient) error,
 ) {
-	quickKVCmd(m, top, use, aliases, short, long, quickKVOpts, nil,
+	quickKVCmd(m, top, use, aliases, short, long, quickKVOpts, setup,
 		func(arg []string, cfg lcl.KVConfig, kvcli lcl.KVClient) error {
 			gcli := kvcli.Cli
 			cli := lcl.GitClient{
@@ -42,6 +43,7 @@ func gitCreate(m libclient.MetaContext, top *cobra.Command) {
 		"Create a new git repository",
 		"Create a new git repository",
 		quickKVOpts{NoSupportMkdirP: true},
+		nil,
 		func(arg []string, cfg lcl.KVConfig, cli lcl.GitClient) error {
 			if len(arg) != 1 {
 				return ArgsError("expected exactly one argument -- the repo name")
@@ -101,13 +103,92 @@ func gitShellConfig(m libclient.MetaContext, top *cobra.Command) {
 	)
 }
 
+func gitSetDefaultBranch(m libclient.MetaContext, top *cobra.Command) {
+	var force bool
+	quickGitCmd(m, top,
+		"set-default-branch", nil,
+		"Set the default branch for a git repository",
+		"Set the default branch for a git repository",
+		quickKVOpts{
+			NoSupportMkdirP: true,
+		},
+		func(cob *cobra.Command) {
+			cob.Flags().BoolVar(&force, "force", false,
+				"force setting the default branch even if the branch does not exist",
+			)
+		},
+		func(arg []string, cfg lcl.KVConfig, kvcli lcl.GitClient) error {
+			if len(arg) != 2 {
+				return ArgsError("expected exactly two arguments -- the repo name and the branch name")
+			}
+			name, err := libgit.NormalizedRepoName(arg[0])
+			if err != nil {
+				return err
+			}
+			branch := arg[1]
+			err = kvcli.GitSetDefaultBranch(m.Ctx(), lcl.GitSetDefaultBranchArg{
+				Nm:    name,
+				Rn:    lcl.GitReferenceName(branch),
+				Cfg:   cfg,
+				Force: force,
+			})
+			if dErr, dangler := err.(core.GitDanglingRefError); dangler && dErr.Forced {
+				m.G().UIs().Terminal.Printf("Warning: dangling reference '%s' (forced)\n", branch)
+			} else if err != nil {
+				return err
+			}
+			err = PartingConsoleMessage(m)
+			if err != nil {
+				return err
+			}
+			return nil
+		},
+	)
+}
+
+func gitGetDefaultBranch(m libclient.MetaContext, top *cobra.Command) {
+	quickGitCmd(m, top,
+		"get-default-branch", nil,
+		"Get the default branch for a git repository",
+		"Get the default branch for a git repository",
+		quickKVOpts{
+			NoSupportMkdirP: true,
+		}, nil,
+		func(arg []string, cfg lcl.KVConfig, cli lcl.GitClient) error {
+			if len(arg) != 1 {
+				return ArgsError("expected exactly one argument -- the repo name")
+			}
+			name, err := libgit.NormalizedRepoName(arg[0])
+			if err != nil {
+				return err
+			}
+			branch, err := cli.GitGetDefaultBranch(
+				m.Ctx(),
+				lcl.GitGetDefaultBranchArg{
+					Nm:  name,
+					Cfg: cfg,
+				},
+			)
+			if err != nil {
+				return err
+			}
+			m.G().UIs().Terminal.Printf("%s\n", branch)
+			err = PartingConsoleMessage(m)
+			if err != nil {
+				return err
+			}
+			return nil
+		},
+	)
+}
+
 func gitLs(m libclient.MetaContext, top *cobra.Command) {
 
 	quickGitCmd(m, top,
 		"ls", []string{"list"},
 		"list remote git repositories",
 		"list remote git repositories",
-		quickKVOpts{},
+		quickKVOpts{}, nil,
 		func(arg []string, cfg lcl.KVConfig, cli lcl.GitClient) error {
 			if len(arg) != 0 {
 				return ArgsError("expected 0 arguments")
@@ -153,6 +234,8 @@ func gitCmd(m libclient.MetaContext) *cobra.Command {
 	gitCreate(m, top)
 	gitShellConfig(m, top)
 	gitLs(m, top)
+	gitGetDefaultBranch(m, top)
+	gitSetDefaultBranch(m, top)
 	return top
 }
 

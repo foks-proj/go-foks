@@ -143,6 +143,9 @@ const (
 	StatusCode_KV_ABS_PATH_ERROR                       StatusCode = 8020
 	StatusCode_GIT_GENERIC_ERROR                       StatusCode = 9001
 	StatusCode_GIT_BAD_PATH_ERROR                      StatusCode = 9002
+	StatusCode_GIT_BAD_HEAD_ERROR                      StatusCode = 9003
+	StatusCode_GIT_BAD_REF_NAME_ERROR                  StatusCode = 9004
+	StatusCode_GIT_DANGLING_REF_ERROR                  StatusCode = 9005
 	StatusCode_HTTP_ERROR                              StatusCode = 10001
 	StatusCode_STRIPE_SESSION_EXISTS_ERROR             StatusCode = 11001
 )
@@ -279,6 +282,9 @@ var StatusCodeMap = map[string]StatusCode{
 	"KV_ABS_PATH_ERROR":                       8020,
 	"GIT_GENERIC_ERROR":                       9001,
 	"GIT_BAD_PATH_ERROR":                      9002,
+	"GIT_BAD_HEAD_ERROR":                      9003,
+	"GIT_BAD_REF_NAME_ERROR":                  9004,
+	"GIT_DANGLING_REF_ERROR":                  9005,
 	"HTTP_ERROR":                              10001,
 	"STRIPE_SESSION_EXISTS_ERROR":             11001,
 }
@@ -414,6 +420,9 @@ var StatusCodeRevMap = map[StatusCode]string{
 	8020:  "KV_ABS_PATH_ERROR",
 	9001:  "GIT_GENERIC_ERROR",
 	9002:  "GIT_BAD_PATH_ERROR",
+	9003:  "GIT_BAD_HEAD_ERROR",
+	9004:  "GIT_BAD_REF_NAME_ERROR",
+	9005:  "GIT_DANGLING_REF_ERROR",
 	10001: "HTTP_ERROR",
 	11001: "STRIPE_SESSION_EXISTS_ERROR",
 }
@@ -1175,6 +1184,7 @@ type Status struct {
 	F_19__ *OAuth2TokenError     `json:"f19,omitempty"`
 	F_20__ *OAuth2IdPError       `json:"f20,omitempty"`
 	F_21__ *int64                `json:"f21,omitempty"`
+	F_22__ *bool                 `json:"f22,omitempty"`
 	F_0__  *string               `json:"f0,omitempty"`
 }
 type StatusInternal__ struct {
@@ -1205,6 +1215,7 @@ type StatusInternalSwitch__ struct {
 	F_19__  *OAuth2TokenErrorInternal__     `codec:"j"`
 	F_20__  *OAuth2IdPErrorInternal__       `codec:"k"`
 	F_21__  *int64                          `codec:"l"`
+	F_22__  *bool                           `codec:"m"`
 	F_0__   *string                         `codec:"0"`
 }
 
@@ -1212,7 +1223,7 @@ func (s Status) GetSc() (ret StatusCode, err error) {
 	switch s.Sc {
 	case StatusCode_OK, StatusCode_AUTH_ERROR, StatusCode_TIMEOUT_ERROR, StatusCode_REPLAY_ERROR, StatusCode_BAD_PASSPHRASE_ERROR, StatusCode_RATE_LIMIT_ERROR, StatusCode_TX_RETRY_ERROR, StatusCode_WRONG_USER_ERROR, StatusCode_BAD_INVITE_CODE_ERROR, StatusCode_NOT_IMPLEMENTED, StatusCode_USERNAME_IN_USE_ERROR, StatusCode_MERKLE_NO_ROOT_ERROR, StatusCode_NO_DEFAULT_HOST_ERROR, StatusCode_KEY_IN_USE_ERROR, StatusCode_MERKLE_LEAF_NOT_FOUND_ERROR, StatusCode_USER_NOT_FOUND_ERROR, StatusCode_ROW_NOT_FOUND_ERROR, StatusCode_KEX_BAD_SECRET, StatusCode_PASSPHRASE_LOCKED_ERROR, StatusCode_NO_ACTIVE_USER_ERROR, StatusCode_SIGNING_KEY_NOT_FULLY_PROVISIONED_ERROR, StatusCode_CANCELED_INPUT_ERROR, StatusCode_TESTING_ONLY_ERROR, StatusCode_PASSPHRASE_NOT_FOUND_ERROR, StatusCode_RPC_EOF, StatusCode_TEAM_NOT_FOUND_ERROR, StatusCode_TEAM_NO_SRC_ROLE_ERROR, StatusCode_NEED_LOGIN_ERROR, StatusCode_BAD_RANGE_ERROR, StatusCode_HOSTID_NOT_FOUND_ERROR, StatusCode_KV_UPLOAD_IN_PROGRESS_ERROR, StatusCode_KV_EXISTS_ERROR, StatusCode_KV_NEED_FILE_ERROR, StatusCode_KV_NEED_DIR_ERROR, StatusCode_KV_PATH_TOO_DEEP_ERROR, StatusCode_KV_LOCK_ALREADY_HELD_ERROR, StatusCode_KV_LOCK_TIMEOUT_ERROR, StatusCode_KV_RMDIR_NEED_RECURSIVE_ERROR, StatusCode_CONTEXT_CANCELED_ERROR, StatusCode_NETWORK_CONDITIONER_ERROR, StatusCode_WEB_SESSION_NOT_FOUND_ERROR, StatusCode_NO_ACTIVE_PLAN_ERROR, StatusCode_OVER_QUOTA_ERROR, StatusCode_PLAN_EXISTS_ERROR, StatusCode_EXPIRED_ERROR, StatusCode_STRIPE_SESSION_EXISTS_ERROR, StatusCode_SSO_IDP_LOCKED_ERROR, StatusCode_TEAM_INVITE_ALREADY_ACCEPTED_ERROR, StatusCode_DEVICE_ALREADY_PROVISIONED_ERROR, StatusCode_KV_NOT_AVAILABLE_ERROR, StatusCode_YUBI_DEFAULT_MANAGEMENT_KEY_ERROR, StatusCode_YUBI_BAD_PIN_FORMAT_ERROR, StatusCode_YUBI_PIN_REQUIRED_ERROR, StatusCode_YUBI_DEFAULT_PIN_ERROR:
 		break
-	case StatusCode_TLS_ERROR, StatusCode_CONFIG_ERROR, StatusCode_DUPLICATE_ERROR, StatusCode_RESERVATION_ERROR, StatusCode_LINK_ERROR, StatusCode_VALIDATION_ERROR, StatusCode_VERIFY_ERROR, StatusCode_X509_ERROR, StatusCode_PERMISSION_ERROR, StatusCode_PREV_ERROR, StatusCode_BOX_ERROR, StatusCode_INSERT_ERROR, StatusCode_UPDATE_ERROR, StatusCode_REVOKE_ERROR, StatusCode_COMMITMENT_ERROR, StatusCode_YUBI_ERROR, StatusCode_HOSTCHAIN_ERROR, StatusCode_GRANT_ERROR, StatusCode_NO_CHANGE_ERROR, StatusCode_BAD_ARGS_ERROR, StatusCode_KEY_NOT_FOUND_ERROR, StatusCode_PROTO_DATA_ERROR, StatusCode_HOST_MISMATCH_ERROR, StatusCode_BAD_FORMAT_ERROR, StatusCode_AMBIGUOUS_ERROR, StatusCode_ROLE_ERROR, StatusCode_REVOKE_RACE_ERROR, StatusCode_MERKLE_VERIFY_ERROR, StatusCode_TEAM_ERROR, StatusCode_TEAM_RACE_ERROR, StatusCode_TEAM_BEARER_TOKEN_STALE_ERROR, StatusCode_TEAM_CERT_ERROR, StatusCode_TEAM_ROSTER_ERROR, StatusCode_TEAM_KEY_ERROR, StatusCode_TEAM_INDEX_RANGE_ERROR, StatusCode_TEAM_REMOVAL_KEY_ERROR, StatusCode_TEAM_EXPLORE_ERROR, StatusCode_GENERIC_NOT_FOUND_ERROR, StatusCode_KV_UPLOAD_ERROR, StatusCode_KV_RACE_ERROR, StatusCode_KV_PATH_ERROR, StatusCode_KV_MKDIR_ERROR, StatusCode_KV_TYPE_ERROR, StatusCode_KV_NOENT_ERROR, StatusCode_GIT_GENERIC_ERROR, StatusCode_GIT_BAD_PATH_ERROR, StatusCode_UPGRADE_NEEDED_ERROR, StatusCode_VERSION_NOT_SUPPORTED_ERROR, StatusCode_HOST_IN_USE_ERROR, StatusCode_OAUTH2_ERROR, StatusCode_KV_ABS_PATH_ERROR, StatusCode_YUBI_BUS_ERROR, StatusCode_KEYCHAIN_ERROR, StatusCode_AGENT_CONNECT_ERROR, StatusCode_BOT_TOKEN_ERROR:
+	case StatusCode_TLS_ERROR, StatusCode_CONFIG_ERROR, StatusCode_DUPLICATE_ERROR, StatusCode_RESERVATION_ERROR, StatusCode_LINK_ERROR, StatusCode_VALIDATION_ERROR, StatusCode_VERIFY_ERROR, StatusCode_X509_ERROR, StatusCode_PERMISSION_ERROR, StatusCode_PREV_ERROR, StatusCode_BOX_ERROR, StatusCode_INSERT_ERROR, StatusCode_UPDATE_ERROR, StatusCode_REVOKE_ERROR, StatusCode_COMMITMENT_ERROR, StatusCode_YUBI_ERROR, StatusCode_HOSTCHAIN_ERROR, StatusCode_GRANT_ERROR, StatusCode_NO_CHANGE_ERROR, StatusCode_BAD_ARGS_ERROR, StatusCode_KEY_NOT_FOUND_ERROR, StatusCode_PROTO_DATA_ERROR, StatusCode_HOST_MISMATCH_ERROR, StatusCode_BAD_FORMAT_ERROR, StatusCode_AMBIGUOUS_ERROR, StatusCode_ROLE_ERROR, StatusCode_REVOKE_RACE_ERROR, StatusCode_MERKLE_VERIFY_ERROR, StatusCode_TEAM_ERROR, StatusCode_TEAM_RACE_ERROR, StatusCode_TEAM_BEARER_TOKEN_STALE_ERROR, StatusCode_TEAM_CERT_ERROR, StatusCode_TEAM_ROSTER_ERROR, StatusCode_TEAM_KEY_ERROR, StatusCode_TEAM_INDEX_RANGE_ERROR, StatusCode_TEAM_REMOVAL_KEY_ERROR, StatusCode_TEAM_EXPLORE_ERROR, StatusCode_GENERIC_NOT_FOUND_ERROR, StatusCode_KV_UPLOAD_ERROR, StatusCode_KV_RACE_ERROR, StatusCode_KV_PATH_ERROR, StatusCode_KV_MKDIR_ERROR, StatusCode_KV_TYPE_ERROR, StatusCode_KV_NOENT_ERROR, StatusCode_GIT_GENERIC_ERROR, StatusCode_GIT_BAD_PATH_ERROR, StatusCode_UPGRADE_NEEDED_ERROR, StatusCode_VERSION_NOT_SUPPORTED_ERROR, StatusCode_HOST_IN_USE_ERROR, StatusCode_OAUTH2_ERROR, StatusCode_KV_ABS_PATH_ERROR, StatusCode_YUBI_BUS_ERROR, StatusCode_KEYCHAIN_ERROR, StatusCode_AGENT_CONNECT_ERROR, StatusCode_BOT_TOKEN_ERROR, StatusCode_GIT_BAD_HEAD_ERROR, StatusCode_GIT_BAD_REF_NAME_ERROR:
 		if s.F_1__ == nil {
 			return ret, errors.New("unexpected nil case for F_1__")
 		}
@@ -1295,6 +1306,10 @@ func (s Status) GetSc() (ret StatusCode, err error) {
 	case StatusCode_YUBI_AUTH_ERROR:
 		if s.F_21__ == nil {
 			return ret, errors.New("unexpected nil case for F_21__")
+		}
+	case StatusCode_GIT_DANGLING_REF_ERROR:
+		if s.F_22__ == nil {
+			return ret, errors.New("unexpected nil case for F_22__")
 		}
 	default:
 		if s.F_0__ == nil {
@@ -1798,6 +1813,24 @@ func (s Status) BotTokenError() string {
 	}
 	return *s.F_1__
 }
+func (s Status) GitBadHeadError() string {
+	if s.F_1__ == nil {
+		panic("unexpected nil case; should have been checked")
+	}
+	if s.Sc != StatusCode_GIT_BAD_HEAD_ERROR {
+		panic(fmt.Sprintf("unexpected switch value (%v) when GitBadHeadError is called", s.Sc))
+	}
+	return *s.F_1__
+}
+func (s Status) GitBadRefNameError() string {
+	if s.F_1__ == nil {
+		panic("unexpected nil case; should have been checked")
+	}
+	if s.Sc != StatusCode_GIT_BAD_REF_NAME_ERROR {
+		panic(fmt.Sprintf("unexpected switch value (%v) when GitBadRefNameError is called", s.Sc))
+	}
+	return *s.F_1__
+}
 func (s Status) ProtoNotFoundError() uint64 {
 	if s.F_2__ == nil {
 		panic("unexpected nil case; should have been checked")
@@ -1995,6 +2028,15 @@ func (s Status) YubiAuthError() int64 {
 		panic(fmt.Sprintf("unexpected switch value (%v) when YubiAuthError is called", s.Sc))
 	}
 	return *s.F_21__
+}
+func (s Status) GitDanglingRefError() bool {
+	if s.F_22__ == nil {
+		panic("unexpected nil case; should have been checked")
+	}
+	if s.Sc != StatusCode_GIT_DANGLING_REF_ERROR {
+		panic(fmt.Sprintf("unexpected switch value (%v) when GitDanglingRefError is called", s.Sc))
+	}
+	return *s.F_22__
 }
 func (s Status) Default() string {
 	if s.F_0__ == nil {
@@ -2602,6 +2644,18 @@ func NewStatusWithBotTokenError(v string) Status {
 		F_1__: &v,
 	}
 }
+func NewStatusWithGitBadHeadError(v string) Status {
+	return Status{
+		Sc:    StatusCode_GIT_BAD_HEAD_ERROR,
+		F_1__: &v,
+	}
+}
+func NewStatusWithGitBadRefNameError(v string) Status {
+	return Status{
+		Sc:    StatusCode_GIT_BAD_REF_NAME_ERROR,
+		F_1__: &v,
+	}
+}
 func NewStatusWithProtoNotFoundError(v uint64) Status {
 	return Status{
 		Sc:    StatusCode_PROTO_NOT_FOUND_ERROR,
@@ -2732,6 +2786,12 @@ func NewStatusWithYubiAuthError(v int64) Status {
 	return Status{
 		Sc:     StatusCode_YUBI_AUTH_ERROR,
 		F_21__: &v,
+	}
+}
+func NewStatusWithGitDanglingRefError(v bool) Status {
+	return Status{
+		Sc:     StatusCode_GIT_DANGLING_REF_ERROR,
+		F_22__: &v,
 	}
 }
 func NewStatusDefault(s StatusCode, v string) Status {
@@ -2962,6 +3022,7 @@ func (s StatusInternal__) Import() Status {
 			return &tmp
 		})(s.Switch__.F_20__),
 		F_21__: s.Switch__.F_21__,
+		F_22__: s.Switch__.F_22__,
 		F_0__:  s.Switch__.F_0__,
 	}
 }
@@ -3080,6 +3141,7 @@ func (s Status) Export() *StatusInternal__ {
 				return (*x).Export()
 			})(s.F_20__),
 			F_21__: s.F_21__,
+			F_22__: s.F_22__,
 			F_0__:  s.F_0__,
 		},
 	}

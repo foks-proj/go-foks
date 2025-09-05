@@ -5,6 +5,7 @@ package cli
 
 import (
 	"fmt"
+	"io/fs"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -443,4 +444,57 @@ func TestOneArgClone(t *testing.T) {
 
 	sr2 := gte.NewScratchRepo(t)
 	sr2.Git(t, "clone", sr.Origin())
+}
+
+func TestGetSetDefaultBranch(t *testing.T) {
+	gte, cleanup := newGitTestEnv(t)
+	defer cleanup()
+	au := gte.newAgentAndUser(t)
+	sr := gte.NewScratchRepo(t)
+
+	sr.Git(t, "init")
+	merklePoke(t)
+	au.agent.runCmd(t, nil, "git", "create", gte.Desc.RepoName)
+	sr.WriteFile(t, "f1", "11111")
+	sr.Git(t, "add", ".")
+	sr.Git(t, "commit", "-m", "f1")
+	sr.Git(t, "remote", "add", "origin", sr.Origin())
+	sr.Git(t, "push", "origin", "main")
+
+	assertDefaultBranch := func(s string) {
+		brnch := au.agent.runCmdToBytes(t, "git", "get-default-branch", gte.Desc.RepoName)
+		require.Equal(t, s+"\n", string(brnch))
+	}
+	assertDefaultBranch("main")
+
+	err := au.agent.runCmdErr(nil, "git", "set-default-branch", gte.Desc.RepoName, "dev")
+	require.Error(t, err)
+	require.Equal(t, core.GitDanglingRefError{Forced: false}, err)
+
+	assertDefaultBranch("main")
+
+	forced := au.agent.runCmdToBytes(t, "git", "set-default-branch", gte.Desc.RepoName, "--force", "dev")
+	require.Equal(t, "Warning: dangling reference 'dev' (forced)\n", string(forced))
+
+	assertDefaultBranch("dev")
+
+	sr2 := gte.NewScratchRepo(t)
+	sr2.Git(t, "clone", sr.Origin(), ".")
+	err = sr2.ReadFileWithErr("f1", "")
+	require.Error(t, err)
+	require.IsType(t, &fs.PathError{}, err)
+
+	sr3 := gte.NewScratchRepo(t)
+	sr3.Git(t, "clone", "-b", "main", sr.Origin(), ".")
+	sr3.ReadFile(t, "f1", "11111")
+
+	sr.Git(t, "checkout", "-b", "dev")
+	sr.WriteFile(t, "f2", "22222")
+	sr.Git(t, "add", ".")
+	sr.Git(t, "commit", "-m", "f2")
+	sr.Git(t, "push", "origin", "dev")
+
+	sr4 := gte.NewScratchRepo(t)
+	sr4.Git(t, "clone", sr.Origin(), ".")
+	sr4.ReadFile(t, "f2", "22222")
 }
