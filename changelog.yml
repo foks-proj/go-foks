@@ -17,6 +17,8 @@ changelog:
         closes: ["#187"]
       - desc: get/set default git branch
         closes: ["#204"]  
+      - desc: add --all-teams feature to git ls
+        closes: ["#197"]
   - version: 0.1.2
     urgency: low
     stable: true
