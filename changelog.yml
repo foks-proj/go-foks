@@ -19,6 +19,8 @@ changelog:
         closes: ["#204"]  
       - desc: add --all-teams feature to git ls
         closes: ["#197"]
+      - desc: clean up key switch and key remove to display device names better
+        closes: ["#193"]
   - version: 0.1.2
     urgency: low
     stable: true
