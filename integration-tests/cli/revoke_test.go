@@ -277,7 +277,9 @@ func TestSelfProvisionThenRevoke(t *testing.T) {
 	require.True(t, findDevice())
 
 	aInfoDev := getActiveUser(t, a)
-	a.runCmd(t, nil, "key", "switch", "--yubi", "-u", aStr)
+	yubiDev, err := aInfoYubi.Key.StringErr()
+	require.NoError(t, err)
+	a.runCmd(t, nil, "key", "switch", "-u", aStr, "--key-id", yubiDev)
 
 	dev, err := aInfoDev.Key.StringErr()
 	require.NoError(t, err)
