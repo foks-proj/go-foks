@@ -13,17 +13,15 @@ import (
 import lib "github.com/foks-proj/go-foks/proto/lib"
 
 type LocalUserIndexParsed struct {
-	Fqu      lib.FQUserParsed
-	Role     lib.Role
-	KeyGenus *lib.KeyGenus
-	KeyID    lib.EntityID
+	Fqu   lib.FQUserParsed
+	KeyID lib.EntityID
 }
 type LocalUserIndexParsedInternal__ struct {
-	_struct  struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
-	Fqu      *lib.FQUserParsedInternal__
-	Role     *lib.RoleInternal__
-	KeyGenus *lib.KeyGenusInternal__
-	KeyID    *lib.EntityIDInternal__
+	_struct     struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
+	Fqu         *lib.FQUserParsedInternal__
+	Deprecated1 *struct{}
+	Deprecated2 *struct{}
+	KeyID       *lib.EntityIDInternal__
 }
 
 func (l LocalUserIndexParsedInternal__) Import() LocalUserIndexParsed {
@@ -34,24 +32,6 @@ func (l LocalUserIndexParsedInternal__) Import() LocalUserIndexParsed {
 			}
 			return x.Import()
 		})(l.Fqu),
-		Role: (func(x *lib.RoleInternal__) (ret lib.Role) {
-			if x == nil {
-				return ret
-			}
-			return x.Import()
-		})(l.Role),
-		KeyGenus: (func(x *lib.KeyGenusInternal__) *lib.KeyGenus {
-			if x == nil {
-				return nil
-			}
-			tmp := (func(x *lib.KeyGenusInternal__) (ret lib.KeyGenus) {
-				if x == nil {
-					return ret
-				}
-				return x.Import()
-			})(x)
-			return &tmp
-		})(l.KeyGenus),
 		KeyID: (func(x *lib.EntityIDInternal__) (ret lib.EntityID) {
 			if x == nil {
 				return ret
@@ -62,14 +42,7 @@ func (l LocalUserIndexParsedInternal__) Import() LocalUserIndexParsed {
 }
 func (l LocalUserIndexParsed) Export() *LocalUserIndexParsedInternal__ {
 	return &LocalUserIndexParsedInternal__{
-		Fqu:  l.Fqu.Export(),
-		Role: l.Role.Export(),
-		KeyGenus: (func(x *lib.KeyGenus) *lib.KeyGenusInternal__ {
-			if x == nil {
-				return nil
-			}
-			return (*x).Export()
-		})(l.KeyGenus),
+		Fqu:   l.Fqu.Export(),
 		KeyID: l.KeyID.Export(),
 	}
 }

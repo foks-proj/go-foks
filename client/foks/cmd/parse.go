@@ -20,13 +20,6 @@ func (s BadSubCommandError) Error() string {
 	return "bad subcommand: " + string(s)
 }
 
-func parseRole(s string, def *proto.Role) (*proto.Role, error) {
-	if len(s) == 0 {
-		return def, nil
-	}
-	return proto.RoleString(s).Parse()
-}
-
 func parseFqu(s string) (*proto.FQUserParsed, error) {
 	if len(s) == 0 {
 		return nil, nil

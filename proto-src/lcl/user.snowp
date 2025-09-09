@@ -7,8 +7,8 @@ go:import "github.com/foks-proj/go-foks/proto/lib" as lib;
 
 struct LocalUserIndexParsed {
     fqu @0 : lib.FQUserParsed;
-    role @1 : lib.Role;
-    keyGenus @2 : Option(lib.KeyGenus);
+    // role @1 : lib.Role; // Deprecated 
+    // keyGenus @2 : Option(lib.KeyGenus); // Deprecated
     keyID @3 : lib.EntityID; // optional, for disambiguation
 }
 

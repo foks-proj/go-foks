@@ -347,7 +347,7 @@ struct PartyName {
 enum PartyType {
     User @0;
     Team @1;
-gte.Desc.RepoName}
+}
 
 variant ParsedParty switch (s : bool) {
     case false @0 : PartyID;

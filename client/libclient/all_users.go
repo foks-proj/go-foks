@@ -491,13 +491,6 @@ func LookupUserInAllUsers(
 		if !ok {
 			return false, nil
 		}
-		ok, err = u.Role.Eq(i.Role)
-		if err != nil {
-			return false, err
-		}
-		if !ok {
-			return false, nil
-		}
 		return true, nil
 	}
 
@@ -513,9 +506,6 @@ func LookupUserInAllUsers(
 			continue
 		}
 
-		if u.KeyGenus != nil && e.KeyGenus != *u.KeyGenus {
-			continue
-		}
 		if u.KeyID != nil && !e.Key.Eq(u.KeyID) {
 			continue
 		}
