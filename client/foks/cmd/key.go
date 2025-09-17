@@ -302,6 +302,13 @@ func (s *switchCmdCfg) parse() (*lcl.LocalUserIndexParsed, error) {
 	if err != nil {
 		return nil, err
 	}
+	if fqu == nil && len(eid) > 0 {
+		return nil, ArgsError("user must be specified if key-id is provided")
+	}
+
+	if fqu == nil {
+		return nil, nil
+	}
 
 	ret := lcl.LocalUserIndexParsed{
 		Fqu:   *fqu,
