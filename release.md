@@ -91,8 +91,16 @@
   - cd ../go-foks/scripts
   - mark the GH release live via the web interface
   - ./winget-gen.bash ../../winget-pkgs
-  - git commit -a -m "Add foks vX.Y.Z"
+  - cd ../../winget-pkgs
+  - git commit -a -m "New version: Ne43.Foks version X.Y.Z"
   - git push
+  - open a pull request against: https://github.com/microsoft/winget-pkgs
+  - boot up window box
+  - cd winget-pkgs
+  - git fetch origin master
+  - git reset --hard origin/master
+  - winget validate --manifest ne43/foks/v0.1.3 // or thereabout
+  - winget install --manifest ne43/foks/v0.1.3 // or thereabout
 
 - Update server
    - make foks-server-release
