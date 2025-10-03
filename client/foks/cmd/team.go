@@ -157,7 +157,7 @@ func teamAccept(m libclient.MetaContext, top *cobra.Command) {
 		Aliases: []string{"acc"},
 		Short:   "accept a team invite",
 		Long: libterm.MustRewrapSense(`Accept a team invite given an invite code.
-The invite code is good for exactly on team. By default, accept the invitation for
+The invite code is good for exactly one team. By default, accept the invitation for
 your user, at the role Owner. Optionally, you can specify a team and/or a 
 source role, if you want to accept the invitation on behalf of a team, or with
 a role other than the default.`, 0),
