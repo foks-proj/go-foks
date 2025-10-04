@@ -207,12 +207,9 @@ func gitLs(m libclient.MetaContext, top *cobra.Command) {
 				},
 			)
 
-			// If we don't have a /, /app, or /app/git directory,
-			// we are still OK and return an empty list.
-			if _, ok := err.(core.KVNoentError); ok {
-				err = nil
-				urls = nil
-			}
+			// KVNoent errors on /app or /app/git is swallowed up
+			// on the agent side, so we should never see it here.
+			// Any error is a real error.
 			if err != nil {
 				return err
 			}

@@ -193,11 +193,21 @@ func (c *AgentConn) GitLs(ctx context.Context, arg lcl.GitLsArg) ([]proto.GitURL
 			return nil
 		}
 
+		first := true
+
 		for !eof {
+
 			err := listSome()
+
+			if first && err != nil && core.IsKVNoentError(err) {
+				// No /app/git directory is OK.
+				return nil, nil
+			}
+
 			if err != nil {
 				return nil, err
 			}
+			first = false
 		}
 
 		slices.SortFunc(ret, func(a, b proto.GitURL) int {

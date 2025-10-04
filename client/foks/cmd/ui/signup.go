@@ -1685,7 +1685,7 @@ type NextStepsTableOpts struct {
 func NextStepsTable(t NextStepsTableOpts) string {
 	var b strings.Builder
 	if t.Header {
-		fmt.Fprintf(&b, BoldStyle.Render(" Next Steps You Might Consider️:")+"\n\n")
+		b.WriteString(BoldStyle.Render(" Next Steps You Might Consider️:") + "\n\n")
 	}
 
 	type nextStep struct {

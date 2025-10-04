@@ -290,6 +290,7 @@ func runRevoke(m libclient.MetaContext, cmd *cobra.Command, arg []string) error 
 
 func (s *switchCmdCfg) parse() (*lcl.LocalUserIndexParsed, error) {
 	var eid proto.EntityID
+
 	if s.keyID != "" {
 		tmp, err := proto.ImportEntityIDFromString(s.keyID)
 		if err != nil {

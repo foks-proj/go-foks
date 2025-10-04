@@ -22,6 +22,7 @@ import (
 
 	"github.com/briandowns/spinner"
 	"github.com/compose-spec/compose-go/types"
+	"github.com/containerd/errdefs"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/image"
 	"github.com/docker/docker/api/types/network"
@@ -885,7 +886,7 @@ func (e *StandupEng) databaseCreateVolume(m shared.MetaContext) error {
 		StandupStageCreateDBVolume,
 		func() (bool, error) {
 			vol, err := cli.VolumeInspect(m.Ctx(), e.dbVolumeName())
-			if err != nil && client.IsErrNotFound(err) {
+			if err != nil && errdefs.IsNotFound(err) {
 				return false, nil
 			}
 			if err != nil {
