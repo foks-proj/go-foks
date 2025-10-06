@@ -18,20 +18,24 @@ func (s *LogSendUI) Outputf(f string, args ...interface{}) {
 	fmt.Printf(f, args...)
 }
 
+func (s *LogSendUI) Output(msg string) {
+	fmt.Print(msg)
+}
+
 func (l *LogSendUI) ApproveLogs(m libclient.MetaContext, logs lcl.LogSendSet) error {
-	l.Outputf("🔍 Sending the following logs for analysis:\n\n")
+	l.Output("🔍 Sending the following logs for analysis:\n\n")
 	for _, log := range logs.Files {
 		l.Outputf("    - %s\n", log)
 	}
-	l.Outputf("\n")
-	l.Outputf(
+	l.Output("\n")
+	l.Output(
 		libterm.MustRewrapSense(
 			`Feel free to examine your logs to be certain that you are comfortable
 sharing their contents with the FOKS developers. We are careful to exclude sensitive data
 from logs, but please check our work. If you notice any sensitive data in these logs, do not send and please file a GitHub issue.
 Thank you for helping us to improve this software.`, 0),
 	)
-	l.Outputf("\n")
+	l.Output("\n")
 
 	prompt := promptui.Select{
 		Label: "Go ahead and share logs with the developers?",
