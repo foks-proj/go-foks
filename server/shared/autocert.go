@@ -94,6 +94,8 @@ func (a *RealAutocertDoer) Stop() {
 
 func (a *RealAutocertDoer) DoOne(m MetaContext, pkg AutocertPackage) error {
 
+	m.Infow("RealAutocertDoer.DoOne", "hn", pkg.Hostname)
+
 	err := a.fetchCerts(m, pkg)
 	if err != nil {
 		return err

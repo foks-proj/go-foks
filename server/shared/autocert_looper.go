@@ -5,6 +5,7 @@ package shared
 
 import (
 	"errors"
+	"fmt"
 	"sync"
 	"time"
 
@@ -20,6 +21,11 @@ type AutocertHostError struct {
 	Err      error
 }
 
+type doSomeArg struct {
+	shid     core.ShortHostID
+	forceNow bool
+}
+
 type AutocertLooper struct {
 	sync.Mutex
 	swtch   *AutocertSwitchboard
@@ -28,7 +34,7 @@ type AutocertLooper struct {
 	accfg   AutocertServiceConfigger
 	vhc     VHostsConfigger
 	pkgCh   chan infra.AutocertPackage
-	shidCh  chan core.ShortHostID
+	shidCh  chan doSomeArg
 	eofCh   chan struct{}
 	batchSz int
 
@@ -48,7 +54,7 @@ func NewAutocertLooper(
 		swtch:  NewAutocertSwitchboard(),
 		acdoer: acdoer,
 		pkgCh:  make(chan infra.AutocertPackage),
-		shidCh: make(chan core.ShortHostID),
+		shidCh: make(chan doSomeArg),
 	}
 }
 
@@ -177,7 +183,7 @@ func (a *AutocertLooper) newHost(
 	return nil
 }
 
-var errAutocertNeedWait = errors.New("autocert need wait")
+var errAutocertGoTryIt = errors.New("autocert need wait")
 
 func (a *AutocertLooper) loadOrCreate(
 	m MetaContext,
@@ -194,25 +200,37 @@ func (a *AutocertLooper) loadOrCreate(
 	if err != nil {
 		return err
 	}
+
+	// For ForceNow operation, if we're in state failing, failed, or even OK,
+	// we still try again. The only thing we treat the same is the NONE state,
+	// in which we still need to call newHost to create the entry.
+	if pkg.ForceNow && state != proto.AutocertState_None {
+		m.Infow("loadOrCreate", "hn", pkg.Hostname, "styp", pkg.Styp.String(),
+			"state", state.String(), "forceNow", true, "action", "try it")
+		return errAutocertGoTryIt
+	}
+
 	switch state {
 	case proto.AutocertState_Failed:
 		return core.AutocertFailedError{}
 	case proto.AutocertState_Failing:
-		return errAutocertNeedWait
+		return errAutocertGoTryIt
 	case proto.AutocertState_OK:
 		return nil
 	}
+
 	err = a.newHost(m, db, chid, pkg)
 	if err != nil {
 		return err
 	}
-	return errAutocertNeedWait
+	return errAutocertGoTryIt
 }
 
 func (a *AutocertLooper) doHost(
 	m MetaContext,
 	pkg infra.AutocertPackage,
 ) error {
+	m.Infow("AutocertLooper.doHost", "hn", pkg.Hostname, "styp", pkg.Styp.String(), "stage", "enter")
 	chid, err := m.G().HostIDMap().LookupByHostID(m, pkg.Hostid)
 	doBroadcast := func(err error) error {
 		return a.swtch.Broadcast(m.Ctx(),
@@ -224,29 +242,38 @@ func (a *AutocertLooper) doHost(
 		)
 	}
 	if err != nil {
+		m.Warnw("AutocertLooper.doHost", "stage", "lookupByHostID", "err", err)
 		return doBroadcast(err)
 	}
 	err = a.loadOrCreate(m, *chid, pkg)
-	if !errors.Is(err, errAutocertNeedWait) {
-		return doBroadcast(err)
+	if !errors.Is(err, errAutocertGoTryIt) {
+		m.Warnw("AutocertLooper.doHost", "stage", "loadOrCreate", "err", err)
+		err := doBroadcast(err)
+		return err
 	}
-	err = a.doSome(m, chid.Short)
+	m.Infow("AutocertLooper.doHost", "stage", "doSome", "chid", chid.Short)
+	err = a.doSome(m, doSomeArg{
+		shid:     chid.Short,
+		forceNow: pkg.ForceNow,
+	})
 	if err != nil {
+		m.Warnw("AutocertLooper.doHost", "stage", "doSome", "err", err)
 		return err
 	}
 	return nil
 }
 
 type autocertRow struct {
-	acid    proto.AutocertID
-	hn      proto.Hostname
-	shid    core.ShortHostID
-	stype   proto.ServerType
-	expires time.Time
-	isVan   bool
-	pri     int
-	numFail int
-	numSucc int
+	acid     proto.AutocertID
+	hn       proto.Hostname
+	shid     core.ShortHostID
+	stype    proto.ServerType
+	expires  time.Time
+	isVan    bool
+	pri      int
+	numFail  int
+	numSucc  int
+	forceNow bool
 }
 
 func (a autocertRow) asKey() AutocertHost {
@@ -256,31 +283,44 @@ func (a autocertRow) asKey() AutocertHost {
 	}
 }
 
+type fetchBatchParams struct {
+	forceNow bool
+}
+
 func (a *AutocertLooper) fetchBatch(
 	m MetaContext,
 	db *pgxpool.Conn,
+	arg fetchBatchParams,
 ) (
 	[]autocertRow,
 	error,
 ) {
 	now := m.Now()
-	rows, err := db.Query(
-		m.Ctx(),
-		`SELECT autocert_id, hostname, short_host_id, server_type, is_vanity,
-		   priority, num_failures, num_succ, expires
-		FROM autocert_run_queue 
-		WHERE short_host_id=$1
-		AND scheduled_next <= $2
-		AND cancel_id=$3
-		AND state!=$4
-		ORDER by priority ASC
-		LIMIT $5`,
+	args := []any{
 		m.ShortHostID().ExportToDB(),
-		now,
 		proto.NilCancelID(),
-		proto.AutocertState_Failed.String(),
-		a.batchSz,
-	)
+	}
+	q := `SELECT autocert_id, hostname, short_host_id, server_type, is_vanity,
+		   priority, num_failures, num_succ, expires
+		FROM autocert_run_queue
+		WHERE short_host_id=$1
+		AND cancel_id=$2
+	`
+	if !arg.forceNow {
+		args = append(args,
+			now,
+			proto.AutocertState_Failed.String(),
+		)
+		q += ` AND scheduled_next <= $3 AND state != $4`
+	}
+	q += `
+		ORDER by priority ASC
+		`
+	args = append(args, a.batchSz)
+	q += fmt.Sprintf(" LIMIT $%d", len(args))
+
+	rows, err := db.Query(m.ctx, q, args...)
+
 	if err != nil {
 		return nil, err
 	}
@@ -299,13 +339,14 @@ func (a *AutocertLooper) fetchBatch(
 			return nil, err
 		}
 		item := autocertRow{
-			hn:      proto.Hostname(hnRaw),
-			shid:    core.ShortHostID(shidRaw),
-			isVan:   isVan,
-			stype:   proto.ServerType(stypeRaw),
-			pri:     pri,
-			numFail: numFail,
-			numSucc: numSucc,
+			hn:       proto.Hostname(hnRaw),
+			shid:     core.ShortHostID(shidRaw),
+			isVan:    isVan,
+			stype:    proto.ServerType(stypeRaw),
+			pri:      pri,
+			numFail:  numFail,
+			numSucc:  numSucc,
+			forceNow: arg.forceNow,
 		}
 		err = item.acid.ImportFromDB(idRaw)
 		if err != nil {
@@ -420,7 +461,11 @@ func (a *AutocertLooper) markFailure(
 	pri++
 
 	if item.numSucc == 0 {
-		if item.numFail >= len(ibck) {
+		// On forceNow, as in when we are doing this on the CLI, do not
+		// change the state, that is only for the background looper to do
+		if item.forceNow {
+			m.Infow("markFailure", "numFail", item.numFail, "noUpdate", "forceNow")
+		} else if item.numFail >= len(ibck) {
 			state = proto.AutocertState_Failed
 			m.Infow("markFailure", "numFail", item.numFail, "newState", state.String())
 		} else {
@@ -546,9 +591,9 @@ func (a *AutocertLooper) doOne(
 
 func (a *AutocertLooper) doSome(
 	m MetaContext,
-	shid core.ShortHostID,
+	arg doSomeArg,
 ) error {
-	chid, err := m.G().HostIDMap().LookupByShortID(m, shid)
+	chid, err := m.G().HostIDMap().LookupByShortID(m, arg.shid)
 	if err != nil {
 		return err
 	}
@@ -559,7 +604,7 @@ func (a *AutocertLooper) doSome(
 		return err
 	}
 	defer db.Release()
-	btch, err := a.fetchBatch(m, db)
+	btch, err := a.fetchBatch(m, db, fetchBatchParams{forceNow: arg.forceNow})
 	if err != nil {
 		m.Warnw("AutocertLooper.doSome", "stage", "fetchBatch", "err", err)
 		return err
@@ -582,8 +627,8 @@ func (a *AutocertLooper) run(m MetaContext) {
 			if err != nil {
 				m.Warnw("AutocertLooper.run", "stage", "doHost", "err", err)
 			}
-		case shid := <-a.shidCh:
-			err := a.doSome(m, shid)
+		case dsa := <-a.shidCh:
+			err := a.doSome(m, dsa)
 			if err != nil {
 				m.Warnw("AutocertLooper.run", "stage", "doSome", "err", err)
 			}
@@ -643,7 +688,9 @@ func (a *AutocertLooper) DoHost(m MetaContext, arg infra.DoAutocertArg) error {
 }
 
 func (a *AutocertLooper) DoSome(m MetaContext) error {
-	a.shidCh <- m.ShortHostID()
+	a.shidCh <- doSomeArg{
+		shid: m.ShortHostID(),
+	}
 	return nil
 }
 
@@ -680,6 +727,7 @@ func OneshotAutocert(
 	}
 	defer looper.Stop()
 
+	arg.Pkg.ForceNow = true
 	err = looper.DoHost(m, arg)
 	if err != nil {
 		return err

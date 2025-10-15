@@ -12,6 +12,7 @@ struct AutocertPackage {
     hostid @1 : lib.HostID;
     styp @2 : lib.ServerType;
     isVanity @3 : Bool;
+    forceNow @4 : Bool;
 }
 
 protocol Autocert errors lib.Status @0xb9515d98 {
