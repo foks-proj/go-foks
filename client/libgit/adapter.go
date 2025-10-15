@@ -173,11 +173,16 @@ func (r *readerWithBonusByte) Read(p []byte) (int, error) {
 	}
 	p[0] = r.val
 	r.done = true
+
+	// See issue-219; note that if the blob we are reading is empty,
+	// we'll get ret=0, err=EOF. We can't error out here, we still
+	// need to return the one byte we have. Thus we update ret
+	// in the EOF case as well as the non-error case.
 	ret, err := r.r.Read(p[1:])
-	if err != nil {
-		return ret, err
+	if err == nil || errors.Is(err, io.EOF) {
+		ret += 1
 	}
-	return 1 + ret, nil
+	return ret, err
 }
 
 var _ io.Reader = (*readerWithBonusByte)(nil)

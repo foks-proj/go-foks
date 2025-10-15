@@ -2,6 +2,15 @@ project: foks
 maintaner: Maxwell Krohn <max@ne43.com>
 
 changelog:
+  - version: 0.1.5
+    urgency: low
+    stable: true
+    date: TBD
+    changes:
+      - desc: fix bugs in cert refresh in standup
+        closes: ["#217"]
+      - desc: fix git bug; crasher on empty blobs (found in empty files)
+        closes: ["#219"]
   - version: 0.1.4
     urgency: low
     stable: true
