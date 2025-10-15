@@ -1506,6 +1506,17 @@ func (e *StandupEng) writeDockerComposeYMLinner(m shared.MetaContext) error {
 			Condition: types.ServiceConditionHealthy,
 		},
 	}
+	portConfig := func(p proto.Port) []types.ServicePortConfig {
+		return []types.ServicePortConfig{
+			{
+				Target:    uint32(p),
+				Published: fmt.Sprintf("%d", int(p)),
+				Protocol:  "tcp",
+				Mode:      "host",
+				HostIP:    "0.0.0.0",
+			},
+		}
+	}
 
 	for _, svc := range proto.CoreServers {
 		ba, _, _, err := m.G().Config().ListenParams(m.Ctx(), svc, 0)
@@ -1529,16 +1540,14 @@ func (e *StandupEng) writeDockerComposeYMLinner(m shared.MetaContext) error {
 			Restart:   types.RestartPolicyUnlessStopped,
 		}
 		if svc.IsFrontFacing() {
-			sc.Ports = []types.ServicePortConfig{
-				{
-					Target:    uint32(port),
-					Published: fmt.Sprintf("%d", port),
-					Protocol:  "tcp",
-					Mode:      "host",
-					HostIP:    "0.0.0.0",
-				},
-			}
+			sc.Ports = portConfig(port)
 
+		}
+		// As a special case, autocert sometimes needs to listen on an
+		// HTTP port, when it refreshing certs and proves DNS ownership over
+		// HTTP to LetsEncrypt.
+		if svc == proto.ServerType_Autocert {
+			sc.Ports = portConfig(proto.Port(e.httpLocalPort))
 		}
 		project.Services = append(project.Services, sc)
 	}

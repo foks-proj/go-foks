@@ -52,6 +52,7 @@ type AutocertPackage struct {
 	Hostid   lib.HostID
 	Styp     lib.ServerType
 	IsVanity bool
+	ForceNow bool
 }
 type AutocertPackageInternal__ struct {
 	_struct  struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
@@ -59,6 +60,7 @@ type AutocertPackageInternal__ struct {
 	Hostid   *lib.HostIDInternal__
 	Styp     *lib.ServerTypeInternal__
 	IsVanity *bool
+	ForceNow *bool
 }
 
 func (a AutocertPackageInternal__) Import() AutocertPackage {
@@ -87,6 +89,12 @@ func (a AutocertPackageInternal__) Import() AutocertPackage {
 			}
 			return *x
 		})(a.IsVanity),
+		ForceNow: (func(x *bool) (ret bool) {
+			if x == nil {
+				return ret
+			}
+			return *x
+		})(a.ForceNow),
 	}
 }
 func (a AutocertPackage) Export() *AutocertPackageInternal__ {
@@ -95,6 +103,7 @@ func (a AutocertPackage) Export() *AutocertPackageInternal__ {
 		Hostid:   a.Hostid.Export(),
 		Styp:     a.Styp.Export(),
 		IsVanity: &a.IsVanity,
+		ForceNow: &a.ForceNow,
 	}
 }
 func (a *AutocertPackage) Encode(enc rpc.Encoder) error {
