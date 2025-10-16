@@ -528,3 +528,23 @@ func TestGetSetDefaultBranch(t *testing.T) {
 	sr4.Git(t, "clone", sr.Origin(), ".")
 	sr4.ReadFile(t, "f2", "22222")
 }
+
+func TestEmptyFile(t *testing.T) {
+	gte, cleanup := newGitTestEnv(t)
+	defer cleanup()
+	au := gte.newAgentAndUser(t)
+	sr := gte.NewScratchRepo(t)
+
+	sr.Git(t, "init")
+	merklePoke(t)
+	au.agent.runCmd(t, nil, "git", "create", gte.Desc.RepoName)
+	sr.WriteFile(t, "f1", "")
+	sr.Git(t, "add", ".")
+	sr.Git(t, "commit", "-m", "f1")
+	sr.Git(t, "remote", "add", "origin", sr.Origin())
+	sr.Git(t, "push", "origin", "main")
+
+	sr2 := gte.NewScratchRepo(t)
+	sr2.Git(t, "clone", sr.Origin(), ".")
+	sr2.ReadFile(t, "f1", "")
+}
