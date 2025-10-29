@@ -534,6 +534,10 @@ func MakeConfigConnHook(
 		clienter = func(cli *rpc.Client) selector {
 			return NewRegClient(cli, wcw)
 		}
+	case proto.ServerType_KVStore:
+		clienter = func(cli *rpc.Client) selector {
+			return NewKVStoreClient(cli, wcw)
+		}
 	case proto.ServerType_MerkleQuery:
 		clienter = func(cli *rpc.Client) selector {
 			return NewMerkleQueryClient(cli, wcw)

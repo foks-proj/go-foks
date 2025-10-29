@@ -4,6 +4,8 @@
 package cli
 
 import (
+	"encoding/json"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -11,7 +13,9 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/foks-proj/go-foks/integration-tests/common"
 	"github.com/foks-proj/go-foks/lib/core"
+	"github.com/foks-proj/go-foks/lib/team"
 	"github.com/foks-proj/go-foks/proto/lcl"
 	proto "github.com/foks-proj/go-foks/proto/lib"
 	"github.com/stretchr/testify/require"
@@ -200,4 +204,55 @@ func TestKVTestPut404(t *testing.T) {
 	err := b.runCmdErr(nil, "kv", "put", parentPath+"/xxx", "foooo")
 	require.Error(t, err)
 	require.Equal(t, core.KVNoentOnWriteError{Path: proto.KVPath(parentPath)}, err)
+}
+
+func TestCrossHostKV(t *testing.T) {
+	defer common.DebugEntryAndExit()()
+
+	x := newTestAgent(t)
+	x.runAgent(t)
+	defer x.stop(t)
+	newUserWithAgentAtVHost(t, x, 0)
+	merklePoke(t)
+	merklePoke(t)
+
+	teamName := "aa.bb.zz"
+
+	var res lcl.TeamCreateRes
+	x.runCmdToJSON(t, &res, "team", "create", teamName)
+	out, err := json.Marshal(res)
+	require.NoError(t, err)
+	fmt.Printf("Output: %s\n", string(out))
+	merklePoke(t)
+
+	var res3 proto.TeamInvite
+	x.runCmdToJSON(t, &res3, "team", "invite", teamName)
+	inviteStr, err := team.ExportTeamInvite(res3)
+	require.NoError(t, err)
+
+	z := newTestAgent(t)
+	z.runAgent(t)
+	defer z.stop(t)
+
+	newUserWithAgentAtVHost(t, z, 1)
+	merklePoke(t)
+	merklePoke(t)
+	z.runCmd(t, nil, "team", "accept", inviteStr)
+
+	var inb lcl.TeamInbox
+	x.runCmdToJSON(t, &inb, "team", "inbox", teamName)
+	require.Equal(t, 1, len(inb.Rows))
+	x.runCmd(t, nil, "team", "admit", teamName, string(inb.Rows[0].Tok.String())+"/m/0")
+	merklePoke(t)
+
+	file := "/aaa"
+	data := "hello team kv"
+	x.runCmd(t, nil, "kv", "put", "-p", "-t", teamName, file, data)
+	var userX lcl.UserMetadataAndSigchainState
+	x.runCmdToJSON(t, &userX, "user", "load-me")
+	hn := userX.Hostname
+	fmt.Printf("User X hostname: %s\n", hn)
+
+	dat := z.runCmdToBytes(t, "kv", "get", "-t", teamName+"@"+hn.String(), file)
+	require.Equal(t, data, string(dat))
 }

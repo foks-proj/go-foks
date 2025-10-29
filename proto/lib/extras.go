@@ -11,6 +11,7 @@ import (
 	"crypto/elliptic"
 	"crypto/hmac"
 	"crypto/rand"
+	"crypto/tls"
 	"encoding/hex"
 	"encoding/json"
 	"encoding/pem"
@@ -4602,15 +4603,18 @@ func (k CKSEncKeyString) Parse() (*CKSEncKey, error) {
 	return &ret, nil
 }
 
-func (t ServerType) ClientCAType() CKSAssetType {
+func (t ServerType) ClientCAType() (CKSAssetType, tls.ClientAuthType) {
+	cat := tls.NoClientCert
 	switch t {
 	case ServerType_Queue, ServerType_Quota, ServerType_MerkleBatcher,
 		ServerType_MerkleBuilder, ServerType_MerkleSigner, ServerType_Autocert:
-		return CKSAssetType_InternalClientCA
-	case ServerType_User, ServerType_KVStore:
-		return CKSAssetType_ExternalClientCA
+		return CKSAssetType_InternalClientCA, tls.RequireAndVerifyClientCert
+	case ServerType_User:
+		return CKSAssetType_ExternalClientCA, tls.RequireAndVerifyClientCert
+	case ServerType_KVStore:
+		return CKSAssetType_ExternalClientCA, tls.VerifyClientCertIfGiven
 	default:
-		return CKSAssetType_None
+		return CKSAssetType_None, cat
 	}
 }
 

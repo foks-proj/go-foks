@@ -163,8 +163,8 @@ func (c *ClientConn) auth(
 		}
 		pid = idOrName.True().ToPartyID()
 		role = tmp.Role
-		if !tmp.Req.Member.Host.Eq(m.HostID().Id) {
-			return core.HostMismatchError{}
+		if !tmp.Req.Team.Host.Eq(m.HostID().Id) {
+			return core.HostMismatchError{Which: "team host in kv-store auth"}
 		}
 	default:
 		return core.BadArgsError("invalid auth type")
@@ -415,6 +415,13 @@ func (c *ClientConn) KvUsage(
 		})
 	return res, err
 
+}
+
+func (c *ClientConn) SelectVHost(
+	ctx context.Context,
+	arg proto.HostID,
+) error {
+	return shared.SelectVHost(ctx, c, arg)
 }
 
 var _ rem.KVStoreInterface = (*ClientConn)(nil)

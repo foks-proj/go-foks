@@ -1723,6 +1723,45 @@ func (k *KvUsageArg) Decode(dec rpc.Decoder) error {
 
 func (k *KvUsageArg) Bytes() []byte { return nil }
 
+type KVSelectVhost struct {
+	Host lib.HostID
+}
+type KVSelectVhostInternal__ struct {
+	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
+	Host    *lib.HostIDInternal__
+}
+
+func (k KVSelectVhostInternal__) Import() KVSelectVhost {
+	return KVSelectVhost{
+		Host: (func(x *lib.HostIDInternal__) (ret lib.HostID) {
+			if x == nil {
+				return ret
+			}
+			return x.Import()
+		})(k.Host),
+	}
+}
+func (k KVSelectVhost) Export() *KVSelectVhostInternal__ {
+	return &KVSelectVhostInternal__{
+		Host: k.Host.Export(),
+	}
+}
+func (k *KVSelectVhost) Encode(enc rpc.Encoder) error {
+	return enc.Encode(k.Export())
+}
+
+func (k *KVSelectVhost) Decode(dec rpc.Decoder) error {
+	var tmp KVSelectVhostInternal__
+	err := dec.Decode(&tmp)
+	if err != nil {
+		return err
+	}
+	*k = tmp.Import()
+	return nil
+}
+
+func (k *KVSelectVhost) Bytes() []byte { return nil }
+
 type KVStoreInterface interface {
 	KvMkdir(context.Context, KvMkdirArg) error
 	KvPut(context.Context, KvPutArg) error
@@ -1740,6 +1779,7 @@ type KVStoreInterface interface {
 	KvLockAcquire(context.Context, KvLockAcquireArg) error
 	KvLockRelease(context.Context, KvLockReleaseArg) error
 	KvUsage(context.Context, KVAuth) (lib.KVUsage, error)
+	SelectVHost(context.Context, lib.HostID) error
 	ErrorWrapper() func(error) lib.Status
 	CheckArgHeader(ctx context.Context, h lib.Header) error
 	MakeResHeader() lib.Header
@@ -2119,6 +2159,29 @@ func (c KVStoreClient) KvUsage(ctx context.Context, auth KVAuth) (res lib.KVUsag
 		}
 	}
 	res = tmp.Data.Import()
+	return
+}
+func (c KVStoreClient) SelectVHost(ctx context.Context, host lib.HostID) (err error) {
+	arg := KVSelectVhost{
+		Host: host,
+	}
+	warg := &rpc.DataWrap[lib.Header, *KVSelectVhostInternal__]{
+		Data: arg.Export(),
+	}
+	if c.MakeArgHeader != nil {
+		warg.Header = c.MakeArgHeader()
+	}
+	var tmp rpc.DataWrap[lib.Header, interface{}]
+	err = c.Cli.Call2(ctx, rpc.NewMethodV2(KVStoreProtocolID, 18, "KVStore.selectVHost"), warg, &tmp, 0*time.Millisecond, kVStoreErrorUnwrapperAdapter{h: c.ErrorUnwrapper})
+	if err != nil {
+		return
+	}
+	if c.CheckResHeader != nil {
+		err = c.CheckResHeader(ctx, tmp.Header)
+		if err != nil {
+			return
+		}
+	}
 	return
 }
 func KVStoreProtocol(i KVStoreInterface) rpc.ProtocolV2 {
@@ -2580,6 +2643,34 @@ func KVStoreProtocol(i KVStoreInterface) rpc.ProtocolV2 {
 					},
 				},
 				Name: "kvUsage",
+			},
+			18: {
+				ServeHandlerDescription: rpc.ServeHandlerDescription{
+					MakeArg: func() interface{} {
+						var ret rpc.DataWrap[lib.Header, *KVSelectVhostInternal__]
+						return &ret
+					},
+					Handler: func(ctx context.Context, args interface{}) (interface{}, error) {
+						typedWrappedArg, ok := args.(*rpc.DataWrap[lib.Header, *KVSelectVhostInternal__])
+						if !ok {
+							err := rpc.NewTypeError((*rpc.DataWrap[lib.Header, *KVSelectVhostInternal__])(nil), args)
+							return nil, err
+						}
+						if err := i.CheckArgHeader(ctx, typedWrappedArg.Header); err != nil {
+							return nil, err
+						}
+						typedArg := typedWrappedArg.Data
+						err := i.SelectVHost(ctx, (typedArg.Import()).Host)
+						if err != nil {
+							return nil, err
+						}
+						ret := rpc.DataWrap[lib.Header, interface{}]{
+							Header: i.MakeResHeader(),
+						}
+						return &ret, nil
+					},
+				},
+				Name: "selectVHost",
 			},
 		},
 		WrapError: KVStoreMakeGenericErrorWrapper(i.ErrorWrapper()),

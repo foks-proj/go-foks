@@ -11,6 +11,8 @@ changelog:
         closes: ["#217"]
       - desc: fix git bug; crasher on empty blobs (found in empty files)
         closes: ["#219"]
+      - desc: fix kv-store bug that disallowed cross-host teams from accessing files
+        closes: ["#215"]
   - version: 0.1.4
     urgency: low
     stable: true
