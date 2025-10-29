@@ -398,7 +398,7 @@ type HostMismatchError struct {
 }
 
 func (h HostMismatchError) Error() string {
-	ret := "hostname mismatch"
+	ret := "host mismatch"
 	if h.Which != "" {
 		ret += ": " + h.Which
 	}

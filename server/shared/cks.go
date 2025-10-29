@@ -646,14 +646,17 @@ func (c *CertVaultCKS) MakeGetConfigForClient(
 
 		ret := cfg.Clone()
 
-		ccat := styp.ClientCAType()
-		if ccat == proto.CKSAssetType_InternalClientCA ||
-			ccat == proto.CKSAssetType_ExternalClientCA {
-			pool, err := c.Pool(m, nil, ccat, hn)
+		cliCAType, authMode := styp.ClientCAType()
+		if cliCAType == proto.CKSAssetType_InternalClientCA ||
+			cliCAType == proto.CKSAssetType_ExternalClientCA {
+			pool, err := c.Pool(m, nil, cliCAType, hn)
 			if err != nil {
 				return nil, err
 			}
-			ret.ClientAuth = tls.RequireAndVerifyClientCert
+			if authMode != tls.RequireAndVerifyClientCert && authMode != tls.VerifyClientCertIfGiven {
+				return nil, core.InternalError("bad client auth mode from server type")
+			}
+			ret.ClientAuth = authMode
 			ret.ClientCAs = pool
 		}
 

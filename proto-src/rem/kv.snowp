@@ -164,4 +164,8 @@ protocol KVStore
     kvUsage @17 (
         auth @0 : KVAuth
     ) -> lib.KVUsage;
+
+    selectVHost @18 (
+        host @0 : lib.HostID
+    ) : KVSelectVhost;
 }
