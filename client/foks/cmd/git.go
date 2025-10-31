@@ -93,7 +93,7 @@ func gitShellConfig(m libclient.MetaContext, top *cobra.Command) {
 			if err != nil {
 				return err
 			}
-			term.Printf("export FOKS_CONFIG=%s\n", cfg)
+			term.Printf("export FOKS_CONFIG='%s'\n", cfg)
 			path := filepath.Dir(os.Args[0])
 			if path != "" && path != "." && path != "./" {
 				term.Printf("export PATH=%s:$PATH\n", path)
