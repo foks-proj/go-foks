@@ -222,7 +222,7 @@ Nomenclature is still in flux, but we have some rough definitions:
   which as a YubiKey. Yubi exposes ECDSA keys, which are 33 bytes. Therefore, YubiKey entities
   are 34 bytes. Entities can all be expressed as fixed 34-byte entities, which can be used
   as map keys, or map key components.
-- Pariies: A party is a user or a team, they can often do similar things, and sometimes 
+- Parties: A party is a user or a team, they can often do similar things, and sometimes 
   we can use the notion of a `PartyID` to express that the thing operating might either be
   a user or a team. Note that `PartyID`s, `UID`s, and `TeamID`s are all subclasses, more or less,
   of `EntityID`s.
