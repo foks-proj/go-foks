@@ -5,7 +5,7 @@ changelog:
   - version: 0.1.5
     urgency: low
     stable: true
-    date: TBD
+    date: 2025-11-12 12:00:00 -0500
     changes:
       - desc: fix bugs in cert refresh in standup
         closes: ["#217"]
