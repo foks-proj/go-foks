@@ -170,14 +170,14 @@ type WebConfigJSON struct {
 }
 
 type AutocertServiceConfig struct {
-	Batch_           *LooperConfigJSON `json:"batch"`
-	BindAddr_        *proto.TCPAddr    `json:"bind_addr"`
-	BindPort_        *proto.Port       `json:"bind_port"`
-	ExpireIn_        *core.Duration    `json:"expire_in"`
-	RefreshIn_       *core.Duration    `json:"refresh_in"`
-	InitialBackoffs_ []core.Duration   `json:"initial_backoffs"`
-	RefreshBackoff_  *core.Duration    `json:"refresh_backoff"`
-	AcmeTimeout_     *core.Duration    `json:"acme_timeout"`
+	Batch_               *LooperConfigJSON `json:"batch"`
+	BindAddr_            *proto.TCPAddr    `json:"bind_addr"`
+	BindPort_            *proto.Port       `json:"bind_port"`
+	BufferDuration_      *core.Duration    `json:"buffer_duration"`
+	DefaultCertDuration_ *core.Duration    `json:"default_cert_duration"`
+	InitialBackoffs_     []core.Duration   `json:"initial_backoffs"`
+	RefreshBackoff_      *core.Duration    `json:"refresh_backoff"`
+	AcmeTimeout_         *core.Duration    `json:"acme_timeout"`
 }
 
 type OAuth2ConfigJSON struct {
@@ -242,17 +242,17 @@ func (a *AutocertServiceConfig) GetLooperConfigger() ServerLooperConfigger {
 	}
 	return a.Batch_
 }
-func (a *AutocertServiceConfig) ExpireIn() time.Duration {
-	if a == nil || a.ExpireIn_ == nil {
-		return (DefaultAutocertServiceConfig{}).ExpireIn()
+func (a *AutocertServiceConfig) BufferDuration() time.Duration {
+	if a == nil || a.BufferDuration_ == nil {
+		return (DefaultAutocertServiceConfig{}).BufferDuration()
 	}
-	return a.ExpireIn_.Duration
+	return a.BufferDuration_.Duration
 }
-func (a *AutocertServiceConfig) RefreshIn() time.Duration {
-	if a == nil || a.RefreshIn_ == nil {
-		return (DefaultAutocertServiceConfig{}).RefreshIn()
+func (a *AutocertServiceConfig) DefaultCertDuration() time.Duration {
+	if a == nil || a.DefaultCertDuration_ == nil {
+		return (DefaultAutocertServiceConfig{}).DefaultCertDuration()
 	}
-	return a.RefreshIn_.Duration
+	return a.DefaultCertDuration_.Duration
 }
 func (a *AutocertServiceConfig) InitialBackoffs() []time.Duration {
 	if a == nil || len(a.InitialBackoffs_) == 0 {

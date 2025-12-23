@@ -311,38 +311,38 @@ func EmulateLetsEncrypt(
 	caKey crypto.PrivateKey,
 	typ proto.CKSAssetType,
 	inTest bool,
-) error {
+) (*AutocertDoneResult, error) {
 	bits := core.Sel(inTest, 1024, 2048)
 	priv, err := rsa.GenerateKey(rand.Reader, bits)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	pkixer, err := m.G().Config().PKIXConfig(m.Ctx())
 	if err != nil {
-		return err
+		return nil, err
 	}
 	name := pkixer.Name()
 	template, err := core.CertTemplateWithPKIX(hosts, name)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	pub := priv.Public()
 	keyid, err := core.ComputePKIXCertID(pub)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	template.SubjectKeyId = keyid.Bytes()
 	caCert, err := x509.ParseCertificate(caCertRaw)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	certBytes, err := x509.CreateCertificate(rand.Reader, template, caCert, pub, caKey)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	rawkey, err := x509.MarshalPKCS8PrivateKey(priv)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	data := &cks.X509Bundle{
@@ -353,5 +353,12 @@ func EmulateLetsEncrypt(
 		Etime:   template.NotAfter,
 	}
 
-	return m.G().CertMgr().PutExternallyGeneratedCert(m, typ, aliases, data)
+	err = m.G().CertMgr().PutExternallyGeneratedCert(m, typ, aliases, data)
+	if err != nil {
+		return nil, err
+	}
+	res := &AutocertDoneResult{
+		Etime: data.Etime,
+	}
+	return res, nil
 }

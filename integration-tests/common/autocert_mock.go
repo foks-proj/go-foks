@@ -40,15 +40,18 @@ func (f *FakeAutocertDoer) Start(m shared.MetaContext) error {
 func (f *FakeAutocertDoer) Stop() {
 }
 
-func (f *FakeAutocertDoer) DoOne(m shared.MetaContext, pkg shared.AutocertPackage) error {
+func (f *FakeAutocertDoer) DoOne(
+	m shared.MetaContext,
+	pkg shared.AutocertPackage,
+) (*shared.AutocertDoneResult, error) {
 	f.Lock()
 	defer f.Unlock()
 
 	if f.badHosts[pkg.Hostname] {
-		return errors.New("acme autocert failed")
+		return nil, errors.New("acme autocert failed")
 	}
 
-	err := EmulateLetsEncrypt(
+	res, err := EmulateLetsEncrypt(
 		m,
 		[]proto.Hostname{pkg.Hostname},
 		nil,
@@ -57,9 +60,9 @@ func (f *FakeAutocertDoer) DoOne(m shared.MetaContext, pkg shared.AutocertPackag
 	)
 
 	if err != nil {
-		return err
+		return nil, err
 	}
-	return nil
+	return res, nil
 }
 
 func (f *FakeAutocertDoer) SetBadHost(hn proto.Hostname) {

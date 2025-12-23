@@ -398,8 +398,14 @@ func (a *AutocertLooper) markSuccess(
 	item autocertRow,
 ) error {
 	now := m.Now()
-	expire := now.Add(a.accfg.ExpireIn())
-	refresh := now.Add(a.accfg.RefreshIn())
+	expire := item.expires
+	if expire.IsZero() {
+		expire = now.Add(a.accfg.DefaultCertDuration())
+	}
+	refresh := expire.Add(-a.accfg.BufferDuration())
+	if refresh.Before(now) {
+		refresh = now.Add(time.Hour * 24)
+	}
 	tag, err := db.Exec(
 		m.Ctx(),
 		`UPDATE autocert_run_queue
@@ -563,7 +569,7 @@ func (a *AutocertLooper) doOne(
 	}
 
 	m.Infow("AutocertLooper.doOne", "hn", pkg.Hostname, "stage", "enter")
-	err = a.acdoer.DoOne(m, *pkg)
+	res, err := a.acdoer.DoOne(m, *pkg)
 	m.Infow("AutocertLooper.doOne", "hn", pkg.Hostname, "stage", "exit", "err", err)
 
 	logErr := a.logAction(m, db, item, err)
@@ -571,6 +577,8 @@ func (a *AutocertLooper) doOne(
 	var markError error
 
 	if err == nil {
+		item.expires = res.Etime
+		m.Infow("AutocertLooper.doOne", "hn", pkg.Hostname, "newExpiry", item.expires)
 		markError = a.markSuccess(m, db, item)
 	} else {
 		markError = a.markFailure(m, db, item)

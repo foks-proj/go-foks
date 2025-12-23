@@ -155,8 +155,8 @@ type KVShardsConfig interface {
 type AutocertServiceConfigger interface {
 	BindAddr() proto.TCPAddr
 	GetLooperConfigger() ServerLooperConfigger
-	ExpireIn() time.Duration
-	RefreshIn() time.Duration
+	BufferDuration() time.Duration // how much before expiry to try to renew
+	DefaultCertDuration() time.Duration
 	InitialBackoffs() []time.Duration
 	RefreshBackoff() time.Duration
 	AcmeTimeout() time.Duration
@@ -183,11 +183,11 @@ func (d DefaultAutocertServiceConfig) BindAddr() proto.TCPAddr { return "0.0.0.0
 func (d DefaultAutocertServiceConfig) GetLooperConfigger() ServerLooperConfigger {
 	return DefaultLooperConfig{}
 }
-func (d DefaultAutocertServiceConfig) ExpireIn() time.Duration {
-	return time.Hour * time.Duration(24*30*3)
+func (d DefaultAutocertServiceConfig) BufferDuration() time.Duration {
+	return time.Hour * time.Duration(24*7)
 }
-func (d DefaultAutocertServiceConfig) RefreshIn() time.Duration {
-	return time.Hour * time.Duration(24*80)
+func (d DefaultAutocertServiceConfig) DefaultCertDuration() time.Duration {
+	return time.Hour * time.Duration(24*30)
 }
 func (d DefaultAutocertServiceConfig) InitialBackoffs() []time.Duration {
 	return []time.Duration{

@@ -491,10 +491,11 @@ func (e *TestEnv) VHostMakeWithOpts(
 	// Generate a cert for the probe servre using our fake RootPKI CA.
 	// In prod, we'll of course get a Cert for let's encrypt.
 	opts.MakeProbeCert = func(m shared.MetaContext) error {
-		return EmulateLetsEncrypt(m, []proto.Hostname{hostname}, nil,
+		_, err := EmulateLetsEncrypt(m, []proto.Hostname{hostname}, nil,
 			e.x509m.ProbeCA,
 			proto.CKSAssetType_RootPKIFrontendX509Cert,
 		)
+		return err
 	}
 
 	vhostId, err := shared.VHostInit(m, hostname, opts)

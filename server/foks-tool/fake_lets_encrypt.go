@@ -66,7 +66,7 @@ func (l *LetsEncrypt) Run(m shared.MetaContext) error {
 	if err != nil {
 		return err
 	}
-	err = shared.EmulateLetsEncrypt(m, hosts, nil, cert, key, proto.CKSAssetType_RootPKIFrontendX509Cert, false)
+	_, err = shared.EmulateLetsEncrypt(m, hosts, nil, cert, key, proto.CKSAssetType_RootPKIFrontendX509Cert, false)
 	if err != nil {
 		return err
 	}
