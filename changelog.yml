@@ -7,6 +7,8 @@ changelog:
     stable: true
     date: TBD
     changes:
+      - desc: fix autocert refresh intervals to use what LE sends backout
+        closes: ["#225"]
   - version: 0.1.5
     urgency: low
     stable: true

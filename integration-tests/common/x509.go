@@ -14,6 +14,9 @@ func EmulateLetsEncrypt(
 	aliases []proto.Hostname,
 	ca X509CA,
 	typ proto.CKSAssetType,
-) error {
+) (
+	*shared.AutocertDoneResult,
+	error,
+) {
 	return shared.EmulateLetsEncrypt(m, hosts, aliases, ca.Cert, ca.Key, typ, true)
 }

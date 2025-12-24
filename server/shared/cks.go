@@ -721,12 +721,16 @@ func StoreCertToCertMgr(
 	if err != nil {
 		return err
 	}
+	etime, err := getExpireTimeFromTLSCert(cert)
+	if err != nil {
+		return core.AutocertFailedError{Err: err}
+	}
 
 	data := &cks.X509Bundle{
 		Key:     proto.NewCKSCertKeyWithX509(rawkey),
 		Cert:    proto.CKSCertChain{Certs: cert.Certificate},
 		Primary: true,
-		Etime:   cert.Leaf.NotAfter,
+		Etime:   etime,
 		KeyID:   keyid.EntityID(),
 	}
 

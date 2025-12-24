@@ -125,6 +125,8 @@ func CSRTemplate(hosts []string) (*x509.CertificateRequest, error) {
 	return template, nil
 }
 
+const CertTemplateDuration = 10 * 365 * 24 * time.Hour
+
 func CertTemplateWithPKIX(
 	hosts []proto.Hostname,
 	pkix pkix.Name,
@@ -144,7 +146,7 @@ func CertTemplateWithPKIX(
 		SerialNumber:          serialNumber,
 		Subject:               pkix,
 		NotBefore:             time.Now(),
-		NotAfter:              time.Now().AddDate(10, 0, 0),
+		NotAfter:              time.Now().Add(CertTemplateDuration),
 		KeyUsage:              keyUsage,
 		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
 		BasicConstraintsValid: true,

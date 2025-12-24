@@ -576,7 +576,8 @@ func setupX509v2(m shared.MetaContext, x509m *X509Material, opts SetupOpts) erro
 		if opts.WildcardVhostDomain != "" {
 			hosts = append(hosts, proto.Hostname("*."+opts.WildcardVhostDomain))
 		}
-		return EmulateLetsEncrypt(m, hosts, aliases, x509m.ProbeCA, typ)
+		_, err := EmulateLetsEncrypt(m, hosts, aliases, x509m.ProbeCA, typ)
+		return err
 	}
 
 	hn := opts.Hostnames

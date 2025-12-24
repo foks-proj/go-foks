@@ -142,6 +142,9 @@ func TestAutocertLooper(t *testing.T) {
 	}
 
 	host2Sequence()
-	cl.Advance(defCfg.RefreshIn())
+
+	// Somewhat of a hack, we should plumb this all the way through, but for now,
+	// this is the duration that our fake Let's Encrypt certs are valid for.
+	cl.Advance(core.CertTemplateDuration)
 	host2RefreshSequence()
 }
