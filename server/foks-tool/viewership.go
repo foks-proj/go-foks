@@ -19,11 +19,11 @@ type ViewCmd struct {
 
 func (o *ViewCmd) CobraConfig() *cobra.Command {
 	ret := &cobra.Command{
-		Use:     "viewiership",
+		Use:     "viewership",
 		Aliases: []string{"view"},
 		Short:   "Check or change viewership settings for a FOKS host (or vhost)",
 		Long: `Check or change viewership settings for a FOKS host (or vhost).
-With --set, will try to set the value to the given bool. Withou --set, will print the current value.
+With --set, will try to set the value to the given bool. Without --set, will print the current value.
 If there is only one virtual host on this machine, no need to specify --host-id on --set,
 but otherwise, you must.`,
 	}

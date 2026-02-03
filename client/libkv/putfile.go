@@ -485,7 +485,7 @@ func (k *Minder) PutFileChunk(
 
 // PutFile is called from the CLI to chunk over the local agent bridge, and also internally for
 // git purposes. It always writes a first chunk and maybe subsequent chunks for bigger files.
-// Small files are guaranteed to fix into one chunk, but the converse is not true. That is,
+// Small files are guaranteed to fit into one chunk, but the converse is not true. That is,
 // some single-chunk files may be bigger than the small file size.
 func PutFile(
 	rdr io.Reader,

@@ -108,9 +108,9 @@ func (a *autocertWaiters) broadcast(e error) {
 	for _, ch := range a.chs {
 		ch <- e
 	}
-	// Clear out the map to stop any races when 3 braodcasts happen in rapid sucessiong
-	// before the watiers can a chance to call cancel. The 3nd broadcast would deadlock
-	// the program since no one will be listening on the channel. I think 2 broacasts
+	// Clear out the map to stop any races when 3 broadcasts happen in rapid succession
+	// before the waiters can have a chance to call cancel. The 3rd broadcast would deadlock
+	// the program since no one will be listening on the channel. I think 2 broadcasts
 	// would be fine for what it's worth.
 	a.chs = make(map[int]chan<- error)
 }
