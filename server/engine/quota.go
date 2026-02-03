@@ -273,7 +273,7 @@ func (c *QuotaServer) pollReadyHostsKVDB(
 		ret = append(ret, k)
 		out[k] = true
 	}
-	m.Infow("pollReadyHostsKVDB", "ready", ret)
+	m.Debugw("pollReadyHostsKVDB", "ready", ret)
 	return nil
 }
 

@@ -83,11 +83,11 @@ func RPCServeWithSignals(m MetaContext, s RPCServer, launchCh chan<- error) erro
 
 	keepGoing := true
 	nOut := 0
-	startShutdown := func() {
+		startShutdown := func() {
 		if keepGoing {
 			close(quitCh)
 			listener.Close()
-			m.Infow("shutdown", "state", "listener closed", "mOut", nOut)
+			m.Debugw("shutdown", "state", "listener closed", "mOut", nOut)
 			keepGoing = false
 		}
 	}
@@ -99,7 +99,7 @@ func RPCServeWithSignals(m MetaContext, s RPCServer, launchCh chan<- error) erro
 		case <-doneCh:
 			nOut--
 			if !keepGoing {
-				m.Infow("shutdown", "state", "drained connection", "nOut", nOut)
+				m.Debugw("shutdown", "state", "drained connection", "nOut", nOut)
 			}
 		case err := <-bgShutdownCh:
 			if err != nil {
@@ -140,7 +140,7 @@ func serveConnection(m MetaContext, s RPCServer, conn net.Conn, doneCh chan<- st
 	m = m.WithLogTag("conn")
 
 	if m.G().LogRemoteIP(m.Ctx()) || s.IsInternal() {
-		m.Infow("serveConnection",
+		m.Debugw("serveConnection",
 			"stage", "new connection",
 			"remote", conn.RemoteAddr().String(),
 		)
@@ -162,7 +162,7 @@ func serveConnection(m MetaContext, s RPCServer, conn net.Conn, doneCh chan<- st
 		)
 	}
 
-	m.Infow("serveConnection", "stage", "OK")
+	m.Debugw("serveConnection", "stage", "OK")
 
 	lf := rpc.NewSimpleLogFactory(
 		core.NewZapLogWrapper(m.G().Log().Desugar()),
@@ -188,16 +188,16 @@ func serveConnection(m MetaContext, s RPCServer, conn net.Conn, doneCh chan<- st
 
 	select {
 	case <-srv.Run():
-		m.Infow("client disconnected")
+		m.Debugw("client disconnected")
 		err = srv.Err()
 		if err != nil && err != io.EOF {
 			m.Warnw("error on conn shutdown", zap.Error(err))
 		}
 	case <-m.Ctx().Done():
-		m.Infow("serveConnection", "stage", "server shutdown")
+		m.Debugw("serveConnection", "stage", "server shutdown")
 	}
 
-	m.Infow("serveConnection", "stage", "exit")
+	m.Debugw("serveConnection", "stage", "exit")
 }
 
 func configureTLS(

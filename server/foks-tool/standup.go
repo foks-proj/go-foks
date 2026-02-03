@@ -1444,12 +1444,22 @@ func (e *StandupEng) writeDockerComposeYMLinner(m shared.MetaContext) error {
 	mkuint64 := func(i uint64) *uint64 { return &i }
 	mkstr := func(s string) *string { return &s }
 
+	// Enable log rotation for all containers so logs don't grow unbounded in Docker.
+	dockerLogging := &types.LoggingConfig{
+		Driver: "json-file",
+		Options: types.Options{
+			"max-size": "10m",
+			"max-file": "3",
+		},
+	}
+
 	project := types.Project{
 		Services: []types.ServiceConfig{
 			{
 				Name:    postgresContainerName,
 				Image:   dbImageFull,
 				Restart: "unless-stopped",
+				Logging: dockerLogging,
 				Volumes: []types.ServiceVolumeConfig{
 					{
 						Source: e.dbVol.Name,
@@ -1528,12 +1538,15 @@ func (e *StandupEng) writeDockerComposeYMLinner(m shared.MetaContext) error {
 			return err
 		}
 		sc := types.ServiceConfig{
-			Name:  svc.ToString(),
-			Image: foksServer,
+			Name:    svc.ToString(),
+			Image:   foksServer,
+			Logging: dockerLogging,
 			Command: types.ShellCommand{
 				svc.ToCommand(),
 				"--config-path",
 				configPath,
+				"--log-level",
+				"info",
 			},
 			Volumes:   volumes,
 			DependsOn: depends,
@@ -1553,12 +1566,15 @@ func (e *StandupEng) writeDockerComposeYMLinner(m shared.MetaContext) error {
 	}
 
 	project.Services = append(project.Services, types.ServiceConfig{
-		Name:  "beacon_register",
-		Image: foksTool,
+		Name:    "beacon_register",
+		Image:   foksTool,
+		Logging: dockerLogging,
 		Command: types.ShellCommand{
 			"beacon-register",
 			"--config-path",
 			configPath,
+			"--log-level",
+			"info",
 			"--delay", "5s",
 			"--tries", "30",
 			"--wait", "15s",

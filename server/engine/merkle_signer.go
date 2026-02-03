@@ -161,7 +161,7 @@ func (s *MerkleSignerServer) pollReadyHosts(m shared.MetaContext) ([]core.ShortH
 	if err != nil {
 		return nil, err
 	}
-	m.Infow("pollReadyHosts", "shortHostID", m.ShortHostID(), "ret", ret)
+	m.Debugw("pollReadyHosts", "shortHostID", m.ShortHostID(), "ret", ret)
 
 	return ret, nil
 }
@@ -240,7 +240,7 @@ func (s *MerkleSignerServer) doOnePollForHost(m shared.MetaContext) (err error) 
 		return err
 	}
 
-	m.Infow("doOnePollForHost", "shortHostID", m.ShortHostID(), "roots", roots)
+	m.Debugw("doOnePollForHost", "shortHostID", m.ShortHostID(), "roots", roots)
 
 	defer func() {
 		err = shared.TxRollback(m.Ctx(), tx, err)
@@ -295,7 +295,7 @@ func (s *MerkleSignerServer) doOnePollForHost(m shared.MetaContext) (err error) 
 		lst = &root
 	}
 
-	m.Infow("doOnePollForHost", "shortHostID", m.ShortHostID(), "signUpTo", lst.Epno)
+	m.Debugw("doOnePollForHost", "shortHostID", m.ShortHostID(), "signUpTo", lst.Epno)
 
 	tag, err := tx.Exec(
 		m.Ctx(),

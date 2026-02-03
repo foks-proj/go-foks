@@ -56,6 +56,8 @@ after a crash
  a systemd unit, and can be configured to start when the machine starts up.
 * *docker_compose* mode is for running FOKS in a Docker container, using
   [docker compose](https://docs.docker.com/compose/) for orchestration.
+  See [docker_logging.md](docker_logging.md) for log rotation and verbosity
+  when using standup.
 * *pm2* mode is useful in testing and development, where FOKS services are run
   using [PM2](https://pm2.keymetrics.io/), a process manager for Node.js. PM2
   provides a convenient way to run multiple processes, restart them on crash, and

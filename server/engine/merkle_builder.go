@@ -144,7 +144,7 @@ func (s *MerkleBuilderServer) pollReadyHosts(m shared.MetaContext) ([]core.Short
 		return nil, err
 	}
 	ret, err := scanShortHostIDs(rows)
-	m.Infow("pollReadyHosts", "shortHostID", m.ShortHostID(), "ret", ret)
+	m.Debugw("pollReadyHosts", "shortHostID", m.ShortHostID(), "ret", ret)
 	if err != nil {
 		return nil, err
 	}
@@ -175,7 +175,7 @@ func (s *MerkleBuilderServer) doOneLeaf(m shared.MetaContext) error {
 
 	if nxt.Pos == -1 && len(batch.Leaves) == 0 && batch.Hostchain != nil {
 		nxt.Pos = 0
-		m.Infow("doOneLeaf", "shortHostID", m.ShortHostID(), "batchNo", nxt.BatchNo, "stage", "store hostchain")
+		m.Debugw("doOneLeaf", "shortHostID", m.ShortHostID(), "batchNo", nxt.BatchNo, "stage", "store hostchain")
 		err = s.eng.StoreRoot(m, batch.Time, *batch.Hostchain, *nxt)
 		if err != nil {
 			return err
@@ -188,7 +188,7 @@ func (s *MerkleBuilderServer) doOneLeaf(m shared.MetaContext) error {
 		if err != nil {
 			return err
 		}
-		m.Infow("doOneLeaf", "shortHostID", m.ShortHostID(), "batchNo", nxt.BatchNo, "stage", "no more leaves")
+		m.Debugw("doOneLeaf", "shortHostID", m.ShortHostID(), "batchNo", nxt.BatchNo, "stage", "no more leaves")
 		return nil
 	}
 
@@ -207,7 +207,7 @@ func (s *MerkleBuilderServer) doOneLeaf(m shared.MetaContext) error {
 		Hct:  hct,
 	}
 
-	m.Infow("doOneLeaf", "shortHostID", m.ShortHostID(), "batchNo", nxt.BatchNo, "stage", "insert key-value")
+	m.Debugw("doOneLeaf", "shortHostID", m.ShortHostID(), "batchNo", nxt.BatchNo, "stage", "insert key-value")
 
 	// NB: this updates Bookkeeping in the same transaction as the insertion of the
 	// Key-Value (see Bk : nxt above).

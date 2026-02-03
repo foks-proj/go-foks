@@ -58,7 +58,7 @@ func (a *RealAutocertDoer) GetBindAddr() proto.TCPAddr {
 
 func (a *RealAutocertDoer) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
 	m := NewMetaContextBackground(a.g)
-	m.Infow("autocert", "req", req.RequestURI)
+	m.Debugw("autocert", "req", req.RequestURI)
 	a.handler.ServeHTTP(resp, req)
 }
 
@@ -99,7 +99,7 @@ func (a *RealAutocertDoer) Stop() {
 
 func (a *RealAutocertDoer) DoOne(m MetaContext, pkg AutocertPackage) (*AutocertDoneResult, error) {
 
-	m.Infow("RealAutocertDoer.DoOne", "hn", pkg.Hostname)
+	m.Debugw("RealAutocertDoer.DoOne", "hn", pkg.Hostname)
 
 	res, err := a.fetchCerts(m, pkg)
 	if err != nil {
@@ -134,7 +134,7 @@ func (a *RealAutocertDoer) fetchCerts(
 	*AutocertDoneResult,
 	error,
 ) {
-	m.Infow("autocert", "msg", "fetching certs", "serverName", string(pkg.Hostname), "addr", a.addr, "styp", pkg.ServerType.String())
+	m.Debugw("autocert", "msg", "fetching certs", "serverName", string(pkg.Hostname), "addr", a.addr, "styp", pkg.ServerType.String())
 
 	var cert *tls.Certificate
 

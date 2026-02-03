@@ -50,7 +50,7 @@ func (b *BeaconProbe) loadPrev(m MetaContext, tx pgx.Tx) error {
 	).Scan(&tailRaw, &seqRaw)
 
 	if err == pgx.ErrNoRows {
-		m.Infow("no prev hostchain found")
+		m.Debugw("no prev hostchain found")
 		return nil
 	}
 	if err != nil {
@@ -62,7 +62,7 @@ func (b *BeaconProbe) loadPrev(m MetaContext, tx pgx.Tx) error {
 	}
 	b.prev = core.NewHostchainSkeleton(b.hostID, *lh, proto.Seqno(seqRaw))
 
-	m.Infow("loaded prev")
+	m.Debugw("loaded prev")
 
 	return nil
 }
@@ -91,13 +91,13 @@ func (b *BeaconProbe) probe(m MetaContext) error {
 		HostchainLastSeqno: 0,
 		Hostname:           b.addr.Hostname().Normalize(),
 	}
-	m.Infow("sending probe", "addr", b.addr)
+	m.Debugw("sending probe", "addr", b.addr)
 	pr, err := pcli.Probe(m.Ctx(), arg)
 	if err != nil {
 		m.Warnw("probe failed", "err", err)
 		return err
 	}
-	m.Infow("probe succeeded")
+	m.Debugw("probe succeeded")
 	b.res = &pr
 	return nil
 }
@@ -108,7 +108,7 @@ func (b *BeaconProbe) playChain(m MetaContext) error {
 		m.Warnw("play chain failed", "err", err)
 		return err
 	}
-	m.Infow("played chain", "tail", ch.Tail())
+	m.Debugw("played chain", "tail", ch.Tail())
 	b.ch = ch
 	return nil
 }
@@ -168,11 +168,11 @@ func (b *BeaconProbe) storeChain(m MetaContext, tx pgx.Tx) error {
 func (b *BeaconProbe) runTryTx(m MetaContext, tx pgx.Tx) (err error) {
 
 	m = m.WithLogTag("beacon-probe")
-	m.Infow("running beacon probe", "host", b.host, "port", b.port, "host_id", b.hostID)
+	m.Debugw("running beacon probe", "host", b.host, "port", b.port, "host_id", b.hostID)
 
 	defer func() {
 		if err != nil {
-			m.Infow("beacon probe failed", "err", err)
+			m.Debugw("beacon probe failed", "err", err)
 		} else {
 			m.Warnw("beacon probe succeeded")
 		}

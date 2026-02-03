@@ -133,7 +133,7 @@ func (c *cnameChecker) nsLookupSingle(
 			lst = append(lst, hn)
 		}
 	}
-	m.Infow("nsLookup", "srv", srv, "qry", host, "ns", lst)
+	m.Debugw("nsLookup", "srv", srv, "qry", host, "ns", lst)
 	return newNsServerSet(lst), nil
 }
 
@@ -176,7 +176,7 @@ func (c *cnameChecker) cnameLookupSingle(
 	for _, ans := range response.Answer {
 		if cname, ok := ans.(*dns.CNAME); ok {
 			targ := proto.Hostname(cname.Target)
-			m.Infow("cnameLookup", "srv", srv, "qry", host, "cname", targ)
+			m.Debugw("cnameLookup", "srv", srv, "qry", host, "cname", targ)
 			// Return the first CNAME record target
 			if ret == nil {
 				ret = &targ
