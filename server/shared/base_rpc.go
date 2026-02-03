@@ -83,7 +83,7 @@ func RPCServeWithSignals(m MetaContext, s RPCServer, launchCh chan<- error) erro
 
 	keepGoing := true
 	nOut := 0
-		startShutdown := func() {
+	startShutdown := func() {
 		if keepGoing {
 			close(quitCh)
 			listener.Close()
