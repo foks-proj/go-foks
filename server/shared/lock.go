@@ -56,12 +56,12 @@ func (l *Lock) Acquire(m MetaContext, timeout time.Duration) error {
 
 	err = l.read(m, db, timeout)
 	if err == nil {
-		m.Infow("Lock.Acquire", "lock_id", l.id, "pid", l.pid, "host_id", l.hostID, "success", "already held", "hostID", m.ShortHostID())
+		m.Debugw("Lock.Acquire", "lock_id", l.id, "pid", l.pid, "host_id", l.hostID, "success", "already held", "hostID", m.ShortHostID())
 		return nil
 	}
 
 	if err == errLockNotFound {
-		m.Infow("Lock.Acquire", "lock_id", l.id, "pid", l.pid, "host_id", l.hostID, "success", "acquired", "hostID", m.ShortHostID())
+		m.Debugw("Lock.Acquire", "lock_id", l.id, "pid", l.pid, "host_id", l.hostID, "success", "acquired", "hostID", m.ShortHostID())
 		return l.insert(m, db)
 	}
 
@@ -71,7 +71,7 @@ func (l *Lock) Acquire(m MetaContext, timeout time.Duration) error {
 		return err
 	}
 	if loerr.Age > timeout {
-		m.Infow("Lock.Acquire", "lock_id", l.id, "pid", l.pid, "host_id", l.hostID, "success", "stolen", "hostID", m.ShortHostID())
+		m.Debugw("Lock.Acquire", "lock_id", l.id, "pid", l.pid, "host_id", l.hostID, "success", "stolen", "hostID", m.ShortHostID())
 		return l.steal(m, db, loerr.Pid, loerr.Id)
 	}
 

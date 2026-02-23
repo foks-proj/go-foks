@@ -423,7 +423,7 @@ func (s *MerkleBatcherServer) commitBatch(m shared.MetaContext, batch *proto.Mer
 		return err
 	}
 
-	m.Infow("commitBatch", "stage", "start", "shortHostID", m.ShortHostID(), "batch", batch.Batchno, "leaves", len(batch.Leaves), "id", s.lock.ID())
+	m.Debugw("commitBatch", "stage", "start", "shortHostID", m.ShortHostID(), "batch", batch.Batchno, "leaves", len(batch.Leaves), "id", s.lock.ID())
 
 	tag, err := tx.Exec(m.Ctx(),
 		`INSERT INTO raft_kv_store(short_host_id, k,v) VALUES($1,$2,$3)`,
@@ -448,7 +448,7 @@ func (s *MerkleBatcherServer) commitBatch(m shared.MetaContext, batch *proto.Mer
 		return err
 	}
 
-	m.Infow("commitBatch",
+	m.Debugw("commitBatch",
 		"stage", "complete",
 		"shortHostID", m.ShortHostID(),
 		"batch", batch.Batchno,
@@ -534,7 +534,7 @@ func (s *MerkleBatcherServer) checkTreeForHostchainUpdates(
 		return err
 	}
 	n := tag.RowsAffected()
-	m.Infow("checkTreeForHostchainUpdates", "shortHostID", m.ShortHostID(), "nLinksUpdated", n, "seqno", seqno)
+	m.Debugw("checkTreeForHostchainUpdates", "shortHostID", m.ShortHostID(), "nLinksUpdated", n, "seqno", seqno)
 
 	return nil
 }

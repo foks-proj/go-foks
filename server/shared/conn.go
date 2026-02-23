@@ -60,12 +60,12 @@ func GetClientCertChainForService(m MetaContext, t proto.ServerType, key proto.D
 	gcli := rpc.NewClient(xp, nil, nil)
 	cli := infra.InternalCAClient{Cli: gcli, ErrorUnwrapper: core.StatusToError}
 
-	m.Infow("GetClientCertChainForService", "stage", "call", "service", t.ServiceID(), "key", key)
+	m.Debugw("GetClientCertChainForService", "stage", "call", "service", t.ServiceID(), "key", key)
 	ret, err := cli.GetClientCertChainForService(m.Ctx(), infra.GetClientCertChainForServiceArg{
 		Service: t.ServiceID(),
 		Key:     key,
 	})
-	m.Infow("GetClientCertChainForService", "stage", "return", "ret", ret, "err", err)
+	m.Debugw("GetClientCertChainForService", "stage", "return", "ret", ret, "err", err)
 	return ret, err
 }
 
@@ -207,7 +207,7 @@ func (n *BackendClient) TLSCert(ctx context.Context) (*tls.Certificate, error) {
 	cit := settings.ConnectionIdleTimeout()
 
 	if n.cert == nil || n.certTime.Add(cit).Before(time.Now()) {
-		m.Infow("TLSCert", "refresh", true, "callerType", n.callerType, "eid", eid)
+		m.Debugw("TLSCert", "refresh", true, "callerType", n.callerType, "eid", eid)
 		cert, err := GetClientCertChainForService(m, n.callerType, proto.DeviceID(eid))
 		if err != nil {
 			return nil, err

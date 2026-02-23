@@ -205,7 +205,7 @@ func (a *AutocertLooper) loadOrCreate(
 	// we still try again. The only thing we treat the same is the NONE state,
 	// in which we still need to call newHost to create the entry.
 	if pkg.ForceNow && state != proto.AutocertState_None {
-		m.Infow("loadOrCreate", "hn", pkg.Hostname, "styp", pkg.Styp.String(),
+		m.Debugw("loadOrCreate", "hn", pkg.Hostname, "styp", pkg.Styp.String(),
 			"state", state.String(), "forceNow", true, "action", "try it")
 		return errAutocertGoTryIt
 	}
@@ -230,7 +230,7 @@ func (a *AutocertLooper) doHost(
 	m MetaContext,
 	pkg infra.AutocertPackage,
 ) error {
-	m.Infow("AutocertLooper.doHost", "hn", pkg.Hostname, "styp", pkg.Styp.String(), "stage", "enter")
+	m.Debugw("AutocertLooper.doHost", "hn", pkg.Hostname, "styp", pkg.Styp.String(), "stage", "enter")
 	chid, err := m.G().HostIDMap().LookupByHostID(m, pkg.Hostid)
 	doBroadcast := func(err error) error {
 		return a.swtch.Broadcast(m.Ctx(),
@@ -251,7 +251,7 @@ func (a *AutocertLooper) doHost(
 		err := doBroadcast(err)
 		return err
 	}
-	m.Infow("AutocertLooper.doHost", "stage", "doSome", "chid", chid.Short)
+	m.Debugw("AutocertLooper.doHost", "stage", "doSome", "chid", chid.Short)
 	err = a.doSome(m, doSomeArg{
 		shid:     chid.Short,
 		forceNow: pkg.ForceNow,
@@ -470,13 +470,13 @@ func (a *AutocertLooper) markFailure(
 		// On forceNow, as in when we are doing this on the CLI, do not
 		// change the state, that is only for the background looper to do
 		if item.forceNow {
-			m.Infow("markFailure", "numFail", item.numFail, "noUpdate", "forceNow")
+			m.Debugw("markFailure", "numFail", item.numFail, "noUpdate", "forceNow")
 		} else if item.numFail >= len(ibck) {
 			state = proto.AutocertState_Failed
-			m.Infow("markFailure", "numFail", item.numFail, "newState", state.String())
+			m.Debugw("markFailure", "numFail", item.numFail, "newState", state.String())
 		} else {
 			wait = ibck[item.numFail]
-			m.Infow("markFailure", "numFail", item.numFail, "len(ibck)", len(ibck), "wait", wait)
+			m.Debugw("markFailure", "numFail", item.numFail, "len(ibck)", len(ibck), "wait", wait)
 		}
 	} else {
 		wait = a.accfg.RefreshBackoff()
@@ -568,9 +568,9 @@ func (a *AutocertLooper) doOne(
 		return err
 	}
 
-	m.Infow("AutocertLooper.doOne", "hn", pkg.Hostname, "stage", "enter")
+	m.Debugw("AutocertLooper.doOne", "hn", pkg.Hostname, "stage", "enter")
 	res, err := a.acdoer.DoOne(m, *pkg)
-	m.Infow("AutocertLooper.doOne", "hn", pkg.Hostname, "stage", "exit", "err", err)
+	m.Debugw("AutocertLooper.doOne", "hn", pkg.Hostname, "stage", "exit", "err", err)
 
 	logErr := a.logAction(m, db, item, err)
 
@@ -578,7 +578,7 @@ func (a *AutocertLooper) doOne(
 
 	if err == nil {
 		item.expires = res.Etime
-		m.Infow("AutocertLooper.doOne", "hn", pkg.Hostname, "newExpiry", item.expires)
+		m.Debugw("AutocertLooper.doOne", "hn", pkg.Hostname, "newExpiry", item.expires)
 		markError = a.markSuccess(m, db, item)
 	} else {
 		markError = a.markFailure(m, db, item)
@@ -677,12 +677,12 @@ func (a *AutocertLooper) PollReadyHosts(m MetaContext) ([]core.ShortHostID, erro
 		}
 		ret = append(ret, core.ShortHostID(shid))
 	}
-	m.Infow("PollReadyHosts", "ret", ret)
+	m.Debugw("PollReadyHosts", "ret", ret)
 	return ret, nil
 }
 
 func (a *AutocertLooper) DoHost(m MetaContext, arg infra.DoAutocertArg) error {
-	m.Infow("AutocertLooper.DoHost", "hn", arg.Pkg.Hostname, "styp", arg.Pkg.Styp.String())
+	m.Debugw("AutocertLooper.DoHost", "hn", arg.Pkg.Hostname, "styp", arg.Pkg.Styp.String())
 	a.pkgCh <- arg.Pkg
 	err := a.swtch.Wait(
 		m.Ctx(),
