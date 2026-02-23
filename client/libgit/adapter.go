@@ -405,7 +405,7 @@ func (o *objectIter) nextAny(ctx context.Context) (plumbing.EncodedObject, error
 		return nil, err
 	}
 	if o.ptr >= len(o.buf) {
-		return nil, core.InternalError("empty after sucessful refresh")
+		return nil, core.InternalError("empty after successful refresh")
 	}
 	hsh := o.buf[o.ptr]
 	o.ptr++
