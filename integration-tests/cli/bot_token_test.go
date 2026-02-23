@@ -101,4 +101,9 @@ func TestBotTokenNewAndLoad(t *testing.T) {
 	require.Equal(t, nm, ad.Di.Dn.Name)
 	require.Equal(t, bkid, ad.Di.Key.Member.Id.Entity)
 	require.Equal(t, proto.DeviceType_BotToken, ad.Di.Dn.Label.DeviceType)
+
+	// Revoke the bot token key (issue #231 repro).
+	bkidStr, err := bkid.StringErr()
+	require.NoError(t, err)
+	b.runCmd(t, nil, "key", "revoke", bkidStr)
 }

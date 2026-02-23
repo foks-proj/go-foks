@@ -3555,6 +3555,8 @@ func (e EntityType) KeyGenus() (KeyGenus, error) {
 		kg = KeyGenus_Yubi
 	case EntityType_BackupKey:
 		kg = KeyGenus_Backup
+	case EntityType_BotTokenKey:
+		kg = KeyGenus_BotToken
 	default:
 		return kg, DataError("bad entity type")
 	}

@@ -9,6 +9,10 @@ changelog:
     changes:
       - desc: fix autocert refresh intervals to use what LE sends backout
         closes: ["#225"]
+      - desc: Fix bug in revoking bot-token keys
+        closes: ["#231"]
+      - desc: Improve log rotation on `standup` 
+        closes: ["#228"]
   - version: 0.1.5
     urgency: low
     stable: true
