@@ -10,6 +10,7 @@ to get started.
 * Read our [whitepaper](https://github.com/foks-proj/foks-whitepaper)
 * We run a [hosting service (foks.app)](https://w.foks.app)
 * [FCPs](https://github.com/foks-proj/FCPs) are our community proposals, similar to BIPs or EIPs, for proposing changes to the FOKS protocol.
+* [Docs](https://docs.foks.pub) available via mintlify; [PRs](https://github.com/foks-proj/docs) welcome if bugs found
 
 ## Build / Test / Install
 
