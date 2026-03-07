@@ -86,6 +86,19 @@ type VHostsConfigJSON struct {
 var _ StripeConfigger = (*StripeConfigJSON)(nil)
 var _ VHostsConfigger = (*VHostsConfigJSON)(nil)
 
+type BeaconConfigJSON struct {
+	AllowPrivateIPs_ bool `json:"allow_private_ips"`
+}
+
+func (b *BeaconConfigJSON) AllowPrivateIPs() bool {
+	if b == nil {
+		return false
+	}
+	return b.AllowPrivateIPs_
+}
+
+var _ BeaconServerConfigger = (*BeaconConfigJSON)(nil)
+
 type UserServerConfigJSON struct {
 	BadLoginRateLimit_ RateLimit `json:"bad_login_rate_limit"`
 }
@@ -300,6 +313,7 @@ type JSonnetTemplateNoLog struct {
 		Merkle  *MerkleConfigJSON        `json:"merkle"`
 		Quota   *QuotaConfigJSON         `json:"quota"`
 		Web     *WebConfigJSON           `json:"web"`
+		Beacon  *BeaconConfigJSON        `json:"beacon"`
 	} `json:"apps"`
 	CKS    *CKSConfigJSON    `json:"cks"`
 	PKIX   *PKIXConfigJSON   `json:"pkix"`
@@ -656,6 +670,14 @@ func (c *ConfigJSonnet) QuotaServerConfig(ctx context.Context) (QuotaServerConfi
 		return c.Data.Apps.Quota, nil
 	}
 	return DefaultQuotaServerConfig{}, nil
+}
+func (c *ConfigJSonnet) BeaconServerConfig(ctx context.Context) (BeaconServerConfigger, error) {
+	c.RLock()
+	defer c.RUnlock()
+	if c.Data.Apps.Beacon != nil {
+		return c.Data.Apps.Beacon, nil
+	}
+	return DefaultBeaconServerConfig{}, nil
 }
 func (c *ConfigJSonnet) QueueServiceConfig(ctx context.Context) (*QueueServiceConfig, error) {
 	c.RLock()

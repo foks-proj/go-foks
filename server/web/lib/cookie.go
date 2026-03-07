@@ -25,6 +25,15 @@ func SetSessionCookie(
 		Value:    string(ws.EncodeToString()),
 		Expires:  time.Now().Add(time.Duration(7*24) * time.Hour),
 		HttpOnly: true,
+		Path:     "/",
+		SameSite: http.SameSiteStrictMode,
+	}
+	wcfg, err := m.G().Config().WebConfig(m.Ctx())
+	if err != nil {
+		return err
+	}
+	if wcfg.UseTLS() {
+		cook.Secure = true
 	}
 	http.SetCookie(w, &cook)
 	return nil

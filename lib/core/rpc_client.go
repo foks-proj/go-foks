@@ -196,6 +196,9 @@ func (c *connectionMgr) makeTlsConfig(m RpcClientMetaContexter) (*tls.Config, er
 			cfg.Certificates = []tls.Certificate{*cert}
 		}
 	}
+	if c.opts != nil && c.opts.ServerName != "" {
+		cfg.ServerName = c.opts.ServerName
+	}
 	return cfg, nil
 }
 
@@ -326,7 +329,8 @@ type RpcClientOpts struct {
 	MinConnectWait     time.Duration
 	ConfigConnHook     func(context.Context, rpc.Transporter) error
 
-	DebugName string
+	DebugName  string
+	ServerName string // if set, override TLS ServerName (for connecting to a pre-resolved IP)
 
 	// For testing purposes
 	Clock                clockwork.Clock

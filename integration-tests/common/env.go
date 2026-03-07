@@ -383,7 +383,7 @@ func (w *TestEnv) BeaconRegisterReturnErr() error {
 	}
 	port := proto.Port(addr.Port)
 	hostID := m.G().HostID().Id
-	err = shared.BeaconRegisterSrv(m, hostname, port, hostID, time.Hour)
+	err = shared.BeaconRegisterSrv(m, hostname, port, hostID, time.Hour, "")
 	return err
 
 }
