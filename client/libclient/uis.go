@@ -11,6 +11,7 @@ import (
 	"github.com/foks-proj/go-foks/proto/lcl"
 	proto "github.com/foks-proj/go-foks/proto/lib"
 	"github.com/mattn/go-isatty"
+	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
 type SignupUIer interface {
@@ -108,6 +109,10 @@ type LogSendUIer interface {
 	ShowLogSendRes(m MetaContext, res lcl.LogSendRes) error
 }
 
+type MCPUIer interface {
+	Transport() mcp.Transport
+}
+
 type UIs struct {
 	Signup     SignupUIer
 	Terminal   TerminalUIer
@@ -117,4 +122,5 @@ type UIs struct {
 	SSOLogin   SSOLoginUIer
 	PIN        PINUIer
 	LogSend    LogSendUIer
+	MCP        MCPUIer
 }
