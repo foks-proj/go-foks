@@ -1032,8 +1032,8 @@ func (e *StandupEng) makeFoksUser(m shared.MetaContext) (err error) {
 			if err != nil {
 				return err
 			}
-			if strings.Contains(e.dbpw, "'") {
-				return core.BadArgsError("database password cannot contain single quotes")
+			if strings.Contains(e.dbpw, "'") || strings.Contains(e.dbpw, "\\") {
+				return core.BadArgsError("database password cannot contain single quotes or backslashes")
 			}
 			_, err = conn.Exec(
 				m.Ctx(),

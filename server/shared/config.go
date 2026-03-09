@@ -242,6 +242,7 @@ type Config interface {
 	// configurations.
 	MerkleBuilderServerConfig(ctx context.Context) (MerkleBuilderServerConfigger, error)
 	QuotaServerConfig(ctx context.Context) (QuotaServerConfigger, error)
+	BeaconServerConfig(ctx context.Context) (BeaconServerConfigger, error)
 
 	// Get the address and x509 cert to use to connect to the external beacon service,
 	// which for now is a single service running across all FOKS servers.
@@ -333,6 +334,16 @@ func (d DefaultQuotaServerConfig) GetDelay() time.Duration { return time.Minute 
 func (d DefaultQuotaServerConfig) GetNoPlanMaxTeams() int  { return 2 }
 
 var _ QuotaServerConfigger = DefaultQuotaServerConfig{}
+
+type BeaconServerConfigger interface {
+	AllowPrivateIPs() bool
+}
+
+type DefaultBeaconServerConfig struct{}
+
+func (d DefaultBeaconServerConfig) AllowPrivateIPs() bool { return false }
+
+var _ BeaconServerConfigger = DefaultBeaconServerConfig{}
 
 type DefaultTeamConfig struct{}
 
@@ -564,6 +575,9 @@ func (c *EmptyConfig) MerkleBuilderServerConfig(ctx context.Context) (MerkleBuil
 	return nil, NewEmptyConfigError()
 }
 func (c *EmptyConfig) QuotaServerConfig(ctx context.Context) (QuotaServerConfigger, error) {
+	return nil, NewEmptyConfigError()
+}
+func (c *EmptyConfig) BeaconServerConfig(ctx context.Context) (BeaconServerConfigger, error) {
 	return nil, NewEmptyConfigError()
 }
 func (c *EmptyConfig) QueueServiceConfig(ctx context.Context) (*QueueServiceConfig, error) {

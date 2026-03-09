@@ -48,7 +48,7 @@ func TestBeaconProbe(t *testing.T) {
 
 	tester := func() {
 
-		err = shared.BeaconRegisterSrv(m, hostname, port, hostID, time.Hour)
+		err = shared.BeaconRegisterSrv(m, hostname, port, hostID, time.Hour, "")
 		require.NoError(t, err)
 		ret, err := shared.BeaconLookup(m, hostID)
 		require.NoError(t, err)
@@ -63,7 +63,7 @@ func TestBeaconProbe(t *testing.T) {
 	tester()
 
 	hostID[5] ^= 0x01
-	err = shared.BeaconRegisterSrv(m, hostname, port, hostID, time.Hour)
+	err = shared.BeaconRegisterSrv(m, hostname, port, hostID, time.Hour, "")
 	require.Error(t, err)
 	require.Equal(t, core.HostMismatchError{Which: "hostID"}, err)
 
@@ -107,11 +107,11 @@ func TestBeaconHostnames(t *testing.T) {
 	// It still works to connect to p1 via the alias p2, but
 	// we check hostname equality in the beacon registration, and it
 	// should fail.
-	err := shared.BeaconRegisterSrv(m, p2, port, hostID, time.Hour)
+	err := shared.BeaconRegisterSrv(m, p2, port, hostID, time.Hour, "")
 	require.Error(t, err)
 	require.Equal(t, core.HostMismatchError{Which: "hostname"}, err)
 
-	err = shared.BeaconRegisterSrv(m, proto.Hostname(strings.ToUpper(string(p1))), port, hostID, time.Hour)
+	err = shared.BeaconRegisterSrv(m, proto.Hostname(strings.ToUpper(string(p1))), port, hostID, time.Hour, "")
 	require.NoError(t, err)
 
 	ret, err := shared.BeaconLookup(m, hostID)

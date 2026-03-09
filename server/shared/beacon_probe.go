@@ -17,25 +17,31 @@ import (
 // only stores one row per host, for now. This storage is in SQL not SQLite. So it's
 // slightly different.
 type BeaconProbe struct {
-	host    proto.Hostname
-	port    proto.Port
-	addr    proto.TCPAddr
-	hostID  proto.HostID
-	timeout time.Duration
-	res     *rem.ProbeRes
-	prev    *core.Hostchain
-	ch      *core.Hostchain
-	pz      *proto.PublicZone
+	host     proto.Hostname
+	port     proto.Port
+	addr     proto.TCPAddr
+	dialAddr proto.TCPAddr
+	hostID   proto.HostID
+	timeout  time.Duration
+	res      *rem.ProbeRes
+	prev     *core.Hostchain
+	ch       *core.Hostchain
+	pz       *proto.PublicZone
 }
 
-func NewBeaconProbe(h proto.Hostname, p proto.Port, i proto.HostID, t time.Duration) *BeaconProbe {
+func NewBeaconProbe(h proto.Hostname, p proto.Port, i proto.HostID, t time.Duration, dialAddr proto.TCPAddr) *BeaconProbe {
+	addr := proto.NewTCPAddr(h, p)
+	if dialAddr == "" {
+		dialAddr = addr
+	}
 	return &BeaconProbe{
-		host:    h,
-		port:    p,
-		hostID:  i,
-		timeout: t,
-		prev:    nil,
-		addr:    proto.NewTCPAddr(h, p),
+		host:     h,
+		port:     p,
+		hostID:   i,
+		timeout:  t,
+		prev:     nil,
+		addr:     addr,
+		dialAddr: dialAddr,
 	}
 }
 
@@ -78,12 +84,17 @@ func (b *BeaconProbe) probe(m MetaContext) error {
 		return err
 	}
 	rm := RpcClientMetaContext{MetaContext: m}
+	var opts *core.RpcClientOpts
+	if b.dialAddr != b.addr {
+		opts = core.NewRpcClientOpts()
+		opts.ServerName = b.addr.Hostname().String()
+	}
 	cli := core.NewRpcClient(
 		rm,
-		b.addr,
+		b.dialAddr,
 		rootCAs,
 		nil,
-		nil,
+		opts,
 	)
 	defer cli.Shutdown()
 	pcli := core.NewProbeClient(cli, m)
@@ -237,8 +248,8 @@ func (b *BeaconProbe) Run(m MetaContext) error {
 	})
 }
 
-func BeaconRegisterSrv(m MetaContext, host proto.Hostname, port proto.Port, hid proto.HostID, timeout time.Duration) error {
-	return NewBeaconProbe(host, port, hid, timeout).Run(m)
+func BeaconRegisterSrv(m MetaContext, host proto.Hostname, port proto.Port, hid proto.HostID, timeout time.Duration, dialAddr proto.TCPAddr) error {
+	return NewBeaconProbe(host, port, hid, timeout, dialAddr).Run(m)
 }
 
 func BeaconLookup(m MetaContext, hid proto.HostID) (proto.TCPAddr, error) {

@@ -58,7 +58,6 @@ func (r *AWSRoute53DNSSetter) awsConfig(m MetaContext) (*aws.Config, error) {
 		return nil, core.ConfigError("missing AWS secret key")
 	}
 
-	m.Infow("AWSRoute53.awsConfig", "access_key", r.creds.AccessKey())
 	customCreds := aws.NewCredentialsCache(credentials.NewStaticCredentialsProvider(
 		r.creds.AccessKey(),
 		r.creds.SecretKey(),

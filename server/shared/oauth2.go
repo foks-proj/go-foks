@@ -397,7 +397,7 @@ func (o *oauth2Session) postExchange(m MetaContext, arg *proto.OAuth2Code) error
 	}
 	data.Set("redirect_uri", o.cfg.RedirectURI.String())
 	data.Set("client_id", o.cfg.ClientID.String())
-	if o.cfg.ClientSecret.IsZero() {
+	if !o.cfg.ClientSecret.IsZero() {
 		data.Set("client_secret", o.cfg.ClientSecret.String())
 	}
 	if o.pkceVerifier != "" {

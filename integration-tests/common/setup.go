@@ -375,6 +375,10 @@ func configureServers(
 	}
 	config.Apps.Merkle = &merkleBuilderConfigData
 
+	config.Apps.Beacon = &shared.BeaconConfigJSON{
+		AllowPrivateIPs_: true,
+	}
+
 	config.Apps.Quota = &shared.QuotaConfigJSON{
 		LooperConfigJSON: shared.LooperConfigJSON{
 			PollWaitMilliseconds_: 1000 * 60 * 60, // one hour, so it basically is driven by active poking.
