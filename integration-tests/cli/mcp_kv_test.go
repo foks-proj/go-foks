@@ -419,6 +419,93 @@ func TestMCPKVBinaryPutGet(t *testing.T) {
 	})
 }
 
+func TestMCPKVTeamStore(t *testing.T) {
+	bob := makeBobAndHisAgent(t)
+	merklePoke(t)
+	merklePoke(t)
+
+	// Create a team to use as a KV store scope
+	bob.agent.runCmd(t, nil, "team", "create", "kv-team-test")
+	merklePoke(t)
+
+	mcpKVTest(t, bob.agent, func(t *testing.T, session *mcp.ClientSession, ctx context.Context) {
+		// Put a file in the team's KV store
+		text := mcpCallTool(t, session, ctx, "put", map[string]any{
+			"path":    "/team-file.txt",
+			"content": "team data",
+			"team":    "kv-team-test",
+		})
+		require.Equal(t, "ok", text)
+
+		// Get it back from team store
+		text = mcpCallTool(t, session, ctx, "get", map[string]any{
+			"path": "/team-file.txt",
+			"team": "kv-team-test",
+		})
+		require.Equal(t, "team data", text)
+
+		// List team store root
+		text = mcpCallTool(t, session, ctx, "list", map[string]any{
+			"path": "/",
+			"team": "kv-team-test",
+		})
+		require.Contains(t, text, "team-file.txt")
+
+		// Stat the file in team store
+		text = mcpCallTool(t, session, ctx, "stat", map[string]any{
+			"path": "/team-file.txt",
+			"team": "kv-team-test",
+		})
+		require.Contains(t, text, "\"De\"")
+
+		// Usage for team store
+		text = mcpCallTool(t, session, ctx, "usage", map[string]any{
+			"team": "kv-team-test",
+		})
+		require.Contains(t, text, "Num Files:")
+
+		// Personal store should NOT have this file
+		errText := mcpCallToolExpectError(t, session, ctx, "get", map[string]any{
+			"path": "/team-file.txt",
+		})
+		require.NotEmpty(t, errText)
+
+		// Mkdir in team store
+		text = mcpCallTool(t, session, ctx, "mkdir", map[string]any{
+			"path": "/team-dir",
+			"team": "kv-team-test",
+		})
+		require.Contains(t, text, "DirID:")
+
+		// Mv in team store
+		mcpCallTool(t, session, ctx, "put", map[string]any{
+			"path":    "/team-dir/mv-src.txt",
+			"content": "to move",
+			"team":    "kv-team-test",
+		})
+		text = mcpCallTool(t, session, ctx, "mv", map[string]any{
+			"src":  "/team-dir/mv-src.txt",
+			"dst":  "/team-dir/mv-dst.txt",
+			"team": "kv-team-test",
+		})
+		require.Equal(t, "ok", text)
+
+		text = mcpCallTool(t, session, ctx, "get", map[string]any{
+			"path": "/team-dir/mv-dst.txt",
+			"team": "kv-team-test",
+		})
+		require.Equal(t, "to move", text)
+
+		// Rm in team store
+		text = mcpCallTool(t, session, ctx, "rm", map[string]any{
+			"path":      "/team-dir",
+			"team":      "kv-team-test",
+			"recursive": true,
+		})
+		require.Equal(t, "ok", text)
+	})
+}
+
 func TestMCPKVPathNormalization(t *testing.T) {
 	bob := makeBobAndHisAgent(t)
 	merklePoke(t)
