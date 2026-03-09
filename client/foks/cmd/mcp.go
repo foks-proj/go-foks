@@ -38,6 +38,7 @@ func mcpCmd(m libclient.MetaContext) *cobra.Command {
 		},
 	}
 	mcpKVCmd(m, top)
+	mcpTeamCmd(m, top)
 	return top
 }
 
