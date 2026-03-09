@@ -13,6 +13,10 @@ changelog:
         closes: ["#231"]
       - desc: Improve log rotation on `standup` 
         closes: ["#228"]
+      - desc: MCP interface for KV
+        closes : []
+      - desc: Claude security audit; 2 highs, and 1 medium; all server-side
+        closes : []
   - version: 0.1.5
     urgency: low
     stable: true
