@@ -240,6 +240,15 @@ Some important docs are:
 - `docs/kv_store.md` - A pretty up-to-date description of how the KV store is working,
    and ideas for future work there.
 
+## MCP (Model Context Protocol)
+
+FOKS ships MCP servers that let LLM tools (like Claude Code) interact with the encrypted KV store and team operations. Two servers are available:
+
+- `foks mcp kv` — read, write, list, move, remove, and stat entries in the encrypted KV store (personal or team-scoped)
+- `foks mcp team` — list team members and query team memberships
+
+See the [MCP docs](https://docs.foks.pub/cli/mcp) for setup instructions with Claude Code and other MCP clients.
+
 ## Future Work
 
 Lots, left blank for now.

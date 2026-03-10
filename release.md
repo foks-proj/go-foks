@@ -26,7 +26,7 @@
   - git pull
   - bash -x scripts/make-debian-repo.bash
   - git add public
-  - git commit -a -m 'vX.Y.Z'
+  - git commit -a -m 'debian vX.Y.Z'
   - git push
   - startup debian VM
   - ssh max@192.168.56.5
@@ -51,7 +51,7 @@
   - git pull
   - bash -x scripts/make-fedora-repo.bash
   - git add public/stable
-  - git commit -a -m 'vX.Y.Z'
+  - git commit -a -m 'fedora vX.Y.Z'
   - git push
   - wait about 10 minutes
   - sudo dnf upgrade --refresh
@@ -78,6 +78,7 @@
   - cp foks.rb /opt/homebrew/Library/Taps/homebrew-releaser/homebrew-test/Casks/foks.rb 
   - brew install --cask homebrew-releaser/homebrew-test/foks  # to test
   - brew audit --cask homebrew-releaser/homebrew-test/foks # to test
+  - git push origin main # in our fork of homebreak-casks
   - cd pkgs && git pull
   - go to github and open PR against homebrew/homebrew-cask
 
@@ -92,15 +93,18 @@
   - mark the GH release live via the web interface
   - ./winget-gen.bash ../../winget-pkgs
   - cd ../../winget-pkgs
+  - git add manifests/n/ne43/foks
   - git commit -a -m "New version: Ne43.Foks version X.Y.Z"
-  - git push
+  - git push --force origin master
   - open a pull request against: https://github.com/microsoft/winget-pkgs
+    - go to https://github.com/foks-proj/winget-pkgs and click "contribute"
   - boot up window box
   - cd winget-pkgs
   - git fetch origin master
   - git reset --hard origin/master
-  - winget validate --manifest ne43/foks/v0.1.3 // or thereabout
-  - winget install --manifest ne43/foks/v0.1.3 // or thereabout
+  - cd manifests/n
+  - winget validate --manifest ne43/foks/0.1.3 # or thereabout
+  - winget install --manifest ne43/foks/0.1.3 # or thereabout
 
 - Update server
    - make foks-server-release
