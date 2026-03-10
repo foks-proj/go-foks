@@ -12,6 +12,51 @@ to get started.
 * [FCPs](https://github.com/foks-proj/FCPs) are our community proposals, similar to BIPs or EIPs, for proposing changes to the FOKS protocol.
 * [Docs](https://docs.foks.pub) available via mintlify; [PRs](https://github.com/foks-proj/docs) welcome if bugs found
 
+## Install
+
+The easiest way to install is via a package manager. See [foks.pub](https://foks.pub) for full details.
+
+**macOS (Homebrew):**
+```bash
+brew install foks
+```
+
+**Debian / Ubuntu:**
+```bash
+curl -fsSL https://pkgs.foks.pub/install.sh | sh
+apt-get install foks
+```
+
+**Fedora:**
+```bash
+curl -fsSL https://pkgs.foks.pub/install.sh | sh
+dnf install foks
+```
+
+**Arch Linux (AUR):**
+```bash
+yay -Sy go-foks
+```
+
+**Windows:**
+```
+winget install foks
+```
+
+**Static binary (any platform):**
+```bash
+curl -fsSL https://pkgs.foks.pub/install-static.sh | sh
+```
+
+## MCP (Model Context Protocol)
+
+FOKS ships MCP servers that let LLM tools (like Claude Code) interact with the encrypted KV store and team operations. Two servers are available:
+
+- `foks mcp kv` — read, write, list, move, remove, and stat entries in the encrypted KV store (personal or team-scoped)
+- `foks mcp team` — list team members and query team memberships
+
+See the [MCP docs](https://docs.foks.pub/cli/mcp) for setup instructions with Claude Code and other MCP clients.
+
 ## Build / Test / Install
 
 ### Prerequisites
@@ -239,15 +284,6 @@ Some important docs are:
    that some users will ask for them, and they would be hard to add later.
 - `docs/kv_store.md` - A pretty up-to-date description of how the KV store is working,
    and ideas for future work there.
-
-## MCP (Model Context Protocol)
-
-FOKS ships MCP servers that let LLM tools (like Claude Code) interact with the encrypted KV store and team operations. Two servers are available:
-
-- `foks mcp kv` — read, write, list, move, remove, and stat entries in the encrypted KV store (personal or team-scoped)
-- `foks mcp team` — list team members and query team memberships
-
-See the [MCP docs](https://docs.foks.pub/cli/mcp) for setup instructions with Claude Code and other MCP clients.
 
 ## Future Work
 
