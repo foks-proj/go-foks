@@ -148,7 +148,7 @@ func TestTeamMembershipMinderExplore(t *testing.T) {
 			return nil
 		},
 	}
-	exstate, err := tmm.Explore(mc)
+	exstate, err := tmm.Explore(mc, nil)
 	require.NoError(t, err)
 
 	allTeams := []*teamObj{t0, t1, t2}
@@ -173,7 +173,7 @@ func TestTeamMembershipMinderExplore(t *testing.T) {
 	)
 	tew.DirectDoubleMerklePokeInTest(t)
 
-	estate, err := tmm.Explore(mc)
+	estate, err := tmm.Explore(mc, nil)
 	require.NoError(t, err)
 	require.Equal(t, 1, len(estate.Warnings))
 	wrn := estate.Warnings[t2.FQTeam(t)]
@@ -181,7 +181,7 @@ func TestTeamMembershipMinderExplore(t *testing.T) {
 	require.True(t, core.IsPermissionError(wrn.Err))
 
 	tew.DirectDoubleMerklePokeInTest(t)
-	estate, err = tmm.Explore(mc)
+	estate, err = tmm.Explore(mc, nil)
 	require.NoError(t, err)
 	require.Equal(t, 0, len(estate.Warnings))
 
@@ -267,7 +267,7 @@ func TestExactRolesInTeamGraphRemovals(t *testing.T) {
 			return nil
 		},
 	}
-	exstate, err := tmm.Explore(mc)
+	exstate, err := tmm.Explore(mc, nil)
 	require.NoError(t, err)
 
 	checkTeams := func(state *libclient.ExploreState, teams []*teamObj, visitTeams []*teamObj) {
@@ -298,7 +298,7 @@ func TestExactRolesInTeamGraphRemovals(t *testing.T) {
 	)
 	tew.DirectDoubleMerklePokeInTest(t)
 
-	exstate, err = tmm.Explore(mc)
+	exstate, err = tmm.Explore(mc, nil)
 	require.NoError(t, err)
 	require.Equal(t, 1, len(exstate.Warnings))
 	wrn := exstate.Warnings[t1.FQTeam(t)]
@@ -310,7 +310,7 @@ func TestExactRolesInTeamGraphRemovals(t *testing.T) {
 	checkTeams(exstate, []*teamObj{t0}, []*teamObj{t0, t1})
 
 	tew.DirectDoubleMerklePokeInTest(t)
-	exstate, err = tmm.Explore(mc)
+	exstate, err = tmm.Explore(mc, nil)
 	require.NoError(t, err)
 	require.Equal(t, 0, len(exstate.Warnings))
 	checkTeams(exstate, []*teamObj{t0}, nil)
@@ -318,6 +318,8 @@ func TestExactRolesInTeamGraphRemovals(t *testing.T) {
 
 func TestTeamFixViaUpgrade(t *testing.T) {
 	tew := testEnvBeta(t)
+	stopper := runMerkleActivePoker(t, tew)
+	defer stopper()
 	tew.DirectMerklePoke(t)
 	bluey := tew.NewTestUser(t)
 	bingo := tew.NewTestUser(t)
@@ -335,11 +337,18 @@ func TestTeamFixViaUpgrade(t *testing.T) {
 	require.NotNil(t, au)
 	tmm := libclient.NewTeamMinder(au)
 
+	tmm.TestHooks = &libclient.TeamMinderTestHooks{
+		PostChainHook: func() error {
+			tew.DirectDoubleMerklePokeInTest(t)
+			return nil
+		},
+	}
+
 	runLocalJoinSequenceForUser(t, m, t0, bluey, bingo, proto.AdminRole,
 		&localJoinHooks{
 			preTeamEdit: func() {
 				tew.DirectMerklePokeInTest(t)
-				estate, err := tmm.Explore(mc)
+				estate, err := tmm.Explore(mc, nil)
 				require.NoError(t, err)
 				require.NotNil(t, estate)
 				require.Equal(t, 0, len(estate.Teams))
@@ -355,7 +364,7 @@ func TestTeamFixViaUpgrade(t *testing.T) {
 		},
 	)
 	tew.DirectMerklePokeInTest(t)
-	estate, err := tmm.Explore(mc)
+	estate, err := tmm.Explore(mc, nil)
 	require.NoError(t, err)
 	require.NotNil(t, estate)
 	require.Equal(t, 1, len(estate.Teams))

@@ -1594,7 +1594,7 @@ func TestTeamListMemberships(t *testing.T) {
 	tmm, err := mc.G().TeamMinder()
 	require.NoError(t, err)
 
-	lst, err := tmm.ListMemberships(mc)
+	lst, err := tmm.ListMemberships(mc, nil)
 	require.NoError(t, err)
 	require.Equal(t, 2, len(lst.Teams))
 

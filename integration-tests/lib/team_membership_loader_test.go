@@ -245,7 +245,7 @@ func TestTeamMembershipMinder(t *testing.T) {
 			return nil
 		},
 	}
-	_, err := tmm.Explore(mc)
+	_, err := tmm.Explore(mc, nil)
 	require.NoError(t, err)
 
 	var key libclient.FQTeamSrcRole

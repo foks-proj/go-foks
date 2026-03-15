@@ -1025,6 +1025,128 @@ func (t *TeamMembership) Decode(dec rpc.Decoder) error {
 
 func (t *TeamMembership) Bytes() []byte { return nil }
 
+type TeamMembershipChainTeam struct {
+	Team    lib.FQTeam
+	SrcRole lib.Role
+	DstRole lib.Role
+	Seqno   lib.Seqno
+}
+type TeamMembershipChainTeamInternal__ struct {
+	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
+	Team    *lib.FQTeamInternal__
+	SrcRole *lib.RoleInternal__
+	DstRole *lib.RoleInternal__
+	Seqno   *lib.SeqnoInternal__
+}
+
+func (t TeamMembershipChainTeamInternal__) Import() TeamMembershipChainTeam {
+	return TeamMembershipChainTeam{
+		Team: (func(x *lib.FQTeamInternal__) (ret lib.FQTeam) {
+			if x == nil {
+				return ret
+			}
+			return x.Import()
+		})(t.Team),
+		SrcRole: (func(x *lib.RoleInternal__) (ret lib.Role) {
+			if x == nil {
+				return ret
+			}
+			return x.Import()
+		})(t.SrcRole),
+		DstRole: (func(x *lib.RoleInternal__) (ret lib.Role) {
+			if x == nil {
+				return ret
+			}
+			return x.Import()
+		})(t.DstRole),
+		Seqno: (func(x *lib.SeqnoInternal__) (ret lib.Seqno) {
+			if x == nil {
+				return ret
+			}
+			return x.Import()
+		})(t.Seqno),
+	}
+}
+func (t TeamMembershipChainTeam) Export() *TeamMembershipChainTeamInternal__ {
+	return &TeamMembershipChainTeamInternal__{
+		Team:    t.Team.Export(),
+		SrcRole: t.SrcRole.Export(),
+		DstRole: t.DstRole.Export(),
+		Seqno:   t.Seqno.Export(),
+	}
+}
+func (t *TeamMembershipChainTeam) Encode(enc rpc.Encoder) error {
+	return enc.Encode(t.Export())
+}
+
+func (t *TeamMembershipChainTeam) Decode(dec rpc.Decoder) error {
+	var tmp TeamMembershipChainTeamInternal__
+	err := dec.Decode(&tmp)
+	if err != nil {
+		return err
+	}
+	*t = tmp.Import()
+	return nil
+}
+
+func (t *TeamMembershipChainTeam) Bytes() []byte { return nil }
+
+type TeamMembershipChainList []TeamMembershipChainTeam
+type TeamMembershipChainListInternal__ [](*TeamMembershipChainTeamInternal__)
+
+func (t TeamMembershipChainList) Export() *TeamMembershipChainListInternal__ {
+	tmp := (([]TeamMembershipChainTeam)(t))
+	return ((*TeamMembershipChainListInternal__)((func(x []TeamMembershipChainTeam) *[](*TeamMembershipChainTeamInternal__) {
+		if len(x) == 0 {
+			return nil
+		}
+		ret := make([](*TeamMembershipChainTeamInternal__), len(x))
+		for k, v := range x {
+			ret[k] = v.Export()
+		}
+		return &ret
+	})(tmp)))
+}
+func (t TeamMembershipChainListInternal__) Import() TeamMembershipChainList {
+	tmp := ([](*TeamMembershipChainTeamInternal__))(t)
+	return TeamMembershipChainList((func(x *[](*TeamMembershipChainTeamInternal__)) (ret []TeamMembershipChainTeam) {
+		if x == nil || len(*x) == 0 {
+			return nil
+		}
+		ret = make([]TeamMembershipChainTeam, len(*x))
+		for k, v := range *x {
+			if v == nil {
+				continue
+			}
+			ret[k] = (func(x *TeamMembershipChainTeamInternal__) (ret TeamMembershipChainTeam) {
+				if x == nil {
+					return ret
+				}
+				return x.Import()
+			})(v)
+		}
+		return ret
+	})(&tmp))
+}
+
+func (t *TeamMembershipChainList) Encode(enc rpc.Encoder) error {
+	return enc.Encode(t.Export())
+}
+
+func (t *TeamMembershipChainList) Decode(dec rpc.Decoder) error {
+	var tmp TeamMembershipChainListInternal__
+	err := dec.Decode(&tmp)
+	if err != nil {
+		return err
+	}
+	*t = tmp.Import()
+	return nil
+}
+
+func (t TeamMembershipChainList) Bytes() []byte {
+	return nil
+}
+
 type ListMembershipsRes struct {
 	HomeHost lib.HostID
 	Teams    []TeamMembership
@@ -1862,6 +1984,34 @@ func (t *TeamChangeRolesArg) Decode(dec rpc.Decoder) error {
 
 func (t *TeamChangeRolesArg) Bytes() []byte { return nil }
 
+type TeamDumpMembershipChainArg struct {
+}
+type TeamDumpMembershipChainArgInternal__ struct {
+	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
+}
+
+func (t TeamDumpMembershipChainArgInternal__) Import() TeamDumpMembershipChainArg {
+	return TeamDumpMembershipChainArg{}
+}
+func (t TeamDumpMembershipChainArg) Export() *TeamDumpMembershipChainArgInternal__ {
+	return &TeamDumpMembershipChainArgInternal__{}
+}
+func (t *TeamDumpMembershipChainArg) Encode(enc rpc.Encoder) error {
+	return enc.Encode(t.Export())
+}
+
+func (t *TeamDumpMembershipChainArg) Decode(dec rpc.Decoder) error {
+	var tmp TeamDumpMembershipChainArgInternal__
+	err := dec.Decode(&tmp)
+	if err != nil {
+		return err
+	}
+	*t = tmp.Import()
+	return nil
+}
+
+func (t *TeamDumpMembershipChainArg) Bytes() []byte { return nil }
+
 type TeamInterface interface {
 	TeamCreate(context.Context, lib.NameUtf8) (TeamCreateRes, error)
 	TeamList(context.Context, lib.FQTeamParsed) (TeamRoster, error)
@@ -1878,6 +2028,7 @@ type TeamInterface interface {
 	TeamListMemberships(context.Context) (ListMembershipsRes, error)
 	TeamAdd(context.Context, TeamAddArg) error
 	TeamChangeRoles(context.Context, TeamChangeRolesArg) error
+	TeamDumpMembershipChain(context.Context) (TeamMembershipChainList, error)
 	ErrorWrapper() func(error) lib.Status
 	CheckArgHeader(ctx context.Context, h Header) error
 	MakeResHeader() Header
@@ -2255,6 +2406,28 @@ func (c TeamClient) TeamChangeRoles(ctx context.Context, arg TeamChangeRolesArg)
 			return
 		}
 	}
+	return
+}
+func (c TeamClient) TeamDumpMembershipChain(ctx context.Context) (res TeamMembershipChainList, err error) {
+	var arg TeamDumpMembershipChainArg
+	warg := &rpc.DataWrap[Header, *TeamDumpMembershipChainArgInternal__]{
+		Data: arg.Export(),
+	}
+	if c.MakeArgHeader != nil {
+		warg.Header = c.MakeArgHeader()
+	}
+	var tmp rpc.DataWrap[Header, TeamMembershipChainListInternal__]
+	err = c.Cli.Call2(ctx, rpc.NewMethodV2(TeamProtocolID, 15, "Team.teamDumpMembershipChain"), warg, &tmp, 0*time.Millisecond, teamErrorUnwrapperAdapter{h: c.ErrorUnwrapper})
+	if err != nil {
+		return
+	}
+	if c.CheckResHeader != nil {
+		err = c.CheckResHeader(ctx, tmp.Header)
+		if err != nil {
+			return
+		}
+	}
+	res = tmp.Data.Import()
 	return
 }
 func TeamProtocol(i TeamInterface) rpc.ProtocolV2 {
@@ -2692,6 +2865,34 @@ func TeamProtocol(i TeamInterface) rpc.ProtocolV2 {
 					},
 				},
 				Name: "teamChangeRoles",
+			},
+			15: {
+				ServeHandlerDescription: rpc.ServeHandlerDescription{
+					MakeArg: func() interface{} {
+						var ret rpc.DataWrap[Header, *TeamDumpMembershipChainArgInternal__]
+						return &ret
+					},
+					Handler: func(ctx context.Context, args interface{}) (interface{}, error) {
+						typedWrappedArg, ok := args.(*rpc.DataWrap[Header, *TeamDumpMembershipChainArgInternal__])
+						if !ok {
+							err := rpc.NewTypeError((*rpc.DataWrap[Header, *TeamDumpMembershipChainArgInternal__])(nil), args)
+							return nil, err
+						}
+						if err := i.CheckArgHeader(ctx, typedWrappedArg.Header); err != nil {
+							return nil, err
+						}
+						tmp, err := i.TeamDumpMembershipChain(ctx)
+						if err != nil {
+							return nil, err
+						}
+						ret := rpc.DataWrap[Header, *TeamMembershipChainListInternal__]{
+							Data:   tmp.Export(),
+							Header: i.MakeResHeader(),
+						}
+						return &ret, nil
+					},
+				},
+				Name: "teamDumpMembershipChain",
 			},
 		},
 		WrapError: TeamMakeGenericErrorWrapper(i.ErrorWrapper()),

@@ -173,7 +173,7 @@ func (t *TeamMinder) checkSingleTeamInMembershipChain(
 	if err != nil {
 		return false, nil, err
 	}
-	if appr == nil {
+	if appr == nil || !appr.Approved {
 		return false, &fqt, nil
 	}
 	eq, err := appr.SrcRole.Eq(tm.SrcRole)
@@ -228,6 +228,7 @@ func (t *TeamRecord) Member() CryptoPartier {
 type LoadTeamOpts struct {
 	LoadMembers bool
 	Refresh     bool
+	NoUpdates   bool
 }
 
 func (t *TeamMinder) GetTeam(fqt proto.FQTeam) *TeamRecord {
@@ -258,7 +259,7 @@ func (t *TeamMinder) loadTeamMembership(
 	*TeamMembershipWrapper,
 	error,
 ) {
-	tr, err := t.getTeamWithRefresh(m, fqt, opts.Refresh)
+	tr, err := t.getTeamWithRefresh(m, fqt, &opts)
 	if err != nil {
 		return nil, err
 	}
@@ -278,15 +279,15 @@ func (t *TeamMinder) loadTeamMembership(
 func (t *TeamMinder) getTeamWithRefresh(
 	m MetaContext,
 	fqt proto.FQTeam,
-	refresh bool,
+	opts *LoadTeamOpts,
 ) (
 	*TeamRecord,
 	error,
 ) {
 	get := func() *TeamRecord { return t.getTeam(fqt) }
 	tr := get()
-	if tr == nil && refresh {
-		err := t.ExploreAndIndex(m)
+	if tr == nil && opts != nil && opts.Refresh {
+		err := t.ExploreAndIndex(m, opts)
 		if err != nil {
 			return nil, err
 		}
@@ -308,7 +309,7 @@ func (t *TeamMinder) LoadTeamWithFQTeam(
 	*TeamRecord,
 	error,
 ) {
-	tr, err := t.getTeamWithRefresh(m, fqt, opts.Refresh)
+	tr, err := t.getTeamWithRefresh(m, fqt, &opts)
 	if err != nil {
 		return nil, err
 	}
@@ -765,6 +766,7 @@ func (t *TeamMembershipLoaderAndWrapper) explore(
 
 func (t *TeamMinder) Explore(
 	m MetaContext,
+	opts *LoadTeamOpts,
 ) (
 	*ExploreState,
 	error,
@@ -828,6 +830,11 @@ func (t *TeamMinder) Explore(
 				queue = append(queue, t)
 			}
 		}
+	}
+
+	// Early-out before updates if we have the NoUpdates flag set
+	if opts != nil && opts.NoUpdates {
+		return state, nil
 	}
 
 	for _, w := range state.Warnings {
@@ -957,8 +964,8 @@ func NewTeamMinder(u *UserContext) *TeamMinder {
 	return &TeamMinder{au: u}
 }
 
-func (t *TeamMinder) ExploreAndIndex(m MetaContext) error {
-	state, err := t.Explore(m)
+func (t *TeamMinder) ExploreAndIndex(m MetaContext, opts *LoadTeamOpts) error {
+	state, err := t.Explore(m, opts)
 	if err != nil {
 		return err
 	}
@@ -1062,7 +1069,14 @@ func (t *TeamMinder) Resolve(m MetaContext, arg proto.FQTeamParsed) (*proto.FQTe
 	return t.resolveTeam(arg)
 }
 
-func (t *TeamMinder) ResolveAndReindex(m MetaContext, arg proto.FQTeamParsed) (*proto.FQTeam, error) {
+func (t *TeamMinder) ResolveAndReindex(
+	m MetaContext,
+	arg proto.FQTeamParsed,
+	opts *LoadTeamOpts,
+) (
+	*proto.FQTeam,
+	error,
+) {
 	fqt, err := t.resolveTeam(arg)
 	if err != nil {
 		return nil, err
@@ -1070,7 +1084,7 @@ func (t *TeamMinder) ResolveAndReindex(m MetaContext, arg proto.FQTeamParsed) (*
 	if fqt != nil {
 		return fqt, nil
 	}
-	err = t.ExploreAndIndex(m)
+	err = t.ExploreAndIndex(m, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -1092,7 +1106,7 @@ func (t *TeamMinder) LoadTeam(
 	*TeamWrapper,
 	error,
 ) {
-	fqt, err := t.ResolveAndReindex(m, arg)
+	fqt, err := t.ResolveAndReindex(m, arg, &opts)
 	if err != nil {
 		return nil, err
 	}
@@ -1112,7 +1126,7 @@ func (t *TeamMinder) withLoadedTeam(
 	opts LoadTeamOpts,
 	f func(m MetaContext, tm *TeamRecord) error,
 ) error {
-	fqt, err := t.ResolveAndReindex(m, arg)
+	fqt, err := t.ResolveAndReindex(m, arg, &opts)
 	if err != nil {
 		return err
 	}
@@ -1132,7 +1146,7 @@ func (t *TeamMinder) withLoadedTeamAndAdminToken(
 	opts LoadTeamOpts,
 	f func(m MetaContext, tr *TeamRecord, token *rem.TeamBearerToken) error,
 ) error {
-	fqt, err := t.ResolveAndReindex(m, arg)
+	fqt, err := t.ResolveAndReindex(m, arg, &opts)
 	if err != nil {
 		return err
 	}
@@ -1417,12 +1431,13 @@ func (arg LoadTeamArg) makeKeyRingRefresher() func(m MetaContext) (SharedKeySequ
 
 func (t *TeamMinder) ListMemberships(
 	m MetaContext,
+	opts *LoadTeamOpts,
 ) (
 	*lcl.ListMembershipsRes,
 	error,
 ) {
 	var ret lcl.ListMembershipsRes
-	err := t.ExploreAndIndex(m)
+	err := t.ExploreAndIndex(m, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -1503,4 +1518,39 @@ func (t *TeamMinder) loadConfig(
 	t.config = &cfg
 	tmp := cfg
 	return &tmp, nil
+}
+
+func (t *TeamMinder) DumpMembershipChain(
+	m MetaContext,
+) (
+	lcl.TeamMembershipChainList,
+	error,
+) {
+	err := t.loadUserTMLLocked(m)
+	if err != nil {
+		return nil, err
+	}
+	wr := t.userTMW.Wrapper
+	if wr == nil {
+		return nil, nil
+	}
+	var ret lcl.TeamMembershipChainList
+	for _, v := range wr.Map {
+		typ, err := v.State.GetT()
+		if err != nil {
+			return nil, err
+		}
+		if typ != proto.TeamMembershipLinkState_Approved {
+			continue
+		}
+		appr := v.State.Approved()
+		link := lcl.TeamMembershipChainTeam{
+			Team:    v.Team,
+			SrcRole: v.SrcRole,
+			DstRole: appr.Dst.Role,
+			Seqno:   appr.Dst.Seqno,
+		}
+		ret = append(ret, link)
+	}
+	return ret, nil
 }

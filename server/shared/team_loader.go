@@ -267,8 +267,8 @@ func (l *TeamLoader) loadKeyBoxes(m MetaContext) error {
 	rows, err := l.db.Query(m.Ctx(),
 		`SELECT role_type, viz_level, gen
 		 FROM shared_key_generations
-		 WHERE short_host_id=$1 AND entity_id=$2 AND role_type >= $3`,
-		m.ShortHostID(), l.Arg.Team.Team.ExportToDB(), myRk.Lev,
+		 WHERE short_host_id=$1 AND entity_id=$2 AND role_type <= $3`,
+		m.ShortHostID(), l.Arg.Team.Team.ExportToDB(), myRk.Typ,
 	)
 	if err != nil {
 		return err

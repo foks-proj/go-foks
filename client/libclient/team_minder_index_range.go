@@ -105,7 +105,7 @@ func (t *TeamMinder) setIndexRangeCommon(
 	error,
 ) {
 
-	fqt, err := t.ResolveAndReindex(m, arg)
+	fqt, err := t.ResolveAndReindex(m, arg, nil)
 	if err != nil {
 		return nil, err
 	}
