@@ -97,6 +97,16 @@ struct TeamMembership {
     tir @4 : lib.RationalRange; // The index range of the team
 }
 
+// One item in a user or team's TeamMembershipChain; can be multiple
+struct TeamMembershipChainTeam {
+    team @0 : lib.FQTeam;
+    srcRole @1 : lib.Role;
+    dstRole @2 : lib.Role;
+    seqno @3 : lib.Seqno;  // The seqno of the last change to this team/srcRole
+}
+
+typedef TeamMembershipChainList = List(TeamMembershipChainTeam);
+
 struct ListMembershipsRes {
     homeHost @0 : lib.HostID;
     teams @1 : List(TeamMembership);
@@ -186,4 +196,8 @@ protocol Team
         team @0 : lib.FQTeamParsed,
         changes @1 : List(RoleChange)
     );
+
+    // used largely in testing and in debugging
+    teamDumpMembershipChain @15 (
+    ) -> TeamMembershipChainList;
 }

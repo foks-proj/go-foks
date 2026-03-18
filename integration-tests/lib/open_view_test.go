@@ -144,7 +144,7 @@ func TestOpenUserViewAndTeamAdd(t *testing.T) {
 		},
 	}
 	require.NoError(t, err)
-	membs, err := tmindDeb.ListMemberships(mcDeb)
+	membs, err := tmindDeb.ListMemberships(mcDeb, nil)
 	require.NoError(t, err)
 	require.Len(t, membs.Teams, 1)
 	require.Equal(t, membs.Teams[0].Team.Name, tm.nm)

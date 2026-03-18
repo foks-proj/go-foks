@@ -824,7 +824,7 @@ func (t *TeamMinder) AcceptInvite(
 	var actAsTeam *proto.TeamID
 
 	if arg.ActingAs != nil {
-		fqt, err := t.ResolveAndReindex(m, arg.ActingAs.Fqtp)
+		fqt, err := t.ResolveAndReindex(m, arg.ActingAs.Fqtp, nil)
 		if err != nil {
 			return nil, err
 		}
@@ -1072,7 +1072,7 @@ func (t *TeamMinder) TeamInbox(
 	*lcl.TeamInbox,
 	error,
 ) {
-	fqt, err := t.ResolveAndReindex(m, fqtp)
+	fqt, err := t.ResolveAndReindex(m, fqtp, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -1184,7 +1184,7 @@ func (t *TeamMinder) TeamAdmit(
 	m MetaContext,
 	arg lcl.TeamAdmitArg,
 ) error {
-	fqt, err := t.ResolveAndReindex(m, arg.Team)
+	fqt, err := t.ResolveAndReindex(m, arg.Team, nil)
 	if err != nil {
 		return err
 	}

@@ -232,7 +232,7 @@ func (c *AgentConn) GitLs(ctx context.Context, arg lcl.GitLsArg) ([]proto.GitURL
 		return nil, err
 	}
 
-	tmp, err := teamMinder.ListMemberships(m.MetaContext)
+	tmp, err := teamMinder.ListMemberships(m.MetaContext, nil)
 	if err != nil {
 		return nil, err
 	}

@@ -201,6 +201,12 @@ func TestLongChainCLKR(t *testing.T) {
 	au := mu.G().ActiveUser()
 	require.NotNil(t, au)
 	tmm := libclient.NewTeamMinder(au)
+	tmm.TestHooks = &libclient.TeamMinderTestHooks{
+		PostChainHook: func() error {
+			tew.DirectDoubleMerklePokeInTest(t)
+			return nil
+		},
+	}
 
 	mu.Infow("TestSimpleCLKR", "stage", "no-op CLKR")
 

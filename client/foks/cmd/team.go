@@ -602,7 +602,35 @@ func teamIndexRangeRaise(m libclient.MetaContext, top *cobra.Command) {
 			})
 		},
 	)
+}
 
+func teamDumpMembershipChain(m libclient.MetaContext, top *cobra.Command) {
+	cmd := &cobra.Command{
+		Use:     "dump-membership-chain",
+		Aliases: nil,
+		Short:   "dump the team membership chain for a user (testing and debugging)",
+		Long: `The team membership chain is the chain that keeps track of which
+teams a user is a member of, and what role they have on their team. This
+command dumps the contents of this chain for the current user as JSON.
+For now, it's limited to only the user's chain, and also, only showed
+links in the "approved" state, last-writer wins. We might expand this
+in the future.`,
+		SilenceUsage: true,
+		Hidden:       true,
+		RunE: func(cmd *cobra.Command, arg []string) error {
+			if len(arg) != 0 {
+				return ArgsError("expected no arguments")
+			}
+			return quickStartLambda(m, &teamOpts, func(cli lcl.TeamClient) error {
+				res, err := cli.TeamDumpMembershipChain(m.Ctx())
+				if err != nil {
+					return err
+				}
+				return JSONOutput(m, res)
+			})
+		},
+	}
+	top.AddCommand(cmd)
 }
 
 func teamIndexRangeCmd(m libclient.MetaContext) *cobra.Command {
@@ -671,6 +699,7 @@ commands.`, 0),
 	teamAdd(m, top)
 	teamAll(m, top)
 	teamChangeRoles(m, top)
+	teamDumpMembershipChain(m, top)
 	top.AddCommand(teamIndexRangeCmd(m))
 	return top
 }

@@ -4,6 +4,7 @@
 package libclient
 
 import (
+	"context"
 	"slices"
 
 	"github.com/foks-proj/go-foks/lib/core"
@@ -33,6 +34,11 @@ type TMLParty interface {
 	// convenient to keep it close to the chain data.
 	RoleInChain() proto.Role
 	LatestSharedKey() core.SharedPrivateSuiter
+
+	// For users, this is going to be the current device key (for updating, let's say, the
+	// user's team membership chain). For teams, this is going to be the team's latest shared
+	// key.
+	SigningKey(ctx context.Context) (core.PrivateSuiter, error)
 
 	PostLink(m MetaContext, arg rem.PostGenericLinkArg) error
 }
@@ -122,6 +128,14 @@ func (t *TMLTeam) HostID() proto.HostID {
 
 func (t *TMLTeam) RoleInChain() proto.Role {
 	return t.ric
+}
+
+func (t *TMLTeam) SigningKey(_ context.Context) (core.PrivateSuiter, error) {
+	ret := t.LatestSharedKey()
+	if ret == nil {
+		return nil, core.KeyNotFoundError{Which: "LatestSharedKey for team"}
+	}
+	return ret, nil
 }
 
 func (t *TMLTeam) LatestSharedKey() core.SharedPrivateSuiter {
@@ -230,6 +244,10 @@ func (t *TMLUser) HostID() proto.HostID {
 
 func (t *TMLUser) LatestSharedKey() core.SharedPrivateSuiter {
 	return t.au.PrivKeys.LatestPuk()
+}
+
+func (t *TMLUser) SigningKey(ctx context.Context) (core.PrivateSuiter, error) {
+	return t.au.Devkey(ctx)
 }
 
 func (t *TMLUser) PostLink(m MetaContext, arg rem.PostGenericLinkArg) error {
@@ -436,14 +454,14 @@ func (t *TeamMembershipLoader) postLink(
 	}
 	glp := proto.NewGenericLinkPayloadWithTeammembership(tml)
 
-	lsk := t.party.LatestSharedKey()
-	if lsk == nil {
-		return core.KeyNotFoundError{Which: "LatestSharedKey"}
+	signingKey, err := t.party.SigningKey(m.Ctx())
+	if err != nil {
+		return err
 	}
 	glink, err := core.MakeGenericLink(
 		t.party.EntityID(),
 		t.party.HostID(),
-		lsk,
+		signingKey,
 		glp,
 		t.gcl.res.Tail.Base.Seqno+1,
 		t.gcl.lastHash,

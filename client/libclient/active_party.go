@@ -38,7 +38,7 @@ func ActivePartyNamed(
 		return &ret, nil
 	}
 	tm := au.TeamMinder()
-	fqt, err := tm.ResolveAndReindex(m, *actingAs)
+	fqt, err := tm.ResolveAndReindex(m, *actingAs, nil)
 	if err != nil {
 		return nil, err
 	}

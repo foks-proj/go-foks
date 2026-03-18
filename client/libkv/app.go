@@ -53,7 +53,7 @@ func (a *App) Minder(m MetaContext, actingAs *proto.FQTeamParsed) (*Minder, erro
 	if actingAs == nil {
 		return a.getUser(), nil
 	}
-	fqp, err := a.parent.TeamMinder().ResolveAndReindex(m.MetaContext, *actingAs)
+	fqp, err := a.parent.TeamMinder().ResolveAndReindex(m.MetaContext, *actingAs, nil)
 	if err != nil {
 		return nil, err
 	}

@@ -234,7 +234,7 @@ func (c *AgentConn) TeamListMemberships(
 		return zed, err
 	}
 
-	tmp, err := teamMinder.ListMemberships(m)
+	tmp, err := teamMinder.ListMemberships(m, nil)
 	if err != nil {
 		return zed, err
 	}
@@ -261,6 +261,20 @@ func (c *AgentConn) TeamChangeRoles(
 		return err
 	}
 	return tm.TeamChangeRoles(m, arg)
+}
+
+func (c *AgentConn) TeamDumpMembershipChain(
+	ctx context.Context,
+) (
+	lcl.TeamMembershipChainList,
+	error,
+) {
+	var zed lcl.TeamMembershipChainList
+	m, tm, err := c.teamInit(ctx)
+	if err != nil {
+		return zed, err
+	}
+	return tm.DumpMembershipChain(m)
 }
 
 var _ lcl.TeamInterface = (*AgentConn)(nil)

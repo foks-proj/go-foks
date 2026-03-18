@@ -13,6 +13,7 @@ import (
 	"github.com/foks-proj/go-foks/lib/core"
 	"github.com/foks-proj/go-foks/lib/team"
 	"github.com/foks-proj/go-foks/proto/lcl"
+	"github.com/foks-proj/go-foks/proto/lib"
 	proto "github.com/foks-proj/go-foks/proto/lib"
 	"github.com/foks-proj/go-foks/server/shared"
 	"github.com/keybase/clockwork"
@@ -32,6 +33,8 @@ func TestCreateInviteSequence(t *testing.T) {
 	x := newTestAgent(t)
 	x.runAgent(t)
 	defer x.stop(t)
+	stopper := runMerkleActivePoker(t)
+	defer stopper()
 	newUserWithAgentAtVHost(t, x, 0)
 	merklePoke(t)
 	merklePoke(t)
@@ -178,6 +181,9 @@ func TestCreateAdmitLoad(t *testing.T) {
 	x := newTestAgent(t)
 	x.runAgent(t)
 	defer x.stop(t)
+
+	stopper := runMerkleActivePoker(t)
+	defer stopper()
 
 	newUserWithAgentAtVHost(t, x, 0)
 	merklePoke(t)
@@ -625,4 +631,67 @@ func TestTeamChangeMembershipClosedViewership(t *testing.T) {
 	// specify the source role
 	x.runCmd(t, nil, "team", "change-roles", teamName, yuid+"/o->m/0")
 	merklePoke(t)
+}
+
+func TestTeamChangeMembershipClosedViewershipTestReload(t *testing.T) {
+
+	x := newTestAgent(t)
+	x.runAgent(t)
+	defer x.stop(t)
+	stopper := runMerkleActivePoker(t)
+	defer stopper()
+
+	newUserWithAgentAtVHost(t, x, 0)
+	merklePoke(t)
+
+	var res lcl.TeamCreateRes
+	teamName := "minnesota_wild"
+	x.runCmdToJSON(t, &res, "team", "create", teamName)
+
+	var res3 proto.TeamInvite
+	x.runCmdToJSON(t, &res3, "team", "invite", teamName)
+	inviteStr, err := team.ExportTeamInvite(res3)
+	require.NoError(t, err)
+
+	y := newTestAgent(t)
+	y.runAgent(t)
+	defer y.stop(t)
+	newUserWithAgentAtVHost(t, y, 0)
+	y.runCmd(t, nil, "team", "accept", inviteStr)
+
+	var inb lcl.TeamInbox
+	x.runCmdToJSON(t, &inb, "team", "inbox", teamName)
+	require.Equal(t, 1, len(inb.Rows))
+	x.runCmd(t, nil, "team", "admit", teamName, string(inb.Rows[0].Tok.String())+"/m/4")
+
+	// we expect this dump to show us 0 links until we rectify the
+	// user's team membership chain, which comes as a result of
+	// listing the team
+	var dump lcl.TeamMembershipChainList
+	y.runCmdToJSON(t, &dump, "team", "dump-membership-chain")
+	require.Equal(t, 0, len(dump))
+
+	y.runCmd(t, nil, "team", "list", teamName)
+
+	// Now the membership chain should be fixed.
+	y.runCmdToJSON(t, &dump, "team", "dump-membership-chain")
+	require.Equal(t, 1, len(dump))
+	eq, err := lib.NewRoleWithMember(4).Eq(dump[0].DstRole)
+	require.NoError(t, err)
+	require.True(t, eq)
+
+	ystat := y.status(t)
+	yusername := ystat.Users[0].Info.Username.NameUtf8
+
+	y.runCmd(t, nil, "team", "list-memberships")
+
+	x.runCmd(t, nil, "team", "change-roles", teamName, yusername.String()+"->o")
+
+	y.runCmd(t, nil, "team", "list-memberships")
+
+	y.runCmdToJSON(t, &dump, "team", "dump-membership-chain")
+	require.Equal(t, 1, len(dump))
+	eq, err = lib.OwnerRole.Eq(dump[0].DstRole)
+	require.NoError(t, err)
+	require.True(t, eq)
 }

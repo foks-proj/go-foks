@@ -52,7 +52,7 @@ func NewCLKR(
 
 func (c *CLKR) explore(m MetaContext) error {
 	var err error
-	c.estate, err = c.tm.Explore(m)
+	c.estate, err = c.tm.Explore(m, nil)
 	if err != nil {
 		return err
 	}
