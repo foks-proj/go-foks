@@ -9,6 +9,8 @@ changelog:
     changes:
       - desc: fix bug in team membership chain patching
         closes: ["#240"]
+      - desc: fix bug in double-patching the team membership chain
+        closes : ["#241"]
   - version: 0.1.6
     urgency: low
     stable: true

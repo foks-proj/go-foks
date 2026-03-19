@@ -71,6 +71,12 @@ type TeamMinder struct {
 	// Varies per host; this one is on the current active user's host
 	configMu sync.Mutex
 	config   *rem.TeamConfig
+
+	// During the fixing process (fixViaUpdate and fixWarnings),
+	// we might generate some errors due to Merkle races, etc.
+	// These don't have to kill the operation if they fail, as
+	// they can be retried during the next load
+	fixErrors []error
 }
 
 func (t *TeamMinder) ActiveUser() *UserContext {
@@ -840,18 +846,30 @@ func (t *TeamMinder) Explore(
 	for _, w := range state.Warnings {
 		err := t.fixExploreWarning(m, state, w)
 		if err != nil {
-			return nil, err
+			t.nonFatalError(m, err)
 		}
 	}
 
 	for _, u := range state.Updates {
 		err := t.fixViaUpdate(m, state, u)
 		if err != nil {
-			return nil, err
+			t.nonFatalError(m, err)
 		}
 	}
 
 	return state, nil
+}
+
+func (t *TeamMinder) nonFatalError(m MetaContext, err error) {
+	if err == nil {
+		return
+	}
+	t.fixErrors = append(t.fixErrors, err)
+	m.Warnw("TeamMinder.nonFatalError", "err", err)
+}
+
+func (t *TeamMinder) FixErrors() []error {
+	return t.fixErrors
 }
 
 func (t *TeamMinder) fixViaUpdate(
@@ -935,7 +953,6 @@ func (t *TeamMinder) fixExploreWarning(
 	if err != nil {
 		return err
 	}
-
 	return nil
 }
 
