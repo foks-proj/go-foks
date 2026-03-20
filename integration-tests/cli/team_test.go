@@ -13,7 +13,6 @@ import (
 	"github.com/foks-proj/go-foks/lib/core"
 	"github.com/foks-proj/go-foks/lib/team"
 	"github.com/foks-proj/go-foks/proto/lcl"
-	"github.com/foks-proj/go-foks/proto/lib"
 	proto "github.com/foks-proj/go-foks/proto/lib"
 	"github.com/foks-proj/go-foks/server/shared"
 	"github.com/keybase/clockwork"
@@ -644,25 +643,52 @@ func TestTeamChangeMembershipClosedViewershipTestReload(t *testing.T) {
 	newUserWithAgentAtVHost(t, x, 0)
 	merklePoke(t)
 
-	var res lcl.TeamCreateRes
-	teamName := "minnesota_wild"
-	x.runCmdToJSON(t, &res, "team", "create", teamName)
+	type teamObj struct {
+		name   string
+		ti     proto.TeamInvite
+		invite string
+		cres   lcl.TeamCreateRes
+		inb    lcl.TeamInbox
+	}
+	create := func(tm *teamObj) {
+		x.runCmdToJSON(t, &tm.cres, "team", "create", tm.name)
+		merklePoke(t)
+	}
+	t1 := teamObj{name: "minnesota_wild"}
+	t2 := teamObj{name: "seattle_kraken"}
+	create(&t1)
+	create(&t2)
 
-	var res3 proto.TeamInvite
-	x.runCmdToJSON(t, &res3, "team", "invite", teamName)
-	inviteStr, err := team.ExportTeamInvite(res3)
-	require.NoError(t, err)
+	invite := func(tm *teamObj) {
+		x.runCmdToJSON(t, &tm.ti, "team", "invite", tm.name)
+		var err error
+		tm.invite, err = team.ExportTeamInvite(tm.ti)
+		require.NoError(t, err)
+	}
+	invite(&t1)
+	invite(&t2)
 
 	y := newTestAgent(t)
 	y.runAgent(t)
 	defer y.stop(t)
 	newUserWithAgentAtVHost(t, y, 0)
-	y.runCmd(t, nil, "team", "accept", inviteStr)
 
-	var inb lcl.TeamInbox
-	x.runCmdToJSON(t, &inb, "team", "inbox", teamName)
-	require.Equal(t, 1, len(inb.Rows))
-	x.runCmd(t, nil, "team", "admit", teamName, string(inb.Rows[0].Tok.String())+"/m/4")
+	accept := func(tm *teamObj) {
+		y.runCmd(t, nil, "team", "accept", tm.invite)
+	}
+
+	accept(&t1)
+	accept(&t2)
+
+	admit := func(tm *teamObj) {
+		x.runCmdToJSON(t, &tm.inb, "team", "inbox", tm.name)
+		require.Equal(t, 1, len(tm.inb.Rows))
+		x.runCmd(t, nil, "team", "admit", tm.name, string(tm.inb.Rows[0].Tok.String())+"/m/4")
+		merklePoke(t)
+	}
+
+	admit(&t1)
+	admit(&t2)
 
 	// we expect this dump to show us 0 links until we rectify the
 	// user's team membership chain, which comes as a result of
@@ -671,27 +697,36 @@ func TestTeamChangeMembershipClosedViewershipTestReload(t *testing.T) {
 	y.runCmdToJSON(t, &dump, "team", "dump-membership-chain")
 	require.Equal(t, 0, len(dump))
 
-	y.runCmd(t, nil, "team", "list", teamName)
+	y.runCmd(t, nil, "team", "list", t1.name)
 
 	// Now the membership chain should be fixed.
-	y.runCmdToJSON(t, &dump, "team", "dump-membership-chain")
-	require.Equal(t, 1, len(dump))
-	eq, err := lib.NewRoleWithMember(4).Eq(dump[0].DstRole)
-	require.NoError(t, err)
-	require.True(t, eq)
+
+	checkMembershipChain := func(role proto.Role) {
+		var dump lcl.TeamMembershipChainList
+		y.runCmdToJSON(t, &dump, "team", "dump-membership-chain")
+		require.Equal(t, 2, len(dump))
+		for _, d := range dump {
+			eq, err := role.Eq(d.DstRole)
+			require.NoError(t, err)
+			require.True(t, eq)
+		}
+	}
+
+	checkMembershipChain(proto.NewRoleWithMember(4))
 
 	ystat := y.status(t)
 	yusername := ystat.Users[0].Info.Username.NameUtf8
 
 	y.runCmd(t, nil, "team", "list-memberships")
 
-	x.runCmd(t, nil, "team", "change-roles", teamName, yusername.String()+"->o")
+	changeRoles := func(tm *teamObj) {
+		x.runCmd(t, nil, "team", "change-roles", tm.name, yusername.String()+"->o")
+	}
+	changeRoles(&t1)
+	changeRoles(&t2)
 
+	// should fix the membership chain again, with the changed roles
 	y.runCmd(t, nil, "team", "list-memberships")
 
-	y.runCmdToJSON(t, &dump, "team", "dump-membership-chain")
-	require.Equal(t, 1, len(dump))
-	eq, err = lib.OwnerRole.Eq(dump[0].DstRole)
-	require.NoError(t, err)
-	require.True(t, eq)
+	checkMembershipChain(proto.OwnerRole)
 }

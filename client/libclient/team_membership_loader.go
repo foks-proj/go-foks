@@ -437,6 +437,15 @@ func LoadTeamMembershipReturnLoader(
 	}, nil
 }
 
+func (t *TeamMembershipLoaderAndWrapper) Refresh(m MetaContext) error {
+	ret, err := t.Loader.Run(m)
+	if err != nil {
+		return err
+	}
+	t.Wrapper = ret
+	return nil
+}
+
 func (t *TeamMembershipLoader) postLink(
 	m MetaContext,
 	tml proto.TeamMembershipLink,
@@ -477,6 +486,16 @@ func (t *TeamMembershipLoader) postLink(
 	if err != nil {
 		return err
 	}
+
+	// Advance chain state so subsequent posts to the same chain use the
+	// correct seqno and prev hash (fixes issue #241).
+	lh, err := core.LinkHash(glink.Link)
+	if err != nil {
+		return err
+	}
+	t.gcl.lastHash = lh
+	t.gcl.res.Tail.Base.Seqno++
+
 	return nil
 }
 
