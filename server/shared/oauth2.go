@@ -213,8 +213,7 @@ func (o *oauth2Session) makeAuthURI(m MetaContext, id proto.OAuth2SessionID) err
 	if err != nil {
 		return err
 	}
-	// Include "offline_access" to get a refresh token.
-	scopes := []string{"openid", "email", "profile", "offline_access"}
+	scopes := []string{"openid", "email", "profile"}
 	ids, err := id.StringErr()
 	if err != nil {
 		return err
@@ -225,18 +224,19 @@ func (o *oauth2Session) makeAuthURI(m MetaContext, id proto.OAuth2SessionID) err
 	}
 
 	q := u.Query()
+	if o.idpCfg.ScopeSupported("offline_access") {
+		scopes = append(scopes, "offline_access")
+	} else {
+		q.Set("access_type", "offline")
+	}
 	q.Set("client_id", o.cfg.ClientID.String())
 	q.Set("redirect_uri", o.cfg.RedirectURI.String())
 	q.Set("response_type", "code")
 	q.Set("scope", strings.Join(scopes, " "))
 	q.Set("state", ids)
 	q.Set("nonce", o.nonce.String())
-	if o.cfg.ClientSecret.IsZero() {
-		q.Set("code_challenge", chal.String())
-		q.Set("code_challenge_method", "S256")
-	} else {
-		q.Set("client_secret", o.cfg.ClientSecret.String())
-	}
+	q.Set("code_challenge", chal.String())
+	q.Set("code_challenge_method", "S256")
 	u.RawQuery = q.Encode()
 
 	o.authURI = proto.URLString(u.String())
@@ -566,9 +566,10 @@ func setOAuth2Config(
 	}
 	tag, err := db.Exec(
 		m.Ctx(),
-		`UPDATE sso_oauth2_config SET cancel_id=$1, mtime=NOW() WHERE short_host_id=$2`,
+		`UPDATE sso_oauth2_config SET cancel_id=$1, mtime=NOW() WHERE short_host_id=$2 AND cancel_id=$3`,
 		canc.ExportToDB(),
 		m.ShortHostID().ExportToDB(),
+		proto.NilCancelID(),
 	)
 	if err != nil {
 		return err
