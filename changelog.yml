@@ -11,6 +11,8 @@ changelog:
         closes: ["#240"]
       - desc: fix bug in double-patching the team membership chain
         closes : ["#241"]
+      - desc: fix bug in OAuth SSO exchange for Google IdP
+        closes : ["#244"]
   - version: 0.1.6
     urgency: low
     stable: true

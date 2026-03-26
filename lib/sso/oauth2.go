@@ -141,9 +141,14 @@ func MakeOAuth2Session(
 	if err != nil {
 		return nil, err
 	}
-	scopes := []string{"openid", "email", "profile", "offline_access"}
+	scopes := []string{"openid", "email", "profile"}
 
 	q := u.Query()
+	if instanceCfg.ScopeSupported("offline_access") {
+		scopes = append(scopes, "offline_access")
+	} else {
+		q.Set("access_type", "offline")
+	}
 	q.Set("client_id", ocfg.ClientID.String())
 	q.Set("redirect_uri", ocfg.RedirectURI.String())
 	q.Set("response_type", "code")
@@ -151,12 +156,8 @@ func MakeOAuth2Session(
 	q.Set("state", Base64URLEncode(ret.Binding.Rand[:]))
 	q.Set("nonce", ret.Nonce.String())
 
-	if ocfg.ClientSecret.IsZero() {
-		q.Set("code_challenge", ret.Verifier.String())
-		q.Set("code_challenge_method", "S256")
-	} else {
-		q.Set("client_secret", ocfg.ClientSecret.String())
-	}
+	q.Set("code_challenge", ret.Verifier.String())
+	q.Set("code_challenge_method", "S256")
 
 	u.RawQuery = q.Encode()
 	ret.AuthURI = proto.URLString(u.String())
@@ -171,15 +172,31 @@ type OAuth2IdPConfig struct {
 
 	isInit bool
 
-	ConfigURI   proto.URLString
-	AuthURI     proto.URLString
-	TokenURI    proto.URLString
-	JwksURI     proto.URLString
-	UserinfoURI proto.URLString
+	ConfigURI       proto.URLString
+	AuthURI         proto.URLString
+	TokenURI        proto.URLString
+	JwksURI         proto.URLString
+	UserinfoURI     proto.URLString
+	ScopesSupported []string // from OIDC discovery; nil means not specified
 
 	jkws map[OAuth2KeyID]*rsa.PublicKey
 
 	RefreshedAt time.Time // Should refresh every ~15 minutes or so (see Oauth2Configger.RefreshInterval
+}
+
+// ScopeSupported returns true if the given scope is in the IdP's scopes_supported list.
+// If the IdP did not advertise scopes_supported (nil), all scopes are assumed supported
+// per the OIDC spec.
+func (c *OAuth2IdPConfig) ScopeSupported(scope string) bool {
+	if c.ScopesSupported == nil {
+		return true
+	}
+	for _, s := range c.ScopesSupported {
+		if s == scope {
+			return true
+		}
+	}
+	return false
 }
 
 func newOAuth2Config(u proto.URLString) *OAuth2IdPConfig {
@@ -240,10 +257,11 @@ func (c *OAuth2IdPConfig) populate(ctx context.Context, g OAuth2GlobalContext) (
 	defer resp.Body.Close()
 
 	type config struct {
-		AuthURI     string `json:"authorization_endpoint"`
-		TokenURI    string `json:"token_endpoint"`
-		JwksURI     string `json:"jwks_uri"`
-		UserinfoURI string `json:"userinfo_endpoint"`
+		AuthURI         string   `json:"authorization_endpoint"`
+		TokenURI        string   `json:"token_endpoint"`
+		JwksURI         string   `json:"jwks_uri"`
+		UserinfoURI     string   `json:"userinfo_endpoint"`
+		ScopesSupported []string `json:"scopes_supported"`
 	}
 
 	var cfg config
@@ -259,6 +277,7 @@ func (c *OAuth2IdPConfig) populate(ctx context.Context, g OAuth2GlobalContext) (
 	c.TokenURI = proto.URLString(cfg.TokenURI)
 	c.JwksURI = proto.URLString(cfg.JwksURI)
 	c.UserinfoURI = proto.URLString(cfg.UserinfoURI)
+	c.ScopesSupported = cfg.ScopesSupported
 	c.RefreshedAt = g.Now()
 	c.isInit = true
 
@@ -412,12 +431,21 @@ func OAuth2CheckToken(
 	if ok {
 		ret.Subject = proto.OAuth2Subject(sub)
 	}
+
+	// If no preferred_username claim was provided, use the local part
+	// of the email as the username (e.g., Google doesn't include preferred_username in its ID tokens).
+	if ret.Username == "" && ret.Email != "" {
+		if parts := strings.SplitN(string(ret.Email), "@", 2); len(parts) == 2 {
+			ret.Username = proto.NameUtf8(parts[0])
+		}
+	}
 	return &ret, nil
 }
 
 // OAuth2CheckTokens takes the ID and access token returned from an OIDC flow and
 // checks them against the issuer's public key. It also sanity checks that the tokens
 // match the expected audience/clientID and that the nonce matches the one we generated.
+// The access token does not get checked, as it can be opaque, and not even a JWT.
 func OAuth2CheckTokens(
 	ctx context.Context,
 	g OAuth2GlobalContext,
@@ -430,24 +458,11 @@ func OAuth2CheckTokens(
 	error,
 ) {
 
-	checkOne := func(tok string, which string) (*proto.OAuth2ParsedIDToken, error) {
-		return OAuth2CheckToken(ctx, g, cfg, tok, which, audExpected, nonceExpected)
+	idtok, err := OAuth2CheckToken(ctx, g, cfg, toks.IdToken.String(), "ID", audExpected, nonceExpected)
+	if err != nil {
+		return nil, err
 	}
 
-	idtok, err := checkOne(toks.IdToken.String(), "ID")
-	if err != nil {
-		return nil, err
-	}
-	accesTok, err := checkOne(toks.AccessToken.String(), "access")
-	if err != nil {
-		return nil, err
-	}
-	if idtok.Issuer != accesTok.Issuer {
-		return nil, core.OAuth2TokenError{Which: "access", Err: core.HostMismatchError{}}
-	}
-	if idtok.Subject != accesTok.Subject {
-		return nil, core.OAuth2TokenError{Which: "access", Err: core.WrongUserError{}}
-	}
 	idtok.Raw = toks.IdToken
 	return idtok, nil
 }
