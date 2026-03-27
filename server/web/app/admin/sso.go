@@ -18,6 +18,7 @@ func VHostSetSSOHandler(g *shared.GlobalContext) func(http.ResponseWriter, *http
 				args := lib.NewArgs(r)
 				sso, err := args.SSOConfig(
 					lib.ParamSourceForm,
+					"sso-provider",
 					"sso-oauth2-config-url",
 					"sso-oauth2-client-id",
 					"sso-oauth2-client-secret",

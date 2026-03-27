@@ -40,8 +40,14 @@ type VHostRowDetails struct {
 	OAuth2CallbackURL proto.URLString // this is known regardless of SSO configuration
 }
 
+const GoogleOIDCConfigURL = "https://accounts.google.com/.well-known/openid-configuration"
+
 func (d *VHostRowDetails) HasOAuth2SSO() bool {
 	return d != nil && d.SSO != nil && d.SSO.Active == proto.SSOProtocolType_Oauth2 && d.SSO.Oauth2 != nil
+}
+
+func (d *VHostRowDetails) IsGoogleSSO() bool {
+	return d.HasOAuth2SSO() && d.SSO.Oauth2.ConfigURI.String() == GoogleOIDCConfigURL
 }
 
 func (d *VHostRowDetails) OAuth2SSOConfigURL() string {

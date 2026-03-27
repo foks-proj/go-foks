@@ -1051,59 +1051,105 @@ func VHostSSOFormFields(a *lib.AdminPageData, r *lib.VHostRow) templ.Component {
 			templ_7745c5c3_Var54 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 74, "<div class=\"w-full py-2\"><div class=\"flex flex-wrap items-center\"><div class=\"w-40 mr-2 my-1\"><label class=\"p-1 w-full text-sm\">OpenID Config URI:</label></div><div class=\"grow min-w-[20rem] w-auto\"><input type=\"text\" name=\"sso-oauth2-config-url\" class=\"p-1 flex-1 border rounded-sm w-full text-sm\" placeholder=\"e.g., http://x.co/application/o/myApp/.well-known/openid-configuration\" value=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 74, "<div class=\"w-full py-2\"><div class=\"flex flex-wrap items-center mb-3\"><div class=\"w-40 mr-2 my-1\"><label class=\"p-1 w-full text-sm\">Provider:</label></div><div class=\"grow min-w-[20rem] w-auto\"><select id=\"sso-provider\" name=\"sso-provider\" class=\"bg-slate-200 dark:bg-slate-700 dark:text-slate-200 p-1 px-2 text-sm rounded-sm h-7\"><option value=\"google\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		if !r.Details.HasOAuth2SSO() || r.Details.IsGoogleSSO() {
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 75, " selected")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 76, ">Google</option> <option value=\"manual\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		if r.Details.HasOAuth2SSO() && !r.Details.IsGoogleSSO() {
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 77, " selected")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 78, ">Manual (OIDC)</option></select></div></div><details class=\"sso-google-only mb-3 text-xs\"><summary class=\"cursor-pointer text-sky-600 dark:text-sky-400 underline text-sm\">Google setup guide</summary><div class=\"mt-1 p-3 border border-slate-300 dark:border-slate-600 rounded text-slate-700 dark:text-slate-300 leading-relaxed\"><ol class=\"list-decimal ml-4 space-y-1\"><li>Open <a href=\"https://console.cloud.google.com/apis/credentials\" target=\"_blank\" rel=\"noopener\" class=\"underline text-sky-600 dark:text-sky-400\">Google Cloud Credentials</a> (create a project first as needed).</li><li>Configure the <a href=\"https://console.cloud.google.com/apis/credentials/consent\" target=\"_blank\" rel=\"noopener\" class=\"underline text-sky-600 dark:text-sky-400\">OAuth consent screen</a>. Choose <i>Internal</i> for Google Workspace orgs (restricts login to your domain).</li><li>On <a href=\"https://console.cloud.google.com/apis/credentials\" target=\"_blank\" rel=\"noopener\" class=\"underline text-sky-600 dark:text-sky-400\">Credentials</a>, click <b>Create Credentials &rarr; OAuth client ID</b>, type = <i>Web application</i>.</li><li>Add redirect URI: <code class=\"bg-slate-200 dark:bg-slate-700 px-1 rounded select-all break-all\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var55 string
-		templ_7745c5c3_Var55, templ_7745c5c3_Err = templ.JoinStringErrs(r.Details.OAuth2SSOConfigURL())
+		templ_7745c5c3_Var55, templ_7745c5c3_Err = templ.JoinStringErrs(r.Details.OAuth2CallbackURL.String())
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `vhost.templ`, Line: 401, Col: 43}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `vhost.templ`, Line: 433, Col: 123}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var55))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 75, "\"></div></div><div class=\"flex flex-wrap items-center my-1\"><div class=\"w-40 mr-2 my-1\"><label class=\"p-1 w-full text-sm\">Client ID:</label></div><div class=\"grow min-w-[20rem] w-auto\"><input type=\"text\" name=\"sso-oauth2-client-id\" class=\"p-1 flex-1 border rounded-sm w-full text-sm\" placeholder=\"e.g., x2dp9lPJoWQ4tuxX4nbt\" value=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 79, "</code></li><li>Copy <b>Client ID</b> and <b>Client Secret</b> below.</li></ol></div></details><div class=\"sso-manual-only flex flex-wrap items-center\"><div class=\"w-40 mr-2 my-1\"><label class=\"p-1 w-full text-sm\">OpenID Config URI:</label></div><div class=\"grow min-w-[20rem] w-auto\"><input type=\"text\" name=\"sso-oauth2-config-url\" class=\"p-1 flex-1 border rounded-sm w-full text-sm\" placeholder=\"e.g., http://x.co/application/o/myApp/.well-known/openid-configuration\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var56 string
-		templ_7745c5c3_Var56, templ_7745c5c3_Err = templ.JoinStringErrs(r.Details.OAuth2SSOClientID())
+		templ_7745c5c3_Var56, templ_7745c5c3_Err = templ.JoinStringErrs(r.Details.OAuth2SSOConfigURL())
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `vhost.templ`, Line: 415, Col: 42}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `vhost.templ`, Line: 451, Col: 43}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var56))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 76, "\"></div></div><div class=\"flex flex-wrap items-center my-1\"><div class=\"w-40 mr-2 my-1\"><label class=\"p-1 w-full text-sm\">Client Secret:</label></div><div class=\"grow min-w-[20rem] w-auto\"><input type=\"text\" name=\"sso-oauth2-client-secret\" class=\"p-1 flex-1 border rounded-sm w-full text-sm\" placeholder=\"leave blank for PKCE\" value=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 80, "\"></div></div><div class=\"flex flex-wrap items-center my-1\"><div class=\"w-40 mr-2 my-1\"><label class=\"p-1 w-full text-sm\">Client ID:</label></div><div class=\"grow min-w-[20rem] w-auto\"><input type=\"text\" name=\"sso-oauth2-client-id\" class=\"p-1 flex-1 border rounded-sm w-full text-sm\" placeholder=\"e.g., x2dp9lPJoWQ4tuxX4nbt\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var57 string
-		templ_7745c5c3_Var57, templ_7745c5c3_Err = templ.JoinStringErrs(r.Details.OAuth2SSOClientSecret())
+		templ_7745c5c3_Var57, templ_7745c5c3_Err = templ.JoinStringErrs(r.Details.OAuth2SSOClientID())
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `vhost.templ`, Line: 429, Col: 46}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `vhost.templ`, Line: 465, Col: 42}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var57))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 77, "\"></div></div><div class=\"flex flex-wrap items-center my-1\"><div class=\"w-40 mr-2 my-1\"><label class=\"p-1 w-full text-sm\">Redirect URI:</label></div><div class=\"grow min-w-[20rem] w-auto\"><span class=\"p-1 px-2 bg-slate-200 dark:bg-slate-700 dark:text-slate-200 border rounded-sm text-sm\" id=\"sso-callback-url\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 81, "\"></div></div><div class=\"flex flex-wrap items-center my-1\"><div class=\"w-40 mr-2 my-1\"><label class=\"p-1 w-full text-sm\">Client Secret:</label></div><div class=\"grow min-w-[20rem] w-auto\"><input type=\"text\" name=\"sso-oauth2-client-secret\" class=\"p-1 flex-1 border rounded-sm w-full text-sm\" placeholder=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var58 string
-		templ_7745c5c3_Var58, templ_7745c5c3_Err = templ.JoinStringErrs(r.Details.OAuth2CallbackURL.String())
+		templ_7745c5c3_Var58, templ_7745c5c3_Err = templ.JoinStringErrs(core.Sel(r.Details.IsGoogleSSO() || !r.Details.HasOAuth2SSO(), "(required for Google)", "leave blank for PKCE"))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `vhost.templ`, Line: 442, Col: 43}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `vhost.templ`, Line: 478, Col: 130}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var58))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 78, "</span></div></div><div class=\"flex items-center mt-2\"><button id=\"sso-submit\" name=\"sso-submit\" value=\"submit\" class=\"put-sso rounded-sm bg-sky-500 p-1 text-center text-white text-xs \n\t\t\t\t\t\t\t\tresponsive-button w-16 h-6 mr-3\"><span>update</span> <img class=\"put-sso button-spinner htmx-indicator w-3 h-3\" src=\"/static/img/bars-scale-fade.svg\"></button> <button id=\"sso-disable\" name=\"sso-disable\" value=\"submit\" class=\"put-sso rounded-sm bg-red-400 p-1 text-center text-white text-xs \n\t\t\t\t\t\t\t\tresponsive-button w-24 h-6\"><span>disable SSO</span> <img class=\"put-sso button-spinner htmx-indicator w-3 h-3\" src=\"/static/img/bars-scale-fade.svg\"></button></div></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 82, "\" value=\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var59 string
+		templ_7745c5c3_Var59, templ_7745c5c3_Err = templ.JoinStringErrs(r.Details.OAuth2SSOClientSecret())
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `vhost.templ`, Line: 479, Col: 46}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var59))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 83, "\"></div></div><div class=\"flex flex-wrap items-center my-1\"><div class=\"w-40 mr-2 my-1\"><label class=\"p-1 w-full text-sm\">Redirect URI:</label></div><div class=\"grow min-w-[20rem] w-auto\"><span class=\"p-1 px-2 bg-slate-200 dark:bg-slate-700 dark:text-slate-200 border rounded-sm text-sm\" id=\"sso-callback-url\">")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var60 string
+		templ_7745c5c3_Var60, templ_7745c5c3_Err = templ.JoinStringErrs(r.Details.OAuth2CallbackURL.String())
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `vhost.templ`, Line: 492, Col: 43}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var60))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 84, "</span></div></div><div class=\"flex items-center mt-2\"><button id=\"sso-submit\" name=\"sso-submit\" value=\"submit\" class=\"put-sso rounded-sm bg-sky-500 p-1 text-center text-white text-xs \n\t\t\t\t\t\t\t\tresponsive-button w-16 h-6 mr-3\"><span>update</span> <img class=\"put-sso button-spinner htmx-indicator w-3 h-3\" src=\"/static/img/bars-scale-fade.svg\"></button> <button id=\"sso-disable\" name=\"sso-disable\" value=\"submit\" class=\"put-sso rounded-sm bg-red-400 p-1 text-center text-white text-xs \n\t\t\t\t\t\t\t\tresponsive-button w-24 h-6\"><span>disable SSO</span> <img class=\"put-sso button-spinner htmx-indicator w-3 h-3\" src=\"/static/img/bars-scale-fade.svg\"></button></div></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1127,71 +1173,71 @@ func VHostChangeUserViewershipFormInner(a *lib.AdminPageData, r *lib.VHostRow) t
 			}()
 		}
 		ctx = templ.InitializeContext(ctx)
-		templ_7745c5c3_Var59 := templ.GetChildren(ctx)
-		if templ_7745c5c3_Var59 == nil {
-			templ_7745c5c3_Var59 = templ.NopComponent
+		templ_7745c5c3_Var61 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var61 == nil {
+			templ_7745c5c3_Var61 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 79, "<div id=\"form-vars\" class=\"contents\"><select id=\"mode\" name=\"mode\" class=\"bg-slate-200 dark:bg-slate-700 dark:text-slate-200 p-1 px-2 text-xs text-center rounded-sm mb-1 h-6\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 85, "<div id=\"form-vars\" class=\"contents\"><select id=\"mode\" name=\"mode\" class=\"bg-slate-200 dark:bg-slate-700 dark:text-slate-200 p-1 px-2 text-xs text-center rounded-sm mb-1 h-6\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		for _, vm := range lib.ValidUserViewershipModes {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 80, "<option value=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 86, "<option value=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var60 string
-			templ_7745c5c3_Var60, templ_7745c5c3_Err = templ.JoinStringErrs(vm.String())
+			var templ_7745c5c3_Var62 string
+			templ_7745c5c3_Var62, templ_7745c5c3_Err = templ.JoinStringErrs(vm.String())
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `vhost.templ`, Line: 486, Col: 24}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `vhost.templ`, Line: 536, Col: 24}
 			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var60))
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var62))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 81, "\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 87, "\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			if r.Details.Config.Viewership.User == vm.ViewershipMode {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 82, " selected")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 88, " selected")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 83, ">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 89, ">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var61 string
-			templ_7745c5c3_Var61, templ_7745c5c3_Err = templ.JoinStringErrs(vm.Desc)
+			var templ_7745c5c3_Var63 string
+			templ_7745c5c3_Var63, templ_7745c5c3_Err = templ.JoinStringErrs(vm.Desc)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `vhost.templ`, Line: 489, Col: 14}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `vhost.templ`, Line: 539, Col: 14}
 			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var61))
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var63))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 84, "</option>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 90, "</option>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 85, "</select> <input type=\"hidden\" id=\"current-val\" value=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 91, "</select> <input type=\"hidden\" id=\"current-val\" value=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var62 string
-		templ_7745c5c3_Var62, templ_7745c5c3_Err = templ.JoinStringErrs(r.Details.Config.Viewership.User.String())
+		var templ_7745c5c3_Var64 string
+		templ_7745c5c3_Var64, templ_7745c5c3_Err = templ.JoinStringErrs(r.Details.Config.Viewership.User.String())
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `vhost.templ`, Line: 493, Col: 89}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `vhost.templ`, Line: 543, Col: 89}
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var62))
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var64))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 86, "\"></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 92, "\"></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1215,77 +1261,77 @@ func vhostDetailsMain(a *lib.AdminPageData, r *lib.VHostRow) templ.Component {
 			}()
 		}
 		ctx = templ.InitializeContext(ctx)
-		templ_7745c5c3_Var63 := templ.GetChildren(ctx)
-		if templ_7745c5c3_Var63 == nil {
-			templ_7745c5c3_Var63 = templ.NopComponent
+		templ_7745c5c3_Var65 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var65 == nil {
+			templ_7745c5c3_Var65 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 87, "<div class=\"grid grid-cols-[min-content_auto] gap-x-4 mt-2 gap-y-2\"><div class=\"vhost-details-row contents\"><div class=\"whitespace-nowrap vhost-detail-cell\"><span>Hosted Domain:</span></div><div class=\"vhost-detail-cell\"><span class=\"font-mono\">")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		var templ_7745c5c3_Var64 string
-		templ_7745c5c3_Var64, templ_7745c5c3_Err = templ.JoinStringErrs(r.Name.String())
-		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `vhost.templ`, Line: 501, Col: 75}
-		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var64))
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 88, "</span></div></div><div class=\"vhost-details-row contents\"><div class=\"whitespace-nowrap vhost-detail-cell\"><span>Hosted CNAME:</span></div><div class=\"vhost-detail-cell\"><span class=\"font-mono\">")
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		var templ_7745c5c3_Var65 string
-		templ_7745c5c3_Var65, templ_7745c5c3_Err = templ.JoinStringErrs(r.Stem.String())
-		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `vhost.templ`, Line: 510, Col: 45}
-		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var65))
-		if templ_7745c5c3_Err != nil {
-			return templ_7745c5c3_Err
-		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 89, "</span></div></div><div class=\"vhost-details-row contents\"><div class=\"whitespace-nowrap vhost-detail-cell\"><span>FOKS Host ID:</span></div><div class=\"vhost-detail-cell\"><span class=\"font-mono\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 93, "<div class=\"grid grid-cols-[min-content_auto] gap-x-4 mt-2 gap-y-2\"><div class=\"vhost-details-row contents\"><div class=\"whitespace-nowrap vhost-detail-cell\"><span>Hosted Domain:</span></div><div class=\"vhost-detail-cell\"><span class=\"font-mono\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var66 string
-		templ_7745c5c3_Var66, templ_7745c5c3_Err = templ.JoinStringErrs(r.Id.Id.StringErr())
+		templ_7745c5c3_Var66, templ_7745c5c3_Err = templ.JoinStringErrs(r.Name.String())
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `vhost.templ`, Line: 520, Col: 49}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `vhost.templ`, Line: 551, Col: 75}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var66))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 90, "</span></div></div><div class=\"vhost-details-row contents\"><div class=\"whitespace-nowrap\">Users:</div><div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 94, "</span></div></div><div class=\"vhost-details-row contents\"><div class=\"whitespace-nowrap vhost-detail-cell\"><span>Hosted CNAME:</span></div><div class=\"vhost-detail-cell\"><span class=\"font-mono\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var67 string
-		templ_7745c5c3_Var67, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", r.Usage.Users))
+		templ_7745c5c3_Var67, templ_7745c5c3_Err = templ.JoinStringErrs(r.Stem.String())
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `vhost.templ`, Line: 525, Col: 42}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `vhost.templ`, Line: 560, Col: 45}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var67))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 91, "</div><div class=\"whitespace-nowrap vhost-detail-cell\">Disk Usage:</div><div class=\"vhost-detail-cell\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 95, "</span></div></div><div class=\"vhost-details-row contents\"><div class=\"whitespace-nowrap vhost-detail-cell\"><span>FOKS Host ID:</span></div><div class=\"vhost-detail-cell\"><span class=\"font-mono\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var68 string
-		templ_7745c5c3_Var68, templ_7745c5c3_Err = templ.JoinStringErrs(r.Usage.Disk.HumanReadable())
+		templ_7745c5c3_Var68, templ_7745c5c3_Err = templ.JoinStringErrs(r.Id.Id.StringErr())
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `vhost.templ`, Line: 527, Col: 64}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `vhost.templ`, Line: 570, Col: 49}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var68))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 92, "</div></div><div class=\"vhost-details-row contents\"><div class=\"vhost-detail-cell whitespace-nowrap\"><span>User Viewership:</span></div><div class=\"vhost-detail-cell\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 96, "</span></div></div><div class=\"vhost-details-row contents\"><div class=\"whitespace-nowrap\">Users:</div><div>")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var69 string
+		templ_7745c5c3_Var69, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", r.Usage.Users))
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `vhost.templ`, Line: 575, Col: 42}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var69))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 97, "</div><div class=\"whitespace-nowrap vhost-detail-cell\">Disk Usage:</div><div class=\"vhost-detail-cell\">")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var70 string
+		templ_7745c5c3_Var70, templ_7745c5c3_Err = templ.JoinStringErrs(r.Usage.Disk.HumanReadable())
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `vhost.templ`, Line: 577, Col: 64}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var70))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 98, "</div></div><div class=\"vhost-details-row contents\"><div class=\"vhost-detail-cell whitespace-nowrap\"><span>User Viewership:</span></div><div class=\"vhost-detail-cell\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1293,7 +1339,7 @@ func vhostDetailsMain(a *lib.AdminPageData, r *lib.VHostRow) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 93, "</div></div><div class=\"vhost-details-row contents\"><div class=\"vhost-detail-cell whitespace-nowrap\"><span>Single Sign-On:</span></div><div class=\"vhost-detail-cell\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 99, "</div></div><div class=\"vhost-details-row contents\"><div class=\"vhost-detail-cell whitespace-nowrap\"><span>Single Sign-On:</span></div><div class=\"vhost-detail-cell\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1301,7 +1347,7 @@ func vhostDetailsMain(a *lib.AdminPageData, r *lib.VHostRow) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 94, "</div></div><div class=\"vhost-details-row contents collapsible\"><div class=\"vhost-detail-cell\"><button class=\"collapse-toggle\"><div class=\"w-3 text-left\"><span class=\"collapse-toggle-img\">▽</span></div></button> Invite Codes:</div><div class=\"vhost-detail-cell\"><div class=\"collapse-target open\"><div class=\"grid grid-cols-[min-content_min-content_min-content] gap-y-2 gap-x-4\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 100, "</div></div><div class=\"vhost-details-row contents collapsible\"><div class=\"vhost-detail-cell\"><button class=\"collapse-toggle\"><div class=\"w-3 text-left\"><span class=\"collapse-toggle-img\">▽</span></div></button> Invite Codes:</div><div class=\"vhost-detail-cell\"><div class=\"collapse-target open\"><div class=\"grid grid-cols-[min-content_min-content_min-content] gap-y-2 gap-x-4\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1315,7 +1361,7 @@ func vhostDetailsMain(a *lib.AdminPageData, r *lib.VHostRow) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 95, "</div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 101, "</div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1323,7 +1369,7 @@ func vhostDetailsMain(a *lib.AdminPageData, r *lib.VHostRow) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 96, "</div></div></div></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 102, "</div></div></div></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1347,25 +1393,25 @@ func VHostDetails(a *lib.AdminPageData, r *lib.VHostRow) templ.Component {
 			}()
 		}
 		ctx = templ.InitializeContext(ctx)
-		templ_7745c5c3_Var69 := templ.GetChildren(ctx)
-		if templ_7745c5c3_Var69 == nil {
-			templ_7745c5c3_Var69 = templ.NopComponent
+		templ_7745c5c3_Var71 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var71 == nil {
+			templ_7745c5c3_Var71 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 97, "<div class=\"text-sm\"><h3 class=\"font-semibold text-slate-700 dark:text-slate-200 mb-1\">Manage Host</h3><div class=\"ml-2\"><div class=\"vhost-details-row\"><h4 class=\"font-medium\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 103, "<div class=\"text-sm\"><h3 class=\"font-semibold text-slate-700 dark:text-slate-200 mb-1\">Manage Host</h3><div class=\"ml-2\"><div class=\"vhost-details-row\"><h4 class=\"font-medium\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var70 string
-		templ_7745c5c3_Var70, templ_7745c5c3_Err = templ.JoinStringErrs(r.Name.String())
+		var templ_7745c5c3_Var72 string
+		templ_7745c5c3_Var72, templ_7745c5c3_Err = templ.JoinStringErrs(r.Name.String())
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `vhost.templ`, Line: 576, Col: 45}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `vhost.templ`, Line: 626, Col: 45}
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var70))
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var72))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 98, "</h4></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 104, "</h4></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1386,7 +1432,7 @@ func VHostDetails(a *lib.AdminPageData, r *lib.VHostRow) templ.Component {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 99, "</div></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 105, "</div></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1410,9 +1456,9 @@ func VHostPostRes(a *lib.AdminPageData, args *lib.VHostAddArgs) templ.Component 
 			}()
 		}
 		ctx = templ.InitializeContext(ctx)
-		templ_7745c5c3_Var71 := templ.GetChildren(ctx)
-		if templ_7745c5c3_Var71 == nil {
-			templ_7745c5c3_Var71 = templ.NopComponent
+		templ_7745c5c3_Var73 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var73 == nil {
+			templ_7745c5c3_Var73 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
 		templ_7745c5c3_Err = VHostTableAdd(a, args).Render(ctx, templ_7745c5c3_Buffer)
@@ -1443,9 +1489,9 @@ func VHostsMain(a *lib.AdminPageData, addArgs *lib.VHostAddArgs) templ.Component
 			}()
 		}
 		ctx = templ.InitializeContext(ctx)
-		templ_7745c5c3_Var72 := templ.GetChildren(ctx)
-		if templ_7745c5c3_Var72 == nil {
-			templ_7745c5c3_Var72 = templ.NopComponent
+		templ_7745c5c3_Var74 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var74 == nil {
+			templ_7745c5c3_Var74 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
 		templ_7745c5c3_Err = vHostsTable(a, addArgs).Render(ctx, templ_7745c5c3_Buffer)
@@ -1476,58 +1522,58 @@ func VHostTableAdd(a *lib.AdminPageData, args *lib.VHostAddArgs) templ.Component
 			}()
 		}
 		ctx = templ.InitializeContext(ctx)
-		templ_7745c5c3_Var73 := templ.GetChildren(ctx)
-		if templ_7745c5c3_Var73 == nil {
-			templ_7745c5c3_Var73 = templ.NopComponent
+		templ_7745c5c3_Var75 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var75 == nil {
+			templ_7745c5c3_Var75 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 100, "<form id=\"vhost-add\" hx-post=\"/admin/vhost\" hx-swap=\"innerHTML\" hx-target=\"main#admin-main\" hx-indicator=\".vhost-spinner,.vhost-button\"><div class=\"grid grid-cols-[min-content_auto_min-content_min-content] gap-2 text-sm\"><div class=\"font-extrabold\">+</div><div><div id=\"canned-input\"><input id=\"canned-name\" name=\"canned-name\" placeholder=\"your-host\" type=\"text\" class=\"text-xs w-32 text-right hostname-input rounded-sm border border-slate-400 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 p-1 hostname\" minlength=\"3\" maxlength=\"80\"> <span class=\"font-black\">.</span> <select class=\"bg-slate-200 dark:bg-slate-700 dark:text-slate-200 p-1 text-xs rounded-sm\" id=\"canned-domain\" name=\"canned-domain\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 106, "<form id=\"vhost-add\" hx-post=\"/admin/vhost\" hx-swap=\"innerHTML\" hx-target=\"main#admin-main\" hx-indicator=\".vhost-spinner,.vhost-button\"><div class=\"grid grid-cols-[min-content_auto_min-content_min-content] gap-2 text-sm\"><div class=\"font-extrabold\">+</div><div><div id=\"canned-input\"><input id=\"canned-name\" name=\"canned-name\" placeholder=\"your-host\" type=\"text\" class=\"text-xs w-32 text-right hostname-input rounded-sm border border-slate-400 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 p-1 hostname\" minlength=\"3\" maxlength=\"80\"> <span class=\"font-black\">.</span> <select class=\"bg-slate-200 dark:bg-slate-700 dark:text-slate-200 p-1 text-xs rounded-sm\" id=\"canned-domain\" name=\"canned-domain\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		for _, h := range a.VHosts.CannedDomains {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 101, "<option value=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 107, "<option value=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var74 string
-			templ_7745c5c3_Var74, templ_7745c5c3_Err = templ.JoinStringErrs(h.String())
+			var templ_7745c5c3_Var76 string
+			templ_7745c5c3_Var76, templ_7745c5c3_Err = templ.JoinStringErrs(h.String())
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `vhost.templ`, Line: 636, Col: 33}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `vhost.templ`, Line: 686, Col: 33}
 			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var74))
-			if templ_7745c5c3_Err != nil {
-				return templ_7745c5c3_Err
-			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 102, "\">")
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var76))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var75 string
-			templ_7745c5c3_Var75, templ_7745c5c3_Err = templ.JoinStringErrs(h.String())
-			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `vhost.templ`, Line: 636, Col: 48}
-			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var75))
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 108, "\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 103, "</option>")
+			var templ_7745c5c3_Var77 string
+			templ_7745c5c3_Var77, templ_7745c5c3_Err = templ.JoinStringErrs(h.String())
+			if templ_7745c5c3_Err != nil {
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `vhost.templ`, Line: 686, Col: 48}
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var77))
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 109, "</option>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 104, "</select></div><div id=\"byod-input\" class=\"hidden\"><input placeholder=\"foks.your.vanity.domain.cc\" name=\"byod\" id=\"full-vanity-hostname\" type=\"text\" class=\"text-xs w-56 text-left hostname-input p-1 border rounded-sm border-slate-400 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200\"></div></div><div class=\"flex justify-center\"><label class=\"text-xs inline-block whitespace-nowrap pr-1 mt-1\"><input type=\"checkbox\" id=\"toggle-byod\" class=\"align-middle\" name=\"toggle-byod\" value=\"checked\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 110, "</select></div><div id=\"byod-input\" class=\"hidden\"><input placeholder=\"foks.your.vanity.domain.cc\" name=\"byod\" id=\"full-vanity-hostname\" type=\"text\" class=\"text-xs w-56 text-left hostname-input p-1 border rounded-sm border-slate-400 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200\"></div></div><div class=\"flex justify-center\"><label class=\"text-xs inline-block whitespace-nowrap pr-1 mt-1\"><input type=\"checkbox\" id=\"toggle-byod\" class=\"align-middle\" name=\"toggle-byod\" value=\"checked\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if args.IsBYOD {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 105, " checked")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 111, " checked")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 106, "> <span class=\"align-middle\">BYO domain</span></label></div><div class=\"justify-center\"><button id=\"vhost-submit\" class=\"rounded-sm bg-sky-500 p-1 text-center text-white text-xs responsive-button vhost-button w-10 h-6\"><span>add</span> <img id=\"spinner-vhost-add\" class=\"button-spinner htmx-indicator w-3 h-3 vhost-spinner\" src=\"/static/img/bars-scale-fade.svg\"></button></div></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 112, "> <span class=\"align-middle\">BYO domain</span></label></div><div class=\"justify-center\"><button id=\"vhost-submit\" class=\"rounded-sm bg-sky-500 p-1 text-center text-white text-xs responsive-button vhost-button w-10 h-6\"><span>add</span> <img id=\"spinner-vhost-add\" class=\"button-spinner htmx-indicator w-3 h-3 vhost-spinner\" src=\"/static/img/bars-scale-fade.svg\"></button></div></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1537,12 +1583,12 @@ func VHostTableAdd(a *lib.AdminPageData, args *lib.VHostAddArgs) templ.Component
 				return templ_7745c5c3_Err
 			}
 		} else {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 107, "<div id=\"vhost-setup-error\"></div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 113, "<div id=\"vhost-setup-error\"></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 108, "</form>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 114, "</form>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1566,12 +1612,12 @@ func vHostsTable(a *lib.AdminPageData, addArgs *lib.VHostAddArgs) templ.Componen
 			}()
 		}
 		ctx = templ.InitializeContext(ctx)
-		templ_7745c5c3_Var76 := templ.GetChildren(ctx)
-		if templ_7745c5c3_Var76 == nil {
-			templ_7745c5c3_Var76 = templ.NopComponent
+		templ_7745c5c3_Var78 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var78 == nil {
+			templ_7745c5c3_Var78 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 109, "<div class=\"grid lg:grid-cols-[1rem_2fr_3fr_min-content_min-content_min-content] grid-cols-[1rem_1fr_min-content_min-content_min-content] gap-2 gap-x-3 text-sm mb-4\" id=\"vhost-table\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 115, "<div class=\"grid lg:grid-cols-[1rem_2fr_3fr_min-content_min-content_min-content] grid-cols-[1rem_1fr_min-content_min-content_min-content] gap-2 gap-x-3 text-sm mb-4\" id=\"vhost-table\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1583,7 +1629,7 @@ func vHostsTable(a *lib.AdminPageData, addArgs *lib.VHostAddArgs) templ.Componen
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 110, "</div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 116, "</div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1611,25 +1657,25 @@ func VHostCheckError(err lib.VHostCheckError) templ.Component {
 			}()
 		}
 		ctx = templ.InitializeContext(ctx)
-		templ_7745c5c3_Var77 := templ.GetChildren(ctx)
-		if templ_7745c5c3_Var77 == nil {
-			templ_7745c5c3_Var77 = templ.NopComponent
+		templ_7745c5c3_Var79 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var79 == nil {
+			templ_7745c5c3_Var79 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 111, "<div class=\"my-3 ml-4 mr-1 big-error\" id=\"vhost-check-error\"><div class=\"text-left\"><span class=\"font-bold text-red-700\">Error:</span> <span class=\"\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 117, "<div class=\"my-3 ml-4 mr-1 big-error\" id=\"vhost-check-error\"><div class=\"text-left\"><span class=\"font-bold text-red-700\">Error:</span> <span class=\"\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var78 string
-		templ_7745c5c3_Var78, templ_7745c5c3_Err = templ.JoinStringErrs(err.Error())
+		var templ_7745c5c3_Var80 string
+		templ_7745c5c3_Var80, templ_7745c5c3_Err = templ.JoinStringErrs(err.Error())
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `vhost.templ`, Line: 717, Col: 17}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `vhost.templ`, Line: 767, Col: 17}
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var78))
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var80))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 112, "</span></div></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 118, "</span></div></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1653,51 +1699,51 @@ func VHostSetupError(err lib.VHostSetupError) templ.Component {
 			}()
 		}
 		ctx = templ.InitializeContext(ctx)
-		templ_7745c5c3_Var79 := templ.GetChildren(ctx)
-		if templ_7745c5c3_Var79 == nil {
-			templ_7745c5c3_Var79 = templ.NopComponent
+		templ_7745c5c3_Var81 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var81 == nil {
+			templ_7745c5c3_Var81 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 113, "<div class=\"my-3 ml-5 mr-1 big-error\" id=\"vhost-setup-error\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 119, "<div class=\"my-3 ml-5 mr-1 big-error\" id=\"vhost-setup-error\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		switch te := err.Err.(type) {
 		case core.HostInUseError:
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 114, "<span class=\"font-bold text-red-700\">Error:</span> <span>The host <span class=\"font-mono\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 120, "<span class=\"font-bold text-red-700\">Error:</span> <span>The host <span class=\"font-mono\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var80 string
-			templ_7745c5c3_Var80, templ_7745c5c3_Err = templ.JoinStringErrs(te.Host.String())
+			var templ_7745c5c3_Var82 string
+			templ_7745c5c3_Var82, templ_7745c5c3_Err = templ.JoinStringErrs(te.Host.String())
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `vhost.templ`, Line: 734, Col: 56}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `vhost.templ`, Line: 784, Col: 56}
 			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var80))
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var82))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 115, "</span> is already in use.  Please pick another.</span>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 121, "</span> is already in use.  Please pick another.</span>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		case core.OverQuotaError:
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 116, "<span class=\"font-bold text-red-700\">Error:</span> <span>You have exceeded your quota.  Please delete some hosts or upgrade your plan.</span>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 122, "<span class=\"font-bold text-red-700\">Error:</span> <span>You have exceeded your quota.  Please delete some hosts or upgrade your plan.</span>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		default:
-			var templ_7745c5c3_Var81 string
-			templ_7745c5c3_Var81, templ_7745c5c3_Err = templ.JoinStringErrs(err.Err.Error())
+			var templ_7745c5c3_Var83 string
+			templ_7745c5c3_Var83, templ_7745c5c3_Err = templ.JoinStringErrs(err.Err.Error())
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `vhost.templ`, Line: 746, Col: 21}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `vhost.templ`, Line: 796, Col: 21}
 			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var81))
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var83))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 117, "</div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 123, "</div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

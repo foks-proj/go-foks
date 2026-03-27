@@ -380,6 +380,7 @@ func (a *Args) url(
 
 func (a *Args) SSOConfig(
 	src ParamSource,
+	providerParam string,
 	urlParam string,
 	idParam string,
 	secretParam string,
@@ -393,19 +394,32 @@ func (a *Args) SSOConfig(
 		}, nil
 	}
 
-	url, err := a.url(src, urlParam)
-	if err != nil {
-		return nil, err
+	provider := a.raw(src, providerParam)
+
+	var configURL proto.URLString
+	switch provider {
+	case "google":
+		configURL = proto.URLString(GoogleOIDCConfigURL)
+	default:
+		u, err := a.url(src, urlParam)
+		if err != nil {
+			return nil, err
+		}
+		configURL = u
 	}
+
 	id := a.raw(src, idParam)
 	if id == "" {
 		return nil, NewMissingParamError(idParam)
 	}
 	sec := a.raw(src, secretParam)
+	if provider == "google" && sec == "" {
+		return nil, NewMissingParamError(secretParam)
+	}
 	return &proto.SSOConfig{
 		Active: proto.SSOProtocolType_Oauth2,
 		Oauth2: &proto.OAuth2Config{
-			ConfigURI:    proto.URLString(url),
+			ConfigURI:    configURL,
 			ClientID:     proto.OAuth2ClientID(id),
 			ClientSecret: proto.OAuth2ClientSecret(sec),
 		},

@@ -388,7 +388,57 @@ templ VHostSSOToggle(a *lib.AdminPageData, r *lib.VHostRow) {
 
 templ VHostSSOFormFields(a *lib.AdminPageData, r *lib.VHostRow) {
 	<div class="w-full py-2">
-		<div class="flex flex-wrap items-center">
+		<div class="flex flex-wrap items-center mb-3">
+			<div class="w-40 mr-2 my-1">
+				<label class="p-1 w-full text-sm">Provider:</label>
+			</div>
+			<div class="grow min-w-[20rem] w-auto">
+				<select
+					id="sso-provider"
+					name="sso-provider"
+					class="bg-slate-200 dark:bg-slate-700 dark:text-slate-200 p-1 px-2 text-sm rounded-sm h-7"
+				>
+					<option value="google" selected?={ !r.Details.HasOAuth2SSO() || r.Details.IsGoogleSSO() }>
+						Google
+					</option>
+					<option value="manual" selected?={ r.Details.HasOAuth2SSO() && !r.Details.IsGoogleSSO() }>
+						Manual (OIDC)
+					</option>
+				</select>
+			</div>
+		</div>
+		<details class="sso-google-only mb-3 text-xs">
+			<summary class="cursor-pointer text-sky-600 dark:text-sky-400 underline text-sm">
+				Google setup guide
+			</summary>
+			<div class="mt-1 p-3 border border-slate-300 dark:border-slate-600 rounded text-slate-700 dark:text-slate-300 leading-relaxed">
+				<ol class="list-decimal ml-4 space-y-1">
+					<li>
+						Open
+						<a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener" class="underline text-sky-600 dark:text-sky-400">Google Cloud Credentials</a>
+						(create a project first as needed).
+					</li>
+					<li>
+						Configure the
+						<a href="https://console.cloud.google.com/apis/credentials/consent" target="_blank" rel="noopener" class="underline text-sky-600 dark:text-sky-400">OAuth consent screen</a>.
+						Choose <i>Internal</i> for Google Workspace orgs (restricts login to your domain).
+					</li>
+					<li>
+						On <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener" class="underline text-sky-600 dark:text-sky-400">Credentials</a>,
+						click <b>Create Credentials &rarr; OAuth client ID</b>,
+						type = <i>Web application</i>.
+					</li>
+					<li>
+						Add redirect URI:
+						<code class="bg-slate-200 dark:bg-slate-700 px-1 rounded select-all break-all">{ r.Details.OAuth2CallbackURL.String() }</code>
+					</li>
+					<li>
+						Copy <b>Client ID</b> and <b>Client Secret</b> below.
+					</li>
+				</ol>
+			</div>
+		</details>
+		<div class="sso-manual-only flex flex-wrap items-center">
 			<div class="w-40 mr-2 my-1">
 				<label class="p-1 w-full text-sm">OpenID Config URI:</label>
 			</div>
@@ -425,7 +475,7 @@ templ VHostSSOFormFields(a *lib.AdminPageData, r *lib.VHostRow) {
 					type="text"
 					name="sso-oauth2-client-secret"
 					class="p-1 flex-1 border rounded-sm w-full text-sm"
-					placeholder="e.g, xZs8v3LhG9aB1n5Q0rT6u"
+					placeholder={ core.Sel(r.Details.IsGoogleSSO() || !r.Details.HasOAuth2SSO(), "(required for Google)", "leave blank for PKCE") }
 					value={ r.Details.OAuth2SSOClientSecret() }
 				/>
 			</div>
