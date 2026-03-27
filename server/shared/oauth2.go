@@ -438,7 +438,9 @@ func (o *oauth2Session) postExchange(m MetaContext, arg *proto.OAuth2Code) error
 	}
 	o.idToken = proto.OAuth2IDToken(tr.IDToken)
 	o.accessToken = proto.OAuth2AccessToken(tr.AccessToken)
-	o.refreshToken = proto.OAuth2RefreshToken(tr.RefreshToken)
+	if tr.RefreshToken != "" {
+		o.refreshToken = proto.OAuth2RefreshToken(tr.RefreshToken)
+	}
 	now := m.Now()
 	expireDur := time.Duration(tr.ExpiresIn) * time.Second
 	etime := now.Add(expireDur)
