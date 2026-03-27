@@ -235,6 +235,26 @@
 
   }
 
+  function setSSOProviderToggle() {
+    const sel = document.querySelector("select#sso-provider");
+    if (!sel) {
+      return;
+    }
+    if (!attachDespam(sel)) {
+      return;
+    }
+    function update() {
+      document.querySelectorAll(".sso-google-only").forEach(function (el) {
+        el.classList.toggle("hidden", sel.value !== "google");
+      });
+      document.querySelectorAll(".sso-manual-only").forEach(function (el) {
+        el.classList.toggle("hidden", sel.value !== "manual");
+      });
+    }
+    update();
+    sel.addEventListener("change", update);
+  }
+
   function setGenericCollapseToggles() {
     const widgets = document.querySelectorAll("div.collapsible");
     widgets.forEach(function (widget) {
@@ -301,6 +321,7 @@
     setBYODomainToggle();
     setToggleViewershipSubmit();
     toggleVHostSubmit();
+    setSSOProviderToggle();
   }
 
   function updateDOM(evt) {
