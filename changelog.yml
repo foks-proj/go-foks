@@ -5,7 +5,7 @@ changelog:
   - version: 0.1.7
     urgency: low
     stable: true
-    date: TBD
+    date: 2026-03-27 12:00:00 -0500
     changes:
       - desc: fix bug in team membership chain patching
         closes: ["#240"]
