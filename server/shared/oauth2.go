@@ -405,6 +405,7 @@ func (o *oauth2Session) postExchange(m MetaContext, arg *proto.OAuth2Code) error
 		data.Set("code_verifier", o.pkceVerifier.String())
 	}
 
+	m.Infow("postExchange", "client_id", data.Get("client_id"), "has_secret", data.Get("client_secret") != "", "grant", data.Get("grant_type"), "has_refresh", data.Get("refresh_token") != "", "cfg_nil", o.cfg == nil)
 	req, err := http.NewRequestWithContext(m.Ctx(), http.MethodPost, endpoint, strings.NewReader(data.Encode()))
 	if err != nil {
 		return err
@@ -1123,6 +1124,11 @@ func (s *oauth2Session) writeRefreshToDB(m MetaContext) error {
 }
 
 func (s *oauth2Session) checkAccessToken(m MetaContext) error {
+	// Not all IdPs issue JWTs for access tokens (e.g., Google uses opaque tokens).
+	// Only validate if the token looks like a JWT.
+	if strings.Count(s.accessToken.String(), ".") != 2 {
+		return nil
+	}
 	g, err := m.G().OAuth2GlobalContext(m.Ctx())
 	if err != nil {
 		return err
