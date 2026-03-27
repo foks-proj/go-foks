@@ -228,6 +228,7 @@ func (o *oauth2Session) makeAuthURI(m MetaContext, id proto.OAuth2SessionID) err
 		scopes = append(scopes, "offline_access")
 	} else {
 		q.Set("access_type", "offline")
+		q.Set("prompt", "consent")
 	}
 	q.Set("client_id", o.cfg.ClientID.String())
 	q.Set("redirect_uri", o.cfg.RedirectURI.String())
@@ -943,11 +944,13 @@ func (s *oauth2AccessSession) putAccessTokenToDB(m MetaContext) error {
 	tag, err := s.tx.Exec(
 		m.Ctx(),
 		`INSERT INTO oauth2_access
- 		 (short_host_id, uid, config_id, access_token, refresh_token, 
+ 		 (short_host_id, uid, config_id, access_token, refresh_token,
 		   sub, ctime, etime, valid)
 		 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, true)
 		 ON CONFLICT (short_host_id, uid)
- 		 DO UPDATE SET config_id=$3, access_token=$4, refresh_token=$5, etime=$8, valid=true`,
+ 		 DO UPDATE SET config_id=$3, access_token=$4,
+		   refresh_token=COALESCE(NULLIF($5, ''), oauth2_access.refresh_token),
+		   etime=$8, valid=true`,
 		m.ShortHostID().ExportToDB(),
 		s.uid.ExportToDB(),
 		s.cfgId.ExportToDB(),

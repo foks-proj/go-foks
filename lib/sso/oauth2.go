@@ -148,6 +148,7 @@ func MakeOAuth2Session(
 		scopes = append(scopes, "offline_access")
 	} else {
 		q.Set("access_type", "offline")
+		q.Set("prompt", "consent")
 	}
 	q.Set("client_id", ocfg.ClientID.String())
 	q.Set("redirect_uri", ocfg.RedirectURI.String())
