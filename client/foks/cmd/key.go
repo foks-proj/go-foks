@@ -86,6 +86,7 @@ type keyListOpts struct {
 	currentUserKeys bool
 	otherProfiles   bool
 	verbose         bool
+	showHidden      bool
 }
 
 func keyCmd(m libclient.MetaContext) *cobra.Command {
@@ -123,6 +124,7 @@ func keyCmd(m libclient.MetaContext) *cobra.Command {
 	list.Flags().BoolVar(&lsOpts.currentUserKeys, "current-user-keys", false, "show all the curent user's keys")
 	list.Flags().BoolVar(&lsOpts.otherProfiles, "other-profiles", false, "show all other profiles")
 	list.Flags().BoolVarP(&lsOpts.verbose, "verbose", "v", false, "show key IDs for all profiles")
+	list.Flags().BoolVar(&lsOpts.showHidden, "hidden", false, "show hidden profiles")
 	top.AddCommand(list)
 
 	revoke := &cobra.Command{
@@ -158,6 +160,19 @@ func keyCmd(m libclient.MetaContext) *cobra.Command {
 	useBotKey := botTokenUseCmd(m, "use-bot-token", []string{"use-bot"},
 		"This command is a synonym for `foks bot-token use`.")
 	top.AddCommand(useBotKey)
+
+	var hideShow bool
+	hide := &cobra.Command{
+		Use:          "hide <deviceID>",
+		Short:        "hide a profile from 'key list'",
+		Long:         "Hide a local profile so it doesn't appear in 'foks key list'. Use --show to unhide.",
+		SilenceUsage: true,
+		RunE: func(cmd *cobra.Command, arg []string) error {
+			return runHide(m, arg, !hideShow)
+		},
+	}
+	hide.Flags().BoolVar(&hideShow, "show", false, "unhide the profile instead")
+	top.AddCommand(hide)
 
 	// Add device commands as subcommands
 	dev := deviceCmd(m)
@@ -266,7 +281,7 @@ func runKeyList(m libclient.MetaContext, cmd *cobra.Command, arg []string, opts 
 		m,
 		&agent.StartupOpts{NeedUnlockedUser: true, NeedUser: true},
 		func(cli lcl.KeyClient) error {
-			ls, err := cli.KeyList(m.Ctx())
+			ls, err := cli.KeyList(m.Ctx(), opts.showHidden)
 			if err != nil {
 				return err
 			}
@@ -274,6 +289,30 @@ func runKeyList(m libclient.MetaContext, cmd *cobra.Command, arg []string, opts 
 				return JSONOutput(m, ls)
 			}
 			return runKeyListTable(m, ls, opts)
+		},
+	)
+}
+
+func runHide(m libclient.MetaContext, arg []string, hidden bool) error {
+	if len(arg) != 1 {
+		return ArgsError("expected exactly one argument, a device ID")
+	}
+	eid, err := proto.ImportEntityIDFromString(arg[0])
+	if err != nil {
+		return err
+	}
+	did, err := eid.ToDeviceID()
+	if err != nil {
+		return err
+	}
+	return quickStartLambda(
+		m,
+		&agent.StartupOpts{NeedUser: true},
+		func(cli lcl.UserClient) error {
+			return cli.ToggleDeviceHidden(m.Ctx(), lcl.ToggleDeviceHiddenArg{
+				Dev:    did,
+				Hidden: hidden,
+			})
 		},
 	)
 }

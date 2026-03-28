@@ -1672,6 +1672,8 @@ func (p PartyID) StringErr() (string, error)                  { return p.EntityI
 func (p PartyID) MarshalJSON() ([]byte, error)                { return marsh(p) }
 func (d DirentID) MarshalJSON() ([]byte, error)               { return marsh(d) }
 func (i KVNodeID) MarshalJSON() ([]byte, error)               { return marsh(i) }
+func (n NaclNonce) String() string                            { return B62Encode(n[:]) }
+func (n NaclNonce) MarshalJSON() ([]byte, error)              { return json.Marshal(n.String()) }
 
 func (d *DeviceID) UnmarshalJSON(data []byte) error {
 	return unmarshalJson(d, data, func(e EntityID) (DeviceID, error) { return e.ToDeviceID() })
@@ -1694,6 +1696,7 @@ func (k *KVNodeID) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+func (n *NaclNonce) UnmarshalJSON(dat []byte) error          { return UnmarshalJsonFixed((*n)[:], dat) }
 func (t *StdHash) UnmarshalJSON(dat []byte) error            { return UnmarshalJsonFixed((*t)[:], dat) }
 func (m *MerkleTreeRFOutput) UnmarshalJSON(dat []byte) error { return UnmarshalJsonFixed((*m)[:], dat) }
 func (m *MerkleRootHash) UnmarshalJSON(dat []byte) error     { return UnmarshalJsonFixed((*m)[:], dat) }

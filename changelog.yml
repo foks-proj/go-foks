@@ -8,7 +8,11 @@ changelog:
     date: TBD
     changes:
       - desc: add -v flag to 'foks key list' to show key IDs
-        closes: []
+        closes: ["#247"]
+      - desc: add 'foks key hide' to hide/unhide local profiles
+        closes: ["#247"]
+      - desc: add --hidden flag to 'foks key list' to show hidden profiles
+        closes: ["#247"]
   - version: 0.1.7
     urgency: low
     stable: true

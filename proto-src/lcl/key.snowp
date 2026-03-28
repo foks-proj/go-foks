@@ -16,6 +16,6 @@ protocol Key
     resHeader Header
     errors lib.Status @0xbaa02ef2 {
 
-    keyList @0 () -> KeyListRes;
+    keyList @0 ( includeHidden @0 : Bool ) -> KeyListRes;
     keyRevoke @1 ( eid @0 : lib.EntityID );
 }

@@ -715,6 +715,54 @@ func (r *RemoveKeyByInfoArg) Decode(dec rpc.Decoder) error {
 
 func (r *RemoveKeyByInfoArg) Bytes() []byte { return nil }
 
+type ToggleDeviceHiddenArg struct {
+	Dev    lib.DeviceID
+	Hidden bool
+}
+type ToggleDeviceHiddenArgInternal__ struct {
+	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
+	Dev     *lib.DeviceIDInternal__
+	Hidden  *bool
+}
+
+func (t ToggleDeviceHiddenArgInternal__) Import() ToggleDeviceHiddenArg {
+	return ToggleDeviceHiddenArg{
+		Dev: (func(x *lib.DeviceIDInternal__) (ret lib.DeviceID) {
+			if x == nil {
+				return ret
+			}
+			return x.Import()
+		})(t.Dev),
+		Hidden: (func(x *bool) (ret bool) {
+			if x == nil {
+				return ret
+			}
+			return *x
+		})(t.Hidden),
+	}
+}
+func (t ToggleDeviceHiddenArg) Export() *ToggleDeviceHiddenArgInternal__ {
+	return &ToggleDeviceHiddenArgInternal__{
+		Dev:    t.Dev.Export(),
+		Hidden: &t.Hidden,
+	}
+}
+func (t *ToggleDeviceHiddenArg) Encode(enc rpc.Encoder) error {
+	return enc.Encode(t.Export())
+}
+
+func (t *ToggleDeviceHiddenArg) Decode(dec rpc.Decoder) error {
+	var tmp ToggleDeviceHiddenArgInternal__
+	err := dec.Decode(&tmp)
+	if err != nil {
+		return err
+	}
+	*t = tmp.Import()
+	return nil
+}
+
+func (t *ToggleDeviceHiddenArg) Bytes() []byte { return nil }
+
 type UserInterface interface {
 	Clear(context.Context) error
 	AgentStatus(context.Context) (AgentStatus, error)
@@ -732,6 +780,7 @@ type UserInterface interface {
 	LoginWaitForSsoLogin(context.Context, lib.UISessionID) (lib.SSOLoginRes, error)
 	RemoveKey(context.Context, LocalUserIndexParsed) error
 	RemoveKeyByInfo(context.Context, lib.UserInfo) error
+	ToggleDeviceHidden(context.Context, ToggleDeviceHiddenArg) error
 	ErrorWrapper() func(error) lib.Status
 	CheckArgHeader(ctx context.Context, h Header) error
 	MakeResHeader() Header
@@ -1142,6 +1191,26 @@ func (c UserClient) RemoveKeyByInfo(ctx context.Context, info lib.UserInfo) (err
 	}
 	var tmp rpc.DataWrap[Header, interface{}]
 	err = c.Cli.Call2(ctx, rpc.NewMethodV2(UserProtocolID, 15, "User.removeKeyByInfo"), warg, &tmp, 0*time.Millisecond, userErrorUnwrapperAdapter{h: c.ErrorUnwrapper})
+	if err != nil {
+		return
+	}
+	if c.CheckResHeader != nil {
+		err = c.CheckResHeader(ctx, tmp.Header)
+		if err != nil {
+			return
+		}
+	}
+	return
+}
+func (c UserClient) ToggleDeviceHidden(ctx context.Context, arg ToggleDeviceHiddenArg) (err error) {
+	warg := &rpc.DataWrap[Header, *ToggleDeviceHiddenArgInternal__]{
+		Data: arg.Export(),
+	}
+	if c.MakeArgHeader != nil {
+		warg.Header = c.MakeArgHeader()
+	}
+	var tmp rpc.DataWrap[Header, interface{}]
+	err = c.Cli.Call2(ctx, rpc.NewMethodV2(UserProtocolID, 16, "User.toggleDeviceHidden"), warg, &tmp, 0*time.Millisecond, userErrorUnwrapperAdapter{h: c.ErrorUnwrapper})
 	if err != nil {
 		return
 	}
@@ -1617,6 +1686,34 @@ func UserProtocol(i UserInterface) rpc.ProtocolV2 {
 					},
 				},
 				Name: "removeKeyByInfo",
+			},
+			16: {
+				ServeHandlerDescription: rpc.ServeHandlerDescription{
+					MakeArg: func() interface{} {
+						var ret rpc.DataWrap[Header, *ToggleDeviceHiddenArgInternal__]
+						return &ret
+					},
+					Handler: func(ctx context.Context, args interface{}) (interface{}, error) {
+						typedWrappedArg, ok := args.(*rpc.DataWrap[Header, *ToggleDeviceHiddenArgInternal__])
+						if !ok {
+							err := rpc.NewTypeError((*rpc.DataWrap[Header, *ToggleDeviceHiddenArgInternal__])(nil), args)
+							return nil, err
+						}
+						if err := i.CheckArgHeader(ctx, typedWrappedArg.Header); err != nil {
+							return nil, err
+						}
+						typedArg := typedWrappedArg.Data
+						err := i.ToggleDeviceHidden(ctx, (typedArg.Import()))
+						if err != nil {
+							return nil, err
+						}
+						ret := rpc.DataWrap[Header, interface{}]{
+							Header: i.MakeResHeader(),
+						}
+						return &ret, nil
+					},
+				},
+				Name: "toggleDeviceHidden",
 			},
 		},
 		WrapError: UserMakeGenericErrorWrapper(i.ErrorWrapper()),

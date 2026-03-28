@@ -113,19 +113,32 @@ func lookupDeviceName(
 // still can recover the users from the secret store file, and we try to do that here.
 
 type AllUserReader struct {
-	all        map[core.LocalUserIndex]proto.UserInfo
-	db         map[core.LocalUserIndex]proto.UserInfo
-	secrets    map[core.LocalUserIndex]proto.UserInfo
-	repairList []proto.UserInfo
-	order      []core.LocalUserIndex
-	active     *core.LocalUserIndex
+	all           map[core.LocalUserIndex]proto.UserInfo
+	db            map[core.LocalUserIndex]proto.UserInfo
+	secrets       map[core.LocalUserIndex]proto.UserInfo
+	hide          map[core.LocalUserIndex]bool
+	secretList    []lcl.FQUserRoleAndDeviceID
+	repairList    []proto.UserInfo
+	order         []core.LocalUserIndex
+	active        *core.LocalUserIndex
+	includeHidden bool
+}
+
+type ReadAllUsersOpts struct {
+	IncludeHidden bool
 }
 
 func NewAllUserLoader() *AllUserReader {
+	return NewAllUserLoaderWithOpts(ReadAllUsersOpts{})
+}
+
+func NewAllUserLoaderWithOpts(opts ReadAllUsersOpts) *AllUserReader {
 	return &AllUserReader{
-		all:     make(map[core.LocalUserIndex]proto.UserInfo),
-		db:      make(map[core.LocalUserIndex]proto.UserInfo),
-		secrets: make(map[core.LocalUserIndex]proto.UserInfo),
+		all:           make(map[core.LocalUserIndex]proto.UserInfo),
+		db:            make(map[core.LocalUserIndex]proto.UserInfo),
+		secrets:       make(map[core.LocalUserIndex]proto.UserInfo),
+		hide:          make(map[core.LocalUserIndex]bool),
+		includeHidden: opts.IncludeHidden,
 	}
 }
 
@@ -148,6 +161,10 @@ func (a *AllUserReader) loadFromDb(m MetaContext) error {
 		k, err := core.ImportLocalUserIndexFromInfo(u)
 		if err != nil {
 			return err
+		}
+
+		if a.hide[*k] && !a.includeHidden {
+			continue
 		}
 
 		if a.active != nil && a.active.Eq(*k) {
@@ -231,6 +248,21 @@ func (a *AllUserReader) loadFromSecrets(m MetaContext) error {
 	if err != nil {
 		return err
 	}
+	a.secretList = fquList
+	for _, fqu := range fquList {
+		k, err := core.NewLocalUserIndex(fqu.Fqur.Fqu, fqu.KeyID.EntityID())
+		if err != nil {
+			return err
+		}
+		if fqu.Hidden {
+			a.hide[*k] = true
+		}
+	}
+	return nil
+}
+
+func (a *AllUserReader) applySecrets(m MetaContext) error {
+	fquList := a.secretList
 
 	for _, fqu := range fquList {
 		k, err := core.NewLocalUserIndex(fqu.Fqur.Fqu, fqu.KeyID.EntityID())
@@ -239,6 +271,10 @@ func (a *AllUserReader) loadFromSecrets(m MetaContext) error {
 		}
 
 		if _, ok := a.all[*k]; ok {
+			continue
+		}
+
+		if fqu.Hidden && !a.includeHidden {
 			continue
 		}
 
@@ -251,7 +287,7 @@ func (a *AllUserReader) loadFromSecrets(m MetaContext) error {
 
 		err = fillHostInfo(m, &tmp)
 		if err != nil {
-			m.Warnw("AllUserLoader::loadFromSecrets", "fqu", fqu, "err", err)
+			m.Warnw("AllUserLoader::applySecrets", "fqu", fqu, "err", err)
 			continue
 		}
 
@@ -330,12 +366,17 @@ func (a *AllUserReader) Run(m MetaContext) error {
 		return err
 	}
 
+	err = a.loadFromSecrets(m)
+	if err != nil {
+		return err
+	}
+
 	err = a.loadFromDb(m)
 	if err != nil {
 		return err
 	}
 
-	err = a.loadFromSecrets(m)
+	err = a.applySecrets(m)
 	if err != nil {
 		return err
 	}
@@ -367,11 +408,17 @@ func ReadAllUsers(m MetaContext) ([]proto.UserInfo, error) {
 	return aul.Users(), nil
 }
 
-func ReadAllUsersAndStatus(m MetaContext) ([]proto.UserInfoAndStatus, error) {
-	tmp, err := ReadAllUsers(m)
+func ReadAllUsersAndStatus(m MetaContext, opts *ReadAllUsersOpts) ([]proto.UserInfoAndStatus, error) {
+	var o ReadAllUsersOpts
+	if opts != nil {
+		o = *opts
+	}
+	aul := NewAllUserLoaderWithOpts(o)
+	err := aul.Run(m)
 	if err != nil {
 		return nil, err
 	}
+	tmp := aul.Users()
 	res := core.Map(tmp, func(i proto.UserInfo) proto.UserInfoAndStatus {
 		return proto.UserInfoAndStatus{
 			Info: i,
