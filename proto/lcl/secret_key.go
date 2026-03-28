@@ -648,6 +648,7 @@ type LabeledSecretKeyBundle struct {
 	Ctime        lib.Time
 	Mtime        lib.Time
 	MinorVersion SecretKeyBundleMinorVersion
+	Hidden       bool
 }
 type LabeledSecretKeyBundleInternal__ struct {
 	_struct      struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
@@ -659,6 +660,7 @@ type LabeledSecretKeyBundleInternal__ struct {
 	Ctime        *lib.TimeInternal__
 	Mtime        *lib.TimeInternal__
 	MinorVersion *SecretKeyBundleMinorVersionInternal__
+	Hidden       *bool
 }
 
 func (l LabeledSecretKeyBundleInternal__) Import() LabeledSecretKeyBundle {
@@ -711,6 +713,12 @@ func (l LabeledSecretKeyBundleInternal__) Import() LabeledSecretKeyBundle {
 			}
 			return x.Import()
 		})(l.MinorVersion),
+		Hidden: (func(x *bool) (ret bool) {
+			if x == nil {
+				return ret
+			}
+			return *x
+		})(l.Hidden),
 	}
 }
 func (l LabeledSecretKeyBundle) Export() *LabeledSecretKeyBundleInternal__ {
@@ -723,6 +731,7 @@ func (l LabeledSecretKeyBundle) Export() *LabeledSecretKeyBundleInternal__ {
 		Ctime:        l.Ctime.Export(),
 		Mtime:        l.Mtime.Export(),
 		MinorVersion: l.MinorVersion.Export(),
+		Hidden:       &l.Hidden,
 	}
 }
 func (l *LabeledSecretKeyBundle) Encode(enc rpc.Encoder) error {

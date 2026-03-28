@@ -272,12 +272,30 @@ func (s *SecretStore) ListAll() ([]lcl.FQUserRoleAndDeviceID, error) {
 	defer s.RUnlock()
 	var ret []lcl.FQUserRoleAndDeviceID
 	for _, k := range s.data.Keys {
+		if k.Hidden {
+			continue
+		}
 		ret = append(ret, lcl.FQUserRoleAndDeviceID{
 			Fqur:  k.Fqur,
 			KeyID: k.KeyID,
 		})
 	}
 	return ret, nil
+}
+
+func (s *SecretStore) ToggleHidden(u proto.UID, hidden bool) error {
+	s.Lock()
+	defer s.Unlock()
+	ent, _, err := s.lookupWithLockByUID(u)
+	if err != nil {
+		return err
+	}
+	if ent == nil {
+		return core.UserNotFoundError{}
+	}
+	ent.Hidden = hidden
+	s.dirty = true
+	return nil
 }
 
 func (s *SecretStore) Delete(fqu proto.FQUser, role proto.Role, did proto.DeviceID) error {
@@ -410,10 +428,45 @@ func (s *SecretStore) lookupWithLockByDeviceID(
 	return nil, -1
 }
 
+func (s *SecretStore) lookupWithLockByUID(
+	uid proto.UID,
+) (
+	*lcl.LabeledSecretKeyBundle,
+	int,
+	error,
+) {
+	return s.lookupGeneric(
+		func(row lcl.LabeledSecretKeyBundle) (bool, error) {
+			return row.Fqur.Fqu.Uid.Eq(uid), nil
+		},
+	)
+}
+
 func (s *SecretStore) lookupWithLock(
 	fqu proto.FQUser,
 	role proto.Role,
 	noProvsionalDevices bool,
+) (
+	*lcl.LabeledSecretKeyBundle,
+	int,
+	error,
+) {
+	return s.lookupGeneric(
+		func(row lcl.LabeledSecretKeyBundle) (bool, error) {
+			roleEq, err := row.Fqur.Role.Eq(role)
+			if err != nil {
+				return false, err
+			}
+			if noProvsionalDevices && row.Provisional {
+				return false, nil
+			}
+			return roleEq && row.Fqur.Fqu.Eq(fqu), nil
+		},
+	)
+}
+
+func (s *SecretStore) lookupGeneric(
+	predicate func(lcl.LabeledSecretKeyBundle) (bool, error),
 ) (
 	*lcl.LabeledSecretKeyBundle,
 	int,
@@ -428,17 +481,13 @@ func (s *SecretStore) lookupWithLock(
 	// be the one that works, The first will be dead
 	for i := len(s.data.Keys) - 1; i >= 0; i-- {
 		v := s.data.Keys[i]
-		roleEq, err := v.Fqur.Role.Eq(role)
+		ok, err := predicate(v)
 		if err != nil {
 			return nil, -1, err
 		}
-		if !roleEq || !v.Fqur.Fqu.Eq(fqu) {
-			continue
+		if ok {
+			return &v, i, nil
 		}
-		if v.Provisional && noProvsionalDevices {
-			continue
-		}
-		return &v, i, nil
 	}
 	return nil, -1, nil
 }

@@ -53,4 +53,6 @@ protocol User
 
     removeKey @14 ( key @0 : LocalUserIndexParsed );
     removeKeyByInfo @15 ( info @0 : lib.UserInfo );
+
+    hideUser @16 ( u @0 : UID );
 }
