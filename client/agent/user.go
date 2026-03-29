@@ -400,4 +400,9 @@ func (c *AgentConn) RemoveKeyByInfo(ctx context.Context, info proto.UserInfo) er
 	return libclient.RemoveKeyByInfo(m, info)
 }
 
+func (c *AgentConn) ToggleDeviceHidden(ctx context.Context, arg lcl.ToggleDeviceHiddenArg) error {
+	m := c.MetaContext(ctx)
+	return libclient.SecretStoreToggleHidden(m, arg.Dev, arg.Hidden)
+}
+
 var _ lcl.UserInterface = (*AgentConn)(nil)

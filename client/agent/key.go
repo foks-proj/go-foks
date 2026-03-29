@@ -65,7 +65,7 @@ func (c *AgentConn) KeyRevoke(ctx context.Context, arg proto.EntityID) error {
 	return libclient.Revoke(m, au, arg)
 }
 
-func (c *AgentConn) KeyList(ctx context.Context) (lcl.KeyListRes, error) {
+func (c *AgentConn) KeyList(ctx context.Context, includeHidden bool) (lcl.KeyListRes, error) {
 
 	var ret lcl.KeyListRes
 	tmp, err := c.g.ActiveUserExport()
@@ -85,7 +85,9 @@ func (c *AgentConn) KeyList(ctx context.Context) (lcl.KeyListRes, error) {
 		return ret, err
 	}
 
-	allu, err := libclient.ReadAllUsersAndStatus(m)
+	allu, err := libclient.ReadAllUsersAndStatus(m, &libclient.ReadAllUsersOpts{
+		IncludeHidden: includeHidden,
+	})
 	if err != nil {
 		return ret, err
 	}

@@ -53,4 +53,8 @@ protocol User
 
     removeKey @14 ( key @0 : LocalUserIndexParsed );
     removeKeyByInfo @15 ( info @0 : lib.UserInfo );
+
+    // if we wrote down a local device to the local key ring, but signup crashed (let's say),
+    // we can hide that key so it doesn't spam up `foks key list`.
+    toggleDeviceHidden @16 ( dev @0 : lib.DeviceID, hidden @1 : Bool );
 }

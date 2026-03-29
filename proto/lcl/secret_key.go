@@ -648,6 +648,7 @@ type LabeledSecretKeyBundle struct {
 	Ctime        lib.Time
 	Mtime        lib.Time
 	MinorVersion SecretKeyBundleMinorVersion
+	Hidden       bool
 }
 type LabeledSecretKeyBundleInternal__ struct {
 	_struct      struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
@@ -659,6 +660,7 @@ type LabeledSecretKeyBundleInternal__ struct {
 	Ctime        *lib.TimeInternal__
 	Mtime        *lib.TimeInternal__
 	MinorVersion *SecretKeyBundleMinorVersionInternal__
+	Hidden       *bool
 }
 
 func (l LabeledSecretKeyBundleInternal__) Import() LabeledSecretKeyBundle {
@@ -711,6 +713,12 @@ func (l LabeledSecretKeyBundleInternal__) Import() LabeledSecretKeyBundle {
 			}
 			return x.Import()
 		})(l.MinorVersion),
+		Hidden: (func(x *bool) (ret bool) {
+			if x == nil {
+				return ret
+			}
+			return *x
+		})(l.Hidden),
 	}
 }
 func (l LabeledSecretKeyBundle) Export() *LabeledSecretKeyBundleInternal__ {
@@ -723,6 +731,7 @@ func (l LabeledSecretKeyBundle) Export() *LabeledSecretKeyBundleInternal__ {
 		Ctime:        l.Ctime.Export(),
 		Mtime:        l.Mtime.Export(),
 		MinorVersion: l.MinorVersion.Export(),
+		Hidden:       &l.Hidden,
 	}
 }
 func (l *LabeledSecretKeyBundle) Encode(enc rpc.Encoder) error {
@@ -742,13 +751,15 @@ func (l *LabeledSecretKeyBundle) Decode(dec rpc.Decoder) error {
 func (l *LabeledSecretKeyBundle) Bytes() []byte { return nil }
 
 type FQUserRoleAndDeviceID struct {
-	Fqur  lib.FQUserAndRole
-	KeyID lib.DeviceID
+	Fqur   lib.FQUserAndRole
+	KeyID  lib.DeviceID
+	Hidden bool
 }
 type FQUserRoleAndDeviceIDInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Fqur    *lib.FQUserAndRoleInternal__
 	KeyID   *lib.DeviceIDInternal__
+	Hidden  *bool
 }
 
 func (f FQUserRoleAndDeviceIDInternal__) Import() FQUserRoleAndDeviceID {
@@ -765,12 +776,19 @@ func (f FQUserRoleAndDeviceIDInternal__) Import() FQUserRoleAndDeviceID {
 			}
 			return x.Import()
 		})(f.KeyID),
+		Hidden: (func(x *bool) (ret bool) {
+			if x == nil {
+				return ret
+			}
+			return *x
+		})(f.Hidden),
 	}
 }
 func (f FQUserRoleAndDeviceID) Export() *FQUserRoleAndDeviceIDInternal__ {
 	return &FQUserRoleAndDeviceIDInternal__{
-		Fqur:  f.Fqur.Export(),
-		KeyID: f.KeyID.Export(),
+		Fqur:   f.Fqur.Export(),
+		KeyID:  f.KeyID.Export(),
+		Hidden: &f.Hidden,
 	}
 }
 func (f *FQUserRoleAndDeviceID) Encode(enc rpc.Encoder) error {

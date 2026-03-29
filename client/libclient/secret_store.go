@@ -260,7 +260,10 @@ func (s *SecretStore) Get(
 	defer s.RUnlock()
 
 	if args.Opts.ByDeviceID {
-		ret, _ := s.lookupWithLockByDeviceID(args.Fqu, args.DeviceID)
+		ret, _, err := s.lookupWithLockByFQUAndDeviceID(args.Fqu, args.DeviceID)
+		if err != nil {
+			return nil, err
+		}
 		return ret, nil
 	}
 	ret, _, err := s.lookupWithLock(args.Fqu, args.Role, args.Opts.NoProvisional)
@@ -273,11 +276,33 @@ func (s *SecretStore) ListAll() ([]lcl.FQUserRoleAndDeviceID, error) {
 	var ret []lcl.FQUserRoleAndDeviceID
 	for _, k := range s.data.Keys {
 		ret = append(ret, lcl.FQUserRoleAndDeviceID{
-			Fqur:  k.Fqur,
-			KeyID: k.KeyID,
+			Fqur:   k.Fqur,
+			KeyID:  k.KeyID,
+			Hidden: k.Hidden,
 		})
 	}
 	return ret, nil
+}
+
+func (s *SecretStore) ToggleHidden(ctx context.Context, did proto.DeviceID, hidden bool) error {
+	s.Lock()
+	defer s.Unlock()
+	ent, i, err := s.lookupWithLockByDeviceID(did)
+	if err != nil {
+		return err
+	}
+	if ent == nil {
+		return core.UserNotFoundError{}
+	}
+	ent.Hidden = hidden
+	s.dirty = true
+	s.data.Keys[i] = *ent
+
+	err = s.saveWithLock(ctx)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (s *SecretStore) Delete(fqu proto.FQUser, role proto.Role, did proto.DeviceID) error {
@@ -395,25 +420,64 @@ func (s *SecretStore) FilterDeviceIDs(
 	return ret, nil
 }
 
-func (s *SecretStore) lookupWithLockByDeviceID(
+func (s *SecretStore) lookupWithLockByFQUAndDeviceID(
 	fqu proto.FQUser,
 	did proto.DeviceID,
-) (*lcl.LabeledSecretKeyBundle, int) {
-	if s.data == nil {
-		return nil, -1
-	}
-	for i, v := range s.data.Keys {
-		if v.KeyID.Eq(did) && v.Fqur.Fqu.Eq(fqu) {
-			return &v, i
-		}
-	}
-	return nil, -1
+) (
+	*lcl.LabeledSecretKeyBundle,
+	int,
+	error,
+) {
+	return s.lookupGeneric(
+		true,
+		func(row lcl.LabeledSecretKeyBundle) (bool, error) {
+			return row.Fqur.Fqu.Eq(fqu) && row.KeyID.Eq(did), nil
+		},
+	)
+}
+
+func (s *SecretStore) lookupWithLockByDeviceID(
+	devID proto.DeviceID,
+) (
+	*lcl.LabeledSecretKeyBundle,
+	int,
+	error,
+) {
+	return s.lookupGeneric(
+		false,
+		func(row lcl.LabeledSecretKeyBundle) (bool, error) {
+			return row.KeyID.Eq(devID), nil
+		},
+	)
 }
 
 func (s *SecretStore) lookupWithLock(
 	fqu proto.FQUser,
 	role proto.Role,
 	noProvsionalDevices bool,
+) (
+	*lcl.LabeledSecretKeyBundle,
+	int,
+	error,
+) {
+	return s.lookupGeneric(
+		false,
+		func(row lcl.LabeledSecretKeyBundle) (bool, error) {
+			roleEq, err := row.Fqur.Role.Eq(role)
+			if err != nil {
+				return false, err
+			}
+			if noProvsionalDevices && row.Provisional {
+				return false, nil
+			}
+			return roleEq && row.Fqur.Fqu.Eq(fqu), nil
+		},
+	)
+}
+
+func (s *SecretStore) lookupGeneric(
+	fwd bool,
+	predicate func(lcl.LabeledSecretKeyBundle) (bool, error),
 ) (
 	*lcl.LabeledSecretKeyBundle,
 	int,
@@ -426,19 +490,27 @@ func (s *SecretStore) lookupWithLock(
 	// iterate in reverse order so we get the must recent entry.
 	// if we ever failed to provision, and try again, the second entry will
 	// be the one that works, The first will be dead
-	for i := len(s.data.Keys) - 1; i >= 0; i-- {
+	var i, lim, inc int
+	if fwd {
+		i = 0
+		lim = len(s.data.Keys)
+		inc = 1
+	} else {
+		i = len(s.data.Keys) - 1
+		lim = -1
+		inc = -1
+	}
+
+	for i != lim {
 		v := s.data.Keys[i]
-		roleEq, err := v.Fqur.Role.Eq(role)
+		ok, err := predicate(v)
 		if err != nil {
 			return nil, -1, err
 		}
-		if !roleEq || !v.Fqur.Fqu.Eq(fqu) {
-			continue
+		if ok {
+			return &v, i, nil
 		}
-		if v.Provisional && noProvsionalDevices {
-			continue
-		}
-		return &v, i, nil
+		i += inc
 	}
 	return nil, -1, nil
 }
@@ -446,7 +518,10 @@ func (s *SecretStore) lookupWithLock(
 func (s *SecretStore) Put(row lcl.LabeledSecretKeyBundle) error {
 	s.Lock()
 	defer s.Unlock()
-	ex, _ := s.lookupWithLockByDeviceID(row.Fqur.Fqu, row.KeyID)
+	ex, _, err := s.lookupWithLockByFQUAndDeviceID(row.Fqur.Fqu, row.KeyID)
+	if err != nil {
+		return err
+	}
 	if ex != nil {
 		return core.SecretKeyExistsError{}
 	}
@@ -475,7 +550,10 @@ func (s *SecretStore) Update(row lcl.LabeledSecretKeyBundle) error {
 const CurrentSecretKeyRowMinorVersion = lcl.SecretKeyBundleMinorVersion(1)
 
 func (s *SecretStore) updateWithLock(row lcl.LabeledSecretKeyBundle) (func(), error) {
-	_, pos := s.lookupWithLockByDeviceID(row.Fqur.Fqu, row.KeyID)
+	_, pos, err := s.lookupWithLockByFQUAndDeviceID(row.Fqur.Fqu, row.KeyID)
+	if err != nil {
+		return nil, err
+	}
 	if pos < 0 {
 		return nil, core.KeyNotFoundError{Which: "secret devkey"}
 	}

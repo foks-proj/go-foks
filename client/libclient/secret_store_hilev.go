@@ -246,3 +246,12 @@ func makeSecretStoreBundle(
 		return nil, core.NotImplementedError{}
 	}
 }
+
+func SecretStoreToggleHidden(
+	m MetaContext,
+	did proto.DeviceID,
+	hidden bool,
+) error {
+	store := m.G().SecretStore()
+	return store.ToggleHidden(m.Ctx(), did, hidden)
+}

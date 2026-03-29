@@ -125,16 +125,27 @@ func (k *KeyListRes) Bytes() []byte { return nil }
 var KeyProtocolID rpc.ProtocolUniqueID = rpc.ProtocolUniqueID(0xbaa02ef2)
 
 type KeyListArg struct {
+	IncludeHidden bool
 }
 type KeyListArgInternal__ struct {
-	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
+	_struct       struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
+	IncludeHidden *bool
 }
 
 func (k KeyListArgInternal__) Import() KeyListArg {
-	return KeyListArg{}
+	return KeyListArg{
+		IncludeHidden: (func(x *bool) (ret bool) {
+			if x == nil {
+				return ret
+			}
+			return *x
+		})(k.IncludeHidden),
+	}
 }
 func (k KeyListArg) Export() *KeyListArgInternal__ {
-	return &KeyListArgInternal__{}
+	return &KeyListArgInternal__{
+		IncludeHidden: &k.IncludeHidden,
+	}
 }
 func (k *KeyListArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(k.Export())
@@ -192,7 +203,7 @@ func (k *KeyRevokeArg) Decode(dec rpc.Decoder) error {
 func (k *KeyRevokeArg) Bytes() []byte { return nil }
 
 type KeyInterface interface {
-	KeyList(context.Context) (KeyListRes, error)
+	KeyList(context.Context, bool) (KeyListRes, error)
 	KeyRevoke(context.Context, lib.EntityID) error
 	ErrorWrapper() func(error) lib.Status
 	CheckArgHeader(ctx context.Context, h Header) error
@@ -239,8 +250,10 @@ type KeyClient struct {
 	CheckResHeader func(context.Context, Header) error
 }
 
-func (c KeyClient) KeyList(ctx context.Context) (res KeyListRes, err error) {
-	var arg KeyListArg
+func (c KeyClient) KeyList(ctx context.Context, includeHidden bool) (res KeyListRes, err error) {
+	arg := KeyListArg{
+		IncludeHidden: includeHidden,
+	}
 	warg := &rpc.DataWrap[Header, *KeyListArgInternal__]{
 		Data: arg.Export(),
 	}
@@ -304,7 +317,8 @@ func KeyProtocol(i KeyInterface) rpc.ProtocolV2 {
 						if err := i.CheckArgHeader(ctx, typedWrappedArg.Header); err != nil {
 							return nil, err
 						}
-						tmp, err := i.KeyList(ctx)
+						typedArg := typedWrappedArg.Data
+						tmp, err := i.KeyList(ctx, (typedArg.Import()).IncludeHidden)
 						if err != nil {
 							return nil, err
 						}
