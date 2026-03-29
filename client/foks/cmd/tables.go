@@ -32,10 +32,12 @@ type userRow struct {
 	locked          string
 	connected       string
 	devname         string
+	keyID           string
 	mode            userListTableMode
 	showDeviceNames bool
 	yubiInfo        string
 	showYubiInfo    bool
+	verbose         bool
 }
 
 func (u userRow) toTableRow() table.Row {
@@ -49,6 +51,9 @@ func (u userRow) toTableRow() table.Row {
 	}
 	if u.showYubiInfo {
 		ret = append(ret, u.yubiInfo)
+	}
+	if u.verbose {
+		ret = append(ret, u.keyID)
 	}
 	if u.mode == userListTableModeMem {
 		ret = append(ret, u.locked, u.connected)
@@ -92,6 +97,9 @@ func (u userRow) headers() table.Row {
 	if u.showYubiInfo {
 		ret = append(ret, "YubiKey Name <serial/slot>")
 	}
+	if u.verbose {
+		ret = append(ret, "Key ID")
+	}
 	if u.mode == userListTableModeMem {
 		ret = append(ret, "Locked", "Connected")
 
@@ -104,6 +112,7 @@ var _ tableRow = userRow{}
 type outputTableOpts struct {
 	headers bool
 	title   string
+	verbose bool
 }
 
 func outputTable(
@@ -239,6 +248,7 @@ func outputUserListTable(
 			mode:            mode,
 			showDeviceNames: showDeviceNames,
 			showYubiInfo:    showYubiInfo,
+			verbose:         opts.verbose,
 		}
 		username := string(u.Info.Username.NameUtf8)
 		if len(username) == 0 {
@@ -290,6 +300,13 @@ func outputUserListTable(
 		ret.role = role
 		ret.connected = networkStatusToString(u.NetworkStatus)
 		ret.devname = string(u.Info.Devname)
+		if opts.verbose {
+			kid, err := u.Info.Key.StringErr()
+			if err != nil {
+				return ret, err
+			}
+			ret.keyID = kid
+		}
 		return ret, nil
 	}
 

@@ -2,6 +2,13 @@ project: foks
 maintaner: Maxwell Krohn <max@ne43.com>
 
 changelog:
+  - version: 0.1.8
+    urgency: low
+    stable: true
+    date: TBD
+    changes:
+      - desc: add -v flag to 'foks key list' to show key IDs
+        closes: []
   - version: 0.1.7
     urgency: low
     stable: true
