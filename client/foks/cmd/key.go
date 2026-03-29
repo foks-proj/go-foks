@@ -85,6 +85,7 @@ func runKeyLock(m libclient.MetaContext, cmd *cobra.Command, arg []string) error
 type keyListOpts struct {
 	currentUserKeys bool
 	otherProfiles   bool
+	verbose         bool
 }
 
 func keyCmd(m libclient.MetaContext) *cobra.Command {
@@ -121,6 +122,7 @@ func keyCmd(m libclient.MetaContext) *cobra.Command {
 	}
 	list.Flags().BoolVar(&lsOpts.currentUserKeys, "current-user-keys", false, "show all the curent user's keys")
 	list.Flags().BoolVar(&lsOpts.otherProfiles, "other-profiles", false, "show all other profiles")
+	list.Flags().BoolVarP(&lsOpts.verbose, "verbose", "v", false, "show key IDs for all profiles")
 	top.AddCommand(list)
 
 	revoke := &cobra.Command{
@@ -243,7 +245,14 @@ func runKeyListTable(
 		if doBoth {
 			title = "All profiles available on this machine"
 		}
-		err := outputUserListTable(m, outputTableOpts{headers: true, title: title}, ls.AllUsers, mode)
+		err := outputUserListTable(
+			m, outputTableOpts{
+				headers: true,
+				title:   title,
+				verbose: opts.verbose},
+			ls.AllUsers,
+			mode,
+		)
 		if err != nil {
 			return err
 		}
