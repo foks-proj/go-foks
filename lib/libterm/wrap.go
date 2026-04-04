@@ -7,9 +7,21 @@ import (
 	"bufio"
 	"fmt"
 	"io"
+	"regexp"
 	"strings"
 	"unicode/utf8"
 )
+
+// This regex matches most common ANSI escape sequences
+var ansiRegex = regexp.MustCompile(`\x1b\[[0-9;]*[a-zA-Z]`)
+
+func visibleLen(s string) int {
+	// 1. Remove the escape sequences entirely
+	cleanString := ansiRegex.ReplaceAllString(s, "")
+
+	// 2. Count the remaining runes (filtering out any other lone controls if needed)
+	return utf8.RuneCountInString(cleanString)
+}
 
 // RewrapPad reads UTF‑8 text from r, wraps it, and writes it to w.
 // Each line is indented by pad spaces; the total line length
@@ -50,7 +62,7 @@ func RewrapPad(r io.Reader, w io.Writer, width, pad int) error {
 		}
 
 		for _, word := range strings.Fields(line) {
-			wlen := utf8.RuneCountInString(word)
+			wlen := visibleLen(word)
 
 			switch {
 			case col == 0: // first word on new line

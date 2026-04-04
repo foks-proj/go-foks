@@ -13,6 +13,8 @@ changelog:
         closes: ["#247"]
       - desc: add --hidden flag to 'foks key list' to show hidden profiles
         closes: ["#247"]
+      - desc: warn on git privacy gotcha
+        closes: ["#253"]
   - version: 0.1.7
     urgency: low
     stable: true

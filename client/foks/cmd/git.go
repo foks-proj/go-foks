@@ -4,12 +4,15 @@
 package cmd
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 
+	"github.com/foks-proj/go-foks/client/foks/cmd/ui"
 	"github.com/foks-proj/go-foks/client/libclient"
 	"github.com/foks-proj/go-foks/client/libgit"
 	"github.com/foks-proj/go-foks/lib/core"
+	"github.com/foks-proj/go-foks/lib/libterm"
 	"github.com/foks-proj/go-foks/proto/lcl"
 	"github.com/spf13/cobra"
 )
@@ -64,6 +67,28 @@ func gitCreate(m libclient.MetaContext, top *cobra.Command) {
 				return err
 			}
 			m.G().UIs().Terminal.Printf("Created: %s\n", urlStr)
+
+			// See Issue 253.
+			if cfg.ActingAs != nil {
+				es := m.G().UIs().Terminal.ErrorStream()
+				msg := libterm.MustRewrapSense(
+					fmt.Sprintf("%s: %s\n",
+						[]byte(
+							maybeRender(es.IsATTY(),
+								ui.WarningStyle.Render,
+								"Privacy Warning"),
+						),
+						`FOKS eagerly pushes commits to the server to optimize performance.
+						If you push a commit on branch A, some commits on branch B might go
+						along for the ride. Keep this in mind when collaborating with other users.
+						Data might become visible to the team on commit, before the push.`,
+					),
+					0,
+				)
+				// Ignore errors on writing out the warning.
+				_, _ = es.Write([]byte(msg))
+			}
+
 			err = PartingConsoleMessage(m)
 			if err != nil {
 				return err
