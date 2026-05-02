@@ -312,7 +312,9 @@ check_config() {
 #----------------------------------
 
 set_quota() {
+    # always a bug to specify both --run-quota and --no-run-quota, since they are opposites
     [ "$arg_no_run_quota" -eq 1 -a "$arg_run_quota" -eq 1 ] && whoops "Cannot specify --no-run-quota and --run-quota together"
+
     if [ "$server_mode" = "standalone" ]; then
         if [ "$arg_no_run_quota" -eq 1 ] ; then
             whoops "In standalone mode, no-quota is the default, so do not specify --no-run-quota"
@@ -331,6 +333,9 @@ set_quota() {
 #----------------------------------
 
 set_beacon() {
+    # always a bug to specify both --run-beacon and --no-run-beacon, since they are opposites
+    [ "$arg_no_run_beacon" -eq 1 -a "$arg_run_beacon" -eq 1 ] && whoops "Cannot specify --no-run-beacon and --run-beacon together"
+
     if [ "$network_mode" = "test" -o "$network_mode" = "dev" ] ; then
         [ "$arg_run_beacon" -eq 1 ] && whoops "Cannot use --run-beacon in network_mode=$network_mode"
         run_beacon=1
