@@ -1,6 +1,6 @@
 module github.com/foks-proj/go-foks
 
-go 1.24.0
+go 1.25.0
 
 require (
 	filippo.io/mlkem768 v0.0.0-20240902154959-36b3023d41cf
@@ -28,7 +28,7 @@ require (
 	github.com/go-piv/piv-go/v2 v2.3.0
 	github.com/golang-jwt/jwt/v5 v5.3.0
 	github.com/google/go-jsonnet v0.20.0
-	github.com/jackc/pgx/v5 v5.7.4
+	github.com/jackc/pgx/v5 v5.9.2
 	github.com/jedib0t/go-pretty/v6 v6.4.6
 	github.com/keybase/clockwork v0.1.0
 	github.com/keybase/go-codec v0.0.0-20180928230036-164397562123
@@ -42,7 +42,7 @@ require (
 	github.com/opencontainers/image-spec v1.1.1
 	github.com/spf13/cobra v1.9.1
 	github.com/spf13/pflag v1.0.6
-	github.com/stretchr/testify v1.10.0
+	github.com/stretchr/testify v1.11.1
 	github.com/stripe/stripe-go/v82 v82.1.0
 	github.com/testcontainers/testcontainers-go v0.39.0
 	github.com/vbauerster/mpb/v8 v8.10.1
