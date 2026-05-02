@@ -55,6 +55,9 @@ docker_foks_server="ghcr.io/foks-proj/foks-server:latest" # Docker image for fok
 # we can either compile code or use dockerized static images; by default, we compile code
 do_compile=1
 
+# whether FOKS is in test mode or not
+foks_test_mode=0
+
 # directories and important files
 topdir=$(pwd)
 topdir_srv=$topdir
@@ -77,6 +80,8 @@ bind_addr_ext="127.0.0.1"
 # temporary variables for command-line arguments
 arg_run_beacon=0
 arg_no_run_beacon=0
+arg_run_quota=0
+arg_no_run_quota=0
 arg_run_mode=''
 arg_db_port=''
 arg_db_hostname=''
@@ -762,6 +767,7 @@ make_client_local() {
         return
     fi
 
+    mkdir -p ${topdir_cli}
     (cd ${topdir_cli} && ln -sf ../env.sh)
     mkdir -p ${topdir_cli}/home
     mkdir -p ${topdir_cli}/bin
@@ -778,7 +784,6 @@ EOF
 {
     top_dir : "${topdir}",
     primary_hostname : "${base_hostname}",
-    test : ${test},
 EOF
 
     if [ "$server_mode" = "hosting_platform" ]; then
