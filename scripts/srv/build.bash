@@ -23,7 +23,7 @@ TLSDIR=${TOPDIR}/tls
 ##
 declare -a services=(
     "reg" "user" "merkle_builder" "internal_ca" "merkle_query" "queue" 
-    "merkle_batcher" "merkle_signer" "kv_store" "quota" "autocert"
+    "merkle_batcher" "merkle_signer" "kv_store" "autocert"
 )
 
 # New array to store modified service names
@@ -41,7 +41,10 @@ declare -a all_services_hyphenate=("${services_hyphenate[@]}")
 all_services_hyphenate+=("probe")
 
 if [ "$RUN_BEACON" -eq 1 ]; then
-    all_servics_hyphenate+=("beacon")
+    all_services_hyphenate+=("beacon")
+fi
+if [ "$RUN_QUOTA" -eq 1 ]; then
+    all_services_hyphenate+=("quota")
 fi
 if [ "$SERVER_MODE" = "hosting_platform" ]; then
     all_services_hyphenate+=("web")
