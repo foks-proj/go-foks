@@ -1,7 +1,11 @@
 #!/bin/sh
 # Copyright (c) 2025 ne43, Inc.
 # Licensed under the MIT License. See LICENSE in the project root for details.
+#
 
+# need to specify in sshd_config:
+#  GatewayPorts clientspecified
+# or else the server will not honor '*' and will instead bind on localhost
 
 . ./env.sh
 
@@ -11,7 +15,7 @@ get_port() {
 
 proxy_pair() {
     port=$(get_port $1)
-    echo "${port}:localhost:${port}"
+    echo "*:${port}:localhost:${port}"
 }
 
 key=""
@@ -26,6 +30,6 @@ ssh -N ${key} \
     -R $(proxy_pair merkle_query) \
     -R $(proxy_pair beacon) \
     -R $(proxy_pair kv_store) \
-    -R 80:localhost:${HTTP_LOCAL_PORT} \
-    -R 443:localhost:${HTTPS_LOCAL_PORT} \
+    -R *:80:localhost:${HTTP_LOCAL_PORT} \
+    -R *:443:localhost:${HTTPS_LOCAL_PORT} \
     root@${SSH_PROXY_HOSTNAME}

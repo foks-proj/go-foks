@@ -45,10 +45,10 @@ function apps() {
     app('merkle_signer', 'merkle-signer'),
     app('queue', 'queue'),
     app('kv_store', 'kv-store'),
-    app('quota', 'quota'),
     app('autocert', 'autocert'),
     bash_app('ssh-tun', 'ssh-tun.sh'),
   ].concat(lcl.beacon ? [app('beacon', 'beacon')] : [])
+   .concat(lcl.quota ? [app('quota','quota')] : [])
    .concat(lcl.web ? [app('web', 'web')] : [])
 }
 

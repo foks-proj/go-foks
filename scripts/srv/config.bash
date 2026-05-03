@@ -22,6 +22,7 @@ ssh_key=""               # in network_mode=dev, need this ssh key for ssh revers
 ssh_proxy_hostname=""    # in network_mode=dev, hostname of ssh reverse proxy
 
 run_beacon=0             # in test and dev; on by default; in prod, off by default
+run_quota=1              # usually on, but off in the case of standalone mode (see issue #256)
 beacon_hostname=""       # in network_mode!=prod, can specify non-standard beacon hostname, like localhost, etc
 
 db_byo=0                 # if we are bringing out own database, set to 1
@@ -76,6 +77,8 @@ bind_addr_ext="127.0.0.1"
 # temporary variables for command-line arguments
 arg_run_beacon=0
 arg_no_run_beacon=0
+arg_run_quota=0
+arg_no_run_quota=0
 arg_run_mode=''
 arg_db_port=''
 arg_db_hostname=''
@@ -139,6 +142,12 @@ getargs() {
             ;;
         --run-beacon|--run_beacon)
             arg_run_beacon=1
+            ;;
+        --no-run-quota|--no_run_quota)
+            arg_no_run_quota=1
+            ;;
+        --run-quota|--run_quota)
+            arg_run_quota=1
             ;;
         --no-run-beacon|--no_run_beacon)
             arg_no_run_beacon=1
@@ -304,7 +313,31 @@ check_config() {
 
 #----------------------------------
 
+set_quota() {
+    # always a bug to specify both --run-quota and --no-run-quota, since they are opposites
+    [ "$arg_no_run_quota" -eq 1 -a "$arg_run_quota" -eq 1 ] && whoops "Cannot specify --no-run-quota and --run-quota together"
+
+    if [ "$server_mode" = "standalone" ]; then
+        if [ "$arg_no_run_quota" -eq 1 ] ; then
+            whoops "In standalone mode, no-quota is the default, so do not specify --no-run-quota"
+        elif [ "$arg_run_quota" -ne 1 ]; then
+            run_quota=0
+        fi
+    else
+        if [ "$arg_run_quota" -eq 1 ]; then
+            whoops "Do not specify --run-quota in server-mode=standalone, since it's the default"
+        elif [ "$arg_no_run_quota" -eq 1 ]; then
+            run_quota=1
+        fi
+    fi
+}
+
+#----------------------------------
+
 set_beacon() {
+    # always a bug to specify both --run-beacon and --no-run-beacon, since they are opposites
+    [ "$arg_no_run_beacon" -eq 1 -a "$arg_run_beacon" -eq 1 ] && whoops "Cannot specify --no-run-beacon and --run-beacon together"
+
     if [ "$network_mode" = "test" -o "$network_mode" = "dev" ] ; then
         [ "$arg_run_beacon" -eq 1 ] && whoops "Cannot use --run-beacon in network_mode=$network_mode"
         run_beacon=1
@@ -421,9 +454,20 @@ check_go() {
 #----------------------------------
 
 setup_db() {
-    if [ -z "$arg_db_port" -a -z "$arg_db_hostname" -a "$arg_db_byo" -eq 0 -a -z "$arg_db_pw_postgres" ]; then
+    # there are two modalities here --- one, a docker that we setup for the user,
+    # or second, "BYO" mode, where the user can specify a preexisting database.
+    # for instance, on AWS, can point to Aurora Postgres.
+
+    if [ -z "$arg_db_hostname" -a "$arg_db_byo" -eq 0 -a -z "$arg_db_pw_postgres" ]; then
+        # in this case, we're going to use the docker DB and create it; but
+        # we can still can specify a port, and might need to if there are other
+        # competing installs on the same machine
+        if [ ! -z "$arg_db_port" ]; then
+            db_port=$arg_db_port
+        fi
         return
     fi
+
     db_port=${arg_db_port:-$db_port_std}
     db_hostname=${arg_db_hostname:-"localhost"}
     db_byo=1
@@ -518,6 +562,7 @@ export TOOL=\${BINDIR}/foks-tool
 export CONF=\${CONFDIR}/foks.jsonnet
 export BASE_HOSTNAME=${base_hostname}
 export RUN_BEACON=${run_beacon}
+export RUN_QUOTA=${run_quota}
 export DB_PW_FOKS=$(mkpw 9)
 export RUN_REMOTE=${run_remote}
 export COMPILE_SERVER=${do_compile}
@@ -688,6 +733,7 @@ make_pm2_ecosystem_js() {
     cat <<EOF > ${topdir_srv}/ecosystem.config.local.js
 module.exports = { 
     beacon : $(int_to_json_bool "$run_beacon"),
+    quota : $(int_to_json_bool "$run_quota"),
     web : $(eq_to_json "$server_mode" "hosting_platform")
 };
 EOF
@@ -729,6 +775,7 @@ make_client_local() {
         return
     fi
 
+    mkdir -p ${topdir_cli}
     (cd ${topdir_cli} && ln -sf ../env.sh)
     mkdir -p ${topdir_cli}/home
     mkdir -p ${topdir_cli}/bin
@@ -745,7 +792,6 @@ EOF
 {
     top_dir : "${topdir}",
     primary_hostname : "${base_hostname}",
-    test : ${test},
 EOF
 
     if [ "$server_mode" = "hosting_platform" ]; then
@@ -800,6 +846,7 @@ main() {
     check_config
     check_prereqs
     set_beacon
+    set_quota
     setup_run_mode
     setup_network_mode
     setup_db
