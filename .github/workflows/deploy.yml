@@ -1,0 +1,115 @@
+name: Build & Deploy
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to deploy (must already exist as a git tag, e.g. v0.1.7-seco.1)'
+        required: true
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAMESPACE: seco-pbc
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag || github.ref }}
+
+      - name: Resolve deploy tag
+        id: meta
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "tag=${{ inputs.tag }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag=${GITHUB_REF#refs/tags/}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Set up QEMU (arm64 emulation)
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: arm64
+
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build & push foks-server (linux/arm64)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: dockerfiles/foks-server.dev
+          platforms: linux/arm64
+          push: true
+          provenance: false
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}/foks-server:${{ steps.meta.outputs.tag }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}/foks-server:latest
+          build-args: |
+            VERSION=${{ steps.meta.outputs.tag }}
+          cache-from: type=gha,scope=foks-server
+          cache-to: type=gha,scope=foks-server,mode=max
+
+      - name: Build & push foks-tool (linux/arm64)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: dockerfiles/foks-tool.dev
+          platforms: linux/arm64
+          push: true
+          provenance: false
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}/foks-tool:${{ steps.meta.outputs.tag }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}/foks-tool:latest
+          build-args: |
+            VERSION=${{ steps.meta.outputs.tag }}
+          cache-from: type=gha,scope=foks-tool
+          cache-to: type=gha,scope=foks-tool,mode=max
+
+      - name: Configure SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/deploy
+          chmod 600 ~/.ssh/deploy
+          ssh-keyscan -H "${{ secrets.DEPLOY_HOST }}" >> ~/.ssh/known_hosts 2>/dev/null
+
+      - name: Upload deploy script
+        run: |
+          scp -i ~/.ssh/deploy -o StrictHostKeyChecking=yes \
+            scripts/deploy/server-deploy.sh \
+            "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:/opt/foks/deploy.sh"
+          ssh -i ~/.ssh/deploy "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" \
+            "chmod +x /opt/foks/deploy.sh"
+
+      - name: Deploy to Hetzner
+        run: |
+          ssh -i ~/.ssh/deploy "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" \
+            "echo '${{ secrets.GITHUB_TOKEN }}' | docker login ${{ env.REGISTRY }} -u '${{ github.actor }}' --password-stdin && \
+             FOKS_TAG='${{ steps.meta.outputs.tag }}' \
+             REGISTRY='${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}' \
+             bash /opt/foks/deploy.sh"
+
+      - name: Logout SSH agent token from server
+        if: always()
+        run: |
+          ssh -i ~/.ssh/deploy "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" \
+            "docker logout ${{ env.REGISTRY }} || true"
