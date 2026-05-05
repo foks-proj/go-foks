@@ -64,16 +64,20 @@ log "new  image: $SERVER_IMAGE"
 # 2. Pull new images.
 # ---------------------------------------------------------------------------
 log "pulling $SERVER_IMAGE"
-docker pull "$SERVER_IMAGE" >/dev/null
+docker pull "$SERVER_IMAGE"
 log "pulling $TOOL_IMAGE"
-docker pull "$TOOL_IMAGE" >/dev/null
+docker pull "$TOOL_IMAGE"
 
 # ---------------------------------------------------------------------------
 # 3. Apply DB patches (idempotent — patch-db skips already-applied patches
 #    and exits with "no patches to apply" if there's nothing to do).
 # ---------------------------------------------------------------------------
-COMPOSE_NETWORK=$(docker network ls --format '{{.Name}}' | grep -E '_default$' | grep -i foks | head -1)
-COMPOSE_NETWORK="${COMPOSE_NETWORK:-workdir_default}"
+# Compose's default network is "<project>_default"; project name defaults to
+# the workdir basename (here: "workdir"). Allow override via env.
+COMPOSE_NETWORK="${COMPOSE_NETWORK:-$(basename "$WORKDIR")_default}"
+if ! docker network inspect "$COMPOSE_NETWORK" >/dev/null 2>&1; then
+    fail "docker network '$COMPOSE_NETWORK' not found; set COMPOSE_NETWORK to the right name"
+fi
 log "using docker network: $COMPOSE_NETWORK"
 
 run_patch() {
