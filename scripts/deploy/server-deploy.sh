@@ -107,6 +107,10 @@ run_patch() {
         log "  $db: not configured on this server, skipping"
         return 0
     fi
+    if echo "$out" | grep -qE 'database "foks_[a-z_]+" does not exist|SQLSTATE 3D000'; then
+        log "  $db: postgres database not present on this server, skipping"
+        return 0
+    fi
     echo "$out" >&2
     return $rc
 }
