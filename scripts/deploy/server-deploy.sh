@@ -103,6 +103,10 @@ run_patch() {
         log "  $db: up to date"
         return 0
     fi
+    if echo "$out" | grep -q "no database found for type"; then
+        log "  $db: not configured on this server, skipping"
+        return 0
+    fi
     echo "$out" >&2
     return $rc
 }
