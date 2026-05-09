@@ -1,0 +1,41 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            gcc make libpcsclite-dev pkg-config
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Configure git
+        run: |
+          git config --global user.email "ci@foks.test"
+          git config --global user.name "FOKS CI"
+          git config --global init.defaultBranch main
+
+      - name: Lint (golangci-lint)
+        run: go tool golangci-lint run
+
+      - name: Test
+        run: go test ./... -count=1
