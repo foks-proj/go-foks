@@ -15,9 +15,6 @@ End-to-end encrypted Git, secret storage, and team management you can self-host.
 
 * * *
 
-Documentation is a work-in-progress, but below you'll find the essentials to
-get started.
-
 ## Install
 
 The easiest way to install is via a package manager. See [foks.pub](https://foks.pub) for full details.
@@ -54,14 +51,6 @@ winget install foks
 curl -fsSL https://pkgs.foks.pub/install-static.sh | sh
 ```
 
-## MCP (Model Context Protocol)
-
-FOKS ships MCP servers that let LLM tools (like Claude Code) interact with the encrypted KV store and team operations. Two servers are available:
-
-- `foks mcp kv` — read, write, list, move, remove, and stat entries in the encrypted KV store (personal or team-scoped)
-- `foks mcp team` — list team members and query team memberships
-
-See the [MCP docs](https://docs.foks.pub/cli/mcp) for setup instructions with Claude Code and other MCP clients.
 
 ## Build / Test / Install
 
@@ -145,6 +134,15 @@ If you are in a hurry, we have a wizard that magically stands up a new server:
 ```
 
 If you need more control, refer to the [server documentation](docs/server.md).
+
+## MCP (Model Context Protocol)
+
+FOKS ships MCP servers that let LLM tools (like Claude Code) interact with the encrypted KV store and team operations. Two servers are available:
+
+- `foks mcp kv` — read, write, list, move, remove, and stat entries in the encrypted KV store (personal or team-scoped)
+- `foks mcp team` — list team members and query team memberships
+
+See the [MCP docs](https://docs.foks.pub/cli/mcp) for setup instructions with Claude Code and other MCP clients.
 
 ## Protocols
 
