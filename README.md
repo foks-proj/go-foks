@@ -1,16 +1,21 @@
-# FOKS - Federated Open Key Service
+<a href="https://foks.pub"><img src="https://w.foks.app/foks.svg" alt="FOKS" width="200"></a>
 
-Welcome to FOKS. This is our provisional name for this project, but it might stick.
-Documentation is a work-in-progress, but below you'll find the most important information
-to get started.
+[![CI](https://github.com/foks-proj/go-foks/actions/workflows/ci.yml/badge.svg)](https://github.com/foks-proj/go-foks/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-## Overview
+**FOKS — Federated Open Key Service.** End-to-end encrypted Git, secret storage,
+and team management you can self-host.
 
-* See [foks.pub](https://foks.pub) for a high-level overview of the project.
-* Read our [whitepaper](https://github.com/foks-proj/foks-whitepaper)
-* We run a [hosting service (foks.app)](https://w.foks.app)
-* [FCPs](https://github.com/foks-proj/FCPs) are our community proposals, similar to BIPs or EIPs, for proposing changes to the FOKS protocol.
-* [Docs](https://docs.foks.pub) available via mintlify; [PRs](https://github.com/foks-proj/docs) welcome if bugs found
+[Website](https://foks.pub) ·
+[Docs](https://docs.foks.pub) ·
+[Hosted Service](https://w.foks.app) ·
+[Whitepaper](https://github.com/foks-proj/foks-whitepaper) ·
+[FCPs](https://github.com/foks-proj/FCPs)
+
+* * *
+
+Documentation is a work-in-progress, but below you'll find the essentials to
+get started.
 
 ## Install
 
@@ -88,10 +93,9 @@ And to run with YubiKey support, you'll need:
 sudo apt-get install pcscd
 ```
 
-On some Linux distributions, I've found that standard users lack
-permission to access `pcscd`, which is a service Linux runs to manage access to
-YubiKeys. I've found that the following configurations can give unprivileged
-users access:
+On some Linux distributions, standard users lack permission to access `pcscd`,
+the service that manages YubiKey access. The following configuration grants
+unprivileged users access:
 
 ```bash
 cat <<EOF > /etc/polkit-1/rules.d/90-pcscd.rules 
@@ -152,7 +156,7 @@ system communicate. They are split into 4 groups:
 * `lib`: shared libraries for all protocols
 
 To allow `go install` to work as expected, we include the built protocol files in the repository;
-see the `proto/` director for the generated files. To rebuild the protocol files, run `make proto`.
+see the `proto/` directory for the generated files. To rebuild the protocol files, run `make proto`.
 
 ## Processes
 
@@ -166,12 +170,12 @@ When run in "production", there are several processes running on both server and
 - beacon - run once globally on the whole FOKS system. Allows clients to map a raw host ID
    (which is just a hash of the public key) to a DNS name. For now, this is doing the trivial
    thing, but for DoS-prevention, might consider a more distributed system for this purpose,
-   Anyone can "register" as host ID as long as they can product signatures that are consistent
+   Anyone can "register" as host ID as long as they can produce signatures that are consistent
    with that hostID, though we probably want some durable notion of key rotations, so that 
    an evil beacon server can't roll them back.
 - merkle_query - doesn't require mTLS, allows clients to probe the Merkle Tree for this FOKS instance.
 - merkle_batcher - internal service, runs periodically, batches up unrelated transactions into a 
-  stable batch of operations that dictactes what the next Merkle Epoch will look like.
+  stable batch of operations that dictates what the next Merkle Epoch will look like.
 - merkle_builder - internal service, processes the output of merkle_batcher to update the Merkle Tree.
 - merkle_signer - internal service, signs the Merkle Tree root, finalizing the process.
 - queue - internal service, something like SQS that allows various FOKS services to queue up
@@ -188,9 +192,10 @@ Right now, two other processes connect to this agent to do things. One is the `f
 which enables everything from device management, to key-value store access, to team maintenance 
 operations, etc. The other is `git-remote-foks`, a git remote helper that interfaces
 with the FOKS key-value store. This process is just a symlink (or hardlink) to the `foks` command,
-but it acts differently when called as `git-remote-foks`. BTw, the agent itself runs 
-with the `foks agent` subcommand. A design goal here is to have ultra-simple installation. Just
-one binary dumped onto your system (essentially statically linked as Go likes to do) is all you need.
+but it acts differently when called as `git-remote-foks`. The agent itself runs
+with the `foks agent` subcommand. A design goal here is ultra-simple installation:
+just one binary dropped onto your system (essentially statically linked, as Go likes to do)
+is all you need.
 
 ## Testing Philosophy / Context / MetaContext
 
@@ -226,7 +231,7 @@ The directories are, roughly from lowest-level to highest level:
 * proto/ - protocol definitions
 * lib/core - lowest level library, with utilities common to client and server
 * lib/core/kv - low-level key-value store library
-* lib/merkle/ - Merkle library, 
+* lib/merkle/ - Merkle library
 * lib/team/ - Team routines
 * lib/probe - Implementations of probes for FOKS servers; useful on client and server since 
     servers probe each other for team sharing
@@ -262,12 +267,11 @@ In general, the dependencies are:
 
 Nomenclature is still in flux, but we have some rough definitions:
 
-- `EntityID` (see `proto/common.snowp`) - A public key that servers as an identifier for a thing,
-  like a host, a user, a team, a TLS Cert, etc. Usually they are 33 bytes, where the first byte
-  is the type, and the next 32 bytes are the EdDSA public key. There is an important exception,
-  which as a YubiKey. Yubi exposes ECDSA keys, which are 33 bytes. Therefore, YubiKey entities
-  are 34 bytes. Entities can all be expressed as fixed 34-byte entities, which can be used
-  as map keys, or map key components.
+- `EntityID` (see `proto/common.snowp`) - A public key that serves as an identifier for a thing,
+  like a host, a user, a team, a TLS Cert, etc. Usually they are 33 bytes: a 1-byte type prefix
+  followed by a 32-byte EdDSA public key. The exception is YubiKeys, which expose 33-byte ECDSA
+  keys, so YubiKey entities are 34 bytes (1-byte prefix + 33-byte key). All entities can be
+  expressed as fixed 34-byte values, which can be used as map keys or map key components.
 - Parties: A party is a user or a team, they can often do similar things, and sometimes 
   we can use the notion of a `PartyID` to express that the thing operating might either be
   a user or a team. Note that `PartyID`s, `UID`s, and `TeamID`s are all subclasses, more or less,
