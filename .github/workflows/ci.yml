@@ -28,10 +28,11 @@ jobs:
           go-version-file: go.mod
           cache: true
 
-      - name: Configure git identity
+      - name: Configure git
         run: |
           git config --global user.email "ci@foks.test"
           git config --global user.name "FOKS CI"
+          git config --global init.defaultBranch main
 
       - name: Lint (golangci-lint)
         run: go tool golangci-lint run
