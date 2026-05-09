@@ -239,7 +239,10 @@ func launchDatabase(
 			"POSTGRES_PASSWORD": pw,
 			"POSTGRES_DB":       "sample",
 		},
-		WaitingFor: wait.ForListeningPort("5432/tcp"),
+		WaitingFor: wait.ForAll(
+			wait.ForLog("database system is ready to accept connections").WithOccurrence(2),
+			wait.ForListeningPort("5432/tcp"),
+		),
 	}
 	postgres, err := testcontainers.GenericContainer(m.Ctx(), testcontainers.GenericContainerRequest{
 		ContainerRequest: req,
