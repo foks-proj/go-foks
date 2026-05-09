@@ -3,8 +3,9 @@
 [![CI](https://github.com/foks-proj/go-foks/actions/workflows/ci.yml/badge.svg)](https://github.com/foks-proj/go-foks/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-**FOKS — Federated Open Key Service.** End-to-end encrypted Git, secret storage,
-and team management you can self-host.
+# FOKS — Federated Open Key Service
+
+## End-to-end encrypted Git, secret storage, and team management you can self-host.
 
 [Website](https://foks.pub) ·
 [Docs](https://docs.foks.pub) ·
