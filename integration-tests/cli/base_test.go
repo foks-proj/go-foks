@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"net"
 	"os"
 	"strings"
 	"testing"
@@ -463,11 +464,15 @@ func (a *testAgent) waitForSocket(t *testing.T) {
 	}, "ctl", "socket")
 	sock := tui.TrimmedString()
 
-	// Now poll for it, shoudln't take long
+	// Poll until the agent is actually accepting connections, not just until
+	// the socket file exists. A stale socket file from a previous agent run
+	// can satisfy os.Stat before the new listener is up, leading to a flaky
+	// "failed to connect to agent" on the next CLI invocation.
 	wait := time.Millisecond * 1
 	for i := 0; i < 20; i++ {
-		_, err := os.Stat(sock)
+		conn, err := net.DialTimeout("unix", sock, 50*time.Millisecond)
 		if err == nil {
+			_ = conn.Close()
 			return
 		}
 		time.Sleep(wait)
@@ -475,7 +480,7 @@ func (a *testAgent) waitForSocket(t *testing.T) {
 			wait *= 2
 		}
 	}
-	t.Fatal("socket not found")
+	t.Fatal("agent socket not reachable")
 }
 
 func (a *testAgent) stop(t *testing.T) {
