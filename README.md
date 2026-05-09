@@ -5,7 +5,7 @@
 
 # FOKS — Federated Open Key Service
 
-## End-to-end encrypted Git, secret storage, and team management you can self-host.
+End-to-end encrypted Git, secret storage, and team management you can self-host.
 
 [Website](https://foks.pub) ·
 [Docs](https://docs.foks.pub) ·
