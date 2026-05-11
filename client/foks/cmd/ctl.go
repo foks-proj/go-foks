@@ -5,9 +5,11 @@ package cmd
 
 import (
 	"errors"
+	"time"
 
 	"github.com/foks-proj/go-foks/client/agent"
 	"github.com/foks-proj/go-foks/client/libclient"
+	"github.com/foks-proj/go-foks/lib/core"
 	"github.com/foks-proj/go-foks/proto/lcl"
 	"github.com/spf13/cobra"
 )
@@ -50,16 +52,39 @@ func ctlCmd(m libclient.MetaContext) *cobra.Command {
 		},
 	}
 	cmd.AddCommand(shutdown)
+	var startWait bool
+	startWaitFor := time.Duration(-1)
 	start := &cobra.Command{
 		Use:          "start",
 		Short:        "start the FOKS background agent via launch or systemd, depending on your system",
 		Long:         `Start the FOKS background agent, using local daeomization tools`,
 		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, arg []string) error {
-			return RunCtlStart(m, cmd, arg)
+			if !startWait && startWaitFor != time.Duration(-1) {
+				return core.BadArgsError("cannot specify --wait-for without --wait")
+			}
+			err := RunCtlStart(m, cmd, arg)
+			if err != nil {
+				return err
+			}
+			if !startWait {
+				return nil
+			}
+			if startWaitFor == time.Duration(-1) {
+				startWaitFor = 30 * time.Second
+			}
+			err = waitForAgentSocket(m, startWaitFor)
+			if err != nil {
+				return err
+			}
+			return nil
 		},
 	}
+	start.Flags().BoolVar(&startWait, "wait", false,
+		"block until the agent is accepting connections on its socket")
+	start.Flags().DurationVar(&startWaitFor, "wait-for", 0, "specify time to wait [default: 10s]")
 	cmd.AddCommand(start)
+
 	status := &cobra.Command{
 		Use:          "status",
 		Short:        "print status of the FOKS background agent via launch or systemd, depending on your system",
@@ -142,6 +167,33 @@ func RunCtlSocket(m libclient.MetaContext, cmd *cobra.Command, arg []string) err
 	}
 	m.G().UIs().Terminal.Printf("%s\n", s)
 	return nil
+}
+
+func waitForAgentSocket(m libclient.MetaContext, timeout time.Duration) error {
+
+	now := time.Now()
+	end := now.Add(timeout)
+
+	sock, err := m.G().Cfg().SocketFile()
+	if err != nil {
+		return err
+	}
+	dialWait := 500 * time.Millisecond
+	sleepWait := 250 * time.Millisecond
+
+	for {
+		tmp, err := sock.DialTimeout(dialWait)
+		if err == nil {
+			tmp.Close()
+			return nil
+		}
+		m.Warnw("dial agent sock failed", "sock", sock.String(), "err", err)
+		if time.Now().After(end) {
+			break
+		}
+		time.Sleep(sleepWait)
+	}
+	return core.TimeoutError{}
 }
 
 func init() {

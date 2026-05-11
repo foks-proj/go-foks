@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+	"time"
 
 	proto "github.com/foks-proj/go-foks/proto/lib"
 )
@@ -110,8 +111,20 @@ func (p Path) Chdir() error {
 	return os.Chdir(p.String())
 }
 
+func (p Path) DialTimeout(timeout time.Duration) (net.Conn, error) {
+	return p.dial(func(s string) (net.Conn, error) {
+		return net.DialTimeout("unix", s, timeout)
+	})
+}
+
 func (p Path) Dial() (net.Conn, error) {
-	conn, err := net.Dial("unix", p.String())
+	return p.dial(func(s string) (net.Conn, error) {
+		return net.Dial("unix", s)
+	})
+}
+
+func (p Path) dial(dialFn func(s string) (net.Conn, error)) (net.Conn, error) {
+	conn, err := dialFn(p.String())
 	if err == nil {
 		return conn, nil
 	}
