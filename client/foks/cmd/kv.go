@@ -590,6 +590,15 @@ func openReader(m libclient.MetaContext, value string, isFile bool) (io.Reader, 
 	return f, nil
 }
 
+// nopWriteCloser turns an io.Writer into an io.WriteCloser whose Close
+// is a no-op. Used to hand stdout to openWriter callers without letting
+// their `defer wrt.Close()` close the process's stdout fd.
+type nopWriteCloser struct {
+	io.Writer
+}
+
+func (nopWriteCloser) Close() error { return nil }
+
 type terminalOutputWrapper struct {
 	io.WriteCloser
 	didFirst bool
@@ -644,7 +653,9 @@ func openWriter(
 
 	if dest == "-" {
 		tui := m.G().UIs().Terminal
-		stdout := tui.OutputStream()
+		// Wrap in a no-op-Close: openWriter's caller does `defer wrt.Close()`,
+		// and we must not close the process's stdout out from under it.
+		stdout := nopWriteCloser{Writer: tui.OutputStream()}
 		if tui.IsOutputTTY() && !forceOutput {
 			return &terminalOutputWrapper{
 				WriteCloser: stdout,

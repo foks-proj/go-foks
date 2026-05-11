@@ -438,10 +438,16 @@ func (a *testAgent) runCmdToJSON(
 func (a *testAgent) runAgent(t *testing.T) {
 	// Agent runs in the background; grab its global context though
 	// so we can manipulate it (and break it) in tests.
-	go a.runCmd(t, func(m libclient.MetaContext) error {
-		a.g = m.G()
-		return nil
-	}, "agent")
+	go func() {
+		err := a.runCmdErr(func(m libclient.MetaContext) error {
+			a.g = m.G()
+			return nil
+		}, "agent")
+		if err != nil {
+			t.Logf("agent run failed with error: %s", err)
+			t.Fail()
+		}
+	}()
 	a.waitForSocket(t)
 }
 

@@ -14,10 +14,27 @@ import (
 )
 
 func (c *AgentConn) keyList(m libclient.MetaContext) ([]lcl.ActiveDeviceInfo, error) {
-	au, err := m.ActiveConnectedUser(nil)
+	au, err := m.ActiveConnectedUser(&libclient.ACUOpts{
+		ProbeUnlocked: true,
+	})
+
+	// With ProbeUnlocked, we might get back an error in addition to
+	// a workable object. So we need to check both conditions here.
 	if err != nil {
-		return nil, err
+		if au == nil {
+			return nil, err
+		}
+		if errors.Is(err, core.BotTokenLockedError{}) {
+			return nil, err
+		}
+		// there might be other cases we want to short-cirtcuit,
+		// but we are going to be defensive for now and just limit
+		// it to the bot token locked case for the benefit of #263.
+		// But with the core.BotTokenLockedError, LoadMe() will fail.
+		// So in other words, we are NOT exiting here, we are going to let
+		// err be stomped by LoadMe(), even if non-zero.
 	}
+
 	user, err := libclient.LoadMe(m, au)
 	if err != nil {
 		return nil, err

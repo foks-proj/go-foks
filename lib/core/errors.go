@@ -467,6 +467,12 @@ func (b BotTokenError) Error() string {
 	return "bot token error: " + string(b)
 }
 
+type BotTokenLockedError struct{}
+
+func (b BotTokenLockedError) Error() string {
+	return "previously used bot token is missing, so user is locked"
+}
+
 type CannotRotateError struct{}
 
 func (c CannotRotateError) Error() string {
@@ -1382,6 +1388,8 @@ func ErrorToStatus(e error) proto.Status {
 		return proto.NewStatusWithNetworkConditionerError()
 	case VersionNotSupportedError:
 		return proto.NewStatusWithVersionNotSupportedError(string(te))
+	case InternalError:
+		return proto.NewStatusWithInternalError(string(te))
 	case ConfigError:
 		return proto.NewStatusWithConfigError(string(te))
 	case DuplicateError:
@@ -1617,6 +1625,8 @@ func ErrorToStatus(e error) proto.Status {
 		return proto.NewStatusWithStripeSessionExistsError()
 	case BotTokenError:
 		return proto.NewStatusWithBotTokenError(string(te))
+	case BotTokenLockedError:
+		return proto.NewStatusWithBotTokenLockedError()
 	case NonRetriableError:
 		return ErrorToStatus(te.Err)
 	case GitGenericError:
@@ -1938,6 +1948,8 @@ func StatusToError(s proto.Status) error {
 		return StripeSessionExistsError{}
 	case proto.StatusCode_BOT_TOKEN_ERROR:
 		return BotTokenError(s.BotTokenError())
+	case proto.StatusCode_BOT_TOKEN_LOCKED_ERROR:
+		return BotTokenLockedError{}
 	case proto.StatusCode_CHAIN_LOADER_ERROR:
 		cle := s.ChainLoaderError()
 		return ChainLoaderError{
@@ -1958,6 +1970,8 @@ func StatusToError(s proto.Status) error {
 		return GitDanglingRefError{Forced: s.GitDanglingRefError()}
 	case proto.StatusCode_VERSION_NOT_SUPPORTED_ERROR:
 		return VersionNotSupportedError(s.VersionNotSupportedError())
+	case proto.StatusCode_INTERNAL_ERROR:
+		return errors.New(s.InternalError())
 	default:
 		return errors.New(s.Default())
 	}
