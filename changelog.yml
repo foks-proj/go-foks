@@ -17,6 +17,8 @@ changelog:
         closes: ["#253"]
       - desc: better error message for bot token locked case in `foks key list`
         closes: ["#263"] 
+      - desc: wait for second in 'foks ctl start --wait'
+        closes: ["#262"]
   - version: 0.1.7
     urgency: low
     stable: true
