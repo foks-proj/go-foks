@@ -173,6 +173,8 @@ func (u *UserContext) assertUnlockWithMu(ctx context.Context) error {
 		return u.skmm.ReadySeed(ctx)
 	case u.Info.YubiInfo != nil:
 		return core.YubiLockedError{Info: *u.Info.YubiInfo}
+	case u.Info.KeyGenus == proto.KeyGenus_BotToken:
+		return core.BotTokenLockedError{}
 	default:
 		return core.InternalError("unhandled locked key scenario")
 	}

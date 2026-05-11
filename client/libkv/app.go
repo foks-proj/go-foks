@@ -68,7 +68,10 @@ func (a *App) Minder(m MetaContext, actingAs *proto.FQTeamParsed) (*Minder, erro
 }
 
 func appFromMeta(m MetaContext) (*App, error) {
-	au := m.G().ActiveUser()
+	au, err := m.ActiveConnectedUser(&libclient.ACUOpts{AssertUnlocked: true})
+	if err != nil {
+		return nil, err
+	}
 	if au == nil {
 		return nil, core.NoActiveUserError{}
 	}

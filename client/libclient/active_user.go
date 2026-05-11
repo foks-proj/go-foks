@@ -458,6 +458,7 @@ func (u *UserContext) Reconnect(m MetaContext) error {
 
 type ACUOpts struct {
 	AssertUnlocked bool
+	ProbeUnlocked  bool
 	SSOLogin       bool
 }
 
@@ -467,6 +468,9 @@ func (m MetaContext) ActiveConnectedUser(
 	*UserContext,
 	error,
 ) {
+	if opts != nil && opts.AssertUnlocked && opts.ProbeUnlocked {
+		return nil, core.InternalError("invalid options: cannot assert unlocked and probe unlocked at the same time")
+	}
 	g := m.G()
 	au := g.ActiveUser()
 	if au == nil {
@@ -476,7 +480,7 @@ func (m MetaContext) ActiveConnectedUser(
 	if err != nil {
 		return nil, err
 	}
-	if opts == nil || !opts.AssertUnlocked {
+	if opts == nil || (!opts.AssertUnlocked && !opts.ProbeUnlocked) {
 		return au, nil
 	}
 
@@ -486,6 +490,9 @@ func (m MetaContext) ActiveConnectedUser(
 	}
 	if opts.SSOLogin && errors.Is(err, core.SSOIdPLockedError{}) {
 		return au, nil
+	}
+	if opts.ProbeUnlocked {
+		return au, err
 	}
 	return nil, err
 }
