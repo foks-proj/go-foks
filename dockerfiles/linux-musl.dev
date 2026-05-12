@@ -18,8 +18,8 @@ RUN apk add --no-cache \
 
 RUN pkg-config --cflags --libs libpcsclite || { echo "pkg-config failed"; exit 1; }
 
-# Optional: manually install Go 1.24.4
-ENV GOLANG_VERSION=1.24.4
+# Optional: manually install Go 1.25.10
+ENV GOLANG_VERSION=1.25.10
 RUN curl -fsSL "https://go.dev/dl/go${GOLANG_VERSION}.linux-${TARGETARCH}.tar.gz" \
     | tar -C /usr/local -xz
 ENV PATH="/usr/local/go/bin:$PATH"
