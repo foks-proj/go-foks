@@ -52,38 +52,8 @@ func ctlCmd(m libclient.MetaContext) *cobra.Command {
 		},
 	}
 	cmd.AddCommand(shutdown)
-	var startWait bool
-	startWaitFor := time.Duration(-1)
-	start := &cobra.Command{
-		Use:          "start",
-		Short:        "start the FOKS background agent via launch or systemd, depending on your system",
-		Long:         `Start the FOKS background agent, using local daeomization tools`,
-		SilenceUsage: true,
-		RunE: func(cmd *cobra.Command, arg []string) error {
-			if !startWait && startWaitFor != time.Duration(-1) {
-				return core.BadArgsError("cannot specify --wait-for without --wait")
-			}
-			err := RunCtlStart(m, cmd, arg)
-			if err != nil {
-				return err
-			}
-			if !startWait {
-				return nil
-			}
-			if startWaitFor == time.Duration(-1) {
-				startWaitFor = 30 * time.Second
-			}
-			err = waitForAgentSocket(m, startWaitFor)
-			if err != nil {
-				return err
-			}
-			return nil
-		},
-	}
-	start.Flags().BoolVar(&startWait, "wait", false,
-		"block until the agent is accepting connections on its socket")
-	start.Flags().DurationVar(&startWaitFor, "wait-for", 0, "specify time to wait [default: 10s]")
-	cmd.AddCommand(start)
+
+	addStartCmd(m, cmd)
 
 	status := &cobra.Command{
 		Use:          "status",
@@ -118,6 +88,57 @@ func ctlCmd(m libclient.MetaContext) *cobra.Command {
 
 	AddPlatformCtlCommands(m, cmd)
 	return cmd
+}
+
+func addStartCmd(m libclient.MetaContext, parent *cobra.Command) {
+
+	var startWait bool
+	invalDur := time.Duration(-1)
+	startWaitFor := invalDur
+
+	checkArgs := func() error {
+		if !startWait && startWaitFor != invalDur {
+			return core.BadArgsError("cannot specify --wait-for without --wait")
+		}
+		if startWaitFor != invalDur && startWaitFor <= 10*time.Millisecond {
+			return core.BadArgsError("cannot specify 0 or tiny duration for --wait-for")
+		}
+		if startWaitFor == invalDur {
+			startWaitFor = 30 * time.Second
+		}
+		return nil
+	}
+
+	start := &cobra.Command{
+		Use:          "start",
+		Short:        "start the FOKS background agent via launch or systemd, depending on your system",
+		Long:         `Start the FOKS background agent, using local daeomization tools`,
+		SilenceUsage: true,
+		RunE: func(cmd *cobra.Command, arg []string) error {
+			err := checkArgs()
+			if err != nil {
+				return err
+			}
+			err = RunCtlStart(m, cmd, arg)
+			if err != nil {
+				return err
+			}
+			if !startWait {
+				return nil
+			}
+			err = waitForAgentSocket(m, startWaitFor)
+			if err != nil {
+				return err
+			}
+			return nil
+		},
+	}
+
+	start.Flags().BoolVar(&startWait, "wait", false,
+		"block until the agent is accepting connections on its socket")
+	start.Flags().DurationVar(&startWaitFor, "wait-for", invalDur, "specify time to wait [default: 10s]")
+
+	parent.AddCommand(start)
 }
 
 func runCtlCmd(
