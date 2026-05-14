@@ -38,11 +38,6 @@ jobs:
             echo "tag=${GITHUB_REF#refs/tags/}" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Set up QEMU (arm64 emulation)
-        uses: docker/setup-qemu-action@v3
-        with:
-          platforms: arm64
-
       - name: Set up Buildx
         uses: docker/setup-buildx-action@v3
 
@@ -53,12 +48,12 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build & push foks-server (linux/arm64)
+      - name: Build & push foks-server (linux/amd64)
         uses: docker/build-push-action@v6
         with:
           context: .
           file: dockerfiles/foks-server.dev
-          platforms: linux/arm64
+          platforms: linux/amd64
           push: true
           provenance: false
           tags: |
@@ -69,12 +64,12 @@ jobs:
           cache-from: type=gha,scope=foks-server
           cache-to: type=gha,scope=foks-server,mode=max
 
-      - name: Build & push foks-tool (linux/arm64)
+      - name: Build & push foks-tool (linux/amd64)
         uses: docker/build-push-action@v6
         with:
           context: .
           file: dockerfiles/foks-tool.dev
-          platforms: linux/arm64
+          platforms: linux/amd64
           push: true
           provenance: false
           tags: |
