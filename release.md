@@ -50,7 +50,7 @@
   - cd src/pkgs
   - git pull
   - bash -x scripts/make-fedora-repo.bash
-  - git add public/stable
+  - git add public/stable rpm-in
   - git commit -a -m 'fedora vX.Y.Z'
   - git push
   - wait about 10 minutes
