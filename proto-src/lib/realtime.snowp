@@ -1,0 +1,165 @@
+// Copyright (c) 2025 ne43, Inc.
+// Licensed under the MIT License. See LICENSE in the project root for details.
+
+// Shared types for FOKS realtime / chat. Carries chat, CRDT updates, and
+// notifications on the same fabric. See docs/chat-server-design.md for the
+// overall design; the SQL shape is in server/sql/foks_realtime.sql.
+//
+// Stage 1a scope: direct-team channels only, encrypted text + system messages,
+// no ad-hoc teams, no attachments, no push.
+
+@0x66a87546bca14e33;
+
+// RT = "Real Time" -- usually used for chat but should be general enough to 
+//  handle other use cases.
+typedef RTMsgSeq = Uint;            // monotonic per channel; messages_enc.seq
+typedef RTInboxVersion = Uint;      // per (uid, appID); user_inbox.inbox_version
+typedef RTChannelSeqno = Uint;      // CAS on channel metadata updates
+typedef RTChannelName = Text;       // UTF8-ok; no spaces; hyphens allowed; < 40 chars; "" == "general"
+typedef RTChannelDesc = Text;       // UTF-ok; arbitrary text; < 512 chars
+
+// Start higher than KV, so we can tell IDs apart without context
+enum RTIDType {
+    Channel @16;
+}
+
+typedef RTChannelIDShort = Int;    // random 63-bit, unique across all teams; BIGINT in SQL
+typedef RTChannelID = Blob(16);     // Full channelID
+typedef RTID = Blob(17);            // Generic Realtime ID
+
+
+// app_id lets the same fabric carry chat, CRDTs, notifications, etc. Mirrors
+// the foks_realtime.app_id postgres enum.
+enum RTAppID {
+    None @0;
+    Chat @1;
+    Crdt @2;
+    Notif @3;
+}
+
+// Server inspects msg_type for routing (push, badging) but cannot decrypt the
+// body. Mirrors foks_realtime.msg_type.
+enum RTMsgType {
+    None @0;
+    Basic @1;
+    Edit @2;
+    Delete @3;
+    Reactji @4;
+    Attachment @5;
+    Reply @6;
+    System @7;
+    Join @8;
+    Leave @9;
+}
+
+enum RTKeyType {
+    ChannelName @1;
+    ChannelDesc @2;
+    Data @3; 
+}
+
+variant RTKeyVar switch (t : RTKeyType) {
+    default : void;
+}
+
+struct RTKeyDerivation @0xee6956bd3980334a {
+    app @0 : RTAppID;
+    var @1 : RTKeyVar;
+}
+
+typedef RTMsgPlaintextBasic = Blob;
+
+struct RTMsgPlaintextPegged {
+    basic @0 : RTMsgPlaintextBasic;
+    replyTo @1 : RTMsgSeq;
+}
+
+variant RTMsgPlaintext switch (t : RTMsgType) @0xc830111a77ab24f6 {
+    case Basic @1 : RTMsgPlaintextBasic;
+    case Reply, Reactji, Edit @2 : RTMsgPlaintextPegged;
+}
+
+enum RTChannelNameType  {
+    Utf8v1 @1;
+}
+
+// Plaintext input to name_box. Variant so we can distinguish the default
+// "general" channel from a named one, and add structure later (topic, etc.)
+// without a wire break.
+variant RTChannelNamePlaintext switch (t : RTChannelNameType) @0xbe4f7ec6ba0b1393 { 
+    case Utf8v1 @1 : RTChannelName;   // named channel in UTf8 (v1)
+}
+
+enum RTChannelDescType {
+    Utf8v1 @1;
+}
+
+variant RTChannelDescPlaintext switch (t : RTChannelDescType) @0xd14f88f5ae7aaecb {
+    case Utf8v1 @1 : RTChannelDesc;    // simple utf-8 description (v1)
+}
+
+// For ChannelDesc and ChannelName
+struct RTMetadataSecretBox {
+    rg @0 : RoleAndGen;
+    box @1 : SecretBox;
+}
+
+struct RTChannelDescBox {
+    rg @0 : RoleAndGen;
+    box @1 : SecretBox;
+}
+
+typedef RTChannelSetVersion = Uint;
+
+struct RTMessageMetadata {
+    msgType @0 : RTMsgType;      // None if no message yet
+    msgSeq @1 : RTMsgSeq;        // 0 if no message yet
+    senderPartyID @2: PartyID;
+    sendTime @3 : Time;
+    furtherUserAttribution @4 : Option(UID); // for messages sent by teams
+}
+
+enum RTChannelClass {
+    Bottom @0;
+    Admin @1;
+}
+
+
+// Encrypted message body. Key derivation: per-channel symmetric key derived
+// from the parent team's PTK at rg (see design doc, "Crypto").
+struct RTMsgBox {
+    rg @0 : RoleAndGen;     // PTK role+gen used to derive the channel key
+    box @1 : SecretBox;
+}
+
+enum MsgBodyType {
+    Plaintext @0;
+    Encrypted @1;
+}
+
+// Variant so the server can author plaintext system messages (join/leave/etc.)
+// without holding a PTK. Mirrors foks_realtime.messages_enc vs messages_clear.
+variant RTMsgBody switch (t : MsgBodyType) {
+    case Plaintext @0 : Blob; // server-readable plaintext payload
+    case Encrypted @1 : RTMsgBox;
+}
+
+enum RTThreadDir {
+    Forward @0;   // increasing seq (older -> newer)
+    Backward @1;  // decreasing seq (newer -> older)
+}
+
+struct RTThreadQuery {
+    channelID @0 : RTChannelID;
+    start @1 : RTMsgSeq;         // inclusive; 0 = from start (forward) or head (backward)
+    dir @2 : RTThreadDir;
+    max @3 : Uint;               // max messages this page; server may return fewer
+}
+
+// Subscribe long-poll: server returns when inbox advances past `since` OR the
+// timeout elapses. Cheap stand-in for true server-push until Stage 2c wires up
+// Redis pub/sub and a callback protocol.
+struct RTInboxPollRes {
+    bumped @0 : Bool;                  // false if returned due to timeout
+    inboxVersion @1 : RTInboxVersion;  // current head (== since if !bumped)
+}

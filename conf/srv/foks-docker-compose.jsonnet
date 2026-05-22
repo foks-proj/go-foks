@@ -45,6 +45,7 @@ pre.final({
         foks_server_config : make_db("foks_server_config"),
         foks_beacon : make_db("foks_beacon"),
         foks_merkle_tree : make_db("foks_merkle_tree"),
+        foks_realtime : make_db("foks_realtime"),
     },
 
     db_kv_shards : [
@@ -68,6 +69,7 @@ pre.final({
         user: make_listen(base, 3, "user", true),
         kv_store : make_listen(base, 4, "kv_store", true),
         merkle_query : make_listen(base, 5, "merkle_query", true),
+        realtime : make_listen(base, 6, "realtime", true),
         internal_ca : make_listen(base, 0, "internal_ca", false),
         merkle_batcher : make_listen(base, 1, "merkle_batcher", false),
         merkle_builder : make_listen(base, 2, "merkle_builder", false),
@@ -96,7 +98,8 @@ pre.final({
         },
         kv_store : {
             blob_store_path : "sql"
-        }
+        },
+        realtime : {}
     },
     cks : {},
 })

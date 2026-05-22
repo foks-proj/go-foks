@@ -19,6 +19,7 @@ import (
 	"github.com/foks-proj/go-foks/proto/rem"
 	"github.com/foks-proj/go-foks/server/engine"
 	kvStore "github.com/foks-proj/go-foks/server/kv-store"
+	"github.com/foks-proj/go-foks/server/realtime"
 	"github.com/foks-proj/go-foks/server/shared"
 	"github.com/foks-proj/go-foks/server/web/app"
 	"github.com/stretchr/testify/require"
@@ -42,6 +43,7 @@ type TestEnv struct {
 	merkleSignerSrv     *engine.MerkleSignerServer
 	beaconSrv           engine.BeaconServer
 	kvStoreSrv          kvStore.Server
+	realtimeSrv         realtime.Server
 	webAdminSrv         *app.WebServer
 	autocertSrv         engine.AutocertServer
 	quotaSrv            engine.QuotaServer
@@ -159,7 +161,7 @@ func (t *TestEnv) AllServers() []shared.Server {
 	return []shared.Server{
 		&t.regSrv, &t.userSrv, &t.queueSrv, &t.internalCaSrv, &t.probeSrv, &t.merkleQuerySrv,
 		t.merkleBatcherSrv, t.merkleBuilderSrv, t.merkleSignerSrv, &t.beaconSrv,
-		&t.kvStoreSrv, &t.quotaSrv, t.webAdminSrv, &t.autocertSrv,
+		&t.kvStoreSrv, &t.realtimeSrv, &t.quotaSrv, t.webAdminSrv, &t.autocertSrv,
 	}
 }
 

@@ -48,6 +48,7 @@ func (g *GlobalContext) PublicZone(
 		{proto.ServerType_User, &ret.Services.User},
 		{proto.ServerType_MerkleQuery, &ret.Services.MerkleQuery},
 		{proto.ServerType_KVStore, &ret.Services.KvStore},
+		{proto.ServerType_RealTime, &ret.Services.Realtime},
 	} {
 		ext, err := makeExtAddr(srv.typ)
 		if err != nil {

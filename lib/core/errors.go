@@ -1337,6 +1337,24 @@ func (a AgentConnectError) Error() string {
 	return fmt.Sprintf("failed to connect to agent at path %s", a.Path.String())
 }
 
+type RTGenericError string
+
+func (r RTGenericError) Error() string {
+	return "generic realtime error: " + string(r)
+}
+
+type RTChannelExistsError struct{}
+
+func (r RTChannelExistsError) Error() string {
+	return "channel already exists"
+}
+
+type RTChannelRaceError struct{}
+
+func (r RTChannelRaceError) Error() string {
+	return "race when changing chat channels"
+}
+
 func ErrorToStatus(e error) proto.Status {
 
 	switch {
@@ -1533,6 +1551,12 @@ func ErrorToStatus(e error) proto.Status {
 		return proto.NewStatusWithSigningKeyNotFullyProvisionedError()
 	case AgentConnectError:
 		return proto.NewStatusWithAgentConnectError(te.Path.String())
+	case RTGenericError:
+		return proto.NewStatusWithRtGenericError(string(te))
+	case RTChannelExistsError:
+		return proto.NewStatusWithRtChannelExistsError()
+	case RTChannelRaceError:
+		return proto.NewStatusWithRtChannelRace()
 	case RPCEOFError:
 		return proto.NewStatusWithRpcEof()
 	case OverQuotaError:
@@ -1972,6 +1996,12 @@ func StatusToError(s proto.Status) error {
 		return VersionNotSupportedError(s.VersionNotSupportedError())
 	case proto.StatusCode_INTERNAL_ERROR:
 		return errors.New(s.InternalError())
+	case proto.StatusCode_RT_CHANNEL_EXISTS_ERROR:
+		return RTChannelExistsError{}
+	case proto.StatusCode_RT_GENERIC_ERROR:
+		return RTGenericError(s.RtGenericError())
+	case proto.StatusCode_RT_CHANNEL_RACE:
+		return RTChannelRaceError{}
 	default:
 		return errors.New(s.Default())
 	}

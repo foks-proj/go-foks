@@ -4417,6 +4417,7 @@ const (
 	ServerType_KVStore       ServerType = 12
 	ServerType_Quota         ServerType = 13
 	ServerType_Autocert      ServerType = 15
+	ServerType_RealTime      ServerType = 16
 	ServerType_Web           ServerType = 64
 	ServerType_Test          ServerType = 101
 )
@@ -4437,6 +4438,7 @@ var ServerTypeMap = map[string]ServerType{
 	"KVStore":       12,
 	"Quota":         13,
 	"Autocert":      15,
+	"RealTime":      16,
 	"Web":           64,
 	"Test":          101,
 }
@@ -4456,6 +4458,7 @@ var ServerTypeRevMap = map[ServerType]string{
 	12:  "KVStore",
 	13:  "Quota",
 	15:  "Autocert",
+	16:  "RealTime",
 	64:  "Web",
 	101: "Test",
 }

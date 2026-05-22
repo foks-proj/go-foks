@@ -21,6 +21,8 @@ func (t ServerType) Hostname(base Hostname) (Hostname, error) {
 		pfx = "mq"
 	case ServerType_KVStore:
 		pfx = "kv"
+	case ServerType_RealTime:
+		pfx = "rt"
 	case ServerType_Probe:
 	case ServerType_Web:
 		pfx = "web"
@@ -67,6 +69,8 @@ func (t ServerType) ToString() string {
 		return "web"
 	case ServerType_Autocert:
 		return "autocert"
+	case ServerType_RealTime:
+		return "realtime"
 	default:
 		return "none"
 	}
@@ -105,6 +109,8 @@ func (t *ServerType) ImportFromString(s string) error {
 		*t = ServerType_Quota
 	case "autocert":
 		*t = ServerType_Autocert
+	case "realtime":
+		*t = ServerType_RealTime
 	default:
 		return DataError("server type not know")
 	}
@@ -115,18 +121,19 @@ var AllServers []ServerType = []ServerType{
 	ServerType_Reg, ServerType_User, ServerType_MerkleBuilder, ServerType_InternalCA, ServerType_MerkleQuery,
 	ServerType_Queue, ServerType_MerkleBatcher, ServerType_MerkleSigner, ServerType_Probe,
 	ServerType_Beacon, ServerType_KVStore, ServerType_Quota, ServerType_Autocert,
+	ServerType_RealTime,
 }
 
 // FrontFacingServers interact with clients and are exposed to the outside internet.
 var FrontFacingServers []ServerType = []ServerType{
 	ServerType_Reg, ServerType_User, ServerType_MerkleQuery, ServerType_KVStore,
-	ServerType_Probe, ServerType_Web,
+	ServerType_Probe, ServerType_Web, ServerType_RealTime,
 }
 
 var CoreServers []ServerType = []ServerType{
 	ServerType_Reg, ServerType_User, ServerType_MerkleBuilder, ServerType_InternalCA, ServerType_MerkleQuery,
 	ServerType_Queue, ServerType_MerkleBatcher, ServerType_MerkleSigner, ServerType_Probe,
-	ServerType_KVStore, ServerType_Autocert,
+	ServerType_KVStore, ServerType_Autocert, ServerType_RealTime,
 }
 
 func (t ServerType) IsFrontFacing() bool {

@@ -161,3 +161,12 @@ func NewLogSendClient(gcli rpc.GenericClient, wcw WithContextWarner) rem.LogSend
 		CheckResHeader: MakeCheckProtoResHeader(wcw),
 	}
 }
+
+func NewRealTimeClient(gcli rpc.GenericClient, wcw WithContextWarner) rem.RealTimeClient {
+	return rem.RealTimeClient{
+		Cli:            gcli,
+		ErrorUnwrapper: StatusToError,
+		MakeArgHeader:  MakeProtoHeader,
+		CheckResHeader: MakeCheckProtoResHeader(wcw),
+	}
+}

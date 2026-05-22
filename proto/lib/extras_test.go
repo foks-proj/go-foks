@@ -263,3 +263,56 @@ func TestDeviceIDMarshalJSON(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, *tok, tmp)
 }
+
+func TestRTChannelNameParseFrom(t *testing.T) {
+	good := []struct {
+		in  string
+		out string
+	}{
+		{"abc", "abc"},
+		{"  Foo-Bar  ", "foo-bar"},
+		{"hello-world-123", "hello-world-123"},
+		{"a-b", "a-b"},
+		{"αβγ", "αβγ"},
+		{"日本語チャンネル", "日本語チャンネル"},
+		{"foo🚀bar", "foo🚀bar"},
+		{"a-b-c-d-e-f", "a-b-c-d-e-f"},
+		{"abcdefghijklmnopqrstuvwxyz012345", "abcdefghijklmnopqrstuvwxyz012345"},
+	}
+	for _, tc := range good {
+		var n RTChannelName
+		err := n.ParseFrom(tc.in)
+		require.NoError(t, err, "input %q", tc.in)
+		require.Equal(t, RTChannelName(tc.out), n, "input %q", tc.in)
+	}
+
+	bad := []string{
+		"ab",
+		"a",
+		"  ab  ",
+		"abcdefghijklmnopqrstuvwxyz0123456",
+		"foo--bar",
+		"------------",
+		"hello.world",
+		"foo_bar",
+		"foo,bar",
+		"foo!bar",
+		"foo?bar",
+		"foo:bar",
+		"foo;bar",
+		"foo'bar",
+		"foo\"bar",
+		"foo(bar)",
+		"foo[bar]",
+		"foo/bar",
+		"foo\tbar",
+		"foo\nbar",
+		"abc\x00def",
+		"hello no spaces allowed",
+	}
+	for _, in := range bad {
+		var n RTChannelName
+		err := n.ParseFrom(in)
+		require.Error(t, err, "input %q", in)
+	}
+}

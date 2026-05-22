@@ -28,6 +28,8 @@ type TeamKeysForRole struct {
 	priv []core.SharedPrivateSuiter
 }
 
+// TeamKeyRing has all of the relevant PTKs, at all relevant generations.
+// Can be shraed across go-routines.
 type TeamKeyRing struct {
 	sync.Mutex
 	t     map[core.RoleKey]*TeamKeysForRole

@@ -7,6 +7,7 @@ import (
 	"github.com/foks-proj/go-foks/lib/core"
 	"github.com/foks-proj/go-foks/server/engine"
 	kvStore "github.com/foks-proj/go-foks/server/kv-store"
+	"github.com/foks-proj/go-foks/server/realtime"
 	"github.com/foks-proj/go-foks/server/shared"
 	"github.com/foks-proj/go-foks/server/web/app"
 	"github.com/spf13/cobra"
@@ -64,6 +65,7 @@ func newServerList() []shared.ServerCommand {
 		w(&engine.QuotaServer{}, "quota", "Quota Server"),
 		w(&app.WebServer{}, "web", "Web Server (for admin panels, Stripe Callbacks and OAuth2 Callbacks)"),
 		w(&engine.AutocertServer{}, "autocert", "autocert ACME server"),
+		w(&realtime.Server{}, "realtime", "realtime/Chat server"),
 	}
 }
 

@@ -1,0 +1,177 @@
+// Copyright (c) 2025 ne43, Inc.
+// Licensed under the MIT License. See LICENSE in the project root for details.
+
+// FOKS realtime / chat server RPC surface. Stage 1a per
+// docs/chat-server-design.md: direct team membership only, no ad-hoc teams,
+// no attachments, no push notifications, single-server-only (no pubsub).
+
+@0xe4c09e0a92d798d4;
+
+go:import "github.com/foks-proj/go-foks/proto/lib" as lib;
+
+// Identifies who's reading their inbox. UID auth is always implicit from the
+// device cert; we just carry appID and the home host's vhost.
+struct RTInboxKey {
+    appID @0 : lib.RTAppID;
+}
+
+// Send a message into an existing channel. Server fills insertTime, server-
+// side seq (and rejects if expectedSeq != server's next seq, if provided).
+struct RTSendArg {
+    channelID @0 : lib.RTChannelID;
+    typ @1 : lib.RTMsgType;
+    body @2 : lib.RTMsgBody;
+    sentAtTime @3 : lib.Time;
+    // If set, server requires next assigned seq == expectedSeq + 1; lets
+    // clients fail-fast on accidental concurrent sends. Optional in stage 1.
+    expectedPrevSeq @4 : Option(lib.RTMsgSeq);
+}
+
+struct RTSendRes {
+    seq @0 : lib.RTMsgSeq;
+    insertTime @1 : lib.Time;
+}
+
+// Inbox sync. Client sends its highest known inbox_version; server returns
+// metadata for every channel that bumped past `since` and the new head.
+struct RTGetChangedThreadsArg {
+    appID @0 : lib.RTAppID;
+    since @1 : lib.RTInboxVersion;    // 0 = full sync
+    max @2 : Uint;                    // page size; 0 = server default
+}
+
+struct RTReadThroughArg {
+    channelID @0 : lib.RTChannelID;
+    seq @1 : lib.RTMsgSeq;
+}
+
+// Long-poll subscription: blocks until inbox advances or timeout. Stand-in
+// for true server-push (Stage 2c). Client immediately re-issues on return.
+struct RTPollInboxArg {
+    appID @0 : lib.RTAppID;
+    since @1 : lib.RTInboxVersion;
+    timeout @2 : lib.DurationMilli;
+}
+
+struct RTChannelMetadata @0xddf6b26b2ace1535 {
+    id @0 : lib.RTChannelID;
+    parentTeam @1 : lib.TeamID;
+    appID @2 : lib.RTAppID;
+    seqno @3 : lib.RTChannelSeqno;       // CAS-bumps on metadata edits
+    nameBox @4 : lib.RTMetadataSecretBox;    // encrypted channel name
+    descBox @5 : Option(lib.RTMetadataSecretBox); // channel description (optional)
+    roles @6 : lib.RolePair;                   // read/write roles in parent team
+    lastMsg @7 : Option(lib.RTMessageMetadata); // or NULL if no messages sent
+    ctime @8 : lib.Time;
+    mtime @9 : lib.Time;
+    updatedAt @10 : lib.RTChannelSetVersion;
+    klass @11 : lib.RTChannelClass;
+}
+
+struct RTChannelSet {
+    vers @0 : lib.RTChannelSetVersion;
+    lst @1 : List(RTChannelMetadata);
+    mtime @2 : lib.Time;
+}
+
+struct RTMessage @0x7bcd22765c8cd757 {
+    channelID @0 : lib.RTChannelID;
+    seq @1 : lib.RTMsgSeq;
+    typ @2 : lib.RTMsgType;
+    body @3 : lib.RTMsgBody;
+    senderUid @4 : Option(lib.UID);          // null for server-authored
+    senderPartyID @5 : Option(lib.PartyID);  // may differ from senderUid (bots, teams)
+    sentAtTime @6 : lib.Time;                // client-asserted send time
+    insertTime @7 : lib.Time;                // server-asserted insert time
+}
+
+// One channel's worth of inbox state for a particular user. Returned by
+// the inbox sync RPC.
+struct RTInboxChannel {
+    md @0 : RTChannelMetadata;
+    inboxVersion @1 : lib.RTInboxVersion;  // version at which this channel last bumped
+    readThrough @2 : lib.RTMsgSeq;         // max seq this user has read; 0 = unread
+    hidden @3 : Bool;
+    muted @4 : Bool;
+}
+
+// "What changed since lastInboxVersion" snapshot.
+struct RTInboxDelta {
+    inboxVersion @0 : lib.RTInboxVersion;  // current head; client stores this
+    appID @1 : lib.RTAppID;
+    channels @2 : List(RTInboxChannel);
+}
+
+struct RTThreadPage {
+    msgs @0 : List(RTMessage);
+    // True if this page reaches the natural endpoint of the requested range.
+    // Client paginates by re-requesting from msgs[last].seq+1 (or -1).
+    final @1 : Bool;
+}
+
+protocol RealTime
+    errors lib.Status
+    argHeader lib.Header
+    resHeader lib.Header @0x4f58e7d4 {
+
+    // Create a new channel under a (team, appID).
+    // Per-user metadata included in channel creation, persisted into user_channels
+    // for the creating user. Other team members get default rows fanned out by
+    // the server.
+    rtNewChannel @0 (
+        md @0 : RTChannelMetadata,
+        setVers @1 : lib.RTChannelSetVersion /* from fetch, so we don't race */
+    );
+
+    // Look up a single channel's server-side metadata by ID. User auth only;
+    // requires a user_channels row.
+    rtGetChannel @1 (
+        channelID @0 : lib.RTChannelID
+    ) -> RTChannelMetadata;
+
+    // List all channels under a (team, appID). User auth only; requires the
+    // caller to have at least one user_channels row in this team. Stage 1a
+    // does no pagination; channel counts are expected to be small. Note, we 
+    // are focusing on a particular team, not all channels available to the user.
+    rtListAllChannelsForTeam @2 (
+        team @0 : lib.TeamID,
+        appID @1 : lib.RTAppID
+    ) -> RTChannelSet;
+
+    // Send a message. Team auth at write role of the channel.
+    rtSend @3 (
+        rtarg @0 : RTSendArg
+    ) -> RTSendRes;
+
+    // Fetch a page of messages from a channel. User auth only.
+    rtGetThread @4 (
+        q @0 : lib.RTThreadQuery
+    ) -> RTThreadPage;
+
+    // Get the current inbox head for this user+app (cheap no-op sync).
+    rtGetInboxVersion @5 (
+        key @0 : RTInboxKey
+    ) -> lib.RTInboxVersion;
+
+    // "What changed since `since`": the inbox sync RPC.
+    rtGetChangedThreads @6 (
+        rtarg @0 : RTGetChangedThreadsArg
+    ) -> RTInboxDelta;
+
+    // Mark the user's read pointer in this channel. Bumps inbox_version so
+    // other devices see the read state.
+    rtReadThrough @7 (
+        rtarg @0 : RTReadThroughArg
+    );
+
+    // Long-poll for inbox bumps. Stand-in for server-push; Stage 2c will
+    // replace with bidirectional push via a ChatPush client protocol + Redis.
+    rtPollInbox @8 (
+        rtarg @0 : RTPollInboxArg
+    ) -> lib.RTInboxPollRes;
+
+    rtSelectVHost @9 (
+        host @0 : lib.HostID
+    ) : RTSelectVhost;
+
+}

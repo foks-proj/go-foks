@@ -108,6 +108,7 @@ post.final(pre.final({
         foks_server_config : make_db("foks_server_config"),
         foks_beacon : make_db("foks_beacon"),
         foks_merkle_tree : make_db("foks_merkle_tree"),
+        foks_realtime : make_db("foks_realtime"),
     },
 
     db_kv_shards : [
@@ -157,7 +158,8 @@ post.final(pre.final({
         merkle_signer : make_listen(base, 3, "merkle_signer", false),
         queue : make_listen(base, 4, "queue", false),
         quota : make_listen(base, 5, "quota", false),
-        autocert : make_listen(base, 6, "autocert", false)
+        autocert : make_listen(base, 6, "autocert", false),
+        realtime : make_listen_ufs(base, 6, "realtime"),
     } + if base.standalone then {} else {
         web : make_listen_web(base)
     },
@@ -182,6 +184,7 @@ post.final(pre.final({
         kv_store : {
             blob_store_path : "sql"
         },
+        realtime : {},
         web : {
             use_tls : base.web_use_tls,
             external_port : base.web_ports.external,

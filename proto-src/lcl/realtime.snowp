@@ -1,0 +1,44 @@
+@0xf1feae2b2012aad7;
+
+go:import "github.com/foks-proj/go-foks/proto/lib" as lib;
+
+struct RTConfig {
+    team @0 : Option(lib.FQTeamParsed);
+    appID @1 : lib.RTAppID;
+    roles @2 : lib.RolePairOpt;
+    channel @3 : lib.RTChannelName;
+}
+
+struct RTChannelMetadataPlaintext {
+    id @0 : lib.RTChannelID;
+    parentTeam @1 : lib.TeamID;
+    appID @2 : lib.RTAppID;
+    name @3 : lib.RTChannelName;
+    desc @4 : Option(lib.RTChannelDesc);
+    roles @5 : lib.RolePair;
+    klass @6 : lib.RTChannelClass;
+    updatedAt @7 : lib.RTChannelSetVersion;
+}
+
+struct RTChannelSetForTeam {
+    channels @0 : List(RTChannelMetadataPlaintext);
+    vers @1 : lib.RTChannelSetVersion;
+    appID @2 : lib.RTAppID;
+    team @3 : lib.TeamID;
+}
+
+protocol RealTime
+    argHeader Header
+    resHeader Header
+    errors lib.Status @0xaaf0cd97 {
+
+    clientRTMakeChannel @0 (
+        cfg @0 : RTConfig, /* contains the new channel name (if applicable) */
+        desc @1 : lib.RTChannelDesc /* only specify if channel name is specified (above) */
+    ) -> lib.RTChannelID;
+
+    clientRTListChannelsForTeam @1 (
+        cfg @0 : RTConfig /* contains team and AppID to list channels */
+    ) -> RTChannelSetForTeam;
+
+}

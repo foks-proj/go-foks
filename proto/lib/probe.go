@@ -13,6 +13,7 @@ type PublicServices struct {
 	User        TCPAddr
 	MerkleQuery TCPAddr
 	KvStore     TCPAddr
+	Realtime    TCPAddr
 }
 type PublicServicesInternal__ struct {
 	_struct     struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
@@ -21,6 +22,7 @@ type PublicServicesInternal__ struct {
 	User        *TCPAddrInternal__
 	MerkleQuery *TCPAddrInternal__
 	KvStore     *TCPAddrInternal__
+	Realtime    *TCPAddrInternal__
 }
 
 func (p PublicServicesInternal__) Import() PublicServices {
@@ -55,6 +57,12 @@ func (p PublicServicesInternal__) Import() PublicServices {
 			}
 			return x.Import()
 		})(p.KvStore),
+		Realtime: (func(x *TCPAddrInternal__) (ret TCPAddr) {
+			if x == nil {
+				return ret
+			}
+			return x.Import()
+		})(p.Realtime),
 	}
 }
 func (p PublicServices) Export() *PublicServicesInternal__ {
@@ -64,6 +72,7 @@ func (p PublicServices) Export() *PublicServicesInternal__ {
 		User:        p.User.Export(),
 		MerkleQuery: p.MerkleQuery.Export(),
 		KvStore:     p.KvStore.Export(),
+		Realtime:    p.Realtime.Export(),
 	}
 }
 func (p *PublicServices) Encode(enc rpc.Encoder) error {

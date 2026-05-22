@@ -25,6 +25,9 @@ var foksBeacon string
 //go:embed foks_kv_store.sql
 var foksKVStore string
 
+//go:embed foks_realtime.sql
+var foksRealtime string
+
 var SQL = map[string]string{
 	"foks_users":         foksUsers,
 	"foks_merkle_tree":   foksMerkleTree,
@@ -32,6 +35,7 @@ var SQL = map[string]string{
 	"foks_server_config": foksServerConfig,
 	"foks_beacon":        foksBeacon,
 	"foks_kv_store":      foksKVStore,
+	"foks_realtime":      foksRealtime,
 }
 
 //go:embed patches/foks_users/p1.sql
@@ -45,6 +49,9 @@ var usersPatch3 string
 
 //go:embed patches/foks_users/p4.sql
 var usersPatch4 string
+
+//go:embed patches/foks_users/p5.sql
+var usersPatch5 string
 
 //go:embed patches/foks_server_config/p1.sql
 var serverConfigPatch1 string
@@ -61,6 +68,7 @@ var Patches = map[string]map[int]string{
 		2: usersPatch2,
 		3: usersPatch3,
 		4: usersPatch4,
+		5: usersPatch5,
 	},
 	"foks_server_config": {
 		1: serverConfigPatch1,

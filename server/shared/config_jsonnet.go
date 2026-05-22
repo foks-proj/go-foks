@@ -585,6 +585,10 @@ func (u *UserServerConfigJSON) BadLoginRateLimit() RateLimit {
 	}
 }
 
+func (c *ConfigJSonnet) RealTimeConfig(ctx context.Context) (RealTimeConfigger, error) {
+	return nil, nil
+}
+
 func (c *ConfigJSonnet) UserServerConfig(ctx context.Context) (UserServerConfigger, error) {
 	c.RLock()
 	defer c.RUnlock()

@@ -9,6 +9,7 @@ struct PublicServices {
     user @2 : TCPAddr;
     merkleQuery @3 : TCPAddr;
     kvStore @4 : TCPAddr;
+    realtime @5 : TCPAddr;
 }
 
 struct PublicZone {
