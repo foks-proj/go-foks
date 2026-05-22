@@ -21,6 +21,7 @@ enum AppKeyDerivationType {
 
 enum AppKeyEnum {
     KVStore @0;
+    Realtime @1;
 }
 
 variant KeyDerivation switch (t: KeyDerivationType) @0xd35cdcc95caef674 {
@@ -42,6 +43,10 @@ enum KVKeyType {
     MAC @1;
     Box @2;
     Commitment @3;
+}
+
+enum RealtimeKeyType {
+    Chat @1;
 }
 
 variant KVKeyDerivation switch (t : KVKeyType) @0xdbdf2ba29c0de2cb {

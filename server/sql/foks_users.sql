@@ -966,7 +966,24 @@ CREATE TABLE schema_patches (
     ctime TIMESTAMP NOT NULL
 );
 
+/*
+ * teams_adhoc: For DMs and unnamed group conversations. The team itself lives in
+ * teams via the same machinery as named teams (with a different
+ * leading byte on team_id). This table only adds the membership-hash lookup.
+ */
+CREATE TABLE teams_adhoc (
+    short_host_id SMALLINT NOT NULL,
+    team_id BYTEA NOT NULL,
+    mashed_id BYTEA NOT NULL, /* H(sorted partyIDs); deterministic lookup by membership */
+    creator_party_id BYTEA NOT NULL,
+    ctime TIMESTAMP NOT NULL,
+    PRIMARY KEY(short_host_id, team_id)
+);
+CREATE UNIQUE INDEX adhoc_teams_mashed_idx ON adhoc_teams(short_host_id, mashed_id);
+
+
 INSERT INTO schema_patches (id, ctime) VALUES (1, NOW());
 INSERT INTO schema_patches (id, ctime) VALUES (2, NOW());
 INSERT INTO schema_patches (id, ctime) VALUES (3, NOW());
 INSERT INTO schema_patches (id, ctime) VALUES (4, NOW());
+INSERT INTO schema_patches (id, ctime) VALUES (5, NOW());
