@@ -1,0 +1,152 @@
+// Copyright (c) 2025 ne43, Inc.
+// Licensed under the MIT License. See LICENSE in the project root for details.
+
+// Shared types for FOKS realtime / chat. Carries chat, CRDT updates, and
+// notifications on the same fabric. See docs/chat-server-design.md for the
+// overall design; the SQL shape is in server/sql/foks_realtime.sql.
+//
+// Stage 1a scope: direct-team channels only, encrypted text + system messages,
+// no ad-hoc teams, no attachments, no push.
+
+@0x66a87546bca14e33;
+
+typedef ChatChannelID = Blob(16);   // random, unique across all teams
+typedef ChatMsgSeq = Uint;          // monotonic per channel; messages_enc.seq
+typedef ChatInboxVersion = Uint;    // per (uid, appID); user_inbox.inbox_version
+typedef ChatChannelSeqno = Uint;    // CAS on channel metadata updates
+
+// app_id lets the same fabric carry chat, CRDTs, notifications, etc. Mirrors
+// the foks_realtime.app_id postgres enum.
+enum ChatAppID {
+    None @0;
+    Chat @1;
+    Crdt @2;
+    Notif @3;
+}
+
+// Server inspects msg_type for routing (push, badging) but cannot decrypt the
+// body. Mirrors foks_realtime.msg_type.
+enum ChatMsgType {
+    None @0;
+    Basic @1;
+    Edit @2;
+    Delete @3;
+    Reactji @4;
+    Attachment @5;
+    Reply @6;
+    System @7;
+    Join @8;
+    Leave @9;
+}
+
+struct ChatRolePair {
+    read @0 : Role;
+    write @1 : Role;
+}
+
+// Plaintext input to name_box. Variant so we can distinguish the default
+// "general" channel from a named one, and add structure later (topic, etc.)
+// without a wire break.
+variant ChatChannelNamePlaintext switch (t : Bool) @0x980ac7b3438c1271 {
+    case false : void;          // default / unnamed channel (one per team+app)
+    case true  @0 : NameUtf8;   // named channel
+}
+
+// Box of ChatChannelNamePlaintext under the parent team's PTK at ptkGen.
+struct ChatChannelNameBox {
+    rg @0 : RoleAndGen;
+    box @1 : SecretBox;
+}
+
+struct ChatChannelMetadata @0xddf6b26b2ace1535 {
+    id @0 : ChatChannelID;
+    parentTeam @1 : TeamID;
+    appID @2 : ChatAppID;
+    seqno @3 : ChatChannelSeqno;     // CAS-bumps on metadata edits
+    nameBox @4 : ChatChannelNameBox; // encrypted channel name
+    roles @5 : ChatRolePair;         // read/write roles in parent team
+    lastMsgType @6 : ChatMsgType;    // None if no message yet
+    lastMsgSeq @7 : ChatMsgSeq;      // 0 if no message yet
+    lastSenderUid @8 : Option(UID);
+    lastSenderPartyID @9 : Option(PartyID);
+    lastSendTime @10 : Option(Time);
+    ctime @11 : Time;
+    mtime @12 : Time;
+}
+
+// Encrypted message body. Key derivation: per-channel symmetric key derived
+// from the parent team's PTK at rg (see design doc, "Crypto").
+struct ChatMsgBox {
+    rg @0 : RoleAndGen;     // PTK role+gen used to derive the channel key
+    box @1 : SecretBox;
+}
+
+// Variant so the server can author plaintext system messages (join/leave/etc.)
+// without holding a PTK. Mirrors foks_realtime.messages_enc vs messages_clear.
+variant ChatMsgBody switch (encrypted : Bool) {
+    case true @0 : ChatMsgBox;
+    case false @1 : Blob;   // server-readable plaintext payload
+}
+
+struct ChatMessage @0x7bcd22765c8cd757 {
+    channelID @0 : ChatChannelID;
+    seq @1 : ChatMsgSeq;
+    typ @2 : ChatMsgType;
+    body @3 : ChatMsgBody;
+    senderUid @4 : Option(UID);          // null for server-authored
+    senderPartyID @5 : Option(PartyID);  // may differ from senderUid (bots, teams)
+    sentAtTime @6 : Time;                // client-asserted send time
+    insertTime @7 : Time;                // server-asserted insert time
+}
+
+// One channel's worth of inbox state for a particular user. Returned by
+// the inbox sync RPC.
+struct ChatInboxChannel {
+    md @0 : ChatChannelMetadata;
+    inboxVersion @1 : ChatInboxVersion;  // version at which this channel last bumped
+    readThrough @2 : ChatMsgSeq;         // max seq this user has read; 0 = unread
+    hidden @3 : Bool;
+    muted @4 : Bool;
+}
+
+// "What changed since lastInboxVersion" snapshot.
+struct ChatInboxDelta {
+    inboxVersion @0 : ChatInboxVersion;  // current head; client stores this
+    appID @1 : ChatAppID;
+    channels @2 : List(ChatInboxChannel);
+}
+
+struct ChatThreadPage {
+    msgs @0 : List(ChatMessage);
+    // True if this page reaches the natural endpoint of the requested range.
+    // Client paginates by re-requesting from msgs[last].seq+1 (or -1).
+    final @1 : Bool;
+}
+
+enum ChatThreadDir {
+    Forward @0;   // increasing seq (older -> newer)
+    Backward @1;  // decreasing seq (newer -> older)
+}
+
+struct ChatThreadQuery {
+    channelID @0 : ChatChannelID;
+    start @1 : ChatMsgSeq;       // inclusive; 0 = from start (forward) or head (backward)
+    dir @2 : ChatThreadDir;
+    max @3 : Uint;               // max messages this page; server may return fewer
+}
+
+// Per-user metadata included in channel creation, persisted into user_channels
+// for the creating user. Other team members get default rows fanned out by
+// the server.
+struct ChatChannelCreate @0x1bae4ba70272da77 {
+    md @0 : ChatChannelMetadata;
+    // Server enforces parentTeam, appID, ctime, mtime, seqno=1, lastMsg* = empty.
+}
+
+// Subscribe long-poll: server returns when inbox advances past `since` OR the
+// timeout elapses. Cheap stand-in for true server-push until Stage 2c wires up
+// Redis pub/sub and a callback protocol.
+struct ChatInboxPollRes {
+    bumped @0 : Bool;                  // false if returned due to timeout
+    inboxVersion @1 : ChatInboxVersion; // current head (== since if !bumped)
+}

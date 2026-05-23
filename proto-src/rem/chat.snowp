@@ -1,0 +1,136 @@
+// Copyright (c) 2025 ne43, Inc.
+// Licensed under the MIT License. See LICENSE in the project root for details.
+
+// FOKS realtime / chat server RPC surface. Stage 1a per
+// docs/chat-server-design.md: direct team membership only, no ad-hoc teams,
+// no attachments, no push notifications, single-server-only (no pubsub).
+
+@0xe4c09e0a92d798d4;
+
+go:import "github.com/foks-proj/go-foks/proto/lib" as lib;
+
+// User auth uses the mTLS device cert (no extra token). Team auth carries a
+// TeamVOBearerToken proving membership at a given role/gen. Mirrors KVAuth
+// from rem/kv.snowp.
+enum ChatAuthType {
+    User @0;
+    Team @1;
+}
+
+variant ChatAuth switch (t : ChatAuthType) {
+    case Team @1: TeamVOBearerToken;
+}
+
+// Identifies who's reading their inbox. UID auth is always implicit from the
+// device cert; we just carry appID and the home host's vhost.
+struct ChatInboxKey {
+    appID @0 : lib.ChatAppID;
+}
+
+// Create-channel request body. parentTeam in md must match the team that
+// `auth` authorizes; server rewrites server-managed fields.
+struct ChatNewChannelArg {
+    create @0 : lib.ChatChannelCreate;
+}
+
+// Send a message into an existing channel. Server fills insertTime, server-
+// side seq (and rejects if expectedSeq != server's next seq, if provided).
+struct ChatSendArg {
+    channelID @0 : lib.ChatChannelID;
+    typ @1 : lib.ChatMsgType;
+    body @2 : lib.ChatMsgBody;
+    sentAtTime @3 : lib.Time;
+    // If set, server requires next assigned seq == expectedSeq + 1; lets
+    // clients fail-fast on accidental concurrent sends. Optional in stage 1.
+    expectedPrevSeq @4 : Option(lib.ChatMsgSeq);
+}
+
+struct ChatSendRes {
+    seq @0 : lib.ChatMsgSeq;
+    insertTime @1 : lib.Time;
+}
+
+// Inbox sync. Client sends its highest known inbox_version; server returns
+// metadata for every channel that bumped past `since` and the new head.
+struct ChatGetChangedThreadsArg {
+    appID @0 : lib.ChatAppID;
+    since @1 : lib.ChatInboxVersion;  // 0 = full sync
+    max @2 : Uint;                    // page size; 0 = server default
+}
+
+struct ChatReadThroughArg {
+    channelID @0 : lib.ChatChannelID;
+    seq @1 : lib.ChatMsgSeq;
+}
+
+// Long-poll subscription: blocks until inbox advances or timeout. Stand-in
+// for true server-push (Stage 2c). Client immediately re-issues on return.
+struct ChatPollInboxArg {
+    appID @0 : lib.ChatAppID;
+    since @1 : lib.ChatInboxVersion;
+    timeout @2 : lib.DurationMilli;
+}
+
+protocol Chat
+    errors lib.Status
+    argHeader lib.Header
+    resHeader lib.Header @0x4f58e7d4 {
+
+    // Create a new channel under a (team, appID). Requires team auth at admin
+    // role for the parent team.
+    chatNewChannel @0 (
+        auth @0 : ChatAuth,
+        arg @1 : ChatNewChannelArg
+    ) -> lib.ChatChannelMetadata;
+
+    // Look up a single channel's server-side metadata by ID. User auth only;
+    // requires a user_channels row.
+    chatGetChannel @1 (
+        channelID @0 : lib.ChatChannelID
+    ) -> lib.ChatChannelMetadata;
+
+    // List all channels under a (team, appID). User auth only; requires the
+    // caller to have at least one user_channels row in this team. Stage 1a
+    // does no pagination; channel counts are expected to be small.
+    chatListTeamChannels @2 (
+        team @0 : lib.TeamID,
+        appID @1 : lib.ChatAppID
+    ) -> List(lib.ChatChannelMetadata);
+
+    // Send a message. Team auth at write role of the channel.
+    chatSend @3 (
+        auth @0 : ChatAuth,
+        arg @1 : ChatSendArg
+    ) -> ChatSendRes;
+
+    // Fetch a page of messages from a channel. User auth only.
+    chatGetThread @4 (
+        q @0 : lib.ChatThreadQuery
+    ) -> lib.ChatThreadPage;
+
+    // Get the current inbox head for this user+app (cheap no-op sync).
+    chatGetInboxVersion @5 (
+        key @0 : ChatInboxKey
+    ) -> lib.ChatInboxVersion;
+
+    // "What changed since `since`": the inbox sync RPC.
+    chatGetChangedThreads @6 (
+        arg @0 : ChatGetChangedThreadsArg
+    ) -> lib.ChatInboxDelta;
+
+    // Mark the user's read pointer in this channel. Bumps inbox_version so
+    // other devices see the read state.
+    chatReadThrough @7 (
+        arg @0 : ChatReadThroughArg
+    );
+
+    // Long-poll for inbox bumps. Stand-in for server-push; Stage 2c will
+    // replace with bidirectional push via a ChatPush client protocol + Redis.
+    chatPollInbox @8 (
+        arg @0 : ChatPollInboxArg
+    ) -> lib.ChatInboxPollRes;
+
+    selectVHost @9 (
+        host @0 : lib.HostID
+    ) : ChatSelectVhost;
+}

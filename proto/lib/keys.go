@@ -74,14 +74,17 @@ func (a AppKeyDerivationType) Export() *AppKeyDerivationTypeInternal__ {
 type AppKeyEnum int
 
 const (
-	AppKeyEnum_KVStore AppKeyEnum = 0
+	AppKeyEnum_KVStore  AppKeyEnum = 0
+	AppKeyEnum_Realtime AppKeyEnum = 1
 )
 
 var AppKeyEnumMap = map[string]AppKeyEnum{
-	"KVStore": 0,
+	"KVStore":  0,
+	"Realtime": 1,
 }
 var AppKeyEnumRevMap = map[AppKeyEnum]string{
 	0: "KVStore",
+	1: "Realtime",
 }
 
 type AppKeyEnumInternal__ AppKeyEnum
@@ -367,6 +370,28 @@ func (k KVKeyTypeInternal__) Import() KVKeyType {
 }
 func (k KVKeyType) Export() *KVKeyTypeInternal__ {
 	return ((*KVKeyTypeInternal__)(&k))
+}
+
+type RealtimeKeyType int
+
+const (
+	RealtimeKeyType_Chat RealtimeKeyType = 1
+)
+
+var RealtimeKeyTypeMap = map[string]RealtimeKeyType{
+	"Chat": 1,
+}
+var RealtimeKeyTypeRevMap = map[RealtimeKeyType]string{
+	1: "Chat",
+}
+
+type RealtimeKeyTypeInternal__ RealtimeKeyType
+
+func (r RealtimeKeyTypeInternal__) Import() RealtimeKeyType {
+	return RealtimeKeyType(r)
+}
+func (r RealtimeKeyType) Export() *RealtimeKeyTypeInternal__ {
+	return ((*RealtimeKeyTypeInternal__)(&r))
 }
 
 type KVKeyDerivation struct {
