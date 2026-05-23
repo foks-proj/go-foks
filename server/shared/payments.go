@@ -613,7 +613,7 @@ func editStripeSubscriptionTx(
 
 	switch op {
 	case PlanEditOpCancel:
-		args = append(args, true, time.Now())
+		args = append(args, true, m.Now())
 	case PlanEditOpResume:
 		args = append(args, false, nil)
 	case PlanEditOpRageQuit:
@@ -621,7 +621,7 @@ func editStripeSubscriptionTx(
 		if err != nil {
 			return err
 		}
-		args = append(args, cid.ExportToDB(), time.Now())
+		args = append(args, cid.ExportToDB(), m.Now())
 	default:
 		return core.InternalError("unknown plan edit op")
 
@@ -887,7 +887,7 @@ func LoadAndUpdatePlanForUser(
 	// Might have failed if stripe gave us a bad reply, but err on the side of
 	// giving the user a plan.
 	if cpe.IsZero() {
-		cpe = time.Now().Add(time.Duration(24*30) * time.Hour)
+		cpe = m.Now().Add(time.Duration(24*30) * time.Hour)
 		m.Warnw("recordPlan", "uid", uid, "action", "default-cpe", "cpe", cpe)
 	}
 
