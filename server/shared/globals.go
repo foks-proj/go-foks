@@ -223,9 +223,9 @@ func (g *GlobalContext) Now() time.Time {
 	g.RLock()
 	defer g.RUnlock()
 	if g.clock == nil {
-		return time.Now()
+		return time.Now().UTC()
 	}
-	return g.clock.Now()
+	return g.clock.Now().UTC()
 }
 
 func (g *GlobalContext) HostIDMap() *HostIDMap {

@@ -45,6 +45,11 @@ func (d DbConfigJSON) ToString() string {
 	if !d.NoTLS {
 		pairs = append(pairs, "sslmode=verify-full")
 	}
+	// Pin every session to UTC. All time.Time values are written UTC (see
+	// GlobalContext.Now), and TIMESTAMP/TIMESTAMPTZ columns rely on this so the
+	// stored wall-clock digits are unambiguously UTC regardless of the server's
+	// timezone GUC or the host's local zone.
+	pairs = append(pairs, "timezone=UTC")
 	// Tune this way down to expose leaks and recurives db acquires
 	pairs = append(pairs, "pool_max_conns=100")
 	ret := strings.Join(pairs, " ")
