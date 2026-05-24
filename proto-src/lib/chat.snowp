@@ -158,14 +158,6 @@ struct RTThreadQuery {
     max @3 : Uint;               // max messages this page; server may return fewer
 }
 
-// Per-user metadata included in channel creation, persisted into user_channels
-// for the creating user. Other team members get default rows fanned out by
-// the server.
-struct RTChannelCreate {
-    md @0 : RTChannelMetadata;
-    // Server enforces parentTeam, appID, ctime, mtime, seqno=1, lastMsg* = empty.
-}
-
 // Subscribe long-poll: server returns when inbox advances past `since` OR the
 // timeout elapses. Cheap stand-in for true server-push until Stage 2c wires up
 // Redis pub/sub and a callback protocol.

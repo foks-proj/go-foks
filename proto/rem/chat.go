@@ -51,45 +51,6 @@ func (r *RTInboxKey) Decode(dec rpc.Decoder) error {
 
 func (r *RTInboxKey) Bytes() []byte { return nil }
 
-type RTNewChannelArg struct {
-	Create lib.RTChannelCreate
-}
-type RTNewChannelArgInternal__ struct {
-	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
-	Create  *lib.RTChannelCreateInternal__
-}
-
-func (r RTNewChannelArgInternal__) Import() RTNewChannelArg {
-	return RTNewChannelArg{
-		Create: (func(x *lib.RTChannelCreateInternal__) (ret lib.RTChannelCreate) {
-			if x == nil {
-				return ret
-			}
-			return x.Import()
-		})(r.Create),
-	}
-}
-func (r RTNewChannelArg) Export() *RTNewChannelArgInternal__ {
-	return &RTNewChannelArgInternal__{
-		Create: r.Create.Export(),
-	}
-}
-func (r *RTNewChannelArg) Encode(enc rpc.Encoder) error {
-	return enc.Encode(r.Export())
-}
-
-func (r *RTNewChannelArg) Decode(dec rpc.Decoder) error {
-	var tmp RTNewChannelArgInternal__
-	err := dec.Decode(&tmp)
-	if err != nil {
-		return err
-	}
-	*r = tmp.Import()
-	return nil
-}
-
-func (r *RTNewChannelArg) Bytes() []byte { return nil }
-
 type RTSendArg struct {
 	ChannelID       lib.RTChannelID
 	Typ             lib.RTMsgType
@@ -389,26 +350,26 @@ func (r *RTPollInboxArg) Bytes() []byte { return nil }
 var RealTimeProtocolID rpc.ProtocolUniqueID = rpc.ProtocolUniqueID(0x4f58e7d4)
 
 type RtNewChannelArg struct {
-	Cc lib.RTChannelCreate
+	Md lib.RTChannelMetadata
 }
 type RtNewChannelArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
-	Cc      *lib.RTChannelCreateInternal__
+	Md      *lib.RTChannelMetadataInternal__
 }
 
 func (r RtNewChannelArgInternal__) Import() RtNewChannelArg {
 	return RtNewChannelArg{
-		Cc: (func(x *lib.RTChannelCreateInternal__) (ret lib.RTChannelCreate) {
+		Md: (func(x *lib.RTChannelMetadataInternal__) (ret lib.RTChannelMetadata) {
 			if x == nil {
 				return ret
 			}
 			return x.Import()
-		})(r.Cc),
+		})(r.Md),
 	}
 }
 func (r RtNewChannelArg) Export() *RtNewChannelArgInternal__ {
 	return &RtNewChannelArgInternal__{
-		Cc: r.Cc.Export(),
+		Md: r.Md.Export(),
 	}
 }
 func (r *RtNewChannelArg) Encode(enc rpc.Encoder) error {
@@ -788,7 +749,7 @@ func (r *RTSelectVhost) Decode(dec rpc.Decoder) error {
 func (r *RTSelectVhost) Bytes() []byte { return nil }
 
 type RealTimeInterface interface {
-	RtNewChannel(context.Context, lib.RTChannelCreate) (lib.RTChannelMetadata, error)
+	RtNewChannel(context.Context, lib.RTChannelMetadata) (lib.RTChannelMetadata, error)
 	RtGetChannel(context.Context, lib.RTChannelID) (lib.RTChannelMetadata, error)
 	RtListTeamChannels(context.Context, RtListTeamChannelsArg) ([]lib.RTChannelMetadata, error)
 	RtSend(context.Context, RTSendArg) (RTSendRes, error)
@@ -843,9 +804,9 @@ type RealTimeClient struct {
 	CheckResHeader func(context.Context, lib.Header) error
 }
 
-func (c RealTimeClient) RtNewChannel(ctx context.Context, cc lib.RTChannelCreate) (res lib.RTChannelMetadata, err error) {
+func (c RealTimeClient) RtNewChannel(ctx context.Context, md lib.RTChannelMetadata) (res lib.RTChannelMetadata, err error) {
 	arg := RtNewChannelArg{
-		Cc: cc,
+		Md: md,
 	}
 	warg := &rpc.DataWrap[lib.Header, *RtNewChannelArgInternal__]{
 		Data: arg.Export(),
@@ -1116,7 +1077,7 @@ func RealTimeProtocol(i RealTimeInterface) rpc.ProtocolV2 {
 							return nil, err
 						}
 						typedArg := typedWrappedArg.Data
-						tmp, err := i.RtNewChannel(ctx, (typedArg.Import()).Cc)
+						tmp, err := i.RtNewChannel(ctx, (typedArg.Import()).Md)
 						if err != nil {
 							return nil, err
 						}

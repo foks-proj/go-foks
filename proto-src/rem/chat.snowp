@@ -15,12 +15,6 @@ struct RTInboxKey {
     appID @0 : lib.RTAppID;
 }
 
-// Create-channel request body. parentTeam in md must match the team that
-// `auth` authorizes; server rewrites server-managed fields.
-struct RTNewChannelArg {
-    create @0 : lib.RTChannelCreate;
-}
-
 // Send a message into an existing channel. Server fills insertTime, server-
 // side seq (and rejects if expectedSeq != server's next seq, if provided).
 struct RTSendArg {
@@ -64,10 +58,12 @@ protocol RealTime
     argHeader lib.Header
     resHeader lib.Header @0x4f58e7d4 {
 
-    // Create a new channel under a (team, appID). Requires team auth at admin
-    // role for the parent team.
+    // Create a new channel under a (team, appID).
+    // Per-user metadata included in channel creation, persisted into user_channels
+    // for the creating user. Other team members get default rows fanned out by
+    // the server.
     rtNewChannel @0 (
-        cc @0 : lib.RTChannelCreate
+        md @0 : lib.RTChannelMetadata
     ) -> lib.RTChannelMetadata;
 
     // Look up a single channel's server-side metadata by ID. User auth only;

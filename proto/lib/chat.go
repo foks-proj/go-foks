@@ -1487,45 +1487,6 @@ func (r *RTThreadQuery) Decode(dec rpc.Decoder) error {
 
 func (r *RTThreadQuery) Bytes() []byte { return nil }
 
-type RTChannelCreate struct {
-	Md RTChannelMetadata
-}
-type RTChannelCreateInternal__ struct {
-	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
-	Md      *RTChannelMetadataInternal__
-}
-
-func (r RTChannelCreateInternal__) Import() RTChannelCreate {
-	return RTChannelCreate{
-		Md: (func(x *RTChannelMetadataInternal__) (ret RTChannelMetadata) {
-			if x == nil {
-				return ret
-			}
-			return x.Import()
-		})(r.Md),
-	}
-}
-func (r RTChannelCreate) Export() *RTChannelCreateInternal__ {
-	return &RTChannelCreateInternal__{
-		Md: r.Md.Export(),
-	}
-}
-func (r *RTChannelCreate) Encode(enc rpc.Encoder) error {
-	return enc.Encode(r.Export())
-}
-
-func (r *RTChannelCreate) Decode(dec rpc.Decoder) error {
-	var tmp RTChannelCreateInternal__
-	err := dec.Decode(&tmp)
-	if err != nil {
-		return err
-	}
-	*r = tmp.Import()
-	return nil
-}
-
-func (r *RTChannelCreate) Bytes() []byte { return nil }
-
 type RTInboxPollRes struct {
 	Bumped       bool
 	InboxVersion RTInboxVersion
