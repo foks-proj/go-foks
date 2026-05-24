@@ -9,16 +9,16 @@ import (
 	"github.com/foks-proj/go-snowpack-rpc/rpc"
 )
 
-type ChatChannelID uint64
-type ChatChannelIDInternal__ uint64
+type RTChannelID uint64
+type RTChannelIDInternal__ uint64
 
-func (c ChatChannelID) Export() *ChatChannelIDInternal__ {
-	tmp := ((uint64)(c))
-	return ((*ChatChannelIDInternal__)(&tmp))
+func (r RTChannelID) Export() *RTChannelIDInternal__ {
+	tmp := ((uint64)(r))
+	return ((*RTChannelIDInternal__)(&tmp))
 }
-func (c ChatChannelIDInternal__) Import() ChatChannelID {
-	tmp := (uint64)(c)
-	return ChatChannelID((func(x *uint64) (ret uint64) {
+func (r RTChannelIDInternal__) Import() RTChannelID {
+	tmp := (uint64)(r)
+	return RTChannelID((func(x *uint64) (ret uint64) {
 		if x == nil {
 			return ret
 		}
@@ -26,34 +26,34 @@ func (c ChatChannelIDInternal__) Import() ChatChannelID {
 	})(&tmp))
 }
 
-func (c *ChatChannelID) Encode(enc rpc.Encoder) error {
-	return enc.Encode(c.Export())
+func (r *RTChannelID) Encode(enc rpc.Encoder) error {
+	return enc.Encode(r.Export())
 }
 
-func (c *ChatChannelID) Decode(dec rpc.Decoder) error {
-	var tmp ChatChannelIDInternal__
+func (r *RTChannelID) Decode(dec rpc.Decoder) error {
+	var tmp RTChannelIDInternal__
 	err := dec.Decode(&tmp)
 	if err != nil {
 		return err
 	}
-	*c = tmp.Import()
+	*r = tmp.Import()
 	return nil
 }
 
-func (c ChatChannelID) Bytes() []byte {
+func (r RTChannelID) Bytes() []byte {
 	return nil
 }
 
-type ChatMsgSeq uint64
-type ChatMsgSeqInternal__ uint64
+type RTMsgSeq uint64
+type RTMsgSeqInternal__ uint64
 
-func (c ChatMsgSeq) Export() *ChatMsgSeqInternal__ {
-	tmp := ((uint64)(c))
-	return ((*ChatMsgSeqInternal__)(&tmp))
+func (r RTMsgSeq) Export() *RTMsgSeqInternal__ {
+	tmp := ((uint64)(r))
+	return ((*RTMsgSeqInternal__)(&tmp))
 }
-func (c ChatMsgSeqInternal__) Import() ChatMsgSeq {
-	tmp := (uint64)(c)
-	return ChatMsgSeq((func(x *uint64) (ret uint64) {
+func (r RTMsgSeqInternal__) Import() RTMsgSeq {
+	tmp := (uint64)(r)
+	return RTMsgSeq((func(x *uint64) (ret uint64) {
 		if x == nil {
 			return ret
 		}
@@ -61,34 +61,34 @@ func (c ChatMsgSeqInternal__) Import() ChatMsgSeq {
 	})(&tmp))
 }
 
-func (c *ChatMsgSeq) Encode(enc rpc.Encoder) error {
-	return enc.Encode(c.Export())
+func (r *RTMsgSeq) Encode(enc rpc.Encoder) error {
+	return enc.Encode(r.Export())
 }
 
-func (c *ChatMsgSeq) Decode(dec rpc.Decoder) error {
-	var tmp ChatMsgSeqInternal__
+func (r *RTMsgSeq) Decode(dec rpc.Decoder) error {
+	var tmp RTMsgSeqInternal__
 	err := dec.Decode(&tmp)
 	if err != nil {
 		return err
 	}
-	*c = tmp.Import()
+	*r = tmp.Import()
 	return nil
 }
 
-func (c ChatMsgSeq) Bytes() []byte {
+func (r RTMsgSeq) Bytes() []byte {
 	return nil
 }
 
-type ChatInboxVersion uint64
-type ChatInboxVersionInternal__ uint64
+type RTInboxVersion uint64
+type RTInboxVersionInternal__ uint64
 
-func (c ChatInboxVersion) Export() *ChatInboxVersionInternal__ {
-	tmp := ((uint64)(c))
-	return ((*ChatInboxVersionInternal__)(&tmp))
+func (r RTInboxVersion) Export() *RTInboxVersionInternal__ {
+	tmp := ((uint64)(r))
+	return ((*RTInboxVersionInternal__)(&tmp))
 }
-func (c ChatInboxVersionInternal__) Import() ChatInboxVersion {
-	tmp := (uint64)(c)
-	return ChatInboxVersion((func(x *uint64) (ret uint64) {
+func (r RTInboxVersionInternal__) Import() RTInboxVersion {
+	tmp := (uint64)(r)
+	return RTInboxVersion((func(x *uint64) (ret uint64) {
 		if x == nil {
 			return ret
 		}
@@ -96,34 +96,34 @@ func (c ChatInboxVersionInternal__) Import() ChatInboxVersion {
 	})(&tmp))
 }
 
-func (c *ChatInboxVersion) Encode(enc rpc.Encoder) error {
-	return enc.Encode(c.Export())
+func (r *RTInboxVersion) Encode(enc rpc.Encoder) error {
+	return enc.Encode(r.Export())
 }
 
-func (c *ChatInboxVersion) Decode(dec rpc.Decoder) error {
-	var tmp ChatInboxVersionInternal__
+func (r *RTInboxVersion) Decode(dec rpc.Decoder) error {
+	var tmp RTInboxVersionInternal__
 	err := dec.Decode(&tmp)
 	if err != nil {
 		return err
 	}
-	*c = tmp.Import()
+	*r = tmp.Import()
 	return nil
 }
 
-func (c ChatInboxVersion) Bytes() []byte {
+func (r RTInboxVersion) Bytes() []byte {
 	return nil
 }
 
-type ChatChannelSeqno uint64
-type ChatChannelSeqnoInternal__ uint64
+type RTChannelSeqno uint64
+type RTChannelSeqnoInternal__ uint64
 
-func (c ChatChannelSeqno) Export() *ChatChannelSeqnoInternal__ {
-	tmp := ((uint64)(c))
-	return ((*ChatChannelSeqnoInternal__)(&tmp))
+func (r RTChannelSeqno) Export() *RTChannelSeqnoInternal__ {
+	tmp := ((uint64)(r))
+	return ((*RTChannelSeqnoInternal__)(&tmp))
 }
-func (c ChatChannelSeqnoInternal__) Import() ChatChannelSeqno {
-	tmp := (uint64)(c)
-	return ChatChannelSeqno((func(x *uint64) (ret uint64) {
+func (r RTChannelSeqnoInternal__) Import() RTChannelSeqno {
+	tmp := (uint64)(r)
+	return RTChannelSeqno((func(x *uint64) (ret uint64) {
 		if x == nil {
 			return ret
 		}
@@ -131,71 +131,71 @@ func (c ChatChannelSeqnoInternal__) Import() ChatChannelSeqno {
 	})(&tmp))
 }
 
-func (c *ChatChannelSeqno) Encode(enc rpc.Encoder) error {
-	return enc.Encode(c.Export())
+func (r *RTChannelSeqno) Encode(enc rpc.Encoder) error {
+	return enc.Encode(r.Export())
 }
 
-func (c *ChatChannelSeqno) Decode(dec rpc.Decoder) error {
-	var tmp ChatChannelSeqnoInternal__
+func (r *RTChannelSeqno) Decode(dec rpc.Decoder) error {
+	var tmp RTChannelSeqnoInternal__
 	err := dec.Decode(&tmp)
 	if err != nil {
 		return err
 	}
-	*c = tmp.Import()
+	*r = tmp.Import()
 	return nil
 }
 
-func (c ChatChannelSeqno) Bytes() []byte {
+func (r RTChannelSeqno) Bytes() []byte {
 	return nil
 }
 
-type ChatAppID int
+type RTAppID int
 
 const (
-	ChatAppID_None  ChatAppID = 0
-	ChatAppID_Chat  ChatAppID = 1
-	ChatAppID_Crdt  ChatAppID = 2
-	ChatAppID_Notif ChatAppID = 3
+	RTAppID_None  RTAppID = 0
+	RTAppID_Chat  RTAppID = 1
+	RTAppID_Crdt  RTAppID = 2
+	RTAppID_Notif RTAppID = 3
 )
 
-var ChatAppIDMap = map[string]ChatAppID{
+var RTAppIDMap = map[string]RTAppID{
 	"None":  0,
 	"Chat":  1,
 	"Crdt":  2,
 	"Notif": 3,
 }
-var ChatAppIDRevMap = map[ChatAppID]string{
+var RTAppIDRevMap = map[RTAppID]string{
 	0: "None",
 	1: "Chat",
 	2: "Crdt",
 	3: "Notif",
 }
 
-type ChatAppIDInternal__ ChatAppID
+type RTAppIDInternal__ RTAppID
 
-func (c ChatAppIDInternal__) Import() ChatAppID {
-	return ChatAppID(c)
+func (r RTAppIDInternal__) Import() RTAppID {
+	return RTAppID(r)
 }
-func (c ChatAppID) Export() *ChatAppIDInternal__ {
-	return ((*ChatAppIDInternal__)(&c))
+func (r RTAppID) Export() *RTAppIDInternal__ {
+	return ((*RTAppIDInternal__)(&r))
 }
 
-type ChatMsgType int
+type RTMsgType int
 
 const (
-	ChatMsgType_None       ChatMsgType = 0
-	ChatMsgType_Basic      ChatMsgType = 1
-	ChatMsgType_Edit       ChatMsgType = 2
-	ChatMsgType_Delete     ChatMsgType = 3
-	ChatMsgType_Reactji    ChatMsgType = 4
-	ChatMsgType_Attachment ChatMsgType = 5
-	ChatMsgType_Reply      ChatMsgType = 6
-	ChatMsgType_System     ChatMsgType = 7
-	ChatMsgType_Join       ChatMsgType = 8
-	ChatMsgType_Leave      ChatMsgType = 9
+	RTMsgType_None       RTMsgType = 0
+	RTMsgType_Basic      RTMsgType = 1
+	RTMsgType_Edit       RTMsgType = 2
+	RTMsgType_Delete     RTMsgType = 3
+	RTMsgType_Reactji    RTMsgType = 4
+	RTMsgType_Attachment RTMsgType = 5
+	RTMsgType_Reply      RTMsgType = 6
+	RTMsgType_System     RTMsgType = 7
+	RTMsgType_Join       RTMsgType = 8
+	RTMsgType_Leave      RTMsgType = 9
 )
 
-var ChatMsgTypeMap = map[string]ChatMsgType{
+var RTMsgTypeMap = map[string]RTMsgType{
 	"None":       0,
 	"Basic":      1,
 	"Edit":       2,
@@ -207,7 +207,7 @@ var ChatMsgTypeMap = map[string]ChatMsgType{
 	"Join":       8,
 	"Leave":      9,
 }
-var ChatMsgTypeRevMap = map[ChatMsgType]string{
+var RTMsgTypeRevMap = map[RTMsgType]string{
 	0: "None",
 	1: "Basic",
 	2: "Edit",
@@ -220,112 +220,371 @@ var ChatMsgTypeRevMap = map[ChatMsgType]string{
 	9: "Leave",
 }
 
-type ChatMsgTypeInternal__ ChatMsgType
+type RTMsgTypeInternal__ RTMsgType
 
-func (c ChatMsgTypeInternal__) Import() ChatMsgType {
-	return ChatMsgType(c)
+func (r RTMsgTypeInternal__) Import() RTMsgType {
+	return RTMsgType(r)
 }
-func (c ChatMsgType) Export() *ChatMsgTypeInternal__ {
-	return ((*ChatMsgTypeInternal__)(&c))
+func (r RTMsgType) Export() *RTMsgTypeInternal__ {
+	return ((*RTMsgTypeInternal__)(&r))
 }
 
-type ChatRolePair struct {
+type RTMsgPlaintextBasic []byte
+type RTMsgPlaintextBasicInternal__ []byte
+
+func (r RTMsgPlaintextBasic) Export() *RTMsgPlaintextBasicInternal__ {
+	tmp := (([]byte)(r))
+	return ((*RTMsgPlaintextBasicInternal__)(&tmp))
+}
+func (r RTMsgPlaintextBasicInternal__) Import() RTMsgPlaintextBasic {
+	tmp := ([]byte)(r)
+	return RTMsgPlaintextBasic((func(x *[]byte) (ret []byte) {
+		if x == nil {
+			return ret
+		}
+		return *x
+	})(&tmp))
+}
+
+func (r *RTMsgPlaintextBasic) Encode(enc rpc.Encoder) error {
+	return enc.Encode(r.Export())
+}
+
+func (r *RTMsgPlaintextBasic) Decode(dec rpc.Decoder) error {
+	var tmp RTMsgPlaintextBasicInternal__
+	err := dec.Decode(&tmp)
+	if err != nil {
+		return err
+	}
+	*r = tmp.Import()
+	return nil
+}
+
+func (r RTMsgPlaintextBasic) Bytes() []byte {
+	return (r)[:]
+}
+
+type RTMsgPlaintextPegged struct {
+	Basic   RTMsgPlaintextBasic
+	ReplyTo RTMsgSeq
+}
+type RTMsgPlaintextPeggedInternal__ struct {
+	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
+	Basic   *RTMsgPlaintextBasicInternal__
+	ReplyTo *RTMsgSeqInternal__
+}
+
+func (r RTMsgPlaintextPeggedInternal__) Import() RTMsgPlaintextPegged {
+	return RTMsgPlaintextPegged{
+		Basic: (func(x *RTMsgPlaintextBasicInternal__) (ret RTMsgPlaintextBasic) {
+			if x == nil {
+				return ret
+			}
+			return x.Import()
+		})(r.Basic),
+		ReplyTo: (func(x *RTMsgSeqInternal__) (ret RTMsgSeq) {
+			if x == nil {
+				return ret
+			}
+			return x.Import()
+		})(r.ReplyTo),
+	}
+}
+func (r RTMsgPlaintextPegged) Export() *RTMsgPlaintextPeggedInternal__ {
+	return &RTMsgPlaintextPeggedInternal__{
+		Basic:   r.Basic.Export(),
+		ReplyTo: r.ReplyTo.Export(),
+	}
+}
+func (r *RTMsgPlaintextPegged) Encode(enc rpc.Encoder) error {
+	return enc.Encode(r.Export())
+}
+
+func (r *RTMsgPlaintextPegged) Decode(dec rpc.Decoder) error {
+	var tmp RTMsgPlaintextPeggedInternal__
+	err := dec.Decode(&tmp)
+	if err != nil {
+		return err
+	}
+	*r = tmp.Import()
+	return nil
+}
+
+func (r *RTMsgPlaintextPegged) Bytes() []byte { return nil }
+
+type RTMsgPlaintext struct {
+	T     RTMsgType
+	F_1__ *RTMsgPlaintextBasic  `json:"f1,omitempty"`
+	F_2__ *RTMsgPlaintextPegged `json:"f2,omitempty"`
+}
+type RTMsgPlaintextInternal__ struct {
+	_struct  struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
+	T        RTMsgType
+	Switch__ RTMsgPlaintextInternalSwitch__
+}
+type RTMsgPlaintextInternalSwitch__ struct {
+	_struct struct{}                        `codec:",omitempty"` //lint:ignore U1000 msgpack internal field
+	F_1__   *RTMsgPlaintextBasicInternal__  `codec:"1"`
+	F_2__   *RTMsgPlaintextPeggedInternal__ `codec:"2"`
+}
+
+func (r RTMsgPlaintext) GetT() (ret RTMsgType, err error) {
+	switch r.T {
+	case RTMsgType_Basic:
+		if r.F_1__ == nil {
+			return ret, errors.New("unexpected nil case for F_1__")
+		}
+	case RTMsgType_Reply, RTMsgType_Reactji, RTMsgType_Edit:
+		if r.F_2__ == nil {
+			return ret, errors.New("unexpected nil case for F_2__")
+		}
+	}
+	return r.T, nil
+}
+func (r RTMsgPlaintext) Basic() RTMsgPlaintextBasic {
+	if r.F_1__ == nil {
+		panic("unexpected nil case; should have been checked")
+	}
+	if r.T != RTMsgType_Basic {
+		panic(fmt.Sprintf("unexpected switch value (%v) when Basic is called", r.T))
+	}
+	return *r.F_1__
+}
+func (r RTMsgPlaintext) Reply() RTMsgPlaintextPegged {
+	if r.F_2__ == nil {
+		panic("unexpected nil case; should have been checked")
+	}
+	if r.T != RTMsgType_Reply {
+		panic(fmt.Sprintf("unexpected switch value (%v) when Reply is called", r.T))
+	}
+	return *r.F_2__
+}
+func (r RTMsgPlaintext) Reactji() RTMsgPlaintextPegged {
+	if r.F_2__ == nil {
+		panic("unexpected nil case; should have been checked")
+	}
+	if r.T != RTMsgType_Reactji {
+		panic(fmt.Sprintf("unexpected switch value (%v) when Reactji is called", r.T))
+	}
+	return *r.F_2__
+}
+func (r RTMsgPlaintext) Edit() RTMsgPlaintextPegged {
+	if r.F_2__ == nil {
+		panic("unexpected nil case; should have been checked")
+	}
+	if r.T != RTMsgType_Edit {
+		panic(fmt.Sprintf("unexpected switch value (%v) when Edit is called", r.T))
+	}
+	return *r.F_2__
+}
+func NewRTMsgPlaintextWithBasic(v RTMsgPlaintextBasic) RTMsgPlaintext {
+	return RTMsgPlaintext{
+		T:     RTMsgType_Basic,
+		F_1__: &v,
+	}
+}
+func NewRTMsgPlaintextWithReply(v RTMsgPlaintextPegged) RTMsgPlaintext {
+	return RTMsgPlaintext{
+		T:     RTMsgType_Reply,
+		F_2__: &v,
+	}
+}
+func NewRTMsgPlaintextWithReactji(v RTMsgPlaintextPegged) RTMsgPlaintext {
+	return RTMsgPlaintext{
+		T:     RTMsgType_Reactji,
+		F_2__: &v,
+	}
+}
+func NewRTMsgPlaintextWithEdit(v RTMsgPlaintextPegged) RTMsgPlaintext {
+	return RTMsgPlaintext{
+		T:     RTMsgType_Edit,
+		F_2__: &v,
+	}
+}
+func (r RTMsgPlaintextInternal__) Import() RTMsgPlaintext {
+	return RTMsgPlaintext{
+		T: r.T,
+		F_1__: (func(x *RTMsgPlaintextBasicInternal__) *RTMsgPlaintextBasic {
+			if x == nil {
+				return nil
+			}
+			tmp := (func(x *RTMsgPlaintextBasicInternal__) (ret RTMsgPlaintextBasic) {
+				if x == nil {
+					return ret
+				}
+				return x.Import()
+			})(x)
+			return &tmp
+		})(r.Switch__.F_1__),
+		F_2__: (func(x *RTMsgPlaintextPeggedInternal__) *RTMsgPlaintextPegged {
+			if x == nil {
+				return nil
+			}
+			tmp := (func(x *RTMsgPlaintextPeggedInternal__) (ret RTMsgPlaintextPegged) {
+				if x == nil {
+					return ret
+				}
+				return x.Import()
+			})(x)
+			return &tmp
+		})(r.Switch__.F_2__),
+	}
+}
+func (r RTMsgPlaintext) Export() *RTMsgPlaintextInternal__ {
+	return &RTMsgPlaintextInternal__{
+		T: r.T,
+		Switch__: RTMsgPlaintextInternalSwitch__{
+			F_1__: (func(x *RTMsgPlaintextBasic) *RTMsgPlaintextBasicInternal__ {
+				if x == nil {
+					return nil
+				}
+				return (*x).Export()
+			})(r.F_1__),
+			F_2__: (func(x *RTMsgPlaintextPegged) *RTMsgPlaintextPeggedInternal__ {
+				if x == nil {
+					return nil
+				}
+				return (*x).Export()
+			})(r.F_2__),
+		},
+	}
+}
+func (r *RTMsgPlaintext) Encode(enc rpc.Encoder) error {
+	return enc.Encode(r.Export())
+}
+
+func (r *RTMsgPlaintext) Decode(dec rpc.Decoder) error {
+	var tmp RTMsgPlaintextInternal__
+	err := dec.Decode(&tmp)
+	if err != nil {
+		return err
+	}
+	*r = tmp.Import()
+	return nil
+}
+
+var RTMsgPlaintextTypeUniqueID = rpc.TypeUniqueID(0xc830111a77ab24f6)
+
+func (r *RTMsgPlaintext) GetTypeUniqueID() rpc.TypeUniqueID {
+	return RTMsgPlaintextTypeUniqueID
+}
+func (r *RTMsgPlaintext) Bytes() []byte { return nil }
+
+type RTRolePair struct {
 	Read  Role
 	Write Role
 }
-type ChatRolePairInternal__ struct {
+type RTRolePairInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Read    *RoleInternal__
 	Write   *RoleInternal__
 }
 
-func (c ChatRolePairInternal__) Import() ChatRolePair {
-	return ChatRolePair{
+func (r RTRolePairInternal__) Import() RTRolePair {
+	return RTRolePair{
 		Read: (func(x *RoleInternal__) (ret Role) {
 			if x == nil {
 				return ret
 			}
 			return x.Import()
-		})(c.Read),
+		})(r.Read),
 		Write: (func(x *RoleInternal__) (ret Role) {
 			if x == nil {
 				return ret
 			}
 			return x.Import()
-		})(c.Write),
+		})(r.Write),
 	}
 }
-func (c ChatRolePair) Export() *ChatRolePairInternal__ {
-	return &ChatRolePairInternal__{
-		Read:  c.Read.Export(),
-		Write: c.Write.Export(),
+func (r RTRolePair) Export() *RTRolePairInternal__ {
+	return &RTRolePairInternal__{
+		Read:  r.Read.Export(),
+		Write: r.Write.Export(),
 	}
 }
-func (c *ChatRolePair) Encode(enc rpc.Encoder) error {
-	return enc.Encode(c.Export())
+func (r *RTRolePair) Encode(enc rpc.Encoder) error {
+	return enc.Encode(r.Export())
 }
 
-func (c *ChatRolePair) Decode(dec rpc.Decoder) error {
-	var tmp ChatRolePairInternal__
+func (r *RTRolePair) Decode(dec rpc.Decoder) error {
+	var tmp RTRolePairInternal__
 	err := dec.Decode(&tmp)
 	if err != nil {
 		return err
 	}
-	*c = tmp.Import()
+	*r = tmp.Import()
 	return nil
 }
 
-func (c *ChatRolePair) Bytes() []byte { return nil }
+func (r *RTRolePair) Bytes() []byte { return nil }
 
-type ChatChannelNamePlaintext struct {
-	T     bool
-	F_0__ *NameUtf8 `json:"f0,omitempty"`
+type RTChannelNameType int
+
+const (
+	RTChannelNameType_Default RTChannelNameType = 0
+	RTChannelNameType_Named   RTChannelNameType = 1
+)
+
+var RTChannelNameTypeMap = map[string]RTChannelNameType{
+	"Default": 0,
+	"Named":   1,
 }
-type ChatChannelNamePlaintextInternal__ struct {
+var RTChannelNameTypeRevMap = map[RTChannelNameType]string{
+	0: "Default",
+	1: "Named",
+}
+
+type RTChannelNameTypeInternal__ RTChannelNameType
+
+func (r RTChannelNameTypeInternal__) Import() RTChannelNameType {
+	return RTChannelNameType(r)
+}
+func (r RTChannelNameType) Export() *RTChannelNameTypeInternal__ {
+	return ((*RTChannelNameTypeInternal__)(&r))
+}
+
+type RTChannelNamePlaintext struct {
+	T     RTChannelNameType
+	F_1__ *NameUtf8 `json:"f1,omitempty"`
+}
+type RTChannelNamePlaintextInternal__ struct {
 	_struct  struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
-	T        bool
-	Switch__ ChatChannelNamePlaintextInternalSwitch__
+	T        RTChannelNameType
+	Switch__ RTChannelNamePlaintextInternalSwitch__
 }
-type ChatChannelNamePlaintextInternalSwitch__ struct {
+type RTChannelNamePlaintextInternalSwitch__ struct {
 	_struct struct{}            `codec:",omitempty"` //lint:ignore U1000 msgpack internal field
-	F_0__   *NameUtf8Internal__ `codec:"0"`
+	F_1__   *NameUtf8Internal__ `codec:"1"`
 }
 
-func (c ChatChannelNamePlaintext) GetT() (ret bool, err error) {
-	switch c.T {
-	case false:
-		break
-	case true:
-		if c.F_0__ == nil {
-			return ret, errors.New("unexpected nil case for F_0__")
+func (r RTChannelNamePlaintext) GetT() (ret RTChannelNameType, err error) {
+	switch r.T {
+	case RTChannelNameType_Named:
+		if r.F_1__ == nil {
+			return ret, errors.New("unexpected nil case for F_1__")
 		}
 	}
-	return c.T, nil
+	return r.T, nil
 }
-func (c ChatChannelNamePlaintext) True() NameUtf8 {
-	if c.F_0__ == nil {
+func (r RTChannelNamePlaintext) Named() NameUtf8 {
+	if r.F_1__ == nil {
 		panic("unexpected nil case; should have been checked")
 	}
-	if !c.T {
-		panic(fmt.Sprintf("unexpected switch value (%v) when True is called", c.T))
+	if r.T != RTChannelNameType_Named {
+		panic(fmt.Sprintf("unexpected switch value (%v) when Named is called", r.T))
 	}
-	return *c.F_0__
+	return *r.F_1__
 }
-func NewChatChannelNamePlaintextWithFalse() ChatChannelNamePlaintext {
-	return ChatChannelNamePlaintext{
-		T: false,
-	}
-}
-func NewChatChannelNamePlaintextWithTrue(v NameUtf8) ChatChannelNamePlaintext {
-	return ChatChannelNamePlaintext{
-		T:     true,
-		F_0__: &v,
+func NewRTChannelNamePlaintextWithNamed(v NameUtf8) RTChannelNamePlaintext {
+	return RTChannelNamePlaintext{
+		T:     RTChannelNameType_Named,
+		F_1__: &v,
 	}
 }
-func (c ChatChannelNamePlaintextInternal__) Import() ChatChannelNamePlaintext {
-	return ChatChannelNamePlaintext{
-		T: c.T,
-		F_0__: (func(x *NameUtf8Internal__) *NameUtf8 {
+func (r RTChannelNamePlaintextInternal__) Import() RTChannelNamePlaintext {
+	return RTChannelNamePlaintext{
+		T: r.T,
+		F_1__: (func(x *NameUtf8Internal__) *NameUtf8 {
 			if x == nil {
 				return nil
 			}
@@ -336,116 +595,116 @@ func (c ChatChannelNamePlaintextInternal__) Import() ChatChannelNamePlaintext {
 				return x.Import()
 			})(x)
 			return &tmp
-		})(c.Switch__.F_0__),
+		})(r.Switch__.F_1__),
 	}
 }
-func (c ChatChannelNamePlaintext) Export() *ChatChannelNamePlaintextInternal__ {
-	return &ChatChannelNamePlaintextInternal__{
-		T: c.T,
-		Switch__: ChatChannelNamePlaintextInternalSwitch__{
-			F_0__: (func(x *NameUtf8) *NameUtf8Internal__ {
+func (r RTChannelNamePlaintext) Export() *RTChannelNamePlaintextInternal__ {
+	return &RTChannelNamePlaintextInternal__{
+		T: r.T,
+		Switch__: RTChannelNamePlaintextInternalSwitch__{
+			F_1__: (func(x *NameUtf8) *NameUtf8Internal__ {
 				if x == nil {
 					return nil
 				}
 				return (*x).Export()
-			})(c.F_0__),
+			})(r.F_1__),
 		},
 	}
 }
-func (c *ChatChannelNamePlaintext) Encode(enc rpc.Encoder) error {
-	return enc.Encode(c.Export())
+func (r *RTChannelNamePlaintext) Encode(enc rpc.Encoder) error {
+	return enc.Encode(r.Export())
 }
 
-func (c *ChatChannelNamePlaintext) Decode(dec rpc.Decoder) error {
-	var tmp ChatChannelNamePlaintextInternal__
+func (r *RTChannelNamePlaintext) Decode(dec rpc.Decoder) error {
+	var tmp RTChannelNamePlaintextInternal__
 	err := dec.Decode(&tmp)
 	if err != nil {
 		return err
 	}
-	*c = tmp.Import()
+	*r = tmp.Import()
 	return nil
 }
 
-var ChatChannelNamePlaintextTypeUniqueID = rpc.TypeUniqueID(0x980ac7b3438c1271)
+var RTChannelNamePlaintextTypeUniqueID = rpc.TypeUniqueID(0xbe4f7ec6ba0b1393)
 
-func (c *ChatChannelNamePlaintext) GetTypeUniqueID() rpc.TypeUniqueID {
-	return ChatChannelNamePlaintextTypeUniqueID
+func (r *RTChannelNamePlaintext) GetTypeUniqueID() rpc.TypeUniqueID {
+	return RTChannelNamePlaintextTypeUniqueID
 }
-func (c *ChatChannelNamePlaintext) Bytes() []byte { return nil }
+func (r *RTChannelNamePlaintext) Bytes() []byte { return nil }
 
-type ChatChannelNameBox struct {
+type RTChannelNameBox struct {
 	Rg  RoleAndGen
 	Box SecretBox
 }
-type ChatChannelNameBoxInternal__ struct {
+type RTChannelNameBoxInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Rg      *RoleAndGenInternal__
 	Box     *SecretBoxInternal__
 }
 
-func (c ChatChannelNameBoxInternal__) Import() ChatChannelNameBox {
-	return ChatChannelNameBox{
+func (r RTChannelNameBoxInternal__) Import() RTChannelNameBox {
+	return RTChannelNameBox{
 		Rg: (func(x *RoleAndGenInternal__) (ret RoleAndGen) {
 			if x == nil {
 				return ret
 			}
 			return x.Import()
-		})(c.Rg),
+		})(r.Rg),
 		Box: (func(x *SecretBoxInternal__) (ret SecretBox) {
 			if x == nil {
 				return ret
 			}
 			return x.Import()
-		})(c.Box),
+		})(r.Box),
 	}
 }
-func (c ChatChannelNameBox) Export() *ChatChannelNameBoxInternal__ {
-	return &ChatChannelNameBoxInternal__{
-		Rg:  c.Rg.Export(),
-		Box: c.Box.Export(),
+func (r RTChannelNameBox) Export() *RTChannelNameBoxInternal__ {
+	return &RTChannelNameBoxInternal__{
+		Rg:  r.Rg.Export(),
+		Box: r.Box.Export(),
 	}
 }
-func (c *ChatChannelNameBox) Encode(enc rpc.Encoder) error {
-	return enc.Encode(c.Export())
+func (r *RTChannelNameBox) Encode(enc rpc.Encoder) error {
+	return enc.Encode(r.Export())
 }
 
-func (c *ChatChannelNameBox) Decode(dec rpc.Decoder) error {
-	var tmp ChatChannelNameBoxInternal__
+func (r *RTChannelNameBox) Decode(dec rpc.Decoder) error {
+	var tmp RTChannelNameBoxInternal__
 	err := dec.Decode(&tmp)
 	if err != nil {
 		return err
 	}
-	*c = tmp.Import()
+	*r = tmp.Import()
 	return nil
 }
 
-func (c *ChatChannelNameBox) Bytes() []byte { return nil }
+func (r *RTChannelNameBox) Bytes() []byte { return nil }
 
-type ChatChannelMetadata struct {
-	Id                ChatChannelID
+type RTChannelMetadata struct {
+	Id                RTChannelID
 	ParentTeam        TeamID
-	AppID             ChatAppID
-	Seqno             ChatChannelSeqno
-	NameBox           ChatChannelNameBox
-	Roles             ChatRolePair
-	LastMsgType       ChatMsgType
-	LastMsgSeq        ChatMsgSeq
+	AppID             RTAppID
+	Seqno             RTChannelSeqno
+	NameBox           RTChannelNameBox
+	Roles             RTRolePair
+	LastMsgType       RTMsgType
+	LastMsgSeq        RTMsgSeq
 	LastSenderUid     *UID
 	LastSenderPartyID *PartyID
 	LastSendTime      *Time
 	Ctime             Time
 	Mtime             Time
 }
-type ChatChannelMetadataInternal__ struct {
+type RTChannelMetadataInternal__ struct {
 	_struct           struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
-	Id                *ChatChannelIDInternal__
+	Id                *RTChannelIDInternal__
 	ParentTeam        *TeamIDInternal__
-	AppID             *ChatAppIDInternal__
-	Seqno             *ChatChannelSeqnoInternal__
-	NameBox           *ChatChannelNameBoxInternal__
-	Roles             *ChatRolePairInternal__
-	LastMsgType       *ChatMsgTypeInternal__
-	LastMsgSeq        *ChatMsgSeqInternal__
+	AppID             *RTAppIDInternal__
+	Seqno             *RTChannelSeqnoInternal__
+	NameBox           *RTChannelNameBoxInternal__
+	Roles             *RTRolePairInternal__
+	LastMsgType       *RTMsgTypeInternal__
+	LastMsgSeq        *RTMsgSeqInternal__
 	LastSenderUid     *UIDInternal__
 	LastSenderPartyID *PartyIDInternal__
 	LastSendTime      *TimeInternal__
@@ -453,56 +712,56 @@ type ChatChannelMetadataInternal__ struct {
 	Mtime             *TimeInternal__
 }
 
-func (c ChatChannelMetadataInternal__) Import() ChatChannelMetadata {
-	return ChatChannelMetadata{
-		Id: (func(x *ChatChannelIDInternal__) (ret ChatChannelID) {
+func (r RTChannelMetadataInternal__) Import() RTChannelMetadata {
+	return RTChannelMetadata{
+		Id: (func(x *RTChannelIDInternal__) (ret RTChannelID) {
 			if x == nil {
 				return ret
 			}
 			return x.Import()
-		})(c.Id),
+		})(r.Id),
 		ParentTeam: (func(x *TeamIDInternal__) (ret TeamID) {
 			if x == nil {
 				return ret
 			}
 			return x.Import()
-		})(c.ParentTeam),
-		AppID: (func(x *ChatAppIDInternal__) (ret ChatAppID) {
+		})(r.ParentTeam),
+		AppID: (func(x *RTAppIDInternal__) (ret RTAppID) {
 			if x == nil {
 				return ret
 			}
 			return x.Import()
-		})(c.AppID),
-		Seqno: (func(x *ChatChannelSeqnoInternal__) (ret ChatChannelSeqno) {
+		})(r.AppID),
+		Seqno: (func(x *RTChannelSeqnoInternal__) (ret RTChannelSeqno) {
 			if x == nil {
 				return ret
 			}
 			return x.Import()
-		})(c.Seqno),
-		NameBox: (func(x *ChatChannelNameBoxInternal__) (ret ChatChannelNameBox) {
+		})(r.Seqno),
+		NameBox: (func(x *RTChannelNameBoxInternal__) (ret RTChannelNameBox) {
 			if x == nil {
 				return ret
 			}
 			return x.Import()
-		})(c.NameBox),
-		Roles: (func(x *ChatRolePairInternal__) (ret ChatRolePair) {
+		})(r.NameBox),
+		Roles: (func(x *RTRolePairInternal__) (ret RTRolePair) {
 			if x == nil {
 				return ret
 			}
 			return x.Import()
-		})(c.Roles),
-		LastMsgType: (func(x *ChatMsgTypeInternal__) (ret ChatMsgType) {
+		})(r.Roles),
+		LastMsgType: (func(x *RTMsgTypeInternal__) (ret RTMsgType) {
 			if x == nil {
 				return ret
 			}
 			return x.Import()
-		})(c.LastMsgType),
-		LastMsgSeq: (func(x *ChatMsgSeqInternal__) (ret ChatMsgSeq) {
+		})(r.LastMsgType),
+		LastMsgSeq: (func(x *RTMsgSeqInternal__) (ret RTMsgSeq) {
 			if x == nil {
 				return ret
 			}
 			return x.Import()
-		})(c.LastMsgSeq),
+		})(r.LastMsgSeq),
 		LastSenderUid: (func(x *UIDInternal__) *UID {
 			if x == nil {
 				return nil
@@ -514,7 +773,7 @@ func (c ChatChannelMetadataInternal__) Import() ChatChannelMetadata {
 				return x.Import()
 			})(x)
 			return &tmp
-		})(c.LastSenderUid),
+		})(r.LastSenderUid),
 		LastSenderPartyID: (func(x *PartyIDInternal__) *PartyID {
 			if x == nil {
 				return nil
@@ -526,7 +785,7 @@ func (c ChatChannelMetadataInternal__) Import() ChatChannelMetadata {
 				return x.Import()
 			})(x)
 			return &tmp
-		})(c.LastSenderPartyID),
+		})(r.LastSenderPartyID),
 		LastSendTime: (func(x *TimeInternal__) *Time {
 			if x == nil {
 				return nil
@@ -538,277 +797,302 @@ func (c ChatChannelMetadataInternal__) Import() ChatChannelMetadata {
 				return x.Import()
 			})(x)
 			return &tmp
-		})(c.LastSendTime),
+		})(r.LastSendTime),
 		Ctime: (func(x *TimeInternal__) (ret Time) {
 			if x == nil {
 				return ret
 			}
 			return x.Import()
-		})(c.Ctime),
+		})(r.Ctime),
 		Mtime: (func(x *TimeInternal__) (ret Time) {
 			if x == nil {
 				return ret
 			}
 			return x.Import()
-		})(c.Mtime),
+		})(r.Mtime),
 	}
 }
-func (c ChatChannelMetadata) Export() *ChatChannelMetadataInternal__ {
-	return &ChatChannelMetadataInternal__{
-		Id:          c.Id.Export(),
-		ParentTeam:  c.ParentTeam.Export(),
-		AppID:       c.AppID.Export(),
-		Seqno:       c.Seqno.Export(),
-		NameBox:     c.NameBox.Export(),
-		Roles:       c.Roles.Export(),
-		LastMsgType: c.LastMsgType.Export(),
-		LastMsgSeq:  c.LastMsgSeq.Export(),
+func (r RTChannelMetadata) Export() *RTChannelMetadataInternal__ {
+	return &RTChannelMetadataInternal__{
+		Id:          r.Id.Export(),
+		ParentTeam:  r.ParentTeam.Export(),
+		AppID:       r.AppID.Export(),
+		Seqno:       r.Seqno.Export(),
+		NameBox:     r.NameBox.Export(),
+		Roles:       r.Roles.Export(),
+		LastMsgType: r.LastMsgType.Export(),
+		LastMsgSeq:  r.LastMsgSeq.Export(),
 		LastSenderUid: (func(x *UID) *UIDInternal__ {
 			if x == nil {
 				return nil
 			}
 			return (*x).Export()
-		})(c.LastSenderUid),
+		})(r.LastSenderUid),
 		LastSenderPartyID: (func(x *PartyID) *PartyIDInternal__ {
 			if x == nil {
 				return nil
 			}
 			return (*x).Export()
-		})(c.LastSenderPartyID),
+		})(r.LastSenderPartyID),
 		LastSendTime: (func(x *Time) *TimeInternal__ {
 			if x == nil {
 				return nil
 			}
 			return (*x).Export()
-		})(c.LastSendTime),
-		Ctime: c.Ctime.Export(),
-		Mtime: c.Mtime.Export(),
+		})(r.LastSendTime),
+		Ctime: r.Ctime.Export(),
+		Mtime: r.Mtime.Export(),
 	}
 }
-func (c *ChatChannelMetadata) Encode(enc rpc.Encoder) error {
-	return enc.Encode(c.Export())
+func (r *RTChannelMetadata) Encode(enc rpc.Encoder) error {
+	return enc.Encode(r.Export())
 }
 
-func (c *ChatChannelMetadata) Decode(dec rpc.Decoder) error {
-	var tmp ChatChannelMetadataInternal__
+func (r *RTChannelMetadata) Decode(dec rpc.Decoder) error {
+	var tmp RTChannelMetadataInternal__
 	err := dec.Decode(&tmp)
 	if err != nil {
 		return err
 	}
-	*c = tmp.Import()
+	*r = tmp.Import()
 	return nil
 }
 
-var ChatChannelMetadataTypeUniqueID = rpc.TypeUniqueID(0xddf6b26b2ace1535)
+var RTChannelMetadataTypeUniqueID = rpc.TypeUniqueID(0xddf6b26b2ace1535)
 
-func (c *ChatChannelMetadata) GetTypeUniqueID() rpc.TypeUniqueID {
-	return ChatChannelMetadataTypeUniqueID
+func (r *RTChannelMetadata) GetTypeUniqueID() rpc.TypeUniqueID {
+	return RTChannelMetadataTypeUniqueID
 }
-func (c *ChatChannelMetadata) Bytes() []byte { return nil }
+func (r *RTChannelMetadata) Bytes() []byte { return nil }
 
-type ChatMsgBox struct {
+type RTMsgBox struct {
 	Rg  RoleAndGen
 	Box SecretBox
 }
-type ChatMsgBoxInternal__ struct {
+type RTMsgBoxInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Rg      *RoleAndGenInternal__
 	Box     *SecretBoxInternal__
 }
 
-func (c ChatMsgBoxInternal__) Import() ChatMsgBox {
-	return ChatMsgBox{
+func (r RTMsgBoxInternal__) Import() RTMsgBox {
+	return RTMsgBox{
 		Rg: (func(x *RoleAndGenInternal__) (ret RoleAndGen) {
 			if x == nil {
 				return ret
 			}
 			return x.Import()
-		})(c.Rg),
+		})(r.Rg),
 		Box: (func(x *SecretBoxInternal__) (ret SecretBox) {
 			if x == nil {
 				return ret
 			}
 			return x.Import()
-		})(c.Box),
+		})(r.Box),
 	}
 }
-func (c ChatMsgBox) Export() *ChatMsgBoxInternal__ {
-	return &ChatMsgBoxInternal__{
-		Rg:  c.Rg.Export(),
-		Box: c.Box.Export(),
+func (r RTMsgBox) Export() *RTMsgBoxInternal__ {
+	return &RTMsgBoxInternal__{
+		Rg:  r.Rg.Export(),
+		Box: r.Box.Export(),
 	}
 }
-func (c *ChatMsgBox) Encode(enc rpc.Encoder) error {
-	return enc.Encode(c.Export())
+func (r *RTMsgBox) Encode(enc rpc.Encoder) error {
+	return enc.Encode(r.Export())
 }
 
-func (c *ChatMsgBox) Decode(dec rpc.Decoder) error {
-	var tmp ChatMsgBoxInternal__
+func (r *RTMsgBox) Decode(dec rpc.Decoder) error {
+	var tmp RTMsgBoxInternal__
 	err := dec.Decode(&tmp)
 	if err != nil {
 		return err
 	}
-	*c = tmp.Import()
+	*r = tmp.Import()
 	return nil
 }
 
-func (c *ChatMsgBox) Bytes() []byte { return nil }
+func (r *RTMsgBox) Bytes() []byte { return nil }
 
-type ChatMsgBody struct {
-	Encrypted bool
-	F_0__     *ChatMsgBox `json:"f0,omitempty"`
-	F_1__     *[]byte     `json:"f1,omitempty"`
+type MsgBodyType int
+
+const (
+	MsgBodyType_Plaintext MsgBodyType = 0
+	MsgBodyType_Encrypted MsgBodyType = 1
+)
+
+var MsgBodyTypeMap = map[string]MsgBodyType{
+	"Plaintext": 0,
+	"Encrypted": 1,
 }
-type ChatMsgBodyInternal__ struct {
-	_struct   struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
-	Encrypted bool
-	Switch__  ChatMsgBodyInternalSwitch__
-}
-type ChatMsgBodyInternalSwitch__ struct {
-	_struct struct{}              `codec:",omitempty"` //lint:ignore U1000 msgpack internal field
-	F_0__   *ChatMsgBoxInternal__ `codec:"0"`
-	F_1__   *[]byte               `codec:"1"`
+var MsgBodyTypeRevMap = map[MsgBodyType]string{
+	0: "Plaintext",
+	1: "Encrypted",
 }
 
-func (c ChatMsgBody) GetEncrypted() (ret bool, err error) {
-	switch c.Encrypted {
-	case true:
-		if c.F_0__ == nil {
+type MsgBodyTypeInternal__ MsgBodyType
+
+func (m MsgBodyTypeInternal__) Import() MsgBodyType {
+	return MsgBodyType(m)
+}
+func (m MsgBodyType) Export() *MsgBodyTypeInternal__ {
+	return ((*MsgBodyTypeInternal__)(&m))
+}
+
+type RTMsgBody struct {
+	T     MsgBodyType
+	F_0__ *[]byte   `json:"f0,omitempty"`
+	F_1__ *RTMsgBox `json:"f1,omitempty"`
+}
+type RTMsgBodyInternal__ struct {
+	_struct  struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
+	T        MsgBodyType
+	Switch__ RTMsgBodyInternalSwitch__
+}
+type RTMsgBodyInternalSwitch__ struct {
+	_struct struct{}            `codec:",omitempty"` //lint:ignore U1000 msgpack internal field
+	F_0__   *[]byte             `codec:"0"`
+	F_1__   *RTMsgBoxInternal__ `codec:"1"`
+}
+
+func (r RTMsgBody) GetT() (ret MsgBodyType, err error) {
+	switch r.T {
+	case MsgBodyType_Plaintext:
+		if r.F_0__ == nil {
 			return ret, errors.New("unexpected nil case for F_0__")
 		}
-	case false:
-		if c.F_1__ == nil {
+	case MsgBodyType_Encrypted:
+		if r.F_1__ == nil {
 			return ret, errors.New("unexpected nil case for F_1__")
 		}
 	}
-	return c.Encrypted, nil
+	return r.T, nil
 }
-func (c ChatMsgBody) True() ChatMsgBox {
-	if c.F_0__ == nil {
+func (r RTMsgBody) Plaintext() []byte {
+	if r.F_0__ == nil {
 		panic("unexpected nil case; should have been checked")
 	}
-	if !c.Encrypted {
-		panic(fmt.Sprintf("unexpected switch value (%v) when True is called", c.Encrypted))
+	if r.T != MsgBodyType_Plaintext {
+		panic(fmt.Sprintf("unexpected switch value (%v) when Plaintext is called", r.T))
 	}
-	return *c.F_0__
+	return *r.F_0__
 }
-func (c ChatMsgBody) False() []byte {
-	if c.F_1__ == nil {
+func (r RTMsgBody) Encrypted() RTMsgBox {
+	if r.F_1__ == nil {
 		panic("unexpected nil case; should have been checked")
 	}
-	if c.Encrypted {
-		panic(fmt.Sprintf("unexpected switch value (%v) when False is called", c.Encrypted))
+	if r.T != MsgBodyType_Encrypted {
+		panic(fmt.Sprintf("unexpected switch value (%v) when Encrypted is called", r.T))
 	}
-	return *c.F_1__
+	return *r.F_1__
 }
-func NewChatMsgBodyWithTrue(v ChatMsgBox) ChatMsgBody {
-	return ChatMsgBody{
-		Encrypted: true,
-		F_0__:     &v,
-	}
-}
-func NewChatMsgBodyWithFalse(v []byte) ChatMsgBody {
-	return ChatMsgBody{
-		Encrypted: false,
-		F_1__:     &v,
+func NewRTMsgBodyWithPlaintext(v []byte) RTMsgBody {
+	return RTMsgBody{
+		T:     MsgBodyType_Plaintext,
+		F_0__: &v,
 	}
 }
-func (c ChatMsgBodyInternal__) Import() ChatMsgBody {
-	return ChatMsgBody{
-		Encrypted: c.Encrypted,
-		F_0__: (func(x *ChatMsgBoxInternal__) *ChatMsgBox {
+func NewRTMsgBodyWithEncrypted(v RTMsgBox) RTMsgBody {
+	return RTMsgBody{
+		T:     MsgBodyType_Encrypted,
+		F_1__: &v,
+	}
+}
+func (r RTMsgBodyInternal__) Import() RTMsgBody {
+	return RTMsgBody{
+		T:     r.T,
+		F_0__: r.Switch__.F_0__,
+		F_1__: (func(x *RTMsgBoxInternal__) *RTMsgBox {
 			if x == nil {
 				return nil
 			}
-			tmp := (func(x *ChatMsgBoxInternal__) (ret ChatMsgBox) {
+			tmp := (func(x *RTMsgBoxInternal__) (ret RTMsgBox) {
 				if x == nil {
 					return ret
 				}
 				return x.Import()
 			})(x)
 			return &tmp
-		})(c.Switch__.F_0__),
-		F_1__: c.Switch__.F_1__,
+		})(r.Switch__.F_1__),
 	}
 }
-func (c ChatMsgBody) Export() *ChatMsgBodyInternal__ {
-	return &ChatMsgBodyInternal__{
-		Encrypted: c.Encrypted,
-		Switch__: ChatMsgBodyInternalSwitch__{
-			F_0__: (func(x *ChatMsgBox) *ChatMsgBoxInternal__ {
+func (r RTMsgBody) Export() *RTMsgBodyInternal__ {
+	return &RTMsgBodyInternal__{
+		T: r.T,
+		Switch__: RTMsgBodyInternalSwitch__{
+			F_0__: r.F_0__,
+			F_1__: (func(x *RTMsgBox) *RTMsgBoxInternal__ {
 				if x == nil {
 					return nil
 				}
 				return (*x).Export()
-			})(c.F_0__),
-			F_1__: c.F_1__,
+			})(r.F_1__),
 		},
 	}
 }
-func (c *ChatMsgBody) Encode(enc rpc.Encoder) error {
-	return enc.Encode(c.Export())
+func (r *RTMsgBody) Encode(enc rpc.Encoder) error {
+	return enc.Encode(r.Export())
 }
 
-func (c *ChatMsgBody) Decode(dec rpc.Decoder) error {
-	var tmp ChatMsgBodyInternal__
+func (r *RTMsgBody) Decode(dec rpc.Decoder) error {
+	var tmp RTMsgBodyInternal__
 	err := dec.Decode(&tmp)
 	if err != nil {
 		return err
 	}
-	*c = tmp.Import()
+	*r = tmp.Import()
 	return nil
 }
 
-func (c *ChatMsgBody) Bytes() []byte { return nil }
+func (r *RTMsgBody) Bytes() []byte { return nil }
 
-type ChatMessage struct {
-	ChannelID     ChatChannelID
-	Seq           ChatMsgSeq
-	Typ           ChatMsgType
-	Body          ChatMsgBody
+type RTMessage struct {
+	ChannelID     RTChannelID
+	Seq           RTMsgSeq
+	Typ           RTMsgType
+	Body          RTMsgBody
 	SenderUid     *UID
 	SenderPartyID *PartyID
 	SentAtTime    Time
 	InsertTime    Time
 }
-type ChatMessageInternal__ struct {
+type RTMessageInternal__ struct {
 	_struct       struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
-	ChannelID     *ChatChannelIDInternal__
-	Seq           *ChatMsgSeqInternal__
-	Typ           *ChatMsgTypeInternal__
-	Body          *ChatMsgBodyInternal__
+	ChannelID     *RTChannelIDInternal__
+	Seq           *RTMsgSeqInternal__
+	Typ           *RTMsgTypeInternal__
+	Body          *RTMsgBodyInternal__
 	SenderUid     *UIDInternal__
 	SenderPartyID *PartyIDInternal__
 	SentAtTime    *TimeInternal__
 	InsertTime    *TimeInternal__
 }
 
-func (c ChatMessageInternal__) Import() ChatMessage {
-	return ChatMessage{
-		ChannelID: (func(x *ChatChannelIDInternal__) (ret ChatChannelID) {
+func (r RTMessageInternal__) Import() RTMessage {
+	return RTMessage{
+		ChannelID: (func(x *RTChannelIDInternal__) (ret RTChannelID) {
 			if x == nil {
 				return ret
 			}
 			return x.Import()
-		})(c.ChannelID),
-		Seq: (func(x *ChatMsgSeqInternal__) (ret ChatMsgSeq) {
+		})(r.ChannelID),
+		Seq: (func(x *RTMsgSeqInternal__) (ret RTMsgSeq) {
 			if x == nil {
 				return ret
 			}
 			return x.Import()
-		})(c.Seq),
-		Typ: (func(x *ChatMsgTypeInternal__) (ret ChatMsgType) {
+		})(r.Seq),
+		Typ: (func(x *RTMsgTypeInternal__) (ret RTMsgType) {
 			if x == nil {
 				return ret
 			}
 			return x.Import()
-		})(c.Typ),
-		Body: (func(x *ChatMsgBodyInternal__) (ret ChatMsgBody) {
+		})(r.Typ),
+		Body: (func(x *RTMsgBodyInternal__) (ret RTMsgBody) {
 			if x == nil {
 				return ret
 			}
 			return x.Import()
-		})(c.Body),
+		})(r.Body),
 		SenderUid: (func(x *UIDInternal__) *UID {
 			if x == nil {
 				return nil
@@ -820,7 +1104,7 @@ func (c ChatMessageInternal__) Import() ChatMessage {
 				return x.Import()
 			})(x)
 			return &tmp
-		})(c.SenderUid),
+		})(r.SenderUid),
 		SenderPartyID: (func(x *PartyIDInternal__) *PartyID {
 			if x == nil {
 				return nil
@@ -832,175 +1116,175 @@ func (c ChatMessageInternal__) Import() ChatMessage {
 				return x.Import()
 			})(x)
 			return &tmp
-		})(c.SenderPartyID),
+		})(r.SenderPartyID),
 		SentAtTime: (func(x *TimeInternal__) (ret Time) {
 			if x == nil {
 				return ret
 			}
 			return x.Import()
-		})(c.SentAtTime),
+		})(r.SentAtTime),
 		InsertTime: (func(x *TimeInternal__) (ret Time) {
 			if x == nil {
 				return ret
 			}
 			return x.Import()
-		})(c.InsertTime),
+		})(r.InsertTime),
 	}
 }
-func (c ChatMessage) Export() *ChatMessageInternal__ {
-	return &ChatMessageInternal__{
-		ChannelID: c.ChannelID.Export(),
-		Seq:       c.Seq.Export(),
-		Typ:       c.Typ.Export(),
-		Body:      c.Body.Export(),
+func (r RTMessage) Export() *RTMessageInternal__ {
+	return &RTMessageInternal__{
+		ChannelID: r.ChannelID.Export(),
+		Seq:       r.Seq.Export(),
+		Typ:       r.Typ.Export(),
+		Body:      r.Body.Export(),
 		SenderUid: (func(x *UID) *UIDInternal__ {
 			if x == nil {
 				return nil
 			}
 			return (*x).Export()
-		})(c.SenderUid),
+		})(r.SenderUid),
 		SenderPartyID: (func(x *PartyID) *PartyIDInternal__ {
 			if x == nil {
 				return nil
 			}
 			return (*x).Export()
-		})(c.SenderPartyID),
-		SentAtTime: c.SentAtTime.Export(),
-		InsertTime: c.InsertTime.Export(),
+		})(r.SenderPartyID),
+		SentAtTime: r.SentAtTime.Export(),
+		InsertTime: r.InsertTime.Export(),
 	}
 }
-func (c *ChatMessage) Encode(enc rpc.Encoder) error {
-	return enc.Encode(c.Export())
+func (r *RTMessage) Encode(enc rpc.Encoder) error {
+	return enc.Encode(r.Export())
 }
 
-func (c *ChatMessage) Decode(dec rpc.Decoder) error {
-	var tmp ChatMessageInternal__
+func (r *RTMessage) Decode(dec rpc.Decoder) error {
+	var tmp RTMessageInternal__
 	err := dec.Decode(&tmp)
 	if err != nil {
 		return err
 	}
-	*c = tmp.Import()
+	*r = tmp.Import()
 	return nil
 }
 
-var ChatMessageTypeUniqueID = rpc.TypeUniqueID(0x7bcd22765c8cd757)
+var RTMessageTypeUniqueID = rpc.TypeUniqueID(0x7bcd22765c8cd757)
 
-func (c *ChatMessage) GetTypeUniqueID() rpc.TypeUniqueID {
-	return ChatMessageTypeUniqueID
+func (r *RTMessage) GetTypeUniqueID() rpc.TypeUniqueID {
+	return RTMessageTypeUniqueID
 }
-func (c *ChatMessage) Bytes() []byte { return nil }
+func (r *RTMessage) Bytes() []byte { return nil }
 
-type ChatInboxChannel struct {
-	Md           ChatChannelMetadata
-	InboxVersion ChatInboxVersion
-	ReadThrough  ChatMsgSeq
+type RTInboxChannel struct {
+	Md           RTChannelMetadata
+	InboxVersion RTInboxVersion
+	ReadThrough  RTMsgSeq
 	Hidden       bool
 	Muted        bool
 }
-type ChatInboxChannelInternal__ struct {
+type RTInboxChannelInternal__ struct {
 	_struct      struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
-	Md           *ChatChannelMetadataInternal__
-	InboxVersion *ChatInboxVersionInternal__
-	ReadThrough  *ChatMsgSeqInternal__
+	Md           *RTChannelMetadataInternal__
+	InboxVersion *RTInboxVersionInternal__
+	ReadThrough  *RTMsgSeqInternal__
 	Hidden       *bool
 	Muted        *bool
 }
 
-func (c ChatInboxChannelInternal__) Import() ChatInboxChannel {
-	return ChatInboxChannel{
-		Md: (func(x *ChatChannelMetadataInternal__) (ret ChatChannelMetadata) {
+func (r RTInboxChannelInternal__) Import() RTInboxChannel {
+	return RTInboxChannel{
+		Md: (func(x *RTChannelMetadataInternal__) (ret RTChannelMetadata) {
 			if x == nil {
 				return ret
 			}
 			return x.Import()
-		})(c.Md),
-		InboxVersion: (func(x *ChatInboxVersionInternal__) (ret ChatInboxVersion) {
+		})(r.Md),
+		InboxVersion: (func(x *RTInboxVersionInternal__) (ret RTInboxVersion) {
 			if x == nil {
 				return ret
 			}
 			return x.Import()
-		})(c.InboxVersion),
-		ReadThrough: (func(x *ChatMsgSeqInternal__) (ret ChatMsgSeq) {
+		})(r.InboxVersion),
+		ReadThrough: (func(x *RTMsgSeqInternal__) (ret RTMsgSeq) {
 			if x == nil {
 				return ret
 			}
 			return x.Import()
-		})(c.ReadThrough),
+		})(r.ReadThrough),
 		Hidden: (func(x *bool) (ret bool) {
 			if x == nil {
 				return ret
 			}
 			return *x
-		})(c.Hidden),
+		})(r.Hidden),
 		Muted: (func(x *bool) (ret bool) {
 			if x == nil {
 				return ret
 			}
 			return *x
-		})(c.Muted),
+		})(r.Muted),
 	}
 }
-func (c ChatInboxChannel) Export() *ChatInboxChannelInternal__ {
-	return &ChatInboxChannelInternal__{
-		Md:           c.Md.Export(),
-		InboxVersion: c.InboxVersion.Export(),
-		ReadThrough:  c.ReadThrough.Export(),
-		Hidden:       &c.Hidden,
-		Muted:        &c.Muted,
+func (r RTInboxChannel) Export() *RTInboxChannelInternal__ {
+	return &RTInboxChannelInternal__{
+		Md:           r.Md.Export(),
+		InboxVersion: r.InboxVersion.Export(),
+		ReadThrough:  r.ReadThrough.Export(),
+		Hidden:       &r.Hidden,
+		Muted:        &r.Muted,
 	}
 }
-func (c *ChatInboxChannel) Encode(enc rpc.Encoder) error {
-	return enc.Encode(c.Export())
+func (r *RTInboxChannel) Encode(enc rpc.Encoder) error {
+	return enc.Encode(r.Export())
 }
 
-func (c *ChatInboxChannel) Decode(dec rpc.Decoder) error {
-	var tmp ChatInboxChannelInternal__
+func (r *RTInboxChannel) Decode(dec rpc.Decoder) error {
+	var tmp RTInboxChannelInternal__
 	err := dec.Decode(&tmp)
 	if err != nil {
 		return err
 	}
-	*c = tmp.Import()
+	*r = tmp.Import()
 	return nil
 }
 
-func (c *ChatInboxChannel) Bytes() []byte { return nil }
+func (r *RTInboxChannel) Bytes() []byte { return nil }
 
-type ChatInboxDelta struct {
-	InboxVersion ChatInboxVersion
-	AppID        ChatAppID
-	Channels     []ChatInboxChannel
+type RTInboxDelta struct {
+	InboxVersion RTInboxVersion
+	AppID        RTAppID
+	Channels     []RTInboxChannel
 }
-type ChatInboxDeltaInternal__ struct {
+type RTInboxDeltaInternal__ struct {
 	_struct      struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
-	InboxVersion *ChatInboxVersionInternal__
-	AppID        *ChatAppIDInternal__
-	Channels     *[](*ChatInboxChannelInternal__)
+	InboxVersion *RTInboxVersionInternal__
+	AppID        *RTAppIDInternal__
+	Channels     *[](*RTInboxChannelInternal__)
 }
 
-func (c ChatInboxDeltaInternal__) Import() ChatInboxDelta {
-	return ChatInboxDelta{
-		InboxVersion: (func(x *ChatInboxVersionInternal__) (ret ChatInboxVersion) {
+func (r RTInboxDeltaInternal__) Import() RTInboxDelta {
+	return RTInboxDelta{
+		InboxVersion: (func(x *RTInboxVersionInternal__) (ret RTInboxVersion) {
 			if x == nil {
 				return ret
 			}
 			return x.Import()
-		})(c.InboxVersion),
-		AppID: (func(x *ChatAppIDInternal__) (ret ChatAppID) {
+		})(r.InboxVersion),
+		AppID: (func(x *RTAppIDInternal__) (ret RTAppID) {
 			if x == nil {
 				return ret
 			}
 			return x.Import()
-		})(c.AppID),
-		Channels: (func(x *[](*ChatInboxChannelInternal__)) (ret []ChatInboxChannel) {
+		})(r.AppID),
+		Channels: (func(x *[](*RTInboxChannelInternal__)) (ret []RTInboxChannel) {
 			if x == nil || len(*x) == 0 {
 				return nil
 			}
-			ret = make([]ChatInboxChannel, len(*x))
+			ret = make([]RTInboxChannel, len(*x))
 			for k, v := range *x {
 				if v == nil {
 					continue
 				}
-				ret[k] = (func(x *ChatInboxChannelInternal__) (ret ChatInboxChannel) {
+				ret[k] = (func(x *RTInboxChannelInternal__) (ret RTInboxChannel) {
 					if x == nil {
 						return ret
 					}
@@ -1008,63 +1292,63 @@ func (c ChatInboxDeltaInternal__) Import() ChatInboxDelta {
 				})(v)
 			}
 			return ret
-		})(c.Channels),
+		})(r.Channels),
 	}
 }
-func (c ChatInboxDelta) Export() *ChatInboxDeltaInternal__ {
-	return &ChatInboxDeltaInternal__{
-		InboxVersion: c.InboxVersion.Export(),
-		AppID:        c.AppID.Export(),
-		Channels: (func(x []ChatInboxChannel) *[](*ChatInboxChannelInternal__) {
+func (r RTInboxDelta) Export() *RTInboxDeltaInternal__ {
+	return &RTInboxDeltaInternal__{
+		InboxVersion: r.InboxVersion.Export(),
+		AppID:        r.AppID.Export(),
+		Channels: (func(x []RTInboxChannel) *[](*RTInboxChannelInternal__) {
 			if len(x) == 0 {
 				return nil
 			}
-			ret := make([](*ChatInboxChannelInternal__), len(x))
+			ret := make([](*RTInboxChannelInternal__), len(x))
 			for k, v := range x {
 				ret[k] = v.Export()
 			}
 			return &ret
-		})(c.Channels),
+		})(r.Channels),
 	}
 }
-func (c *ChatInboxDelta) Encode(enc rpc.Encoder) error {
-	return enc.Encode(c.Export())
+func (r *RTInboxDelta) Encode(enc rpc.Encoder) error {
+	return enc.Encode(r.Export())
 }
 
-func (c *ChatInboxDelta) Decode(dec rpc.Decoder) error {
-	var tmp ChatInboxDeltaInternal__
+func (r *RTInboxDelta) Decode(dec rpc.Decoder) error {
+	var tmp RTInboxDeltaInternal__
 	err := dec.Decode(&tmp)
 	if err != nil {
 		return err
 	}
-	*c = tmp.Import()
+	*r = tmp.Import()
 	return nil
 }
 
-func (c *ChatInboxDelta) Bytes() []byte { return nil }
+func (r *RTInboxDelta) Bytes() []byte { return nil }
 
-type ChatThreadPage struct {
-	Msgs  []ChatMessage
+type RTThreadPage struct {
+	Msgs  []RTMessage
 	Final bool
 }
-type ChatThreadPageInternal__ struct {
+type RTThreadPageInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
-	Msgs    *[](*ChatMessageInternal__)
+	Msgs    *[](*RTMessageInternal__)
 	Final   *bool
 }
 
-func (c ChatThreadPageInternal__) Import() ChatThreadPage {
-	return ChatThreadPage{
-		Msgs: (func(x *[](*ChatMessageInternal__)) (ret []ChatMessage) {
+func (r RTThreadPageInternal__) Import() RTThreadPage {
+	return RTThreadPage{
+		Msgs: (func(x *[](*RTMessageInternal__)) (ret []RTMessage) {
 			if x == nil || len(*x) == 0 {
 				return nil
 			}
-			ret = make([]ChatMessage, len(*x))
+			ret = make([]RTMessage, len(*x))
 			for k, v := range *x {
 				if v == nil {
 					continue
 				}
-				ret[k] = (func(x *ChatMessageInternal__) (ret ChatMessage) {
+				ret[k] = (func(x *RTMessageInternal__) (ret RTMessage) {
 					if x == nil {
 						return ret
 					}
@@ -1072,232 +1356,227 @@ func (c ChatThreadPageInternal__) Import() ChatThreadPage {
 				})(v)
 			}
 			return ret
-		})(c.Msgs),
+		})(r.Msgs),
 		Final: (func(x *bool) (ret bool) {
 			if x == nil {
 				return ret
 			}
 			return *x
-		})(c.Final),
+		})(r.Final),
 	}
 }
-func (c ChatThreadPage) Export() *ChatThreadPageInternal__ {
-	return &ChatThreadPageInternal__{
-		Msgs: (func(x []ChatMessage) *[](*ChatMessageInternal__) {
+func (r RTThreadPage) Export() *RTThreadPageInternal__ {
+	return &RTThreadPageInternal__{
+		Msgs: (func(x []RTMessage) *[](*RTMessageInternal__) {
 			if len(x) == 0 {
 				return nil
 			}
-			ret := make([](*ChatMessageInternal__), len(x))
+			ret := make([](*RTMessageInternal__), len(x))
 			for k, v := range x {
 				ret[k] = v.Export()
 			}
 			return &ret
-		})(c.Msgs),
-		Final: &c.Final,
+		})(r.Msgs),
+		Final: &r.Final,
 	}
 }
-func (c *ChatThreadPage) Encode(enc rpc.Encoder) error {
-	return enc.Encode(c.Export())
+func (r *RTThreadPage) Encode(enc rpc.Encoder) error {
+	return enc.Encode(r.Export())
 }
 
-func (c *ChatThreadPage) Decode(dec rpc.Decoder) error {
-	var tmp ChatThreadPageInternal__
+func (r *RTThreadPage) Decode(dec rpc.Decoder) error {
+	var tmp RTThreadPageInternal__
 	err := dec.Decode(&tmp)
 	if err != nil {
 		return err
 	}
-	*c = tmp.Import()
+	*r = tmp.Import()
 	return nil
 }
 
-func (c *ChatThreadPage) Bytes() []byte { return nil }
+func (r *RTThreadPage) Bytes() []byte { return nil }
 
-type ChatThreadDir int
+type RTThreadDir int
 
 const (
-	ChatThreadDir_Forward  ChatThreadDir = 0
-	ChatThreadDir_Backward ChatThreadDir = 1
+	RTThreadDir_Forward  RTThreadDir = 0
+	RTThreadDir_Backward RTThreadDir = 1
 )
 
-var ChatThreadDirMap = map[string]ChatThreadDir{
+var RTThreadDirMap = map[string]RTThreadDir{
 	"Forward":  0,
 	"Backward": 1,
 }
-var ChatThreadDirRevMap = map[ChatThreadDir]string{
+var RTThreadDirRevMap = map[RTThreadDir]string{
 	0: "Forward",
 	1: "Backward",
 }
 
-type ChatThreadDirInternal__ ChatThreadDir
+type RTThreadDirInternal__ RTThreadDir
 
-func (c ChatThreadDirInternal__) Import() ChatThreadDir {
-	return ChatThreadDir(c)
+func (r RTThreadDirInternal__) Import() RTThreadDir {
+	return RTThreadDir(r)
 }
-func (c ChatThreadDir) Export() *ChatThreadDirInternal__ {
-	return ((*ChatThreadDirInternal__)(&c))
+func (r RTThreadDir) Export() *RTThreadDirInternal__ {
+	return ((*RTThreadDirInternal__)(&r))
 }
 
-type ChatThreadQuery struct {
-	ChannelID ChatChannelID
-	Start     ChatMsgSeq
-	Dir       ChatThreadDir
+type RTThreadQuery struct {
+	ChannelID RTChannelID
+	Start     RTMsgSeq
+	Dir       RTThreadDir
 	Max       uint64
 }
-type ChatThreadQueryInternal__ struct {
+type RTThreadQueryInternal__ struct {
 	_struct   struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
-	ChannelID *ChatChannelIDInternal__
-	Start     *ChatMsgSeqInternal__
-	Dir       *ChatThreadDirInternal__
+	ChannelID *RTChannelIDInternal__
+	Start     *RTMsgSeqInternal__
+	Dir       *RTThreadDirInternal__
 	Max       *uint64
 }
 
-func (c ChatThreadQueryInternal__) Import() ChatThreadQuery {
-	return ChatThreadQuery{
-		ChannelID: (func(x *ChatChannelIDInternal__) (ret ChatChannelID) {
+func (r RTThreadQueryInternal__) Import() RTThreadQuery {
+	return RTThreadQuery{
+		ChannelID: (func(x *RTChannelIDInternal__) (ret RTChannelID) {
 			if x == nil {
 				return ret
 			}
 			return x.Import()
-		})(c.ChannelID),
-		Start: (func(x *ChatMsgSeqInternal__) (ret ChatMsgSeq) {
+		})(r.ChannelID),
+		Start: (func(x *RTMsgSeqInternal__) (ret RTMsgSeq) {
 			if x == nil {
 				return ret
 			}
 			return x.Import()
-		})(c.Start),
-		Dir: (func(x *ChatThreadDirInternal__) (ret ChatThreadDir) {
+		})(r.Start),
+		Dir: (func(x *RTThreadDirInternal__) (ret RTThreadDir) {
 			if x == nil {
 				return ret
 			}
 			return x.Import()
-		})(c.Dir),
+		})(r.Dir),
 		Max: (func(x *uint64) (ret uint64) {
 			if x == nil {
 				return ret
 			}
 			return *x
-		})(c.Max),
+		})(r.Max),
 	}
 }
-func (c ChatThreadQuery) Export() *ChatThreadQueryInternal__ {
-	return &ChatThreadQueryInternal__{
-		ChannelID: c.ChannelID.Export(),
-		Start:     c.Start.Export(),
-		Dir:       c.Dir.Export(),
-		Max:       &c.Max,
+func (r RTThreadQuery) Export() *RTThreadQueryInternal__ {
+	return &RTThreadQueryInternal__{
+		ChannelID: r.ChannelID.Export(),
+		Start:     r.Start.Export(),
+		Dir:       r.Dir.Export(),
+		Max:       &r.Max,
 	}
 }
-func (c *ChatThreadQuery) Encode(enc rpc.Encoder) error {
-	return enc.Encode(c.Export())
+func (r *RTThreadQuery) Encode(enc rpc.Encoder) error {
+	return enc.Encode(r.Export())
 }
 
-func (c *ChatThreadQuery) Decode(dec rpc.Decoder) error {
-	var tmp ChatThreadQueryInternal__
+func (r *RTThreadQuery) Decode(dec rpc.Decoder) error {
+	var tmp RTThreadQueryInternal__
 	err := dec.Decode(&tmp)
 	if err != nil {
 		return err
 	}
-	*c = tmp.Import()
+	*r = tmp.Import()
 	return nil
 }
 
-func (c *ChatThreadQuery) Bytes() []byte { return nil }
+func (r *RTThreadQuery) Bytes() []byte { return nil }
 
-type ChatChannelCreate struct {
-	Md ChatChannelMetadata
+type RTChannelCreate struct {
+	Md RTChannelMetadata
 }
-type ChatChannelCreateInternal__ struct {
+type RTChannelCreateInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
-	Md      *ChatChannelMetadataInternal__
+	Md      *RTChannelMetadataInternal__
 }
 
-func (c ChatChannelCreateInternal__) Import() ChatChannelCreate {
-	return ChatChannelCreate{
-		Md: (func(x *ChatChannelMetadataInternal__) (ret ChatChannelMetadata) {
+func (r RTChannelCreateInternal__) Import() RTChannelCreate {
+	return RTChannelCreate{
+		Md: (func(x *RTChannelMetadataInternal__) (ret RTChannelMetadata) {
 			if x == nil {
 				return ret
 			}
 			return x.Import()
-		})(c.Md),
+		})(r.Md),
 	}
 }
-func (c ChatChannelCreate) Export() *ChatChannelCreateInternal__ {
-	return &ChatChannelCreateInternal__{
-		Md: c.Md.Export(),
+func (r RTChannelCreate) Export() *RTChannelCreateInternal__ {
+	return &RTChannelCreateInternal__{
+		Md: r.Md.Export(),
 	}
 }
-func (c *ChatChannelCreate) Encode(enc rpc.Encoder) error {
-	return enc.Encode(c.Export())
+func (r *RTChannelCreate) Encode(enc rpc.Encoder) error {
+	return enc.Encode(r.Export())
 }
 
-func (c *ChatChannelCreate) Decode(dec rpc.Decoder) error {
-	var tmp ChatChannelCreateInternal__
+func (r *RTChannelCreate) Decode(dec rpc.Decoder) error {
+	var tmp RTChannelCreateInternal__
 	err := dec.Decode(&tmp)
 	if err != nil {
 		return err
 	}
-	*c = tmp.Import()
+	*r = tmp.Import()
 	return nil
 }
 
-var ChatChannelCreateTypeUniqueID = rpc.TypeUniqueID(0x1bae4ba70272da77)
+func (r *RTChannelCreate) Bytes() []byte { return nil }
 
-func (c *ChatChannelCreate) GetTypeUniqueID() rpc.TypeUniqueID {
-	return ChatChannelCreateTypeUniqueID
-}
-func (c *ChatChannelCreate) Bytes() []byte { return nil }
-
-type ChatInboxPollRes struct {
+type RTInboxPollRes struct {
 	Bumped       bool
-	InboxVersion ChatInboxVersion
+	InboxVersion RTInboxVersion
 }
-type ChatInboxPollResInternal__ struct {
+type RTInboxPollResInternal__ struct {
 	_struct      struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Bumped       *bool
-	InboxVersion *ChatInboxVersionInternal__
+	InboxVersion *RTInboxVersionInternal__
 }
 
-func (c ChatInboxPollResInternal__) Import() ChatInboxPollRes {
-	return ChatInboxPollRes{
+func (r RTInboxPollResInternal__) Import() RTInboxPollRes {
+	return RTInboxPollRes{
 		Bumped: (func(x *bool) (ret bool) {
 			if x == nil {
 				return ret
 			}
 			return *x
-		})(c.Bumped),
-		InboxVersion: (func(x *ChatInboxVersionInternal__) (ret ChatInboxVersion) {
+		})(r.Bumped),
+		InboxVersion: (func(x *RTInboxVersionInternal__) (ret RTInboxVersion) {
 			if x == nil {
 				return ret
 			}
 			return x.Import()
-		})(c.InboxVersion),
+		})(r.InboxVersion),
 	}
 }
-func (c ChatInboxPollRes) Export() *ChatInboxPollResInternal__ {
-	return &ChatInboxPollResInternal__{
-		Bumped:       &c.Bumped,
-		InboxVersion: c.InboxVersion.Export(),
+func (r RTInboxPollRes) Export() *RTInboxPollResInternal__ {
+	return &RTInboxPollResInternal__{
+		Bumped:       &r.Bumped,
+		InboxVersion: r.InboxVersion.Export(),
 	}
 }
-func (c *ChatInboxPollRes) Encode(enc rpc.Encoder) error {
-	return enc.Encode(c.Export())
+func (r *RTInboxPollRes) Encode(enc rpc.Encoder) error {
+	return enc.Encode(r.Export())
 }
 
-func (c *ChatInboxPollRes) Decode(dec rpc.Decoder) error {
-	var tmp ChatInboxPollResInternal__
+func (r *RTInboxPollRes) Decode(dec rpc.Decoder) error {
+	var tmp RTInboxPollResInternal__
 	err := dec.Decode(&tmp)
 	if err != nil {
 		return err
 	}
-	*c = tmp.Import()
+	*r = tmp.Import()
 	return nil
 }
 
-func (c *ChatInboxPollRes) Bytes() []byte { return nil }
+func (r *RTInboxPollRes) Bytes() []byte { return nil }
 
 func init() {
-	rpc.AddUnique(ChatChannelNamePlaintextTypeUniqueID)
-	rpc.AddUnique(ChatChannelMetadataTypeUniqueID)
-	rpc.AddUnique(ChatMessageTypeUniqueID)
-	rpc.AddUnique(ChatChannelCreateTypeUniqueID)
+	rpc.AddUnique(RTMsgPlaintextTypeUniqueID)
+	rpc.AddUnique(RTChannelNamePlaintextTypeUniqueID)
+	rpc.AddUnique(RTChannelMetadataTypeUniqueID)
+	rpc.AddUnique(RTMessageTypeUniqueID)
 }
