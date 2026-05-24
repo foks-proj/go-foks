@@ -1,5 +1,5 @@
 // Auto-generated to Go types and interfaces using snowpc 0.0.4 (https://github.com/foks-proj/go-snowpack-compiler)
-//  Input file:../../proto-src/rem/chat.snowp
+//  Input file:../../proto-src/rem/realtime.snowp
 
 package rem
 
