@@ -9,16 +9,16 @@ import (
 	"github.com/foks-proj/go-snowpack-rpc/rpc"
 )
 
-type ChatChannelID [16]byte
-type ChatChannelIDInternal__ [16]byte
+type ChatChannelID uint64
+type ChatChannelIDInternal__ uint64
 
 func (c ChatChannelID) Export() *ChatChannelIDInternal__ {
-	tmp := (([16]byte)(c))
+	tmp := ((uint64)(c))
 	return ((*ChatChannelIDInternal__)(&tmp))
 }
 func (c ChatChannelIDInternal__) Import() ChatChannelID {
-	tmp := ([16]byte)(c)
-	return ChatChannelID((func(x *[16]byte) (ret [16]byte) {
+	tmp := (uint64)(c)
+	return ChatChannelID((func(x *uint64) (ret uint64) {
 		if x == nil {
 			return ret
 		}
@@ -41,7 +41,7 @@ func (c *ChatChannelID) Decode(dec rpc.Decoder) error {
 }
 
 func (c ChatChannelID) Bytes() []byte {
-	return (c)[:]
+	return nil
 }
 
 type ChatMsgSeq uint64
