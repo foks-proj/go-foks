@@ -10,7 +10,7 @@
 
 @0x66a87546bca14e33;
 
-typedef ChatChannelID = Blob(16);   // random, unique across all teams
+typedef ChatChannelID = Uint;       // random 63-bit, unique across all teams; BIGINT in SQL
 typedef ChatMsgSeq = Uint;          // monotonic per channel; messages_enc.seq
 typedef ChatInboxVersion = Uint;    // per (uid, appID); user_inbox.inbox_version
 typedef ChatChannelSeqno = Uint;    // CAS on channel metadata updates

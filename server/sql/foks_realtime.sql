@@ -33,7 +33,7 @@ CREATE TYPE push_platform AS ENUM('apns', 'fcm');
  */
 CREATE TABLE channels (
     short_host_id SMALLINT NOT NULL,
-    channel_id BYTEA NOT NULL,
+    channel_id BIGINT NOT NULL, /* random 63-bit; see ChatChannelID in chat.snowp */
     parent_team_id BYTEA NOT NULL,
     app_id app_id NOT NULL,
     seqno INTEGER NOT NULL, /* metadata seqno; CAS on update */
@@ -45,8 +45,7 @@ CREATE TABLE channels (
     write_role_viz_level SMALLINT NOT NULL,
     last_msg_type msg_type,
     last_msg_seq BIGINT, /* max(seq) delivered; 0 if none */
-    last_sender_uid BYTEA,
-    last_sender_party_id BYTEA,
+    last_sender_no INTEGER, /* -> channel_parties.party_no; NULL if no msg / server-authored */
     last_send_time TIMESTAMP,
     ctime TIMESTAMP NOT NULL,
     mtime TIMESTAMP NOT NULL,
@@ -56,24 +55,46 @@ CREATE TABLE channels (
 CREATE INDEX channels_team_app_idx ON channels(short_host_id, parent_team_id, app_id);
 
 /*
+ * channel_parties: per-channel dictionary that interns message senders into a
+ * small ordinal, so the unbounded messages tables carry a 4-byte sender_no
+ * instead of two wide EntityID columns. Mirrors the short_host_id pattern.
+ *
+ * A party is a user or a team (PartyID); party_id is always set. uid carries
+ * the human attribution and equals party_id for ordinary user messages, or is
+ * NULL for team/bot-authored. party_no is append-only and never reused, so a
+ * message from someone who later leaves the channel still resolves.
+ */
+CREATE TABLE channel_parties (
+    short_host_id SMALLINT NOT NULL,
+    channel_id BIGINT NOT NULL,
+    party_no INTEGER NOT NULL, /* per-channel ordinal; append-only */
+    party_id BYTEA NOT NULL, /* user or team EntityID */
+    uid BYTEA, /* human attribution; NULL for team/bot-authored */
+    ctime TIMESTAMP NOT NULL,
+    PRIMARY KEY(short_host_id, channel_id, party_no),
+    UNIQUE(short_host_id, channel_id, party_id),
+    FOREIGN KEY(short_host_id, channel_id) REFERENCES channels(short_host_id, channel_id)
+);
+
+/*
  * messages_enc: encrypted message log, one row per message.
  * (channel_id, seq) is monotonic per channel.
  */
 CREATE TABLE messages_enc (
     short_host_id SMALLINT NOT NULL,
-    channel_id BYTEA NOT NULL,
+    channel_id BIGINT NOT NULL,
     seq BIGINT NOT NULL,
     typ msg_type NOT NULL,
     msg_box BYTEA NOT NULL,
     ptk_gen INTEGER NOT NULL,
     role_type SMALLINT NOT NULL,
     viz_level SMALLINT NOT NULL,
-    sender_uid BYTEA NOT NULL,
-    sender_party_id BYTEA NOT NULL, /* may differ from sender_uid for bot/team-authored */
+    sender_no INTEGER NOT NULL, /* -> channel_parties.party_no */
     sent_at_time TIMESTAMP NOT NULL, /* client-asserted */
     insert_time TIMESTAMP NOT NULL, /* server-asserted */
     PRIMARY KEY(short_host_id, channel_id, seq),
-    FOREIGN KEY(short_host_id, channel_id) REFERENCES channels(short_host_id, channel_id)
+    FOREIGN KEY(short_host_id, channel_id) REFERENCES channels(short_host_id, channel_id),
+    FOREIGN KEY(short_host_id, channel_id, sender_no) REFERENCES channel_parties(short_host_id, channel_id, party_no)
 );
 
 /*
@@ -82,16 +103,16 @@ CREATE TABLE messages_enc (
  */
 CREATE TABLE messages_clear (
     short_host_id SMALLINT NOT NULL,
-    channel_id BYTEA NOT NULL,
+    channel_id BIGINT NOT NULL,
     seq BIGINT NOT NULL,
     typ msg_type NOT NULL,
     msg BYTEA NOT NULL,
-    sender_uid BYTEA, /* nullable for server-authored */
-    sender_party_id BYTEA,
+    sender_no INTEGER, /* -> channel_parties.party_no; NULL for server-authored */
     sent_at_time TIMESTAMP NOT NULL,
     insert_time TIMESTAMP NOT NULL,
     PRIMARY KEY(short_host_id, channel_id, seq),
-    FOREIGN KEY(short_host_id, channel_id) REFERENCES channels(short_host_id, channel_id)
+    FOREIGN KEY(short_host_id, channel_id) REFERENCES channels(short_host_id, channel_id),
+    FOREIGN KEY(short_host_id, channel_id, sender_no) REFERENCES channel_parties(short_host_id, channel_id, party_no)
 );
 
 /*
@@ -105,7 +126,7 @@ CREATE TABLE messages_clear (
  */
 CREATE TABLE user_channels (
     short_host_id SMALLINT NOT NULL,
-    channel_id BYTEA NOT NULL,
+    channel_id BIGINT NOT NULL,
     uid BYTEA NOT NULL,
     app_id app_id NOT NULL,
     inbox_version BIGINT NOT NULL,
@@ -143,7 +164,7 @@ CREATE TABLE push_outbox (
     short_host_id SMALLINT NOT NULL,
     id BIGSERIAL NOT NULL,
     uid BYTEA NOT NULL,
-    channel_id BYTEA NOT NULL,
+    channel_id BIGINT NOT NULL,
     kind notif_kind NOT NULL,
     seq BIGINT, /* messages_enc.seq if applicable */
     data BYTEA, /* opaque, may be boxed */
