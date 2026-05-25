@@ -321,6 +321,7 @@ enum ServerType {
     KVStore @12;
     Quota @13;
     Autocert @15;
+    RealTime @16;
     Web @64;
     Test @101;
 }
