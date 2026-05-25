@@ -48,6 +48,9 @@ const (
 
 	// KV Store is a simple key-value store and metadata
 	DbTypeKVStore DbType = 9
+
+	// Realtime Store is for chat, notifications, etc
+	DbTypeRealTime DbType = 10
 )
 
 // do not include Template or KVStore; the latter we have shards of, so
@@ -58,6 +61,7 @@ var AllDBs []DbType = []DbType{
 	DbTypeMerkleRaft,
 	DbTypeServerConfig,
 	DbTypeBeacon,
+	DbTypeRealTime,
 }
 
 type KVShardDescriptor struct {
@@ -111,6 +115,8 @@ func (t DbType) ToString() string {
 		return "foks_beacon"
 	case DbTypeKVStore:
 		return "foks_kv_store"
+	case DbTypeRealTime:
+		return "foks_realtime"
 	default:
 		return "<nil>"
 	}
@@ -134,6 +140,8 @@ func ParseDbType(s string) (DbType, error) {
 		return DbTypeBeacon, nil
 	case "kv-store":
 		return DbTypeKVStore, nil
+	case "real-time":
+		return DbTypeRealTime, nil
 	default:
 		return DbTypeNone, errors.New("unknown DB type: " + s)
 	}
@@ -237,6 +245,7 @@ type Config interface {
 	RegServerConfig(ctx context.Context) (RegServerConfigger, error)
 	UserServerConfig(ctx context.Context) (UserServerConfigger, error)
 	KVStoreServerConfig(ctx context.Context) (KVServerConfigger, error)
+	RealTimeConfig(ctx context.Context) (RealTimeConfigger, error)
 
 	// Used for both the builder and the batcher for now, since they have very similar
 	// configurations.
@@ -273,6 +282,8 @@ type UserServerConfigger interface {
 }
 type KVServerConfigger interface {
 	BlobStorePath() string
+}
+type RealTimeConfigger interface {
 }
 
 type ServerLooperConfigger interface {
@@ -627,5 +638,8 @@ func (c *EmptyConfig) ClientConfig(ctx context.Context) (ClientConfigger, error)
 	return nil, NewEmptyConfigError()
 }
 func (c *EmptyConfig) TeamConfig(ctx context.Context) (TeamConfigger, error) {
+	return nil, NewEmptyConfigError()
+}
+func (c *EmptyConfig) RealTimeConfig(ctx context.Context) (RealTimeConfigger, error) {
 	return nil, NewEmptyConfigError()
 }
