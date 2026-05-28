@@ -49,7 +49,7 @@ func (s *Server) Setup(m shared.MetaContext) error {
 	return core.NotImplementedError{}
 }
 
-func (c *ClientConn) RtNewChannel(ctx context.Context, arg proto.RTChannelMetadata) (res proto.RTChannelMetadata, err error) {
+func (c *ClientConn) RtNewChannel(ctx context.Context, arg rem.RtNewChannelArg) (res proto.RTChannelMetadata, err error) {
 	return res, core.NotImplementedError{}
 }
 func (c *ClientConn) RtGetChannel(ctx context.Context, arg proto.RTChannelID) (res proto.RTChannelMetadata, err error) {

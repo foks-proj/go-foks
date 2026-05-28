@@ -998,16 +998,16 @@ func (r *RTChannelDescBox) Decode(dec rpc.Decoder) error {
 
 func (r *RTChannelDescBox) Bytes() []byte { return nil }
 
-type RTChannelSetVers uint64
-type RTChannelSetVersInternal__ uint64
+type RTChannelSetVersion uint64
+type RTChannelSetVersionInternal__ uint64
 
-func (r RTChannelSetVers) Export() *RTChannelSetVersInternal__ {
+func (r RTChannelSetVersion) Export() *RTChannelSetVersionInternal__ {
 	tmp := ((uint64)(r))
-	return ((*RTChannelSetVersInternal__)(&tmp))
+	return ((*RTChannelSetVersionInternal__)(&tmp))
 }
-func (r RTChannelSetVersInternal__) Import() RTChannelSetVers {
+func (r RTChannelSetVersionInternal__) Import() RTChannelSetVersion {
 	tmp := (uint64)(r)
-	return RTChannelSetVers((func(x *uint64) (ret uint64) {
+	return RTChannelSetVersion((func(x *uint64) (ret uint64) {
 		if x == nil {
 			return ret
 		}
@@ -1015,12 +1015,12 @@ func (r RTChannelSetVersInternal__) Import() RTChannelSetVers {
 	})(&tmp))
 }
 
-func (r *RTChannelSetVers) Encode(enc rpc.Encoder) error {
+func (r *RTChannelSetVersion) Encode(enc rpc.Encoder) error {
 	return enc.Encode(r.Export())
 }
 
-func (r *RTChannelSetVers) Decode(dec rpc.Decoder) error {
-	var tmp RTChannelSetVersInternal__
+func (r *RTChannelSetVersion) Decode(dec rpc.Decoder) error {
+	var tmp RTChannelSetVersionInternal__
 	err := dec.Decode(&tmp)
 	if err != nil {
 		return err
@@ -1029,44 +1029,44 @@ func (r *RTChannelSetVers) Decode(dec rpc.Decoder) error {
 	return nil
 }
 
-func (r RTChannelSetVers) Bytes() []byte {
+func (r RTChannelSetVersion) Bytes() []byte {
 	return nil
 }
 
 type RTChannelMetadata struct {
-	Id                RTChannelID
-	ParentTeam        TeamID
-	AppID             RTAppID
-	Seqno             RTChannelSeqno
-	NameBox           RTChannelNameBox
-	DescBox           *RTChannelDescBox
-	Roles             RTRolePair
-	LastMsgType       RTMsgType
-	LastMsgSeq        RTMsgSeq
-	LastSenderUid     *UID
-	LastSenderPartyID *PartyID
-	LastSendTime      *Time
-	Ctime             Time
-	Mtime             Time
-	UpdatedAtSetVers  RTChannelSetVers
+	Id                  RTChannelID
+	ParentTeam          TeamID
+	AppID               RTAppID
+	Seqno               RTChannelSeqno
+	NameBox             RTChannelNameBox
+	DescBox             *RTChannelDescBox
+	Roles               RTRolePair
+	LastMsgType         RTMsgType
+	LastMsgSeq          RTMsgSeq
+	LastSenderUid       *UID
+	LastSenderPartyID   *PartyID
+	LastSendTime        *Time
+	Ctime               Time
+	Mtime               Time
+	UpdatedAtSetVersion RTChannelSetVersion
 }
 type RTChannelMetadataInternal__ struct {
-	_struct           struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
-	Id                *RTChannelIDInternal__
-	ParentTeam        *TeamIDInternal__
-	AppID             *RTAppIDInternal__
-	Seqno             *RTChannelSeqnoInternal__
-	NameBox           *RTChannelNameBoxInternal__
-	DescBox           *RTChannelDescBoxInternal__
-	Roles             *RTRolePairInternal__
-	LastMsgType       *RTMsgTypeInternal__
-	LastMsgSeq        *RTMsgSeqInternal__
-	LastSenderUid     *UIDInternal__
-	LastSenderPartyID *PartyIDInternal__
-	LastSendTime      *TimeInternal__
-	Ctime             *TimeInternal__
-	Mtime             *TimeInternal__
-	UpdatedAtSetVers  *RTChannelSetVersInternal__
+	_struct             struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
+	Id                  *RTChannelIDInternal__
+	ParentTeam          *TeamIDInternal__
+	AppID               *RTAppIDInternal__
+	Seqno               *RTChannelSeqnoInternal__
+	NameBox             *RTChannelNameBoxInternal__
+	DescBox             *RTChannelDescBoxInternal__
+	Roles               *RTRolePairInternal__
+	LastMsgType         *RTMsgTypeInternal__
+	LastMsgSeq          *RTMsgSeqInternal__
+	LastSenderUid       *UIDInternal__
+	LastSenderPartyID   *PartyIDInternal__
+	LastSendTime        *TimeInternal__
+	Ctime               *TimeInternal__
+	Mtime               *TimeInternal__
+	UpdatedAtSetVersion *RTChannelSetVersionInternal__
 }
 
 func (r RTChannelMetadataInternal__) Import() RTChannelMetadata {
@@ -1179,12 +1179,12 @@ func (r RTChannelMetadataInternal__) Import() RTChannelMetadata {
 			}
 			return x.Import()
 		})(r.Mtime),
-		UpdatedAtSetVers: (func(x *RTChannelSetVersInternal__) (ret RTChannelSetVers) {
+		UpdatedAtSetVersion: (func(x *RTChannelSetVersionInternal__) (ret RTChannelSetVersion) {
 			if x == nil {
 				return ret
 			}
 			return x.Import()
-		})(r.UpdatedAtSetVers),
+		})(r.UpdatedAtSetVersion),
 	}
 }
 func (r RTChannelMetadata) Export() *RTChannelMetadataInternal__ {
@@ -1221,9 +1221,9 @@ func (r RTChannelMetadata) Export() *RTChannelMetadataInternal__ {
 			}
 			return (*x).Export()
 		})(r.LastSendTime),
-		Ctime:            r.Ctime.Export(),
-		Mtime:            r.Mtime.Export(),
-		UpdatedAtSetVers: r.UpdatedAtSetVers.Export(),
+		Ctime:               r.Ctime.Export(),
+		Mtime:               r.Mtime.Export(),
+		UpdatedAtSetVersion: r.UpdatedAtSetVersion.Export(),
 	}
 }
 func (r *RTChannelMetadata) Encode(enc rpc.Encoder) error {
@@ -1248,20 +1248,20 @@ func (r *RTChannelMetadata) GetTypeUniqueID() rpc.TypeUniqueID {
 func (r *RTChannelMetadata) Bytes() []byte { return nil }
 
 type RTChannelSet struct {
-	Vers  RTChannelSetVers
+	Vers  RTChannelSetVersion
 	Lst   []RTChannelMetadata
 	Mtime Time
 }
 type RTChannelSetInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
-	Vers    *RTChannelSetVersInternal__
+	Vers    *RTChannelSetVersionInternal__
 	Lst     *[](*RTChannelMetadataInternal__)
 	Mtime   *TimeInternal__
 }
 
 func (r RTChannelSetInternal__) Import() RTChannelSet {
 	return RTChannelSet{
-		Vers: (func(x *RTChannelSetVersInternal__) (ret RTChannelSetVers) {
+		Vers: (func(x *RTChannelSetVersionInternal__) (ret RTChannelSetVersion) {
 			if x == nil {
 				return ret
 			}

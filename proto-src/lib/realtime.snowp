@@ -99,7 +99,7 @@ struct RTChannelDescBox {
     box @1 : SecretBox;
 }
 
-typedef RTChannelSetVers = Uint;
+typedef RTChannelSetVersion = Uint;
 
 struct RTChannelMetadata @0xddf6b26b2ace1535 {
     id @0 : RTChannelID;
@@ -116,11 +116,11 @@ struct RTChannelMetadata @0xddf6b26b2ace1535 {
     lastSendTime @11 : Option(Time);
     ctime @12 : Time;
     mtime @13 : Time;
-    updatedAtSetVers @14 : RTChannelSetVers;
+    updatedAtSetVersion @14 : RTChannelSetVersion;
 }
 
 struct RTChannelSet {
-    vers @0 : RTChannelSetVers;
+    vers @0 : RTChannelSetVersion;
     lst @1 : List(RTChannelMetadata);
     mtime @2 : Time;
 }
