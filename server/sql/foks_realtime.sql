@@ -36,6 +36,7 @@ CREATE TABLE channels (
     channel_id BIGINT NOT NULL, /* random 63-bit; see ChatChannelID in chat.snowp */
     parent_team_id BYTEA NOT NULL,
     app_id app_id NOT NULL,
+    channel_id_full BYTEA NOT NULL, /* an ID16 for what the channel is; top 8 bytes are channel_id */
     seqno INTEGER NOT NULL, /* metadata seqno; CAS on update */
     name_box BYTEA NOT NULL, /* PTK-encrypted channel name + structural variant */
     ptk_gen INTEGER NOT NULL, /* PTK gen used for name_box */

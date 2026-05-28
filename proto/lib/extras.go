@@ -23,6 +23,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unicode"
+	"unicode/utf8"
 
 	"github.com/keybase/saltpack/encoding/basex"
 	"golang.org/x/crypto/curve25519"
@@ -4933,4 +4935,72 @@ func (i InviteCodeRegime) String() string {
 	default:
 		return "error"
 	}
+}
+
+func (n RTChannelName) IsEmpty() bool { return len(n) == 0 }
+func (n RTChannelDesc) IsEmpty() bool { return len(n) == 0 }
+
+func (n *RTChannelName) ParseFrom(s string) error {
+	s = strings.ToLower(strings.TrimSpace(s))
+	if len(s) == 0 {
+		return nil
+	}
+	if !utf8.ValidString(s) {
+		return DataError("channel name must be valid UTF-8")
+	}
+	count := utf8.RuneCountInString(s)
+	if count < 3 || count > 32 {
+		return DataError("channel name must be between 3 and 32 characters")
+	}
+	prevPunct := false
+	for _, r := range s {
+		if !unicode.IsPrint(r) {
+			return DataError("channel name must contain only printable characters")
+		}
+		isPunct := unicode.IsPunct(r)
+		if isPunct && r != '-' {
+			return DataError("channel name may not contain punctuation other than hyphens")
+		}
+		if isPunct && prevPunct {
+			return DataError("channel name may not contain consecutive punctuation characters")
+		}
+		prevPunct = isPunct
+	}
+	*n = RTChannelName(s)
+	return nil
+}
+
+func (n *RTChannelDesc) ParseFrom(s string) error {
+	s = strings.ToLower(s)
+	if len(s) == 0 {
+		return nil
+	}
+	if !utf8.ValidString(s) {
+		return DataError("channel name must be valid UTF-8")
+	}
+	count := utf8.RuneCountInString(s)
+	if count < 3 || count > 512 {
+		return DataError("channel description must be between 3 and 512 characaters")
+	}
+	*n = RTChannelDesc(s)
+	return nil
+}
+
+func (i RTChannelID) RTID() RTID {
+	var ret RTID
+	ret[0] = byte(RTIDType_Channel)
+	copy(ret[1:], i[:])
+	return ret
+}
+
+func (k RTID) StringErr() (string, error) {
+	if len(k) != 17 {
+		return "", DataError("bad RT ID")
+	}
+	b, err := B62EncodeByte(k[0])
+	if err != nil {
+		return "", err
+	}
+	s := B62Encode(k[1:])
+	return (string(b) + s), nil
 }

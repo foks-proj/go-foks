@@ -9,41 +9,6 @@ import (
 	"github.com/foks-proj/go-snowpack-rpc/rpc"
 )
 
-type RTChannelID uint64
-type RTChannelIDInternal__ uint64
-
-func (r RTChannelID) Export() *RTChannelIDInternal__ {
-	tmp := ((uint64)(r))
-	return ((*RTChannelIDInternal__)(&tmp))
-}
-func (r RTChannelIDInternal__) Import() RTChannelID {
-	tmp := (uint64)(r)
-	return RTChannelID((func(x *uint64) (ret uint64) {
-		if x == nil {
-			return ret
-		}
-		return *x
-	})(&tmp))
-}
-
-func (r *RTChannelID) Encode(enc rpc.Encoder) error {
-	return enc.Encode(r.Export())
-}
-
-func (r *RTChannelID) Decode(dec rpc.Decoder) error {
-	var tmp RTChannelIDInternal__
-	err := dec.Decode(&tmp)
-	if err != nil {
-		return err
-	}
-	*r = tmp.Import()
-	return nil
-}
-
-func (r RTChannelID) Bytes() []byte {
-	return nil
-}
-
 type RTMsgSeq uint64
 type RTMsgSeqInternal__ uint64
 
@@ -147,6 +112,203 @@ func (r *RTChannelSeqno) Decode(dec rpc.Decoder) error {
 
 func (r RTChannelSeqno) Bytes() []byte {
 	return nil
+}
+
+type RTChannelName string
+type RTChannelNameInternal__ string
+
+func (r RTChannelName) Export() *RTChannelNameInternal__ {
+	tmp := ((string)(r))
+	return ((*RTChannelNameInternal__)(&tmp))
+}
+func (r RTChannelNameInternal__) Import() RTChannelName {
+	tmp := (string)(r)
+	return RTChannelName((func(x *string) (ret string) {
+		if x == nil {
+			return ret
+		}
+		return *x
+	})(&tmp))
+}
+
+func (r *RTChannelName) Encode(enc rpc.Encoder) error {
+	return enc.Encode(r.Export())
+}
+
+func (r *RTChannelName) Decode(dec rpc.Decoder) error {
+	var tmp RTChannelNameInternal__
+	err := dec.Decode(&tmp)
+	if err != nil {
+		return err
+	}
+	*r = tmp.Import()
+	return nil
+}
+
+func (r RTChannelName) Bytes() []byte {
+	return nil
+}
+
+type RTChannelDesc string
+type RTChannelDescInternal__ string
+
+func (r RTChannelDesc) Export() *RTChannelDescInternal__ {
+	tmp := ((string)(r))
+	return ((*RTChannelDescInternal__)(&tmp))
+}
+func (r RTChannelDescInternal__) Import() RTChannelDesc {
+	tmp := (string)(r)
+	return RTChannelDesc((func(x *string) (ret string) {
+		if x == nil {
+			return ret
+		}
+		return *x
+	})(&tmp))
+}
+
+func (r *RTChannelDesc) Encode(enc rpc.Encoder) error {
+	return enc.Encode(r.Export())
+}
+
+func (r *RTChannelDesc) Decode(dec rpc.Decoder) error {
+	var tmp RTChannelDescInternal__
+	err := dec.Decode(&tmp)
+	if err != nil {
+		return err
+	}
+	*r = tmp.Import()
+	return nil
+}
+
+func (r RTChannelDesc) Bytes() []byte {
+	return nil
+}
+
+type RTIDType int
+
+const (
+	RTIDType_Channel RTIDType = 16
+)
+
+var RTIDTypeMap = map[string]RTIDType{
+	"Channel": 16,
+}
+var RTIDTypeRevMap = map[RTIDType]string{
+	16: "Channel",
+}
+
+type RTIDTypeInternal__ RTIDType
+
+func (r RTIDTypeInternal__) Import() RTIDType {
+	return RTIDType(r)
+}
+func (r RTIDType) Export() *RTIDTypeInternal__ {
+	return ((*RTIDTypeInternal__)(&r))
+}
+
+type RTChannelIDShort uint64
+type RTChannelIDShortInternal__ uint64
+
+func (r RTChannelIDShort) Export() *RTChannelIDShortInternal__ {
+	tmp := ((uint64)(r))
+	return ((*RTChannelIDShortInternal__)(&tmp))
+}
+func (r RTChannelIDShortInternal__) Import() RTChannelIDShort {
+	tmp := (uint64)(r)
+	return RTChannelIDShort((func(x *uint64) (ret uint64) {
+		if x == nil {
+			return ret
+		}
+		return *x
+	})(&tmp))
+}
+
+func (r *RTChannelIDShort) Encode(enc rpc.Encoder) error {
+	return enc.Encode(r.Export())
+}
+
+func (r *RTChannelIDShort) Decode(dec rpc.Decoder) error {
+	var tmp RTChannelIDShortInternal__
+	err := dec.Decode(&tmp)
+	if err != nil {
+		return err
+	}
+	*r = tmp.Import()
+	return nil
+}
+
+func (r RTChannelIDShort) Bytes() []byte {
+	return nil
+}
+
+type RTChannelID [16]byte
+type RTChannelIDInternal__ [16]byte
+
+func (r RTChannelID) Export() *RTChannelIDInternal__ {
+	tmp := (([16]byte)(r))
+	return ((*RTChannelIDInternal__)(&tmp))
+}
+func (r RTChannelIDInternal__) Import() RTChannelID {
+	tmp := ([16]byte)(r)
+	return RTChannelID((func(x *[16]byte) (ret [16]byte) {
+		if x == nil {
+			return ret
+		}
+		return *x
+	})(&tmp))
+}
+
+func (r *RTChannelID) Encode(enc rpc.Encoder) error {
+	return enc.Encode(r.Export())
+}
+
+func (r *RTChannelID) Decode(dec rpc.Decoder) error {
+	var tmp RTChannelIDInternal__
+	err := dec.Decode(&tmp)
+	if err != nil {
+		return err
+	}
+	*r = tmp.Import()
+	return nil
+}
+
+func (r RTChannelID) Bytes() []byte {
+	return (r)[:]
+}
+
+type RTID [17]byte
+type RTIDInternal__ [17]byte
+
+func (r RTID) Export() *RTIDInternal__ {
+	tmp := (([17]byte)(r))
+	return ((*RTIDInternal__)(&tmp))
+}
+func (r RTIDInternal__) Import() RTID {
+	tmp := ([17]byte)(r)
+	return RTID((func(x *[17]byte) (ret [17]byte) {
+		if x == nil {
+			return ret
+		}
+		return *x
+	})(&tmp))
+}
+
+func (r *RTID) Encode(enc rpc.Encoder) error {
+	return enc.Encode(r.Export())
+}
+
+func (r *RTID) Decode(dec rpc.Decoder) error {
+	var tmp RTIDInternal__
+	err := dec.Decode(&tmp)
+	if err != nil {
+		return err
+	}
+	*r = tmp.Import()
+	return nil
+}
+
+func (r RTID) Bytes() []byte {
+	return (r)[:]
 }
 
 type RTAppID int
@@ -521,16 +683,13 @@ func (r *RTRolePair) Bytes() []byte { return nil }
 type RTChannelNameType int
 
 const (
-	RTChannelNameType_Default RTChannelNameType = 0
-	RTChannelNameType_Named   RTChannelNameType = 1
+	RTChannelNameType_Named RTChannelNameType = 1
 )
 
 var RTChannelNameTypeMap = map[string]RTChannelNameType{
-	"Default": 0,
-	"Named":   1,
+	"Named": 1,
 }
 var RTChannelNameTypeRevMap = map[RTChannelNameType]string{
-	0: "Default",
 	1: "Named",
 }
 
@@ -545,7 +704,7 @@ func (r RTChannelNameType) Export() *RTChannelNameTypeInternal__ {
 
 type RTChannelNamePlaintext struct {
 	T     RTChannelNameType
-	F_1__ *NameUtf8 `json:"f1,omitempty"`
+	F_1__ *RTChannelName `json:"f1,omitempty"`
 }
 type RTChannelNamePlaintextInternal__ struct {
 	_struct  struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
@@ -553,8 +712,8 @@ type RTChannelNamePlaintextInternal__ struct {
 	Switch__ RTChannelNamePlaintextInternalSwitch__
 }
 type RTChannelNamePlaintextInternalSwitch__ struct {
-	_struct struct{}            `codec:",omitempty"` //lint:ignore U1000 msgpack internal field
-	F_1__   *NameUtf8Internal__ `codec:"1"`
+	_struct struct{}                 `codec:",omitempty"` //lint:ignore U1000 msgpack internal field
+	F_1__   *RTChannelNameInternal__ `codec:"1"`
 }
 
 func (r RTChannelNamePlaintext) GetT() (ret RTChannelNameType, err error) {
@@ -566,7 +725,7 @@ func (r RTChannelNamePlaintext) GetT() (ret RTChannelNameType, err error) {
 	}
 	return r.T, nil
 }
-func (r RTChannelNamePlaintext) Named() NameUtf8 {
+func (r RTChannelNamePlaintext) Named() RTChannelName {
 	if r.F_1__ == nil {
 		panic("unexpected nil case; should have been checked")
 	}
@@ -575,7 +734,7 @@ func (r RTChannelNamePlaintext) Named() NameUtf8 {
 	}
 	return *r.F_1__
 }
-func NewRTChannelNamePlaintextWithNamed(v NameUtf8) RTChannelNamePlaintext {
+func NewRTChannelNamePlaintextWithNamed(v RTChannelName) RTChannelNamePlaintext {
 	return RTChannelNamePlaintext{
 		T:     RTChannelNameType_Named,
 		F_1__: &v,
@@ -584,11 +743,11 @@ func NewRTChannelNamePlaintextWithNamed(v NameUtf8) RTChannelNamePlaintext {
 func (r RTChannelNamePlaintextInternal__) Import() RTChannelNamePlaintext {
 	return RTChannelNamePlaintext{
 		T: r.T,
-		F_1__: (func(x *NameUtf8Internal__) *NameUtf8 {
+		F_1__: (func(x *RTChannelNameInternal__) *RTChannelName {
 			if x == nil {
 				return nil
 			}
-			tmp := (func(x *NameUtf8Internal__) (ret NameUtf8) {
+			tmp := (func(x *RTChannelNameInternal__) (ret RTChannelName) {
 				if x == nil {
 					return ret
 				}
@@ -602,7 +761,7 @@ func (r RTChannelNamePlaintext) Export() *RTChannelNamePlaintextInternal__ {
 	return &RTChannelNamePlaintextInternal__{
 		T: r.T,
 		Switch__: RTChannelNamePlaintextInternalSwitch__{
-			F_1__: (func(x *NameUtf8) *NameUtf8Internal__ {
+			F_1__: (func(x *RTChannelName) *RTChannelNameInternal__ {
 				if x == nil {
 					return nil
 				}
@@ -631,6 +790,117 @@ func (r *RTChannelNamePlaintext) GetTypeUniqueID() rpc.TypeUniqueID {
 	return RTChannelNamePlaintextTypeUniqueID
 }
 func (r *RTChannelNamePlaintext) Bytes() []byte { return nil }
+
+type RTChannelDescType int
+
+const (
+	RTChannelDescType_Plain RTChannelDescType = 0
+)
+
+var RTChannelDescTypeMap = map[string]RTChannelDescType{
+	"Plain": 0,
+}
+var RTChannelDescTypeRevMap = map[RTChannelDescType]string{
+	0: "Plain",
+}
+
+type RTChannelDescTypeInternal__ RTChannelDescType
+
+func (r RTChannelDescTypeInternal__) Import() RTChannelDescType {
+	return RTChannelDescType(r)
+}
+func (r RTChannelDescType) Export() *RTChannelDescTypeInternal__ {
+	return ((*RTChannelDescTypeInternal__)(&r))
+}
+
+type RTChannelDescPlaintext struct {
+	T     RTChannelDescType
+	F_0__ *RTChannelDesc `json:"f0,omitempty"`
+}
+type RTChannelDescPlaintextInternal__ struct {
+	_struct  struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
+	T        RTChannelDescType
+	Switch__ RTChannelDescPlaintextInternalSwitch__
+}
+type RTChannelDescPlaintextInternalSwitch__ struct {
+	_struct struct{}                 `codec:",omitempty"` //lint:ignore U1000 msgpack internal field
+	F_0__   *RTChannelDescInternal__ `codec:"0"`
+}
+
+func (r RTChannelDescPlaintext) GetT() (ret RTChannelDescType, err error) {
+	switch r.T {
+	case RTChannelDescType_Plain:
+		if r.F_0__ == nil {
+			return ret, errors.New("unexpected nil case for F_0__")
+		}
+	}
+	return r.T, nil
+}
+func (r RTChannelDescPlaintext) Plain() RTChannelDesc {
+	if r.F_0__ == nil {
+		panic("unexpected nil case; should have been checked")
+	}
+	if r.T != RTChannelDescType_Plain {
+		panic(fmt.Sprintf("unexpected switch value (%v) when Plain is called", r.T))
+	}
+	return *r.F_0__
+}
+func NewRTChannelDescPlaintextWithPlain(v RTChannelDesc) RTChannelDescPlaintext {
+	return RTChannelDescPlaintext{
+		T:     RTChannelDescType_Plain,
+		F_0__: &v,
+	}
+}
+func (r RTChannelDescPlaintextInternal__) Import() RTChannelDescPlaintext {
+	return RTChannelDescPlaintext{
+		T: r.T,
+		F_0__: (func(x *RTChannelDescInternal__) *RTChannelDesc {
+			if x == nil {
+				return nil
+			}
+			tmp := (func(x *RTChannelDescInternal__) (ret RTChannelDesc) {
+				if x == nil {
+					return ret
+				}
+				return x.Import()
+			})(x)
+			return &tmp
+		})(r.Switch__.F_0__),
+	}
+}
+func (r RTChannelDescPlaintext) Export() *RTChannelDescPlaintextInternal__ {
+	return &RTChannelDescPlaintextInternal__{
+		T: r.T,
+		Switch__: RTChannelDescPlaintextInternalSwitch__{
+			F_0__: (func(x *RTChannelDesc) *RTChannelDescInternal__ {
+				if x == nil {
+					return nil
+				}
+				return (*x).Export()
+			})(r.F_0__),
+		},
+	}
+}
+func (r *RTChannelDescPlaintext) Encode(enc rpc.Encoder) error {
+	return enc.Encode(r.Export())
+}
+
+func (r *RTChannelDescPlaintext) Decode(dec rpc.Decoder) error {
+	var tmp RTChannelDescPlaintextInternal__
+	err := dec.Decode(&tmp)
+	if err != nil {
+		return err
+	}
+	*r = tmp.Import()
+	return nil
+}
+
+var RTChannelDescPlaintextTypeUniqueID = rpc.TypeUniqueID(0xd14f88f5ae7aaecb)
+
+func (r *RTChannelDescPlaintext) GetTypeUniqueID() rpc.TypeUniqueID {
+	return RTChannelDescPlaintextTypeUniqueID
+}
+func (r *RTChannelDescPlaintext) Bytes() []byte { return nil }
 
 type RTChannelNameBox struct {
 	Rg  RoleAndGen
@@ -680,12 +950,61 @@ func (r *RTChannelNameBox) Decode(dec rpc.Decoder) error {
 
 func (r *RTChannelNameBox) Bytes() []byte { return nil }
 
+type RTChannelDescBox struct {
+	Rg  RoleAndGen
+	Box SecretBox
+}
+type RTChannelDescBoxInternal__ struct {
+	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
+	Rg      *RoleAndGenInternal__
+	Box     *SecretBoxInternal__
+}
+
+func (r RTChannelDescBoxInternal__) Import() RTChannelDescBox {
+	return RTChannelDescBox{
+		Rg: (func(x *RoleAndGenInternal__) (ret RoleAndGen) {
+			if x == nil {
+				return ret
+			}
+			return x.Import()
+		})(r.Rg),
+		Box: (func(x *SecretBoxInternal__) (ret SecretBox) {
+			if x == nil {
+				return ret
+			}
+			return x.Import()
+		})(r.Box),
+	}
+}
+func (r RTChannelDescBox) Export() *RTChannelDescBoxInternal__ {
+	return &RTChannelDescBoxInternal__{
+		Rg:  r.Rg.Export(),
+		Box: r.Box.Export(),
+	}
+}
+func (r *RTChannelDescBox) Encode(enc rpc.Encoder) error {
+	return enc.Encode(r.Export())
+}
+
+func (r *RTChannelDescBox) Decode(dec rpc.Decoder) error {
+	var tmp RTChannelDescBoxInternal__
+	err := dec.Decode(&tmp)
+	if err != nil {
+		return err
+	}
+	*r = tmp.Import()
+	return nil
+}
+
+func (r *RTChannelDescBox) Bytes() []byte { return nil }
+
 type RTChannelMetadata struct {
 	Id                RTChannelID
 	ParentTeam        TeamID
 	AppID             RTAppID
 	Seqno             RTChannelSeqno
 	NameBox           RTChannelNameBox
+	DescBox           *RTChannelDescBox
 	Roles             RTRolePair
 	LastMsgType       RTMsgType
 	LastMsgSeq        RTMsgSeq
@@ -702,6 +1021,7 @@ type RTChannelMetadataInternal__ struct {
 	AppID             *RTAppIDInternal__
 	Seqno             *RTChannelSeqnoInternal__
 	NameBox           *RTChannelNameBoxInternal__
+	DescBox           *RTChannelDescBoxInternal__
 	Roles             *RTRolePairInternal__
 	LastMsgType       *RTMsgTypeInternal__
 	LastMsgSeq        *RTMsgSeqInternal__
@@ -744,6 +1064,18 @@ func (r RTChannelMetadataInternal__) Import() RTChannelMetadata {
 			}
 			return x.Import()
 		})(r.NameBox),
+		DescBox: (func(x *RTChannelDescBoxInternal__) *RTChannelDescBox {
+			if x == nil {
+				return nil
+			}
+			tmp := (func(x *RTChannelDescBoxInternal__) (ret RTChannelDescBox) {
+				if x == nil {
+					return ret
+				}
+				return x.Import()
+			})(x)
+			return &tmp
+		})(r.DescBox),
 		Roles: (func(x *RTRolePairInternal__) (ret RTRolePair) {
 			if x == nil {
 				return ret
@@ -814,11 +1146,17 @@ func (r RTChannelMetadataInternal__) Import() RTChannelMetadata {
 }
 func (r RTChannelMetadata) Export() *RTChannelMetadataInternal__ {
 	return &RTChannelMetadataInternal__{
-		Id:          r.Id.Export(),
-		ParentTeam:  r.ParentTeam.Export(),
-		AppID:       r.AppID.Export(),
-		Seqno:       r.Seqno.Export(),
-		NameBox:     r.NameBox.Export(),
+		Id:         r.Id.Export(),
+		ParentTeam: r.ParentTeam.Export(),
+		AppID:      r.AppID.Export(),
+		Seqno:      r.Seqno.Export(),
+		NameBox:    r.NameBox.Export(),
+		DescBox: (func(x *RTChannelDescBox) *RTChannelDescBoxInternal__ {
+			if x == nil {
+				return nil
+			}
+			return (*x).Export()
+		})(r.DescBox),
 		Roles:       r.Roles.Export(),
 		LastMsgType: r.LastMsgType.Export(),
 		LastMsgSeq:  r.LastMsgSeq.Export(),
@@ -1538,6 +1876,7 @@ func (r *RTInboxPollRes) Bytes() []byte { return nil }
 func init() {
 	rpc.AddUnique(RTMsgPlaintextTypeUniqueID)
 	rpc.AddUnique(RTChannelNamePlaintextTypeUniqueID)
+	rpc.AddUnique(RTChannelDescPlaintextTypeUniqueID)
 	rpc.AddUnique(RTChannelMetadataTypeUniqueID)
 	rpc.AddUnique(RTMessageTypeUniqueID)
 }

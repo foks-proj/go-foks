@@ -12,10 +12,21 @@
 
 // RT = "Real Time" -- usually used for chat but should be general enough to 
 //  handle other use cases.
-typedef RTChannelID = Uint;         // random 63-bit, unique across all teams; BIGINT in SQL
 typedef RTMsgSeq = Uint;            // monotonic per channel; messages_enc.seq
 typedef RTInboxVersion = Uint;      // per (uid, appID); user_inbox.inbox_version
 typedef RTChannelSeqno = Uint;      // CAS on channel metadata updates
+typedef RTChannelName = Text;       // UTF8-ok; no spaces; hyphens allowed; < 40 chars
+typedef RTChannelDesc = Text;       // UTF-ok; arbitrary text; < 512 chars
+
+// Start higher than KV, so we can tell IDs apart without context
+enum RTIDType {
+    Channel @16;
+}
+
+typedef RTChannelIDShort = Uint;    // random 63-bit, unique across all teams; BIGINT in SQL
+typedef RTChannelID = Blob(16);     // Full channelID
+typedef RTID = Blob(17);            // Generic Realtime ID
+
 
 // app_id lets the same fabric carry chat, CRDTs, notifications, etc. Mirrors
 // the foks_realtime.app_id postgres enum.
@@ -59,7 +70,6 @@ struct RTRolePair {
 }
 
 enum RTChannelNameType  {
-    Default @0;
     Named @1;
 }
 
@@ -67,11 +77,24 @@ enum RTChannelNameType  {
 // "general" channel from a named one, and add structure later (topic, etc.)
 // without a wire break.
 variant RTChannelNamePlaintext switch (t : RTChannelNameType) @0xbe4f7ec6ba0b1393 { 
-    case Named @1 : NameUtf8;   // named channel
+    case Named @1 : RTChannelName;   // named channel
+}
+
+enum RTChannelDescType {
+    Plain @0;
+}
+
+variant RTChannelDescPlaintext switch (t : RTChannelDescType) @0xd14f88f5ae7aaecb {
+    case Plain @0 : RTChannelDesc;    // simple utf-8 description
 }
 
 // Box of RTChannelNamePlaintext under the parent team's PTK at ptkGen.
 struct RTChannelNameBox {
+    rg @0 : RoleAndGen;
+    box @1 : SecretBox;
+}
+
+struct RTChannelDescBox {
     rg @0 : RoleAndGen;
     box @1 : SecretBox;
 }
@@ -82,14 +105,15 @@ struct RTChannelMetadata @0xddf6b26b2ace1535 {
     appID @2 : RTAppID;
     seqno @3 : RTChannelSeqno;       // CAS-bumps on metadata edits
     nameBox @4 : RTChannelNameBox;   // encrypted channel name
-    roles @5 : RTRolePair;           // read/write roles in parent team
-    lastMsgType @6 : RTMsgType;      // None if no message yet
-    lastMsgSeq @7 : RTMsgSeq;        // 0 if no message yet
-    lastSenderUid @8 : Option(UID);
-    lastSenderPartyID @9 : Option(PartyID);
-    lastSendTime @10 : Option(Time);
-    ctime @11 : Time;
-    mtime @12 : Time;
+    descBox @5 : Option(RTChannelDescBox);    // channel description (optional)
+    roles @6 : RTRolePair;           // read/write roles in parent team
+    lastMsgType @7 : RTMsgType;      // None if no message yet
+    lastMsgSeq @8 : RTMsgSeq;        // 0 if no message yet
+    lastSenderUid @9 : Option(UID);
+    lastSenderPartyID @10 : Option(PartyID);
+    lastSendTime @11 : Option(Time);
+    ctime @12 : Time;
+    mtime @13 : Time;
 }
 
 // Encrypted message body. Key derivation: per-channel symmetric key derived
