@@ -75,10 +75,10 @@ protocol RealTime
     // List all channels under a (team, appID). User auth only; requires the
     // caller to have at least one user_channels row in this team. Stage 1a
     // does no pagination; channel counts are expected to be small.
-    rtListTeamChannels @2 (
+    rtListAllChannels @2 (
         team @0 : lib.TeamID,
         appID @1 : lib.RTAppID
-    ) -> List(lib.RTChannelMetadata);
+    ) -> lib.RTChannelSet;
 
     // Send a message. Team auth at write role of the channel.
     rtSend @3 (
@@ -115,4 +115,5 @@ protocol RealTime
     rtSelectVHost @9 (
         host @0 : lib.HostID
     ) : RTSelectVhost;
+
 }

@@ -27,6 +27,21 @@ CREATE TYPE push_status AS ENUM('queued', 'sending', 'done', 'failed');
 CREATE TYPE push_platform AS ENUM('apns', 'fcm');
 
 /*
+ * channel_set: one row for each (teamID X appID) pair. We'll keep track of sequential
+ * versions to detect races in channel creations. Slightly annoying to do since the
+ * server doesn't know channel names, and the PTK encrypting channels can of course 
+ * rotate.
+ */
+CREATE TABLE channel_sets (
+    short_host_id SMALLINT NOT NULL,
+    parent_team_id BYTEA NOT NULL,
+    app_id app_id NOT NULL,
+    vers INTEGER NOT NULL,
+    mtime TIMESTAMPTZ NOT NULL,
+    PRIMARY KEY(short_host_id, parent_team_id, app_id)
+);
+
+/*
  * channels: every (team, app) pair has 1+ channels. channel_id is unique
  * across all teams. seqno CAS-increments on any metadata update (name, etc).
  * last_* fields are denormalized for inbox-snippet rendering.
@@ -47,9 +62,10 @@ CREATE TABLE channels (
     last_msg_type msg_type,
     last_msg_seq BIGINT, /* max(seq) delivered; 0 if none */
     last_sender_no INTEGER, /* -> channel_parties.party_no; NULL if no msg / server-authored */
-    last_send_time TIMESTAMP,
-    ctime TIMESTAMP NOT NULL,
-    mtime TIMESTAMP NOT NULL,
+    last_send_time TIMESTAMPTZ,
+    ctime TIMESTAMPTZ NOT NULL,
+    mtime TIMESTAMPTZ NOT NULL,
+    updated_at_set_vers INTEGER NOT NULL, /* corresponds to channel_sets at time of update */
     PRIMARY KEY(short_host_id, channel_id)
 );
 /* no FK to teams (cross-DB); enforced at app layer */
@@ -71,7 +87,7 @@ CREATE TABLE channel_parties (
     party_no INTEGER NOT NULL, /* per-channel ordinal; append-only */
     party_id BYTEA NOT NULL, /* user or team EntityID */
     uid BYTEA, /* human attribution; NULL for team/bot-authored */
-    ctime TIMESTAMP NOT NULL,
+    ctime TIMESTAMPTZ NOT NULL,
     PRIMARY KEY(short_host_id, channel_id, party_no),
     UNIQUE(short_host_id, channel_id, party_id),
     FOREIGN KEY(short_host_id, channel_id) REFERENCES channels(short_host_id, channel_id)
@@ -91,8 +107,8 @@ CREATE TABLE messages_enc (
     role_type SMALLINT NOT NULL,
     viz_level SMALLINT NOT NULL,
     sender_no INTEGER NOT NULL, /* -> channel_parties.party_no */
-    sent_at_time TIMESTAMP NOT NULL, /* client-asserted */
-    insert_time TIMESTAMP NOT NULL, /* server-asserted */
+    sent_at_time TIMESTAMPTZ NOT NULL, /* client-asserted */
+    insert_time TIMESTAMPTZ NOT NULL, /* server-asserted */
     PRIMARY KEY(short_host_id, channel_id, seq),
     FOREIGN KEY(short_host_id, channel_id) REFERENCES channels(short_host_id, channel_id),
     FOREIGN KEY(short_host_id, channel_id, sender_no) REFERENCES channel_parties(short_host_id, channel_id, party_no)
@@ -109,8 +125,8 @@ CREATE TABLE messages_clear (
     typ msg_type NOT NULL,
     msg BYTEA NOT NULL,
     sender_no INTEGER, /* -> channel_parties.party_no; NULL for server-authored */
-    sent_at_time TIMESTAMP NOT NULL,
-    insert_time TIMESTAMP NOT NULL,
+    sent_at_time TIMESTAMPTZ NOT NULL,
+    insert_time TIMESTAMPTZ NOT NULL,
     PRIMARY KEY(short_host_id, channel_id, seq),
     FOREIGN KEY(short_host_id, channel_id) REFERENCES channels(short_host_id, channel_id),
     FOREIGN KEY(short_host_id, channel_id, sender_no) REFERENCES channel_parties(short_host_id, channel_id, party_no)
@@ -131,13 +147,13 @@ CREATE TABLE user_channels (
     uid BYTEA NOT NULL,
     app_id app_id NOT NULL,
     inbox_version BIGINT NOT NULL,
-    last_msg_time TIMESTAMP NOT NULL,
-    earliest_msg_time TIMESTAMP, /* server's lower bound on this user's reachable history */
+    last_msg_time TIMESTAMPTZ NOT NULL,
+    earliest_msg_time TIMESTAMPTZ, /* server's lower bound on this user's reachable history */
     read_through BIGINT NOT NULL, /* max seq the user has read; 0 = unread */
     hidden BOOLEAN NOT NULL,
     muted BOOLEAN NOT NULL,
-    ctime TIMESTAMP NOT NULL,
-    mtime TIMESTAMP NOT NULL,
+    ctime TIMESTAMPTZ NOT NULL,
+    mtime TIMESTAMPTZ NOT NULL,
     PRIMARY KEY(short_host_id, channel_id, uid),
     FOREIGN KEY(short_host_id, channel_id) REFERENCES channels(short_host_id, channel_id)
 );
@@ -153,7 +169,7 @@ CREATE TABLE user_inbox (
     uid BYTEA NOT NULL,
     app_id app_id NOT NULL,
     inbox_version BIGINT NOT NULL,
-    mtime TIMESTAMP NOT NULL,
+    mtime TIMESTAMPTZ NOT NULL,
     PRIMARY KEY(short_host_id, uid, app_id)
 );
 
@@ -170,8 +186,8 @@ CREATE TABLE push_outbox (
     seq BIGINT, /* messages_enc.seq if applicable */
     data BYTEA, /* opaque, may be boxed */
     status push_status NOT NULL,
-    ctime TIMESTAMP NOT NULL,
-    mtime TIMESTAMP NOT NULL,
+    ctime TIMESTAMPTZ NOT NULL,
+    mtime TIMESTAMPTZ NOT NULL,
     PRIMARY KEY(short_host_id, id)
 );
 CREATE INDEX push_outbox_queue_idx ON push_outbox(status, ctime) WHERE status IN ('queued', 'sending');
@@ -188,14 +204,14 @@ CREATE TABLE push_tokens (
     platform push_platform NOT NULL,
     token BYTEA NOT NULL,
     enabled BOOLEAN NOT NULL,
-    ctime TIMESTAMP NOT NULL,
-    mtime TIMESTAMP NOT NULL,
+    ctime TIMESTAMPTZ NOT NULL,
+    mtime TIMESTAMPTZ NOT NULL,
     PRIMARY KEY(short_host_id, uid, device_verify_key)
 );
 CREATE INDEX push_tokens_user_idx ON push_tokens(short_host_id, uid) WHERE enabled = true;
 
 CREATE TABLE schema_patches (
     id INTEGER NOT NULL PRIMARY KEY,
-    ctime TIMESTAMP NOT NULL
+    ctime TIMESTAMPTZ NOT NULL
 );
 INSERT INTO schema_patches (id, ctime) VALUES (1, NOW());

@@ -427,18 +427,18 @@ func (r *RtGetChannelArg) Decode(dec rpc.Decoder) error {
 
 func (r *RtGetChannelArg) Bytes() []byte { return nil }
 
-type RtListTeamChannelsArg struct {
+type RtListAllChannelsArg struct {
 	Team  lib.TeamID
 	AppID lib.RTAppID
 }
-type RtListTeamChannelsArgInternal__ struct {
+type RtListAllChannelsArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Team    *lib.TeamIDInternal__
 	AppID   *lib.RTAppIDInternal__
 }
 
-func (r RtListTeamChannelsArgInternal__) Import() RtListTeamChannelsArg {
-	return RtListTeamChannelsArg{
+func (r RtListAllChannelsArgInternal__) Import() RtListAllChannelsArg {
+	return RtListAllChannelsArg{
 		Team: (func(x *lib.TeamIDInternal__) (ret lib.TeamID) {
 			if x == nil {
 				return ret
@@ -453,18 +453,18 @@ func (r RtListTeamChannelsArgInternal__) Import() RtListTeamChannelsArg {
 		})(r.AppID),
 	}
 }
-func (r RtListTeamChannelsArg) Export() *RtListTeamChannelsArgInternal__ {
-	return &RtListTeamChannelsArgInternal__{
+func (r RtListAllChannelsArg) Export() *RtListAllChannelsArgInternal__ {
+	return &RtListAllChannelsArgInternal__{
 		Team:  r.Team.Export(),
 		AppID: r.AppID.Export(),
 	}
 }
-func (r *RtListTeamChannelsArg) Encode(enc rpc.Encoder) error {
+func (r *RtListAllChannelsArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(r.Export())
 }
 
-func (r *RtListTeamChannelsArg) Decode(dec rpc.Decoder) error {
-	var tmp RtListTeamChannelsArgInternal__
+func (r *RtListAllChannelsArg) Decode(dec rpc.Decoder) error {
+	var tmp RtListAllChannelsArgInternal__
 	err := dec.Decode(&tmp)
 	if err != nil {
 		return err
@@ -473,7 +473,7 @@ func (r *RtListTeamChannelsArg) Decode(dec rpc.Decoder) error {
 	return nil
 }
 
-func (r *RtListTeamChannelsArg) Bytes() []byte { return nil }
+func (r *RtListAllChannelsArg) Bytes() []byte { return nil }
 
 type RtSendArg struct {
 	Rtarg RTSendArg
@@ -751,7 +751,7 @@ func (r *RTSelectVhost) Bytes() []byte { return nil }
 type RealTimeInterface interface {
 	RtNewChannel(context.Context, lib.RTChannelMetadata) (lib.RTChannelMetadata, error)
 	RtGetChannel(context.Context, lib.RTChannelID) (lib.RTChannelMetadata, error)
-	RtListTeamChannels(context.Context, RtListTeamChannelsArg) ([]lib.RTChannelMetadata, error)
+	RtListAllChannels(context.Context, RtListAllChannelsArg) (lib.RTChannelSet, error)
 	RtSend(context.Context, RTSendArg) (RTSendRes, error)
 	RtGetThread(context.Context, lib.RTThreadQuery) (lib.RTThreadPage, error)
 	RtGetInboxVersion(context.Context, RTInboxKey) (lib.RTInboxVersion, error)
@@ -852,15 +852,15 @@ func (c RealTimeClient) RtGetChannel(ctx context.Context, channelID lib.RTChanne
 	res = tmp.Data.Import()
 	return
 }
-func (c RealTimeClient) RtListTeamChannels(ctx context.Context, arg RtListTeamChannelsArg) (res []lib.RTChannelMetadata, err error) {
-	warg := &rpc.DataWrap[lib.Header, *RtListTeamChannelsArgInternal__]{
+func (c RealTimeClient) RtListAllChannels(ctx context.Context, arg RtListAllChannelsArg) (res lib.RTChannelSet, err error) {
+	warg := &rpc.DataWrap[lib.Header, *RtListAllChannelsArgInternal__]{
 		Data: arg.Export(),
 	}
 	if c.MakeArgHeader != nil {
 		warg.Header = c.MakeArgHeader()
 	}
-	var tmp rpc.DataWrap[lib.Header, [](*lib.RTChannelMetadataInternal__)]
-	err = c.Cli.Call2(ctx, rpc.NewMethodV2(RealTimeProtocolID, 2, "RealTime.rtListTeamChannels"), warg, &tmp, 0*time.Millisecond, realTimeErrorUnwrapperAdapter{h: c.ErrorUnwrapper})
+	var tmp rpc.DataWrap[lib.Header, lib.RTChannelSetInternal__]
+	err = c.Cli.Call2(ctx, rpc.NewMethodV2(RealTimeProtocolID, 2, "RealTime.rtListAllChannels"), warg, &tmp, 0*time.Millisecond, realTimeErrorUnwrapperAdapter{h: c.ErrorUnwrapper})
 	if err != nil {
 		return
 	}
@@ -870,24 +870,7 @@ func (c RealTimeClient) RtListTeamChannels(ctx context.Context, arg RtListTeamCh
 			return
 		}
 	}
-	res = (func(x *[](*lib.RTChannelMetadataInternal__)) (ret []lib.RTChannelMetadata) {
-		if x == nil || len(*x) == 0 {
-			return nil
-		}
-		ret = make([]lib.RTChannelMetadata, len(*x))
-		for k, v := range *x {
-			if v == nil {
-				continue
-			}
-			ret[k] = (func(x *lib.RTChannelMetadataInternal__) (ret lib.RTChannelMetadata) {
-				if x == nil {
-					return ret
-				}
-				return x.Import()
-			})(v)
-		}
-		return ret
-	})(&tmp.Data)
+	res = tmp.Data.Import()
 	return
 }
 func (c RealTimeClient) RtSend(ctx context.Context, rtarg RTSendArg) (res RTSendRes, err error) {
@@ -1122,43 +1105,31 @@ func RealTimeProtocol(i RealTimeInterface) rpc.ProtocolV2 {
 			2: {
 				ServeHandlerDescription: rpc.ServeHandlerDescription{
 					MakeArg: func() interface{} {
-						var ret rpc.DataWrap[lib.Header, *RtListTeamChannelsArgInternal__]
+						var ret rpc.DataWrap[lib.Header, *RtListAllChannelsArgInternal__]
 						return &ret
 					},
 					Handler: func(ctx context.Context, args interface{}) (interface{}, error) {
-						typedWrappedArg, ok := args.(*rpc.DataWrap[lib.Header, *RtListTeamChannelsArgInternal__])
+						typedWrappedArg, ok := args.(*rpc.DataWrap[lib.Header, *RtListAllChannelsArgInternal__])
 						if !ok {
-							err := rpc.NewTypeError((*rpc.DataWrap[lib.Header, *RtListTeamChannelsArgInternal__])(nil), args)
+							err := rpc.NewTypeError((*rpc.DataWrap[lib.Header, *RtListAllChannelsArgInternal__])(nil), args)
 							return nil, err
 						}
 						if err := i.CheckArgHeader(ctx, typedWrappedArg.Header); err != nil {
 							return nil, err
 						}
 						typedArg := typedWrappedArg.Data
-						tmp, err := i.RtListTeamChannels(ctx, (typedArg.Import()))
+						tmp, err := i.RtListAllChannels(ctx, (typedArg.Import()))
 						if err != nil {
 							return nil, err
 						}
-						lst := (func(x []lib.RTChannelMetadata) *[](*lib.RTChannelMetadataInternal__) {
-							if len(x) == 0 {
-								return nil
-							}
-							ret := make([](*lib.RTChannelMetadataInternal__), len(x))
-							for k, v := range x {
-								ret[k] = v.Export()
-							}
-							return &ret
-						})(tmp)
-						ret := rpc.DataWrap[lib.Header, [](*lib.RTChannelMetadataInternal__)]{
+						ret := rpc.DataWrap[lib.Header, *lib.RTChannelSetInternal__]{
+							Data:   tmp.Export(),
 							Header: i.MakeResHeader(),
-						}
-						if lst != nil {
-							ret.Data = *lst
 						}
 						return &ret, nil
 					},
 				},
-				Name: "rtListTeamChannels",
+				Name: "rtListAllChannels",
 			},
 			3: {
 				ServeHandlerDescription: rpc.ServeHandlerDescription{

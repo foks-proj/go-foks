@@ -99,6 +99,8 @@ struct RTChannelDescBox {
     box @1 : SecretBox;
 }
 
+typedef RTChannelSetVers = Uint;
+
 struct RTChannelMetadata @0xddf6b26b2ace1535 {
     id @0 : RTChannelID;
     parentTeam @1 : TeamID;
@@ -114,6 +116,13 @@ struct RTChannelMetadata @0xddf6b26b2ace1535 {
     lastSendTime @11 : Option(Time);
     ctime @12 : Time;
     mtime @13 : Time;
+    updatedAtSetVers @14 : RTChannelSetVers;
+}
+
+struct RTChannelSet {
+    vers @0 : RTChannelSetVers;
+    lst @1 : List(RTChannelMetadata);
+    mtime @2 : Time;
 }
 
 // Encrypted message body. Key derivation: per-channel symmetric key derived

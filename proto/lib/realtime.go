@@ -998,6 +998,41 @@ func (r *RTChannelDescBox) Decode(dec rpc.Decoder) error {
 
 func (r *RTChannelDescBox) Bytes() []byte { return nil }
 
+type RTChannelSetVers uint64
+type RTChannelSetVersInternal__ uint64
+
+func (r RTChannelSetVers) Export() *RTChannelSetVersInternal__ {
+	tmp := ((uint64)(r))
+	return ((*RTChannelSetVersInternal__)(&tmp))
+}
+func (r RTChannelSetVersInternal__) Import() RTChannelSetVers {
+	tmp := (uint64)(r)
+	return RTChannelSetVers((func(x *uint64) (ret uint64) {
+		if x == nil {
+			return ret
+		}
+		return *x
+	})(&tmp))
+}
+
+func (r *RTChannelSetVers) Encode(enc rpc.Encoder) error {
+	return enc.Encode(r.Export())
+}
+
+func (r *RTChannelSetVers) Decode(dec rpc.Decoder) error {
+	var tmp RTChannelSetVersInternal__
+	err := dec.Decode(&tmp)
+	if err != nil {
+		return err
+	}
+	*r = tmp.Import()
+	return nil
+}
+
+func (r RTChannelSetVers) Bytes() []byte {
+	return nil
+}
+
 type RTChannelMetadata struct {
 	Id                RTChannelID
 	ParentTeam        TeamID
@@ -1013,6 +1048,7 @@ type RTChannelMetadata struct {
 	LastSendTime      *Time
 	Ctime             Time
 	Mtime             Time
+	UpdatedAtSetVers  RTChannelSetVers
 }
 type RTChannelMetadataInternal__ struct {
 	_struct           struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
@@ -1030,6 +1066,7 @@ type RTChannelMetadataInternal__ struct {
 	LastSendTime      *TimeInternal__
 	Ctime             *TimeInternal__
 	Mtime             *TimeInternal__
+	UpdatedAtSetVers  *RTChannelSetVersInternal__
 }
 
 func (r RTChannelMetadataInternal__) Import() RTChannelMetadata {
@@ -1142,6 +1179,12 @@ func (r RTChannelMetadataInternal__) Import() RTChannelMetadata {
 			}
 			return x.Import()
 		})(r.Mtime),
+		UpdatedAtSetVers: (func(x *RTChannelSetVersInternal__) (ret RTChannelSetVers) {
+			if x == nil {
+				return ret
+			}
+			return x.Import()
+		})(r.UpdatedAtSetVers),
 	}
 }
 func (r RTChannelMetadata) Export() *RTChannelMetadataInternal__ {
@@ -1178,8 +1221,9 @@ func (r RTChannelMetadata) Export() *RTChannelMetadataInternal__ {
 			}
 			return (*x).Export()
 		})(r.LastSendTime),
-		Ctime: r.Ctime.Export(),
-		Mtime: r.Mtime.Export(),
+		Ctime:            r.Ctime.Export(),
+		Mtime:            r.Mtime.Export(),
+		UpdatedAtSetVers: r.UpdatedAtSetVers.Export(),
 	}
 }
 func (r *RTChannelMetadata) Encode(enc rpc.Encoder) error {
@@ -1202,6 +1246,84 @@ func (r *RTChannelMetadata) GetTypeUniqueID() rpc.TypeUniqueID {
 	return RTChannelMetadataTypeUniqueID
 }
 func (r *RTChannelMetadata) Bytes() []byte { return nil }
+
+type RTChannelSet struct {
+	Vers  RTChannelSetVers
+	Lst   []RTChannelMetadata
+	Mtime Time
+}
+type RTChannelSetInternal__ struct {
+	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
+	Vers    *RTChannelSetVersInternal__
+	Lst     *[](*RTChannelMetadataInternal__)
+	Mtime   *TimeInternal__
+}
+
+func (r RTChannelSetInternal__) Import() RTChannelSet {
+	return RTChannelSet{
+		Vers: (func(x *RTChannelSetVersInternal__) (ret RTChannelSetVers) {
+			if x == nil {
+				return ret
+			}
+			return x.Import()
+		})(r.Vers),
+		Lst: (func(x *[](*RTChannelMetadataInternal__)) (ret []RTChannelMetadata) {
+			if x == nil || len(*x) == 0 {
+				return nil
+			}
+			ret = make([]RTChannelMetadata, len(*x))
+			for k, v := range *x {
+				if v == nil {
+					continue
+				}
+				ret[k] = (func(x *RTChannelMetadataInternal__) (ret RTChannelMetadata) {
+					if x == nil {
+						return ret
+					}
+					return x.Import()
+				})(v)
+			}
+			return ret
+		})(r.Lst),
+		Mtime: (func(x *TimeInternal__) (ret Time) {
+			if x == nil {
+				return ret
+			}
+			return x.Import()
+		})(r.Mtime),
+	}
+}
+func (r RTChannelSet) Export() *RTChannelSetInternal__ {
+	return &RTChannelSetInternal__{
+		Vers: r.Vers.Export(),
+		Lst: (func(x []RTChannelMetadata) *[](*RTChannelMetadataInternal__) {
+			if len(x) == 0 {
+				return nil
+			}
+			ret := make([](*RTChannelMetadataInternal__), len(x))
+			for k, v := range x {
+				ret[k] = v.Export()
+			}
+			return &ret
+		})(r.Lst),
+		Mtime: r.Mtime.Export(),
+	}
+}
+func (r *RTChannelSet) Encode(enc rpc.Encoder) error {
+	return enc.Encode(r.Export())
+}
+
+func (r *RTChannelSet) Decode(dec rpc.Decoder) error {
+	var tmp RTChannelSetInternal__
+	err := dec.Decode(&tmp)
+	if err != nil {
+		return err
+	}
+	*r = tmp.Import()
+	return nil
+}
+
+func (r *RTChannelSet) Bytes() []byte { return nil }
 
 type RTMsgBox struct {
 	Rg  RoleAndGen

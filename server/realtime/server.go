@@ -55,7 +55,7 @@ func (c *ClientConn) RtNewChannel(ctx context.Context, arg proto.RTChannelMetada
 func (c *ClientConn) RtGetChannel(ctx context.Context, arg proto.RTChannelID) (res proto.RTChannelMetadata, err error) {
 	return res, core.NotImplementedError{}
 }
-func (c *ClientConn) RtListTeamChannels(ctx context.Context, arg rem.RtListTeamChannelsArg) (res []proto.RTChannelMetadata, err error) {
+func (c *ClientConn) RtListAllChannels(ctx context.Context, arg rem.RtListAllChannelsArg) (res proto.RTChannelSet, err error) {
 	return res, core.NotImplementedError{}
 }
 func (c *ClientConn) RtSend(ctx context.Context, arg rem.RTSendArg) (res rem.RTSendRes, err error) {
