@@ -101,22 +101,26 @@ struct RTChannelDescBox {
 
 typedef RTChannelSetVersion = Uint;
 
+struct RTMessageMetadata {
+    msgType @0 : RTMsgType;      // None if no message yet
+    msgSeq @1 : RTMsgSeq;        // 0 if no message yet
+    senderPartyID @2: PartyID;
+    sendTime @3 : Time;
+    furtherUserAttribution @4 : Option(UID); // for messages sent by teams
+}
+
 struct RTChannelMetadata @0xddf6b26b2ace1535 {
     id @0 : RTChannelID;
     parentTeam @1 : TeamID;
     appID @2 : RTAppID;
     seqno @3 : RTChannelSeqno;       // CAS-bumps on metadata edits
     nameBox @4 : RTChannelNameBox;   // encrypted channel name
-    descBox @5 : Option(RTChannelDescBox);    // channel description (optional)
+    descBox @5 : Option(RTChannelDescBox); // channel description (optional)
     roles @6 : RTRolePair;           // read/write roles in parent team
-    lastMsgType @7 : RTMsgType;      // None if no message yet
-    lastMsgSeq @8 : RTMsgSeq;        // 0 if no message yet
-    lastSenderUid @9 : Option(UID);
-    lastSenderPartyID @10 : Option(PartyID);
-    lastSendTime @11 : Option(Time);
-    ctime @12 : Time;
-    mtime @13 : Time;
-    updatedAtSetVersion @14 : RTChannelSetVersion;
+    lastMsg @7 : Option(RTMessageMetadata); // or NULL if no messages sent
+    ctime @8 : Time;
+    mtime @9 : Time;
+    updatedAtSetVersion @10 : RTChannelSetVersion;
 }
 
 struct RTChannelSet {

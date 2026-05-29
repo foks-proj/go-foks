@@ -124,6 +124,64 @@ func readAllChannels(
 	}
 	defer rows.Close()
 
+	importLastMessage := func(
+		msgType *string,
+		msgSeq *int64,
+		sendTime *time.Time,
+		partyIDRaw []byte,
+		uidRaw []byte,
+	) (
+		*proto.RTMessageMetadata,
+		error,
+	) {
+		var ret proto.RTMessageMetadata
+		if msgType == nil &&
+			msgSeq == nil &&
+			sendTime == nil &&
+			len(partyIDRaw) == 0 &&
+			len(uidRaw) == 0 {
+			return nil, nil
+		}
+		if msgType == nil {
+			return nil, core.BadServerDataError("nil last msgType unexpected")
+		}
+		err = ret.MsgType.ImportFromDB(*msgType)
+		if err != nil {
+			return nil, err
+		}
+		if msgSeq == nil {
+			return nil, core.BadServerDataError("nil last msgSeq unexpected")
+		}
+		ret.MsgSeq = proto.RTMsgSeq(*msgSeq)
+		if sendTime == nil {
+			return nil, core.BadServerDataError("nil last sendtime unexpected")
+		}
+
+		t := proto.ExportTime(*sendTime)
+		ret.SendTime = t
+		if len(partyIDRaw) == 0 {
+			return nil, core.BadServerDataError("nil last sender unexpected")
+		}
+
+		var pid proto.PartyID
+		err = pid.ImportFromDB(partyIDRaw)
+		if err != nil {
+			return nil, err
+		}
+		ret.SenderPartyID = pid
+
+		if uidRaw != nil {
+			var uid proto.UID
+			err = uid.ImportFromDB(uidRaw)
+			if err != nil {
+				return nil, err
+			}
+			ret.FurtherUserAttribution = &uid
+		}
+
+		return &ret, nil
+	}
+
 	var ret []proto.RTChannelMetadata
 	for rows.Next() {
 		var (
@@ -181,34 +239,19 @@ func readAllChannels(
 		if err != nil {
 			return nil, err
 		}
-		if lastMsgType != nil {
-			err = md.LastMsgType.ImportFromDB(*lastMsgType)
-			if err != nil {
-				return nil, err
-			}
+
+		lm, err := importLastMessage(
+			lastMsgType,
+			lastMsgSeq,
+			lastSendTime,
+			partyIDRaw,
+			uidRaw,
+		)
+		if err != nil {
+			return nil, err
 		}
-		if lastMsgSeq != nil {
-			md.LastMsgSeq = proto.RTMsgSeq(*lastMsgSeq)
-		}
-		if lastSendTime != nil {
-			t := proto.ExportTime(*lastSendTime)
-			md.LastSendTime = &t
-		}
-		if partyIDRaw != nil {
-			var pid proto.PartyID
-			err = pid.ImportFromDB(partyIDRaw)
-			if err != nil {
-				return nil, err
-			}
-			md.LastSenderPartyID = &pid
-		}
-		if uidRaw != nil {
-			var uid proto.UID
-			err = uid.ImportFromDB(uidRaw)
-			if err != nil {
-				return nil, err
-			}
-			md.LastSenderUid = &uid
+		if lm != nil {
+			md.LastMsg = lm
 		}
 
 		ret = append(ret, md)
