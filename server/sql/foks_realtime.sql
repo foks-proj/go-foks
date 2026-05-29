@@ -54,7 +54,9 @@ CREATE TABLE channels (
     channel_id_full BYTEA NOT NULL, /* an ID16 for what the channel is; top 8 bytes are channel_id */
     seqno INTEGER NOT NULL, /* metadata seqno; CAS on update */
     name_box BYTEA NOT NULL, /* PTK-encrypted channel name + structural variant */
-    ptk_gen INTEGER NOT NULL, /* PTK gen used for name_box */
+    name_box_ptk_gen INTEGER NOT NULL, /* PTK gen used for name_box */
+    desc_box BYTEA, /* PTK-encrypted channel descriptio + structural variant */
+    desc_box_ptk_gen INTEGER, /* PTK gen used for desc_box */
     read_role_type SMALLINT NOT NULL,
     read_role_viz_level SMALLINT NOT NULL,
     write_role_type SMALLINT NOT NULL,

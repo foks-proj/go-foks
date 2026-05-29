@@ -5012,3 +5012,29 @@ func (v RTChannelSetVersion) ExportToDB() int {
 func (v RTAppID) ExportToDB() int {
 	return int(v)
 }
+
+func (t *RTMsgType) ImportFromDB(s string) error {
+	switch s {
+	case "text":
+		*t = RTMsgType_Basic
+	case "edit":
+		*t = RTMsgType_Edit
+	case "delete":
+		*t = RTMsgType_Delete
+	case "reactji":
+		*t = RTMsgType_Reactji
+	case "attachment":
+		*t = RTMsgType_Attachment
+	case "reply":
+		*t = RTMsgType_Reply
+	case "system":
+		*t = RTMsgType_System
+	case "join":
+		*t = RTMsgType_Join
+	case "leave":
+		*t = RTMsgType_Leave
+	default:
+		return DataError(fmt.Sprintf("bad RTMsgType (%s) in DB", s))
+	}
+	return nil
+}

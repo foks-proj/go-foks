@@ -100,7 +100,123 @@ func readAllChannels(
 	[]proto.RTChannelMetadata,
 	error,
 ) {
-	return nil, core.NotImplementedError{}
+	rows, err := db.Query(
+		m.Ctx(),
+		`SELECT c.channel_id_full, c.seqno, c.name_box, c.desc_box,
+		        c.read_role_type, c.read_role_viz_level,
+		        c.write_role_type, c.write_role_viz_level,
+		        c.last_msg_type, c.last_msg_seq, c.last_send_time,
+		        cp.party_id, cp.uid,
+		        c.ctime, c.mtime, c.updated_at_set_vers
+		 FROM channels c
+		 LEFT JOIN channel_parties cp ON
+		     cp.short_host_id = c.short_host_id
+		     AND cp.channel_id = c.channel_id
+		     AND cp.party_no = c.last_sender_no
+		 WHERE c.short_host_id=$1 AND c.parent_team_id=$2 AND c.app_id=$3
+		 ORDER BY c.channel_id ASC`,
+		m.ShortHostID().ExportToDB(),
+		team.ExportToDB(),
+		app.ExportToDB(),
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var ret []proto.RTChannelMetadata
+	for rows.Next() {
+		var (
+			idRaw, nameBoxRaw, descBoxRaw []byte
+			partyIDRaw, uidRaw            []byte
+			seqno                         int
+			rrt, rvl, wrt, wvl            int
+			lastMsgType                   *string
+			lastMsgSeq                    *int64
+			lastSendTime                  *time.Time
+			ctime, mtime                  time.Time
+			updatedAtSetVers              int
+		)
+		err := rows.Scan(
+			&idRaw, &seqno, &nameBoxRaw, &descBoxRaw,
+			&rrt, &rvl, &wrt, &wvl,
+			&lastMsgType, &lastMsgSeq, &lastSendTime,
+			&partyIDRaw, &uidRaw,
+			&ctime, &mtime, &updatedAtSetVers,
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		md := proto.RTChannelMetadata{
+			ParentTeam:          team,
+			AppID:               app,
+			Seqno:               proto.RTChannelSeqno(seqno),
+			Ctime:               proto.ExportTime(ctime),
+			Mtime:               proto.ExportTime(mtime),
+			UpdatedAtSetVersion: proto.RTChannelSetVersion(updatedAtSetVers),
+		}
+		if len(idRaw) != len(md.Id) {
+			return nil, core.BadServerDataError("bad channel_id_full length")
+		}
+		copy(md.Id[:], idRaw)
+
+		err = core.DecodeFromBytes(&md.NameBox, nameBoxRaw)
+		if err != nil {
+			return nil, err
+		}
+		if len(descBoxRaw) > 0 {
+			var box proto.RTChannelDescBox
+			err = core.DecodeFromBytes(&box, descBoxRaw)
+			if err != nil {
+				return nil, err
+			}
+			md.DescBox = &box
+		}
+		err = md.Roles.Read.ImportFromDB(rrt, rvl)
+		if err != nil {
+			return nil, err
+		}
+		err = md.Roles.Write.ImportFromDB(wrt, wvl)
+		if err != nil {
+			return nil, err
+		}
+		if lastMsgType != nil {
+			err = md.LastMsgType.ImportFromDB(*lastMsgType)
+			if err != nil {
+				return nil, err
+			}
+		}
+		if lastMsgSeq != nil {
+			md.LastMsgSeq = proto.RTMsgSeq(*lastMsgSeq)
+		}
+		if lastSendTime != nil {
+			t := proto.ExportTime(*lastSendTime)
+			md.LastSendTime = &t
+		}
+		if partyIDRaw != nil {
+			var pid proto.PartyID
+			err = pid.ImportFromDB(partyIDRaw)
+			if err != nil {
+				return nil, err
+			}
+			md.LastSenderPartyID = &pid
+		}
+		if uidRaw != nil {
+			var uid proto.UID
+			err = uid.ImportFromDB(uidRaw)
+			if err != nil {
+				return nil, err
+			}
+			md.LastSenderUid = &uid
+		}
+
+		ret = append(ret, md)
+	}
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+	return ret, nil
 }
 
 func (c *ClientConn) RtListAllChannels(
