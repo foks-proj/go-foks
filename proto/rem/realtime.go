@@ -758,7 +758,7 @@ func (r *RTSelectVhost) Decode(dec rpc.Decoder) error {
 func (r *RTSelectVhost) Bytes() []byte { return nil }
 
 type RealTimeInterface interface {
-	RtNewChannel(context.Context, RtNewChannelArg) (lib.RTChannelMetadata, error)
+	RtNewChannel(context.Context, RtNewChannelArg) error
 	RtGetChannel(context.Context, lib.RTChannelID) (lib.RTChannelMetadata, error)
 	RtListAllChannels(context.Context, RtListAllChannelsArg) (lib.RTChannelSet, error)
 	RtSend(context.Context, RTSendArg) (RTSendRes, error)
@@ -813,14 +813,14 @@ type RealTimeClient struct {
 	CheckResHeader func(context.Context, lib.Header) error
 }
 
-func (c RealTimeClient) RtNewChannel(ctx context.Context, arg RtNewChannelArg) (res lib.RTChannelMetadata, err error) {
+func (c RealTimeClient) RtNewChannel(ctx context.Context, arg RtNewChannelArg) (err error) {
 	warg := &rpc.DataWrap[lib.Header, *RtNewChannelArgInternal__]{
 		Data: arg.Export(),
 	}
 	if c.MakeArgHeader != nil {
 		warg.Header = c.MakeArgHeader()
 	}
-	var tmp rpc.DataWrap[lib.Header, lib.RTChannelMetadataInternal__]
+	var tmp rpc.DataWrap[lib.Header, interface{}]
 	err = c.Cli.Call2(ctx, rpc.NewMethodV2(RealTimeProtocolID, 0, "RealTime.rtNewChannel"), warg, &tmp, 0*time.Millisecond, realTimeErrorUnwrapperAdapter{h: c.ErrorUnwrapper})
 	if err != nil {
 		return
@@ -831,7 +831,6 @@ func (c RealTimeClient) RtNewChannel(ctx context.Context, arg RtNewChannelArg) (
 			return
 		}
 	}
-	res = tmp.Data.Import()
 	return
 }
 func (c RealTimeClient) RtGetChannel(ctx context.Context, channelID lib.RTChannelID) (res lib.RTChannelMetadata, err error) {
@@ -1066,12 +1065,11 @@ func RealTimeProtocol(i RealTimeInterface) rpc.ProtocolV2 {
 							return nil, err
 						}
 						typedArg := typedWrappedArg.Data
-						tmp, err := i.RtNewChannel(ctx, (typedArg.Import()))
+						err := i.RtNewChannel(ctx, (typedArg.Import()))
 						if err != nil {
 							return nil, err
 						}
-						ret := rpc.DataWrap[lib.Header, *lib.RTChannelMetadataInternal__]{
-							Data:   tmp.Export(),
+						ret := rpc.DataWrap[lib.Header, interface{}]{
 							Header: i.MakeResHeader(),
 						}
 						return &ret, nil

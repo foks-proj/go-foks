@@ -65,7 +65,7 @@ protocol RealTime
     rtNewChannel @0 (
         md @0 : lib.RTChannelMetadata,
         setVers @1 : lib.RTChannelSetVersion /* from fetch, so we don't race */
-    ) -> lib.RTChannelMetadata;
+    );
 
     // Look up a single channel's server-side metadata by ID. User auth only;
     // requires a user_channels row.
