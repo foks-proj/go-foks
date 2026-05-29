@@ -345,6 +345,7 @@ func (k *Minder) getKVPartyTeam(
 
 	var kvp *KVParty
 
+	// Cache hit path --- if team is fresh enough
 	if membId != nil {
 		kvp, err = k.getLockedKVParty(*membId)
 		if err != nil {
@@ -359,6 +360,8 @@ func (k *Minder) getKVPartyTeam(
 			return kvp, nil
 		}
 	}
+
+	// cache miss path, or cache was hit but team wasn't fresh
 
 	tw, err := k.au.TeamMinder().LoadTeam(m.Base(), actingAs, libclient.LoadTeamOpts{Refresh: true})
 	if err != nil {
