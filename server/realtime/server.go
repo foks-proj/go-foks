@@ -2,12 +2,14 @@ package realtime
 
 import (
 	"context"
+	"time"
 
 	"github.com/foks-proj/go-foks/lib/core"
 	proto "github.com/foks-proj/go-foks/proto/lib"
 	"github.com/foks-proj/go-foks/proto/rem"
 	"github.com/foks-proj/go-foks/server/shared"
 	"github.com/foks-proj/go-snowpack-rpc/rpc"
+	"github.com/jackc/pgx/v5"
 )
 
 type Server struct {
@@ -55,8 +57,83 @@ func (c *ClientConn) RtNewChannel(ctx context.Context, arg rem.RtNewChannelArg) 
 func (c *ClientConn) RtGetChannel(ctx context.Context, arg proto.RTChannelID) (res proto.RTChannelMetadata, err error) {
 	return res, core.NotImplementedError{}
 }
-func (c *ClientConn) RtListAllChannels(ctx context.Context, arg rem.RtListAllChannelsArg) (res proto.RTChannelSet, err error) {
-	return res, core.NotImplementedError{}
+
+func readChannelSet(
+	m shared.MetaContext,
+	db shared.Querier,
+	teamID proto.TeamID,
+	appID proto.RTAppID,
+) (
+	proto.RTChannelSetVersion,
+	proto.Time,
+	error,
+) {
+	var vers int
+	var mtime time.Time
+
+	var retVers proto.RTChannelSetVersion
+	var retTime proto.Time
+
+	err := db.QueryRow(
+		m.Ctx(),
+		`SELECT vers, mtime FROM channel_sets
+		 WHERE short_host_id=$1 AND parent_team_id=$2 AND app_id=$3`,
+		m.ShortHostID().ExportToDB(),
+		teamID.ExportToDB(),
+		appID.ExportToDB(),
+	).Scan(&vers, &mtime)
+	if err == pgx.ErrNoRows {
+		return retVers, retTime, nil
+	}
+	if err != nil {
+		return retVers, retTime, nil
+	}
+	return proto.RTChannelSetVersion(vers), proto.ExportTime(mtime), nil
+}
+
+func readAllChannels(
+	m shared.MetaContext,
+	db shared.Querier,
+	team proto.TeamID,
+	app proto.RTAppID,
+) (
+	[]proto.RTChannelMetadata,
+	error,
+) {
+	return nil, core.NotImplementedError{}
+}
+
+func (c *ClientConn) RtListAllChannels(
+	ctx context.Context,
+	arg rem.RtListAllChannelsArg,
+) (
+	proto.RTChannelSet,
+	error,
+) {
+	var ret proto.RTChannelSet
+
+	m := shared.NewMetaContextConn(ctx, c)
+	db, err := m.Db(shared.DbTypeRealTime)
+
+	if err != nil {
+		return ret, err
+	}
+	defer db.Release()
+
+	vers, mtime, err := readChannelSet(m, db, arg.Team, arg.AppID)
+	if err != nil {
+		return ret, err
+
+	}
+	ret.Mtime = mtime
+	ret.Vers = vers
+
+	lst, err := readAllChannels(m, db, arg.Team, arg.AppID)
+	if err != nil {
+		return ret, err
+	}
+	ret.Lst = lst
+	return ret, nil
 }
 func (c *ClientConn) RtSend(ctx context.Context, arg rem.RTSendArg) (res rem.RTSendRes, err error) {
 	return res, core.NotImplementedError{}

@@ -5004,3 +5004,11 @@ func (k RTID) StringErr() (string, error) {
 	s := B62Encode(k[1:])
 	return (string(b) + s), nil
 }
+
+func (v RTChannelSetVersion) ExportToDB() int {
+	return int(v)
+}
+
+func (v RTAppID) ExportToDB() int {
+	return int(v)
+}
