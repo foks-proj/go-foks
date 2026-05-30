@@ -20,8 +20,18 @@ type PLCNode struct {
 
 type PartyLoaderCache struct {
 	sync.RWMutex
-	parties map[proto.FQEntityFixed]*PLCNode
-	au      *UserContext
+	au        *UserContext
+	parties   map[proto.FQEntityFixed]*PLCNode
+	fqptLocks core.Locktab[proto.StdHash]
+	fqptCache map[proto.StdHash]*proto.FQParty // Cache of FQTeamParsed -> FQParty
+}
+
+func NewPartyLoaderCache(au *UserContext) *PartyLoaderCache {
+	return &PartyLoaderCache{
+		au:        au,
+		parties:   make(map[proto.FQEntityFixed]*PLCNode),
+		fqptCache: make(map[proto.StdHash]*proto.FQParty),
+	}
 }
 
 type PLCOpts struct {
@@ -55,11 +65,116 @@ func (p *PartyLoaderCache) getLockedNode(
 }
 
 func (p *PartyLoaderCache) loadUser(m MetaContext, opts *PLCOpts) (*PLCNode, error) {
-	return nil, core.NotImplementedError{}
+	plcn, err := p.getLockedNode(p.au.FQParty())
+	if err != nil {
+		return nil, err
+	}
+	defer plcn.Unlock()
+	if plcn.skm != nil {
+		return plcn, nil
+	}
+	skm, err := p.au.GetSharedKeyManager(m)
+	if err != nil {
+		return plcn, nil
+	}
+	plcn.skm = skm
+	return plcn, nil
 }
 
-func (p *PartyLoaderCache) loadTeam(m MetaContext, tm proto.FQTeamParsed, opts *PLCOpts) (*PLCNode, error) {
-	return nil, core.NotImplementedError{}
+func (n *PLCNode) isFresh(m MetaContext) (bool, error) {
+	if n.voTok == nil || n.skm == nil {
+		return false, nil
+	}
+	if n.refreshTime.IsZero() {
+		return false, nil
+	}
+	now := m.G().Now()
+	diff := now.Sub(n.refreshTime)
+	dur, err := m.G().Cfg().TeamCacheTimeout()
+	if err != nil {
+		return false, err
+	}
+	return (diff < dur), nil
+}
+
+func (k *PLCNode) refresh(
+	m MetaContext,
+	tw *TeamWrapper,
+) {
+	k.refreshTime = m.G().Now()
+	k.skm = tw.KeyRing()
+	k.voTok = tw.VOBearerToken()
+}
+
+func (p *PartyLoaderCache) loadTeam(
+	m MetaContext,
+	tm proto.FQTeamParsed,
+	opts *PLCOpts,
+) (
+	*PLCNode, error,
+) {
+	hsh, err := core.PrefixedHash(&tm)
+	if err != nil {
+		return nil, err
+	}
+
+	// Single-flight all activity for this FQTeamParsed, which otherwise is hard to lock
+	// using our various caches.
+	lh := p.fqptLocks.Acquire(*hsh)
+	defer lh.Release()
+
+	p.Lock()
+	membId := p.fqptCache[*hsh]
+	p.Unlock()
+
+	// Cache hit path --- if team is fresh enough
+	var plcn *PLCNode
+
+	if membId != nil {
+		plcn, err = p.getLockedNode(*membId)
+		if err != nil {
+			return nil, err
+		}
+		defer plcn.Unlock()
+		isFresh, err := plcn.isFresh(m)
+		if err != nil {
+			return nil, err
+		}
+		if isFresh {
+			return plcn, nil
+		}
+	}
+
+	// cache miss path, or cache was hit but team wasn't fresh
+
+	tw, err := p.au.TeamMinder().LoadTeam(m, tm, LoadTeamOpts{Refresh: true})
+	if err != nil {
+		return nil, err
+	}
+	fqp := tw.Prot().Fqt.FQParty()
+
+	p.Lock()
+	p.fqptCache[*hsh] = &fqp
+	p.Unlock()
+
+	if plcn == nil {
+		plcn, err = p.getLockedNode(fqp)
+		if err != nil {
+			return nil, err
+		}
+		defer plcn.Unlock()
+		isFresh, err := plcn.isFresh(m)
+		if err != nil {
+			return nil, err
+		}
+		if isFresh {
+			return plcn, nil
+		}
+	}
+
+	plcn.refresh(m, tw)
+
+	return plcn, nil
 }
 
 // Load a PLCNode, from a FQTeamParsed if specified. Return a PLCNode, which
