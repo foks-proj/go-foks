@@ -10,7 +10,7 @@ import (
 )
 
 type PLCNode struct {
-	sync.Mutex
+	sync.RWMutex
 	id          proto.FQParty
 	au          proto.FQUser
 	skm         SharedKeyManager
@@ -18,21 +18,27 @@ type PLCNode struct {
 	refreshTime time.Time
 }
 
+func (p *PLCNode) ActiveUser() proto.FQUser {
+	p.RLock()
+	defer p.RUnlock()
+	return p.au
+}
+
 func (p *PLCNode) FQEntityFixed() (*proto.FQEntityFixed, error) {
-	p.Lock()
-	defer p.Unlock()
+	p.RLock()
+	defer p.RUnlock()
 	return p.id.FQEntity().Fixed()
 }
 
 func (p *PLCNode) FQParty() proto.FQParty {
-	p.Lock()
-	defer p.Unlock()
+	p.RLock()
+	defer p.RUnlock()
 	return p.id
 }
 
 func (p *PLCNode) ViewTok() *rem.TeamVOBearerToken {
-	p.Lock()
-	defer p.Unlock()
+	p.RLock()
+	defer p.RUnlock()
 	if p.voTok == nil {
 		return nil
 	}
@@ -41,8 +47,8 @@ func (p *PLCNode) ViewTok() *rem.TeamVOBearerToken {
 }
 
 func (p *PLCNode) SKM() SharedKeyManager {
-	p.Lock()
-	defer p.Unlock()
+	p.RLock()
+	defer p.RUnlock()
 	return p.skm
 }
 

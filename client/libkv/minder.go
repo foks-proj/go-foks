@@ -18,7 +18,6 @@ import (
 
 type KVParty struct {
 	sync.RWMutex
-	au     proto.FQUser
 	id     proto.FQParty
 	caches *caches
 	root   *proto.KVRoot
@@ -26,12 +25,16 @@ type KVParty struct {
 	plcn   *libclient.PLCNode
 }
 
+func (k *KVParty) ActiveUser() proto.FQUser {
+	return k.plcn.ActiveUser()
+}
+
 func (k *KVParty) IsUser() bool {
 	return k.id.Party.IsUser()
 }
 
 func (k *KVParty) isLocal() bool {
-	return k.au.HostID.Eq(k.id.Host)
+	return k.ActiveUser().HostID.Eq(k.id.Host)
 }
 
 func (k *KVParty) DefaultRootPerms() *proto.RolePair {
@@ -169,7 +172,7 @@ func (k *Minder) clientRemote(
 }
 
 func (k *KVParty) Eq(k2 *KVParty) bool {
-	return k.au.Eq(k2.au) && k.id.Eq(k2.id)
+	return k.ActiveUser().Eq(k2.ActiveUser()) && k.id.Eq(k2.id)
 }
 
 func (k *KVParty) fillAuthToken(
@@ -311,7 +314,6 @@ func (k *Minder) getLockedKVParty(
 	}
 	ret = &KVParty{
 		id:     p,
-		au:     k.au.FQU(),
 		caches: newCaches(p, k.cacheSettings),
 		cs:     k.cacheSettings,
 	}
