@@ -18,6 +18,34 @@ type PLCNode struct {
 	refreshTime time.Time
 }
 
+func (p *PLCNode) FQEntityFixed() (*proto.FQEntityFixed, error) {
+	p.Lock()
+	defer p.Unlock()
+	return p.id.FQEntity().Fixed()
+}
+
+func (p *PLCNode) FQParty() proto.FQParty {
+	p.Lock()
+	defer p.Unlock()
+	return p.id
+}
+
+func (p *PLCNode) ViewTok() *rem.TeamVOBearerToken {
+	p.Lock()
+	defer p.Unlock()
+	if p.voTok == nil {
+		return nil
+	}
+	ret := *p.voTok
+	return &ret
+}
+
+func (p *PLCNode) SKM() SharedKeyManager {
+	p.Lock()
+	defer p.Unlock()
+	return p.skm
+}
+
 type PartyLoaderCache struct {
 	sync.RWMutex
 	au        *UserContext

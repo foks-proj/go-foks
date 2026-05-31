@@ -18,14 +18,12 @@ import (
 
 type KVParty struct {
 	sync.RWMutex
-	au          proto.FQUser
-	id          proto.FQParty
-	skm         libclient.SharedKeyManager
-	voTok       *rem.TeamVOBearerToken
-	caches      *caches
-	root        *proto.KVRoot
-	cs          CacheSettings
-	refreshTime time.Time
+	au     proto.FQUser
+	id     proto.FQParty
+	caches *caches
+	root   *proto.KVRoot
+	cs     CacheSettings
+	plcn   *libclient.PLCNode
 }
 
 func (k *KVParty) IsUser() bool {
@@ -47,31 +45,6 @@ func (k *KVParty) DefaultRootPerms() *proto.RolePair {
 		Write: proto.AdminRole,
 		Read:  proto.MinKVRole,
 	}
-}
-
-func (k *KVParty) isTeamFresh(m MetaContext) (bool, error) {
-	if k.voTok == nil || k.skm == nil {
-		return false, nil
-	}
-	if k.refreshTime.IsZero() {
-		return false, nil
-	}
-	now := m.G().Now()
-	diff := now.Sub(k.refreshTime)
-	dur, err := m.G().Cfg().TeamCacheTimeout()
-	if err != nil {
-		return false, err
-	}
-	return (diff < dur), nil
-}
-
-func (k *KVParty) teamRefresh(
-	m MetaContext,
-	tw *libclient.TeamWrapper,
-) {
-	k.refreshTime = m.G().Now()
-	k.skm = tw.KeyRing()
-	k.voTok = tw.VOBearerToken()
 }
 
 type fileUploadState struct {
@@ -111,21 +84,20 @@ type Minder struct {
 	sync.RWMutex
 	au            *libclient.UserContext
 	parties       map[proto.FQEntityFixed]*KVParty
-	fqptCache     map[proto.StdHash]*proto.FQParty // Cache of FQTeamParsed -> FQParty
-	fqptLocks     core.Locktab[proto.StdHash]
 	probes        libclient.ProbeCollection
 	cacheSettings CacheSettings
 
 	localCliMu sync.Mutex
 	localCli   *rem.KVStoreClient
+	plc        *libclient.PartyLoaderCache
 }
 
 func NewMinder(au *libclient.UserContext) *Minder {
 	return &Minder{
 		au:            au,
 		parties:       make(map[proto.FQEntityFixed]*KVParty),
-		fqptCache:     make(map[proto.StdHash]*proto.FQParty),
 		cacheSettings: CacheSettings{UseMem: true, UseDisk: true},
+		plc:           au.PartyLoaderCache(),
 	}
 }
 
@@ -133,7 +105,6 @@ func NewMinderWithCacheSettings(au *libclient.UserContext, s CacheSettings) *Min
 	return &Minder{
 		au:            au,
 		parties:       make(map[proto.FQEntityFixed]*KVParty),
-		fqptCache:     make(map[proto.StdHash]*proto.FQParty),
 		cacheSettings: s,
 	}
 }
@@ -211,7 +182,7 @@ func (k *KVParty) fillAuthToken(
 	if k.IsUser() {
 		return nil
 	}
-	tok := k.voTok
+	tok := k.plcn.ViewTok()
 	if tok == nil {
 		return core.PermissionError("no VO token")
 	}
@@ -308,89 +279,17 @@ func (k *Minder) getKVParty(
 	*KVParty,
 	error,
 ) {
-	var ret *KVParty
-	var err error
-
-	if cfg.ActingAs == nil {
-		ret, err = k.getKVPartyUser(m)
-	} else {
-		ret, err = k.getKVPartyTeam(m, *cfg.ActingAs)
-	}
+	plcn, err := k.plc.Load(m.Base(), cfg.ActingAs, &libclient.PLCOpts{})
 	if err != nil {
 		return nil, err
 	}
-	return ret, nil
-}
-
-func (k *Minder) getKVPartyTeam(
-	m MetaContext,
-	actingAs proto.FQTeamParsed,
-) (
-	*KVParty,
-	error,
-) {
-	hsh, err := core.PrefixedHash(&actingAs)
+	kvpn, err := k.getLockedKVParty(plcn.FQParty())
 	if err != nil {
 		return nil, err
 	}
-
-	// Single-flight all activity for this FQTeamParsed, which otherwise is hard to lock
-	// using our various caches.
-	lh := k.fqptLocks.Acquire(*hsh)
-	defer lh.Release()
-
-	k.Lock()
-	membId := k.fqptCache[*hsh]
-	k.Unlock()
-
-	var kvp *KVParty
-
-	// Cache hit path --- if team is fresh enough
-	if membId != nil {
-		kvp, err = k.getLockedKVParty(*membId)
-		if err != nil {
-			return nil, err
-		}
-		defer kvp.Unlock()
-		isFresh, err := kvp.isTeamFresh(m)
-		if err != nil {
-			return nil, err
-		}
-		if isFresh {
-			return kvp, nil
-		}
-	}
-
-	// cache miss path, or cache was hit but team wasn't fresh
-
-	tw, err := k.au.TeamMinder().LoadTeam(m.Base(), actingAs, libclient.LoadTeamOpts{Refresh: true})
-	if err != nil {
-		return nil, err
-	}
-	fqp := tw.Prot().Fqt.FQParty()
-
-	k.Lock()
-	k.fqptCache[*hsh] = &fqp
-	k.Unlock()
-
-	if kvp == nil {
-		kvp, err = k.getLockedKVParty(fqp)
-		if err != nil {
-			return nil, err
-		}
-		defer kvp.Unlock()
-		isFresh, err := kvp.isTeamFresh(m)
-		if err != nil {
-			return nil, err
-		}
-		if isFresh {
-			return kvp, nil
-		}
-	}
-
-	kvp.teamRefresh(m, tw)
-
-	return kvp, nil
+	defer kvpn.Unlock()
+	kvpn.plcn = plcn
+	return kvpn, nil
 }
 
 func (k *Minder) getLockedKVParty(
@@ -419,29 +318,6 @@ func (k *Minder) getLockedKVParty(
 	ret.Lock()
 	k.parties[*fqef] = ret
 	return ret, nil
-}
-
-func (k *Minder) getKVPartyUser(
-	m MetaContext,
-) (
-	*KVParty,
-	error,
-) {
-	kvp, err := k.getLockedKVParty(k.au.FQParty())
-	if err != nil {
-		return nil, err
-	}
-	defer kvp.Unlock()
-	if kvp.skm != nil {
-		return kvp, nil
-	}
-
-	skm, err := k.au.GetSharedKeyManager(m.Base())
-	if err != nil {
-		return nil, err
-	}
-	kvp.skm = skm
-	return kvp, nil
 }
 
 func (k *Minder) initReq(
@@ -515,7 +391,7 @@ func (kvp *KVParty) kvStoreKeyCurrent(
 	error,
 ) {
 	var zed proto.Generation
-	ks, err := kvp.skm.PrivateKeysForRole(m.Base(), r)
+	ks, err := kvp.plcn.SKM().PrivateKeysForRole(m.Base(), r)
 	if err != nil {
 		return nil, zed, err
 	}
@@ -748,7 +624,7 @@ func (kvp *KVParty) kvStoreKeyAtRoleGen(
 	*kv.KeyBundle,
 	error,
 ) {
-	ks, err := kvp.skm.PrivateKeysForRole(m.Base(), role)
+	ks, err := kvp.plcn.SKM().PrivateKeysForRole(m.Base(), role)
 	if err != nil {
 		return nil, err
 	}

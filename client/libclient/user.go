@@ -45,6 +45,8 @@ type UserContext struct {
 
 	nagState NagState
 
+	plc *PartyLoaderCache
+
 	apps *Apps
 }
 
@@ -59,6 +61,15 @@ func (u *UserContext) Apps() *Apps {
 		u.apps = NewApps()
 	}
 	return u.apps
+}
+
+func (u *UserContext) PartyLoaderCache() *PartyLoaderCache {
+	u.Lock()
+	defer u.Unlock()
+	if u.plc == nil {
+		u.plc = NewPartyLoaderCache(u)
+	}
+	return u.plc
 }
 
 func (u *UserContext) TeamMinder() *TeamMinder {
