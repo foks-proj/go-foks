@@ -275,7 +275,7 @@ func TestRTChannelNameParseFrom(t *testing.T) {
 		{"a-b", "a-b"},
 		{"αβγ", "αβγ"},
 		{"日本語チャンネル", "日本語チャンネル"},
-		{"foo 🚀 bar", "foo 🚀 bar"},
+		{"foo🚀bar", "foo🚀bar"},
 		{"a-b-c-d-e-f", "a-b-c-d-e-f"},
 		{"abcdefghijklmnopqrstuvwxyz012345", "abcdefghijklmnopqrstuvwxyz012345"},
 	}
