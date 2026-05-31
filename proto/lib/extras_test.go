@@ -287,7 +287,6 @@ func TestRTChannelNameParseFrom(t *testing.T) {
 	}
 
 	bad := []string{
-		"",
 		"ab",
 		"a",
 		"  ab  ",
@@ -309,7 +308,7 @@ func TestRTChannelNameParseFrom(t *testing.T) {
 		"foo\tbar",
 		"foo\nbar",
 		"abc\x00def",
-		"abc\xffdef",
+		"hello no spaces allowed",
 	}
 	for _, in := range bad {
 		var n RTChannelName

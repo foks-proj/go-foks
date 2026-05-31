@@ -4954,6 +4954,9 @@ func (n *RTChannelName) ParseFrom(s string) error {
 	}
 	prevPunct := false
 	for _, r := range s {
+		if unicode.IsSpace(r) {
+			return DataError("channel names cannot include spaces")
+		}
 		if !unicode.IsPrint(r) {
 			return DataError("channel name must contain only printable characters")
 		}

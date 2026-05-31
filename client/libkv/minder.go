@@ -109,6 +109,7 @@ func NewMinderWithCacheSettings(au *libclient.UserContext, s CacheSettings) *Min
 		au:            au,
 		parties:       make(map[proto.FQEntityFixed]*KVParty),
 		cacheSettings: s,
+		plc:           au.PartyLoaderCache(),
 	}
 }
 

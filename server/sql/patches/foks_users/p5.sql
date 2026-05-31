@@ -8,4 +8,4 @@ CREATE TABLE teams_adhoc (
     ctime TIMESTAMP NOT NULL,
     PRIMARY KEY(short_host_id, team_id)
 );
-CREATE UNIQUE INDEX adhoc_teams_mashed_idx ON adhoc_teams(short_host_id, mashed_id);
+CREATE UNIQUE INDEX teams_adhoc_mashed_idx ON teams_adhoc(short_host_id, mashed_id);
