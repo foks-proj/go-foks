@@ -229,3 +229,63 @@ func (p *PartyLoaderCache) Load(
 	}
 	return p.loadTeam(m, *actingAs, opts)
 }
+
+type BaseMinderNoder interface {
+	SetPLCNode(n *PLCNode)
+}
+
+type BaseMinder[
+	N any, P interface {
+		*N
+		BaseMinderNoder
+	}] struct {
+	plc        *PartyLoaderCache
+	partiesMu  sync.Mutex
+	parties    map[proto.FQEntityFixed]P
+	initNodeFn func(n *N)
+}
+
+func NewBaseMinder[N any, P interface {
+	*N
+	BaseMinderNoder
+}](
+	au *UserContext,
+	initNodeFn func(n *N),
+) *BaseMinder[N, P] {
+	return &BaseMinder[N, P]{
+		plc:        au.PartyLoaderCache(),
+		parties:    make(map[proto.FQEntityFixed]P),
+		initNodeFn: initNodeFn,
+	}
+}
+
+func (a *BaseMinder[N, P]) GetParty(
+	m MetaContext,
+	t *proto.FQTeamParsed,
+) (
+	*N,
+	error,
+) {
+	plcn, err := a.plc.Load(m, t, &PLCOpts{})
+	if err != nil {
+		return nil, err
+	}
+	fqef, err := plcn.FQEntityFixed()
+	if err != nil {
+		return nil, err
+	}
+
+	a.partiesMu.Lock()
+	defer a.partiesMu.Unlock()
+	ret := a.parties[*fqef]
+	if ret != nil {
+		return ret, nil
+	}
+
+	ret = new(N)
+	ret.SetPLCNode(plcn)
+	a.initNodeFn(ret)
+	a.parties[*fqef] = ret
+
+	return ret, nil
+}

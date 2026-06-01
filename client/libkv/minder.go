@@ -18,23 +18,32 @@ import (
 
 type KVParty struct {
 	sync.RWMutex
-	id     proto.FQParty
 	caches *caches
 	root   *proto.KVRoot
 	cs     CacheSettings
 	plcn   *libclient.PLCNode
 }
 
+func (k *KVParty) SetPLCNode(n *libclient.PLCNode) {
+	k.plcn = n
+}
+
+func (k *KVParty) Id() proto.FQParty {
+	return k.plcn.FQParty()
+}
+
+var _ libclient.BaseMinderNoder = (*KVParty)(nil)
+
 func (k *KVParty) ActiveUser() proto.FQUser {
 	return k.plcn.ActiveUser()
 }
 
 func (k *KVParty) IsUser() bool {
-	return k.id.Party.IsUser()
+	return k.Id().Party.IsUser()
 }
 
 func (k *KVParty) isLocal() bool {
-	return k.ActiveUser().HostID.Eq(k.id.Host)
+	return k.ActiveUser().HostID.Eq(k.Id().Host)
 }
 
 func (k *KVParty) DefaultRootPerms() *proto.RolePair {
@@ -85,32 +94,31 @@ func newCaches(p proto.FQParty, settings CacheSettings) *caches {
 
 type Minder struct {
 	sync.RWMutex
+
+	base          *libclient.BaseMinder[KVParty, *KVParty]
 	au            *libclient.UserContext
-	parties       map[proto.FQEntityFixed]*KVParty
 	probes        libclient.ProbeCollection
 	cacheSettings CacheSettings
 
 	localCliMu sync.Mutex
 	localCli   *rem.KVStoreClient
-	plc        *libclient.PartyLoaderCache
 }
 
 func NewMinder(au *libclient.UserContext) *Minder {
-	return &Minder{
-		au:            au,
-		parties:       make(map[proto.FQEntityFixed]*KVParty),
-		cacheSettings: CacheSettings{UseMem: true, UseDisk: true},
-		plc:           au.PartyLoaderCache(),
-	}
+	cs := CacheSettings{UseMem: true, UseDisk: true}
+	return NewMinderWithCacheSettings(au, cs)
 }
 
-func NewMinderWithCacheSettings(au *libclient.UserContext, s CacheSettings) *Minder {
-	return &Minder{
-		au:            au,
-		parties:       make(map[proto.FQEntityFixed]*KVParty),
-		cacheSettings: s,
-		plc:           au.PartyLoaderCache(),
-	}
+func NewMinderWithCacheSettings(au *libclient.UserContext, cs CacheSettings) *Minder {
+	ret := &Minder{cacheSettings: cs, au: au}
+	ret.base = libclient.NewBaseMinder(
+		au,
+		func(n *KVParty) {
+			n.caches = newCaches(n.Id(), cs)
+			n.cs = cs
+		},
+	)
+	return ret
 }
 
 func (k *Minder) clientLocal(
@@ -158,7 +166,7 @@ func (k *Minder) clientRemote(
 	*rem.KVStoreClient,
 	error,
 ) {
-	host := kvp.id.Host
+	host := kvp.Id().Host
 	p, err := k.probe(m, host)
 	if err != nil {
 		return nil, nil, err
@@ -173,7 +181,7 @@ func (k *Minder) clientRemote(
 }
 
 func (k *KVParty) Eq(k2 *KVParty) bool {
-	return k.ActiveUser().Eq(k2.ActiveUser()) && k.id.Eq(k2.id)
+	return k.ActiveUser().Eq(k2.ActiveUser()) && k.Id().Eq(k2.Id())
 }
 
 func (k *KVParty) fillAuthToken(
@@ -276,53 +284,6 @@ func (k *Minder) clientWithCacheCheck(
 	return &hdr, cli, nil
 }
 
-func (k *Minder) getKVParty(
-	m MetaContext,
-	cfg lcl.KVConfig,
-) (
-	*KVParty,
-	error,
-) {
-	plcn, err := k.plc.Load(m.Base(), cfg.ActingAs, &libclient.PLCOpts{})
-	if err != nil {
-		return nil, err
-	}
-	kvpn, err := k.getLockedKVParty(plcn.FQParty())
-	if err != nil {
-		return nil, err
-	}
-	defer kvpn.Unlock()
-	kvpn.plcn = plcn
-	return kvpn, nil
-}
-
-func (k *Minder) getLockedKVParty(
-	p proto.FQParty,
-) (
-	*KVParty, // new KVP, return locked so we can initialize it
-	error,
-) {
-	fqef, err := p.FQEntity().Fixed()
-	if err != nil {
-		return nil, err
-	}
-	k.Lock()
-	defer k.Unlock()
-	ret := k.parties[*fqef]
-	if ret != nil {
-		ret.Lock()
-		return ret, nil
-	}
-	ret = &KVParty{
-		id:     p,
-		caches: newCaches(p, k.cacheSettings),
-		cs:     k.cacheSettings,
-	}
-	ret.Lock()
-	k.parties[*fqef] = ret
-	return ret, nil
-}
-
 func (k *Minder) initReq(
 	m MetaContext,
 	cfg lcl.KVConfig,
@@ -337,7 +298,7 @@ func (k *Minder) initReq(
 	if !au.Eq(k.au) {
 		return nil, core.WrongUserError{}
 	}
-	kvp, err := k.getKVParty(m, cfg)
+	kvp, err := k.base.GetParty(m.Base(), cfg.ActingAs)
 	if err != nil {
 		return nil, err
 	}
@@ -349,7 +310,7 @@ func (k *Minder) HostID(m MetaContext, cfg lcl.KVConfig) (*proto.HostID, error) 
 	if err != nil {
 		return nil, err
 	}
-	ret := kvp.id.Host
+	ret := kvp.Id().Host
 	return &ret, nil
 }
 
@@ -677,7 +638,7 @@ func (k *Minder) getRoot(
 		return nil, err
 	}
 
-	binding, err := kb.Hmac(root.ToBindingPayload(kvp.id))
+	binding, err := kb.Hmac(root.ToBindingPayload(kvp.Id()))
 	if err != nil {
 		return nil, err
 	}
@@ -743,7 +704,7 @@ func (k *Minder) makeEmptyDir(
 	if err != nil {
 		return nil, nil, err
 	}
-	ret := NewDirPairFromSingle(kvp.id, kvd, seed)
+	ret := NewDirPairFromSingle(kvp.Id(), kvd, seed)
 	err = kvp.caches.dir.Put(m, ret)
 	if err != nil {
 		return nil, nil, err
@@ -773,7 +734,7 @@ func (k *Minder) mkRoot(
 	vers := proto.KVVersion(1)
 
 	bpl := proto.KVRootBindingPayload{
-		Party: kvp.id,
+		Party: kvp.Id(),
 		Rg:    kb.rg,
 		Root:  ret.Id(),
 		Vers:  vers,
@@ -845,7 +806,7 @@ func (k *Minder) loadDirWithDirID(
 		return nil, err
 	}
 
-	ret = NewDirPair(kvp.id, res, nil /* no seeds known */)
+	ret = NewDirPair(kvp.Id(), res, nil /* no seeds known */)
 	err = kvp.unboxDirSeeds(m, ret)
 	if err != nil {
 		return nil, err
@@ -1043,7 +1004,7 @@ func (k *Minder) lookupDirent(
 		return nil, core.KVNoentError{}
 	case proto.KVNodeType_Dir:
 		raw := res.Data.Dir()
-		dir := NewDirPair(kvp.id, raw, nil)
+		dir := NewDirPair(kvp.Id(), raw, nil)
 		err = kvp.caches.dir.Put(m, dir)
 		if err != nil {
 			return nil, err
@@ -1345,7 +1306,7 @@ func (k *Minder) mkdirRoot(
 		return nil, err
 	}
 	ret := wd.Id()
-	m.Infow("created root directory", "id", ret, "fqp", kvp.id)
+	m.Infow("created root directory", "id", ret, "fqp", kvp.Id())
 	return &ret, nil
 }
 
