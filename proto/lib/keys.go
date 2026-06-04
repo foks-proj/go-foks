@@ -74,14 +74,17 @@ func (a AppKeyDerivationType) Export() *AppKeyDerivationTypeInternal__ {
 type AppKeyEnum int
 
 const (
-	AppKeyEnum_KVStore AppKeyEnum = 0
+	AppKeyEnum_KVStore  AppKeyEnum = 0
+	AppKeyEnum_Realtime AppKeyEnum = 1
 )
 
 var AppKeyEnumMap = map[string]AppKeyEnum{
-	"KVStore": 0,
+	"KVStore":  0,
+	"Realtime": 1,
 }
 var AppKeyEnumRevMap = map[AppKeyEnum]string{
 	0: "KVStore",
+	1: "Realtime",
 }
 
 type AppKeyEnumInternal__ AppKeyEnum

@@ -12,6 +12,7 @@ import (
 	"crypto/hmac"
 	"crypto/rand"
 	"crypto/tls"
+	"encoding/binary"
 	"encoding/hex"
 	"encoding/json"
 	"encoding/pem"
@@ -23,6 +24,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unicode"
+	"unicode/utf8"
 
 	"github.com/keybase/saltpack/encoding/basex"
 	"golang.org/x/crypto/curve25519"
@@ -1674,6 +1677,7 @@ func (d DirentID) MarshalJSON() ([]byte, error)               { return marsh(d) 
 func (i KVNodeID) MarshalJSON() ([]byte, error)               { return marsh(i) }
 func (n NaclNonce) String() string                            { return B62Encode(n[:]) }
 func (n NaclNonce) MarshalJSON() ([]byte, error)              { return json.Marshal(n.String()) }
+func (c RTChannelID) MarshalJSON() ([]byte, error)            { return marsh(c) }
 
 func (d *DeviceID) UnmarshalJSON(data []byte) error {
 	return unmarshalJson(d, data, func(e EntityID) (DeviceID, error) { return e.ToDeviceID() })
@@ -1681,18 +1685,37 @@ func (d *DeviceID) UnmarshalJSON(data []byte) error {
 func (p *PartyID) UnmarshalJSON(data []byte) error {
 	return unmarshalJson(p, data, func(e EntityID) (PartyID, error) { return e.ToPartyID() })
 }
-func (k *KVNodeID) UnmarshalJSON(data []byte) error {
+
+func unmarshViaImport[T interface{ ImportFromString(string) error }](data []byte, t T) error {
 	var s string
 	err := json.Unmarshal(data, &s)
 	if err != nil {
 		return err
 	}
+	err = t.ImportFromString(s)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (k *KVNodeID) UnmarshalJSON(data []byte) error {
 	var tmp KVNodeID
-	err = tmp.ImportFromString(s)
+	err := unmarshViaImport(data, &tmp)
 	if err != nil {
 		return err
 	}
 	*k = tmp
+	return nil
+}
+
+func (r *RTChannelID) UnmarshalJSON(data []byte) error {
+	var tmp RTChannelID
+	err := unmarshViaImport(data, &tmp)
+	if err != nil {
+		return err
+	}
+	*r = tmp
 	return nil
 }
 
@@ -1765,6 +1788,7 @@ func (r Role) ShortStringErr() (string, error) {
 
 var VizLevelMin = VizLevel(-32768)
 var VizLevelKvMin = VizLevel(-0x4000)
+var VizLevelRtMin = VizLevelKvMin
 var VizLevelMax = VizLevel(32767)
 
 func NewKexHESP(s string) KexHESP {
@@ -1809,6 +1833,8 @@ func (s PublicServices) Select(t ServerType) *TCPAddr {
 		return &s.MerkleQuery
 	case ServerType_KVStore:
 		return &s.KvStore
+	case ServerType_RealTime:
+		return &s.Realtime
 	default:
 		return nil
 	}
@@ -1852,6 +1878,7 @@ var OwnerRole = NewRoleDefault(RoleType_OWNER)
 var AdminRole = NewRoleDefault(RoleType_ADMIN)
 var DefaultRole = NewRoleWithMember(VizLevel(0))
 var MinKVRole = NewRoleWithMember(VizLevelKvMin)
+var MinRTRole = MinKVRole
 var DefaultMemberLoadFloor = DefaultRole
 
 func (r *Role) WithDefaultMemberLoadFloor() Role {
@@ -3380,6 +3407,40 @@ func (f *FileID) KVNodeID() KVNodeID {
 	return ret
 }
 
+func (r *RTID) ImportFromString(s string) error {
+	if len(s) < 2 {
+		return DataError("bad RT id")
+	}
+	b, err := B62DecodeByte(s[0])
+	if err != nil {
+		return err
+	}
+	r[0] = b
+	d, err := B62Decode(s[1:])
+	if err != nil {
+		return err
+	}
+	if len(d) != 16 {
+		return DataError("bad RT length id")
+	}
+	copy(r[1:], d)
+	return nil
+}
+
+func (r *RTChannelID) ImportFromString(s string) error {
+	var tmp RTID
+	err := tmp.ImportFromString(s)
+	if err != nil {
+		return err
+	}
+	chid := tmp.RTChannelID()
+	if chid == nil {
+		return DataError("cannot convert RTID to RTChannelID")
+	}
+	*r = *chid
+	return nil
+}
+
 func (k *KVNodeID) ImportFromString(s string) error {
 	if len(s) < 2 {
 		return DataError("bad kv node id")
@@ -4614,7 +4675,7 @@ func (t ServerType) ClientCAType() (CKSAssetType, tls.ClientAuthType) {
 	case ServerType_Queue, ServerType_Quota, ServerType_MerkleBatcher,
 		ServerType_MerkleBuilder, ServerType_MerkleSigner, ServerType_Autocert:
 		return CKSAssetType_InternalClientCA, tls.RequireAndVerifyClientCert
-	case ServerType_User:
+	case ServerType_User, ServerType_RealTime:
 		return CKSAssetType_ExternalClientCA, tls.RequireAndVerifyClientCert
 	case ServerType_KVStore:
 		return CKSAssetType_ExternalClientCA, tls.VerifyClientCertIfGiven
@@ -4629,7 +4690,8 @@ func (t ServerType) ServerCertType() CKSAssetType {
 		ServerType_MerkleBuilder, ServerType_MerkleSigner, ServerType_Autocert,
 		ServerType_InternalCA:
 		return CKSAssetType_BackendX509Cert
-	case ServerType_User, ServerType_KVStore, ServerType_Reg, ServerType_MerkleQuery:
+	case ServerType_User, ServerType_KVStore, ServerType_Reg, ServerType_MerkleQuery,
+		ServerType_RealTime:
 		return CKSAssetType_HostchainFrontendX509Cert
 	case ServerType_Probe, ServerType_Web:
 		return CKSAssetType_RootPKIFrontendX509Cert
@@ -4933,4 +4995,186 @@ func (i InviteCodeRegime) String() string {
 	default:
 		return "error"
 	}
+}
+
+func (n RTChannelName) IsEmpty() bool { return len(n) == 0 }
+func (n RTChannelDesc) IsEmpty() bool { return len(n) == 0 }
+
+func (n *RTChannelName) ParseFrom(s string) error {
+	s = strings.ToLower(strings.TrimSpace(s))
+	if len(s) == 0 {
+		return nil
+	}
+	if !utf8.ValidString(s) {
+		return DataError("channel name must be valid UTF-8")
+	}
+	count := utf8.RuneCountInString(s)
+	if count < 3 || count > 32 {
+		return DataError("channel name must be between 3 and 32 characters")
+	}
+	prevPunct := false
+	for _, r := range s {
+		if unicode.IsSpace(r) {
+			return DataError("channel names cannot include spaces")
+		}
+		if !unicode.IsPrint(r) {
+			return DataError("channel name must contain only printable characters")
+		}
+		isPunct := unicode.IsPunct(r)
+		if isPunct && r != '-' {
+			return DataError("channel name may not contain punctuation other than hyphens")
+		}
+		if isPunct && prevPunct {
+			return DataError("channel name may not contain consecutive punctuation characters")
+		}
+		prevPunct = isPunct
+	}
+	*n = RTChannelName(s)
+	return nil
+}
+
+func (n *RTChannelDesc) ParseFrom(s string) error {
+	s = strings.ToLower(s)
+	if len(s) == 0 {
+		return nil
+	}
+	if !utf8.ValidString(s) {
+		return DataError("channel name must be valid UTF-8")
+	}
+	count := utf8.RuneCountInString(s)
+	if count < 3 || count > 512 {
+		return DataError("channel description must be between 3 and 512 characaters")
+	}
+	*n = RTChannelDesc(s)
+	return nil
+}
+
+func (i RTChannelID) RTID() RTID {
+	var ret RTID
+	ret[0] = byte(RTIDType_Channel)
+	copy(ret[1:], i[:])
+	return ret
+}
+
+func (r RTID) RTChannelID() *RTChannelID {
+	if r[0] != byte(RTIDType_Channel) {
+		return nil
+	}
+	var ret RTChannelID
+	copy(ret[:], r[1:])
+	return &ret
+
+}
+
+func (i RTChannelID) StringErr() (string, error) {
+	return i.RTID().StringErr()
+}
+
+// Short pulls the channel's BIGINT key out of the top 8 bytes of the full
+// 16-byte ID, big-endian. The high bit is masked off so the result is a
+// non-negative 63-bit value that fits a signed SQL BIGINT.
+func (i RTChannelID) Short() RTChannelIDShort {
+	u := binary.BigEndian.Uint64(i[0:8]) & 0x7fffffffffffffff
+	return RTChannelIDShort(u)
+}
+
+func NewRTChannelID() (*RTChannelID, error) {
+	var ret RTChannelID
+	n, err := rand.Read(ret[:])
+	if err != nil {
+		return nil, err
+	}
+	if n != len(ret) {
+		return nil, DataError("short random read")
+	}
+	return &ret, nil
+}
+
+func (k RTID) StringErr() (string, error) {
+	if len(k) != 17 {
+		return "", DataError("bad RT ID")
+	}
+	b, err := B62EncodeByte(k[0])
+	if err != nil {
+		return "", err
+	}
+	s := B62Encode(k[1:])
+	return (string(b) + s), nil
+}
+
+func (v RTChannelSetVersion) ExportToDB() int {
+	return int(v)
+}
+
+// ExportToDB returns the SQL `app_id` enum label for this app. Note the
+// labels are lowercase and differ from the snowp enum names in RTAppIDRevMap;
+// RTAppID_None has no DB representation.
+func (v RTAppID) ExportToDB() (string, error) {
+	switch v {
+	case RTAppID_Chat:
+		return "chat", nil
+	case RTAppID_Crdt:
+		return "crdt", nil
+	case RTAppID_Notif:
+		return "notif", nil
+	}
+	return "", DataError(fmt.Sprintf("bad RTAppID (%d) for DB", v))
+}
+
+func (t *RTMsgType) ImportFromDB(s string) error {
+	switch s {
+	case "text":
+		*t = RTMsgType_Basic
+	case "edit":
+		*t = RTMsgType_Edit
+	case "delete":
+		*t = RTMsgType_Delete
+	case "reactji":
+		*t = RTMsgType_Reactji
+	case "attachment":
+		*t = RTMsgType_Attachment
+	case "reply":
+		*t = RTMsgType_Reply
+	case "system":
+		*t = RTMsgType_System
+	case "join":
+		*t = RTMsgType_Join
+	case "leave":
+		*t = RTMsgType_Leave
+	default:
+		return DataError(fmt.Sprintf("bad RTMsgType (%s) in DB", s))
+	}
+	return nil
+}
+
+func (c RTChannelClass) String() string {
+	switch c {
+	case RTChannelClass_Bottom:
+		return "bottom"
+	case RTChannelClass_Admin:
+		return "admin"
+	}
+	return "error"
+}
+
+func (c RTChannelClass) ExportToDB() (string, error) {
+	switch c {
+	case RTChannelClass_Bottom:
+		return "bottom", nil
+	case RTChannelClass_Admin:
+		return "admin", nil
+	}
+	return "", DataError(fmt.Sprintf("bad RTChannelClass (%d) for DB", c))
+}
+
+func (c *RTChannelClass) ImportFromDB(s string) error {
+	switch s {
+	case "bottom":
+		*c = RTChannelClass_Bottom
+	case "admin":
+		*c = RTChannelClass_Admin
+	default:
+		return DataError(fmt.Sprintf("bad RTChannelClass (%s) in DB", s))
+	}
+	return nil
 }

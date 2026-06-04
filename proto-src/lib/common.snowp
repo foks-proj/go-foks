@@ -90,7 +90,7 @@ variant DHPublicKey switch (t : DHType) {
 
 // ID16 are short (16-byte) identifiers that are random, not the output
 // of the hash of a public key. They have a one-byte prefix, in the same
-// space as EntityIDs, working backwards from 51
+// space as EntityIDs, working backwards from 61
 typedef ID16 = Blob(17);
 
 typedef PlanID = Blob(17);
@@ -321,6 +321,7 @@ enum ServerType {
     KVStore @12;
     Quota @13;
     Autocert @15;
+    RealTime @16;
     Web @64;
     Test @101;
 }

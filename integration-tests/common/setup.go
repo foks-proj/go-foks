@@ -333,9 +333,9 @@ func configureServers(
 			}
 			beacon = lcfg.ExternalAddr
 
-		// User and KV-Store are so far the only services that needs authenticated FOKS users via TLS client
+		// User, RealTime, and KV-Store are so far the only services that needs authenticated FOKS users via TLS client
 		// certs.
-		case proto.ServerType_User, proto.ServerType_KVStore:
+		case proto.ServerType_User, proto.ServerType_KVStore, proto.ServerType_RealTime:
 
 		case proto.ServerType_Reg, proto.ServerType_MerkleQuery:
 

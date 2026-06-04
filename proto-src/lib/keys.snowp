@@ -21,6 +21,7 @@ enum AppKeyDerivationType {
 
 enum AppKeyEnum {
     KVStore @0;
+    Realtime @1;
 }
 
 variant KeyDerivation switch (t: KeyDerivationType) @0xd35cdcc95caef674 {
