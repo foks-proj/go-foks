@@ -986,18 +986,18 @@ func (r *RTChannelDescPlaintext) GetTypeUniqueID() rpc.TypeUniqueID {
 }
 func (r *RTChannelDescPlaintext) Bytes() []byte { return nil }
 
-type RTMetadataSecretBox struct {
+type RTBoxRG struct {
 	Rg  RoleAndGen
 	Box SecretBox
 }
-type RTMetadataSecretBoxInternal__ struct {
+type RTBoxRGInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Rg      *RoleAndGenInternal__
 	Box     *SecretBoxInternal__
 }
 
-func (r RTMetadataSecretBoxInternal__) Import() RTMetadataSecretBox {
-	return RTMetadataSecretBox{
+func (r RTBoxRGInternal__) Import() RTBoxRG {
+	return RTBoxRG{
 		Rg: (func(x *RoleAndGenInternal__) (ret RoleAndGen) {
 			if x == nil {
 				return ret
@@ -1012,18 +1012,18 @@ func (r RTMetadataSecretBoxInternal__) Import() RTMetadataSecretBox {
 		})(r.Box),
 	}
 }
-func (r RTMetadataSecretBox) Export() *RTMetadataSecretBoxInternal__ {
-	return &RTMetadataSecretBoxInternal__{
+func (r RTBoxRG) Export() *RTBoxRGInternal__ {
+	return &RTBoxRGInternal__{
 		Rg:  r.Rg.Export(),
 		Box: r.Box.Export(),
 	}
 }
-func (r *RTMetadataSecretBox) Encode(enc rpc.Encoder) error {
+func (r *RTBoxRG) Encode(enc rpc.Encoder) error {
 	return enc.Encode(r.Export())
 }
 
-func (r *RTMetadataSecretBox) Decode(dec rpc.Decoder) error {
-	var tmp RTMetadataSecretBoxInternal__
+func (r *RTBoxRG) Decode(dec rpc.Decoder) error {
+	var tmp RTBoxRGInternal__
 	err := dec.Decode(&tmp)
 	if err != nil {
 		return err
@@ -1032,55 +1032,7 @@ func (r *RTMetadataSecretBox) Decode(dec rpc.Decoder) error {
 	return nil
 }
 
-func (r *RTMetadataSecretBox) Bytes() []byte { return nil }
-
-type RTChannelDescBox struct {
-	Rg  RoleAndGen
-	Box SecretBox
-}
-type RTChannelDescBoxInternal__ struct {
-	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
-	Rg      *RoleAndGenInternal__
-	Box     *SecretBoxInternal__
-}
-
-func (r RTChannelDescBoxInternal__) Import() RTChannelDescBox {
-	return RTChannelDescBox{
-		Rg: (func(x *RoleAndGenInternal__) (ret RoleAndGen) {
-			if x == nil {
-				return ret
-			}
-			return x.Import()
-		})(r.Rg),
-		Box: (func(x *SecretBoxInternal__) (ret SecretBox) {
-			if x == nil {
-				return ret
-			}
-			return x.Import()
-		})(r.Box),
-	}
-}
-func (r RTChannelDescBox) Export() *RTChannelDescBoxInternal__ {
-	return &RTChannelDescBoxInternal__{
-		Rg:  r.Rg.Export(),
-		Box: r.Box.Export(),
-	}
-}
-func (r *RTChannelDescBox) Encode(enc rpc.Encoder) error {
-	return enc.Encode(r.Export())
-}
-
-func (r *RTChannelDescBox) Decode(dec rpc.Decoder) error {
-	var tmp RTChannelDescBoxInternal__
-	err := dec.Decode(&tmp)
-	if err != nil {
-		return err
-	}
-	*r = tmp.Import()
-	return nil
-}
-
-func (r *RTChannelDescBox) Bytes() []byte { return nil }
+func (r *RTBoxRG) Bytes() []byte { return nil }
 
 type RTChannelSetVersion uint64
 type RTChannelSetVersionInternal__ uint64
@@ -1228,54 +1180,6 @@ func (r RTChannelClass) Export() *RTChannelClassInternal__ {
 	return ((*RTChannelClassInternal__)(&r))
 }
 
-type RTMsgBox struct {
-	Rg  RoleAndGen
-	Box SecretBox
-}
-type RTMsgBoxInternal__ struct {
-	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
-	Rg      *RoleAndGenInternal__
-	Box     *SecretBoxInternal__
-}
-
-func (r RTMsgBoxInternal__) Import() RTMsgBox {
-	return RTMsgBox{
-		Rg: (func(x *RoleAndGenInternal__) (ret RoleAndGen) {
-			if x == nil {
-				return ret
-			}
-			return x.Import()
-		})(r.Rg),
-		Box: (func(x *SecretBoxInternal__) (ret SecretBox) {
-			if x == nil {
-				return ret
-			}
-			return x.Import()
-		})(r.Box),
-	}
-}
-func (r RTMsgBox) Export() *RTMsgBoxInternal__ {
-	return &RTMsgBoxInternal__{
-		Rg:  r.Rg.Export(),
-		Box: r.Box.Export(),
-	}
-}
-func (r *RTMsgBox) Encode(enc rpc.Encoder) error {
-	return enc.Encode(r.Export())
-}
-
-func (r *RTMsgBox) Decode(dec rpc.Decoder) error {
-	var tmp RTMsgBoxInternal__
-	err := dec.Decode(&tmp)
-	if err != nil {
-		return err
-	}
-	*r = tmp.Import()
-	return nil
-}
-
-func (r *RTMsgBox) Bytes() []byte { return nil }
-
 type MsgBodyType int
 
 const (
@@ -1303,8 +1207,8 @@ func (m MsgBodyType) Export() *MsgBodyTypeInternal__ {
 
 type RTMsgBody struct {
 	T     MsgBodyType
-	F_0__ *[]byte   `json:"f0,omitempty"`
-	F_1__ *RTMsgBox `json:"f1,omitempty"`
+	F_0__ *[]byte  `json:"f0,omitempty"`
+	F_1__ *RTBoxRG `json:"f1,omitempty"`
 }
 type RTMsgBodyInternal__ struct {
 	_struct  struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
@@ -1312,9 +1216,9 @@ type RTMsgBodyInternal__ struct {
 	Switch__ RTMsgBodyInternalSwitch__
 }
 type RTMsgBodyInternalSwitch__ struct {
-	_struct struct{}            `codec:",omitempty"` //lint:ignore U1000 msgpack internal field
-	F_0__   *[]byte             `codec:"0"`
-	F_1__   *RTMsgBoxInternal__ `codec:"1"`
+	_struct struct{}           `codec:",omitempty"` //lint:ignore U1000 msgpack internal field
+	F_0__   *[]byte            `codec:"0"`
+	F_1__   *RTBoxRGInternal__ `codec:"1"`
 }
 
 func (r RTMsgBody) GetT() (ret MsgBodyType, err error) {
@@ -1339,7 +1243,7 @@ func (r RTMsgBody) Plaintext() []byte {
 	}
 	return *r.F_0__
 }
-func (r RTMsgBody) Encrypted() RTMsgBox {
+func (r RTMsgBody) Encrypted() RTBoxRG {
 	if r.F_1__ == nil {
 		panic("unexpected nil case; should have been checked")
 	}
@@ -1354,7 +1258,7 @@ func NewRTMsgBodyWithPlaintext(v []byte) RTMsgBody {
 		F_0__: &v,
 	}
 }
-func NewRTMsgBodyWithEncrypted(v RTMsgBox) RTMsgBody {
+func NewRTMsgBodyWithEncrypted(v RTBoxRG) RTMsgBody {
 	return RTMsgBody{
 		T:     MsgBodyType_Encrypted,
 		F_1__: &v,
@@ -1364,11 +1268,11 @@ func (r RTMsgBodyInternal__) Import() RTMsgBody {
 	return RTMsgBody{
 		T:     r.T,
 		F_0__: r.Switch__.F_0__,
-		F_1__: (func(x *RTMsgBoxInternal__) *RTMsgBox {
+		F_1__: (func(x *RTBoxRGInternal__) *RTBoxRG {
 			if x == nil {
 				return nil
 			}
-			tmp := (func(x *RTMsgBoxInternal__) (ret RTMsgBox) {
+			tmp := (func(x *RTBoxRGInternal__) (ret RTBoxRG) {
 				if x == nil {
 					return ret
 				}
@@ -1383,7 +1287,7 @@ func (r RTMsgBody) Export() *RTMsgBodyInternal__ {
 		T: r.T,
 		Switch__: RTMsgBodyInternalSwitch__{
 			F_0__: r.F_0__,
-			F_1__: (func(x *RTMsgBox) *RTMsgBoxInternal__ {
+			F_1__: (func(x *RTBoxRG) *RTBoxRGInternal__ {
 				if x == nil {
 					return nil
 				}

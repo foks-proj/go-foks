@@ -58,8 +58,8 @@ struct RTChannelMetadata @0xddf6b26b2ace1535 {
     parentTeam @1 : lib.TeamID;
     appID @2 : lib.RTAppID;
     seqno @3 : lib.RTChannelSeqno;       // CAS-bumps on metadata edits
-    nameBox @4 : lib.RTMetadataSecretBox;    // encrypted channel name
-    descBox @5 : Option(lib.RTMetadataSecretBox); // channel description (optional)
+    nameBox @4 : lib.RTBoxRG;    // encrypted channel name
+    descBox @5 : Option(lib.RTBoxRG); // channel description (optional)
     roles @6 : lib.RolePair;                   // read/write roles in parent team
     lastMsg @7 : Option(lib.RTMessageMetadata); // or NULL if no messages sent
     ctime @8 : lib.Time;

@@ -5121,6 +5121,30 @@ func (v RTAppID) ExportToDB() (string, error) {
 	return "", DataError(fmt.Sprintf("bad RTAppID (%d) for DB", v))
 }
 
+func (t RTMsgType) ExportToDB() (string, error) {
+	switch t {
+	case RTMsgType_Basic:
+		return "text", nil
+	case RTMsgType_Edit:
+		return "edit", nil
+	case RTMsgType_Delete:
+		return "delete", nil
+	case RTMsgType_Reactji:
+		return "reactji", nil
+	case RTMsgType_Attachment:
+		return "attachment", nil
+	case RTMsgType_Reply:
+		return "reply", nil
+	case RTMsgType_System:
+		return "system", nil
+	case RTMsgType_Join:
+		return "join", nil
+	case RTMsgType_Leave:
+		return "leave", nil
+	}
+	return "", DataError(fmt.Sprintf("bad RTMsgType (%d) for DB", t))
+}
+
 func (t *RTMsgType) ImportFromDB(s string) error {
 	switch s {
 	case "text":
