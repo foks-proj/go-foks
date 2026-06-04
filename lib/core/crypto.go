@@ -52,6 +52,23 @@ func OpenSecretBoxWithNonceInto(res CryptoPayloader, ctext proto.NaclCiphertext,
 	return nil
 }
 
+func OpenSecretBoxWithDomainSeparatedNonceInto(
+	res CryptoPayloader,
+	ctxt proto.NaclCiphertext,
+	nonce *proto.DomainSeparatedNaclNonce,
+	key *proto.SecretBoxKey,
+) error {
+	buf, ok := secretbox.Open(nil, ctxt.Bytes(), nonce.ToRaw(), key.ToRaw())
+	if !ok {
+		return DecryptionError{}
+	}
+	err := DecodeFromBytes(res, buf)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func roundUpBase2(n int, min int) int {
 	if n <= min {
 		return min
@@ -84,6 +101,18 @@ func SealIntoSecretBoxWithNonceAndPadding(
 	obj.GetTypeUniqueID().EncodeToBytes(nonce[0:])
 
 	return SealIntoSecretBoxWithRawNonceAndPadding(obj, &nonce, key, padMin)
+}
+
+func SealIntoSecretBoxWithDomainSeparatedNonceAndPadding(
+	obj CryptoPayloader,
+	nonce *proto.DomainSeparatedNaclNonce,
+	key *proto.SecretBoxKey,
+	padMin int,
+) (
+	proto.NaclCiphertext,
+	error,
+) {
+	return SealIntoSecretBoxWithRawNonceAndPadding(obj, nonce.ToRaw(), key, padMin)
 }
 
 func SealIntoSecretBoxWithRawNonceAndPadding(

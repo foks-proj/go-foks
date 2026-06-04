@@ -188,13 +188,16 @@ type RTIDType int
 
 const (
 	RTIDType_Channel RTIDType = 16
+	RTIDType_Msg     RTIDType = 17
 )
 
 var RTIDTypeMap = map[string]RTIDType{
 	"Channel": 16,
+	"Msg":     17,
 }
 var RTIDTypeRevMap = map[RTIDType]string{
 	16: "Channel",
+	17: "Msg",
 }
 
 type RTIDTypeInternal__ RTIDType
@@ -273,6 +276,41 @@ func (r *RTChannelID) Decode(dec rpc.Decoder) error {
 }
 
 func (r RTChannelID) Bytes() []byte {
+	return (r)[:]
+}
+
+type RTMsgID [16]byte
+type RTMsgIDInternal__ [16]byte
+
+func (r RTMsgID) Export() *RTMsgIDInternal__ {
+	tmp := (([16]byte)(r))
+	return ((*RTMsgIDInternal__)(&tmp))
+}
+func (r RTMsgIDInternal__) Import() RTMsgID {
+	tmp := ([16]byte)(r)
+	return RTMsgID((func(x *[16]byte) (ret [16]byte) {
+		if x == nil {
+			return ret
+		}
+		return *x
+	})(&tmp))
+}
+
+func (r *RTMsgID) Encode(enc rpc.Encoder) error {
+	return enc.Encode(r.Export())
+}
+
+func (r *RTMsgID) Decode(dec rpc.Decoder) error {
+	var tmp RTMsgIDInternal__
+	err := dec.Decode(&tmp)
+	if err != nil {
+		return err
+	}
+	*r = tmp.Import()
+	return nil
+}
+
+func (r RTMsgID) Bytes() []byte {
 	return (r)[:]
 }
 
@@ -523,6 +561,234 @@ func (r *RTKeyDerivation) GetTypeUniqueID() rpc.TypeUniqueID {
 }
 func (r *RTKeyDerivation) Bytes() []byte { return nil }
 
+type RTMsgMetadata struct {
+	MsgID                  RTMsgID
+	PrevID                 RTMsgID
+	PrevSeq                RTMsgSeq
+	SendTime               Time
+	Typ                    RTMsgType
+	FurtherUserAttribution *UID
+}
+type RTMsgMetadataInternal__ struct {
+	_struct                struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
+	MsgID                  *RTMsgIDInternal__
+	PrevID                 *RTMsgIDInternal__
+	PrevSeq                *RTMsgSeqInternal__
+	SendTime               *TimeInternal__
+	Typ                    *RTMsgTypeInternal__
+	FurtherUserAttribution *UIDInternal__
+}
+
+func (r RTMsgMetadataInternal__) Import() RTMsgMetadata {
+	return RTMsgMetadata{
+		MsgID: (func(x *RTMsgIDInternal__) (ret RTMsgID) {
+			if x == nil {
+				return ret
+			}
+			return x.Import()
+		})(r.MsgID),
+		PrevID: (func(x *RTMsgIDInternal__) (ret RTMsgID) {
+			if x == nil {
+				return ret
+			}
+			return x.Import()
+		})(r.PrevID),
+		PrevSeq: (func(x *RTMsgSeqInternal__) (ret RTMsgSeq) {
+			if x == nil {
+				return ret
+			}
+			return x.Import()
+		})(r.PrevSeq),
+		SendTime: (func(x *TimeInternal__) (ret Time) {
+			if x == nil {
+				return ret
+			}
+			return x.Import()
+		})(r.SendTime),
+		Typ: (func(x *RTMsgTypeInternal__) (ret RTMsgType) {
+			if x == nil {
+				return ret
+			}
+			return x.Import()
+		})(r.Typ),
+		FurtherUserAttribution: (func(x *UIDInternal__) *UID {
+			if x == nil {
+				return nil
+			}
+			tmp := (func(x *UIDInternal__) (ret UID) {
+				if x == nil {
+					return ret
+				}
+				return x.Import()
+			})(x)
+			return &tmp
+		})(r.FurtherUserAttribution),
+	}
+}
+func (r RTMsgMetadata) Export() *RTMsgMetadataInternal__ {
+	return &RTMsgMetadataInternal__{
+		MsgID:    r.MsgID.Export(),
+		PrevID:   r.PrevID.Export(),
+		PrevSeq:  r.PrevSeq.Export(),
+		SendTime: r.SendTime.Export(),
+		Typ:      r.Typ.Export(),
+		FurtherUserAttribution: (func(x *UID) *UIDInternal__ {
+			if x == nil {
+				return nil
+			}
+			return (*x).Export()
+		})(r.FurtherUserAttribution),
+	}
+}
+func (r *RTMsgMetadata) Encode(enc rpc.Encoder) error {
+	return enc.Encode(r.Export())
+}
+
+func (r *RTMsgMetadata) Decode(dec rpc.Decoder) error {
+	var tmp RTMsgMetadataInternal__
+	err := dec.Decode(&tmp)
+	if err != nil {
+		return err
+	}
+	*r = tmp.Import()
+	return nil
+}
+
+func (r *RTMsgMetadata) Bytes() []byte { return nil }
+
+type RTMsgNoncer struct {
+	Md     RTMsgMetadata
+	Sender PartyID
+	AppID  RTAppID
+	Team   PartyID
+	Chid   RTChannelID
+}
+type RTMsgNoncerInternal__ struct {
+	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
+	Md      *RTMsgMetadataInternal__
+	Sender  *PartyIDInternal__
+	AppID   *RTAppIDInternal__
+	Team    *PartyIDInternal__
+	Chid    *RTChannelIDInternal__
+}
+
+func (r RTMsgNoncerInternal__) Import() RTMsgNoncer {
+	return RTMsgNoncer{
+		Md: (func(x *RTMsgMetadataInternal__) (ret RTMsgMetadata) {
+			if x == nil {
+				return ret
+			}
+			return x.Import()
+		})(r.Md),
+		Sender: (func(x *PartyIDInternal__) (ret PartyID) {
+			if x == nil {
+				return ret
+			}
+			return x.Import()
+		})(r.Sender),
+		AppID: (func(x *RTAppIDInternal__) (ret RTAppID) {
+			if x == nil {
+				return ret
+			}
+			return x.Import()
+		})(r.AppID),
+		Team: (func(x *PartyIDInternal__) (ret PartyID) {
+			if x == nil {
+				return ret
+			}
+			return x.Import()
+		})(r.Team),
+		Chid: (func(x *RTChannelIDInternal__) (ret RTChannelID) {
+			if x == nil {
+				return ret
+			}
+			return x.Import()
+		})(r.Chid),
+	}
+}
+func (r RTMsgNoncer) Export() *RTMsgNoncerInternal__ {
+	return &RTMsgNoncerInternal__{
+		Md:     r.Md.Export(),
+		Sender: r.Sender.Export(),
+		AppID:  r.AppID.Export(),
+		Team:   r.Team.Export(),
+		Chid:   r.Chid.Export(),
+	}
+}
+func (r *RTMsgNoncer) Encode(enc rpc.Encoder) error {
+	return enc.Encode(r.Export())
+}
+
+func (r *RTMsgNoncer) Decode(dec rpc.Decoder) error {
+	var tmp RTMsgNoncerInternal__
+	err := dec.Decode(&tmp)
+	if err != nil {
+		return err
+	}
+	*r = tmp.Import()
+	return nil
+}
+
+var RTMsgNoncerTypeUniqueID = rpc.TypeUniqueID(0xd45941000217cf8a)
+
+func (r *RTMsgNoncer) GetTypeUniqueID() rpc.TypeUniqueID {
+	return RTMsgNoncerTypeUniqueID
+}
+func (r *RTMsgNoncer) Bytes() []byte { return nil }
+
+type RTMsgPlaintext struct {
+	Md   RTMsgMetadata
+	Body RTMsgBody
+}
+type RTMsgPlaintextInternal__ struct {
+	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
+	Md      *RTMsgMetadataInternal__
+	Body    *RTMsgBodyInternal__
+}
+
+func (r RTMsgPlaintextInternal__) Import() RTMsgPlaintext {
+	return RTMsgPlaintext{
+		Md: (func(x *RTMsgMetadataInternal__) (ret RTMsgMetadata) {
+			if x == nil {
+				return ret
+			}
+			return x.Import()
+		})(r.Md),
+		Body: (func(x *RTMsgBodyInternal__) (ret RTMsgBody) {
+			if x == nil {
+				return ret
+			}
+			return x.Import()
+		})(r.Body),
+	}
+}
+func (r RTMsgPlaintext) Export() *RTMsgPlaintextInternal__ {
+	return &RTMsgPlaintextInternal__{
+		Md:   r.Md.Export(),
+		Body: r.Body.Export(),
+	}
+}
+func (r *RTMsgPlaintext) Encode(enc rpc.Encoder) error {
+	return enc.Encode(r.Export())
+}
+
+func (r *RTMsgPlaintext) Decode(dec rpc.Decoder) error {
+	var tmp RTMsgPlaintextInternal__
+	err := dec.Decode(&tmp)
+	if err != nil {
+		return err
+	}
+	*r = tmp.Import()
+	return nil
+}
+
+var RTMsgPlaintextTypeUniqueID = rpc.TypeUniqueID(0xd156b7500ebab236)
+
+func (r *RTMsgPlaintext) GetTypeUniqueID() rpc.TypeUniqueID {
+	return RTMsgPlaintextTypeUniqueID
+}
+func (r *RTMsgPlaintext) Bytes() []byte { return nil }
+
 type RTMsgPlaintextBasic []byte
 type RTMsgPlaintextBasicInternal__ []byte
 
@@ -560,12 +826,12 @@ func (r RTMsgPlaintextBasic) Bytes() []byte {
 
 type RTMsgPlaintextPegged struct {
 	Basic   RTMsgPlaintextBasic
-	ReplyTo RTMsgSeq
+	ReplyTo RTMsgID
 }
 type RTMsgPlaintextPeggedInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Basic   *RTMsgPlaintextBasicInternal__
-	ReplyTo *RTMsgSeqInternal__
+	ReplyTo *RTMsgIDInternal__
 }
 
 func (r RTMsgPlaintextPeggedInternal__) Import() RTMsgPlaintextPegged {
@@ -576,7 +842,7 @@ func (r RTMsgPlaintextPeggedInternal__) Import() RTMsgPlaintextPegged {
 			}
 			return x.Import()
 		})(r.Basic),
-		ReplyTo: (func(x *RTMsgSeqInternal__) (ret RTMsgSeq) {
+		ReplyTo: (func(x *RTMsgIDInternal__) (ret RTMsgID) {
 			if x == nil {
 				return ret
 			}
@@ -606,23 +872,23 @@ func (r *RTMsgPlaintextPegged) Decode(dec rpc.Decoder) error {
 
 func (r *RTMsgPlaintextPegged) Bytes() []byte { return nil }
 
-type RTMsgPlaintext struct {
+type RTMsgBody struct {
 	T     RTMsgType
 	F_1__ *RTMsgPlaintextBasic  `json:"f1,omitempty"`
 	F_2__ *RTMsgPlaintextPegged `json:"f2,omitempty"`
 }
-type RTMsgPlaintextInternal__ struct {
+type RTMsgBodyInternal__ struct {
 	_struct  struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	T        RTMsgType
-	Switch__ RTMsgPlaintextInternalSwitch__
+	Switch__ RTMsgBodyInternalSwitch__
 }
-type RTMsgPlaintextInternalSwitch__ struct {
+type RTMsgBodyInternalSwitch__ struct {
 	_struct struct{}                        `codec:",omitempty"` //lint:ignore U1000 msgpack internal field
 	F_1__   *RTMsgPlaintextBasicInternal__  `codec:"1"`
 	F_2__   *RTMsgPlaintextPeggedInternal__ `codec:"2"`
 }
 
-func (r RTMsgPlaintext) GetT() (ret RTMsgType, err error) {
+func (r RTMsgBody) GetT() (ret RTMsgType, err error) {
 	switch r.T {
 	case RTMsgType_Basic:
 		if r.F_1__ == nil {
@@ -635,7 +901,7 @@ func (r RTMsgPlaintext) GetT() (ret RTMsgType, err error) {
 	}
 	return r.T, nil
 }
-func (r RTMsgPlaintext) Basic() RTMsgPlaintextBasic {
+func (r RTMsgBody) Basic() RTMsgPlaintextBasic {
 	if r.F_1__ == nil {
 		panic("unexpected nil case; should have been checked")
 	}
@@ -644,7 +910,7 @@ func (r RTMsgPlaintext) Basic() RTMsgPlaintextBasic {
 	}
 	return *r.F_1__
 }
-func (r RTMsgPlaintext) Reply() RTMsgPlaintextPegged {
+func (r RTMsgBody) Reply() RTMsgPlaintextPegged {
 	if r.F_2__ == nil {
 		panic("unexpected nil case; should have been checked")
 	}
@@ -653,7 +919,7 @@ func (r RTMsgPlaintext) Reply() RTMsgPlaintextPegged {
 	}
 	return *r.F_2__
 }
-func (r RTMsgPlaintext) Reactji() RTMsgPlaintextPegged {
+func (r RTMsgBody) Reactji() RTMsgPlaintextPegged {
 	if r.F_2__ == nil {
 		panic("unexpected nil case; should have been checked")
 	}
@@ -662,7 +928,7 @@ func (r RTMsgPlaintext) Reactji() RTMsgPlaintextPegged {
 	}
 	return *r.F_2__
 }
-func (r RTMsgPlaintext) Edit() RTMsgPlaintextPegged {
+func (r RTMsgBody) Edit() RTMsgPlaintextPegged {
 	if r.F_2__ == nil {
 		panic("unexpected nil case; should have been checked")
 	}
@@ -671,32 +937,32 @@ func (r RTMsgPlaintext) Edit() RTMsgPlaintextPegged {
 	}
 	return *r.F_2__
 }
-func NewRTMsgPlaintextWithBasic(v RTMsgPlaintextBasic) RTMsgPlaintext {
-	return RTMsgPlaintext{
+func NewRTMsgBodyWithBasic(v RTMsgPlaintextBasic) RTMsgBody {
+	return RTMsgBody{
 		T:     RTMsgType_Basic,
 		F_1__: &v,
 	}
 }
-func NewRTMsgPlaintextWithReply(v RTMsgPlaintextPegged) RTMsgPlaintext {
-	return RTMsgPlaintext{
+func NewRTMsgBodyWithReply(v RTMsgPlaintextPegged) RTMsgBody {
+	return RTMsgBody{
 		T:     RTMsgType_Reply,
 		F_2__: &v,
 	}
 }
-func NewRTMsgPlaintextWithReactji(v RTMsgPlaintextPegged) RTMsgPlaintext {
-	return RTMsgPlaintext{
+func NewRTMsgBodyWithReactji(v RTMsgPlaintextPegged) RTMsgBody {
+	return RTMsgBody{
 		T:     RTMsgType_Reactji,
 		F_2__: &v,
 	}
 }
-func NewRTMsgPlaintextWithEdit(v RTMsgPlaintextPegged) RTMsgPlaintext {
-	return RTMsgPlaintext{
+func NewRTMsgBodyWithEdit(v RTMsgPlaintextPegged) RTMsgBody {
+	return RTMsgBody{
 		T:     RTMsgType_Edit,
 		F_2__: &v,
 	}
 }
-func (r RTMsgPlaintextInternal__) Import() RTMsgPlaintext {
-	return RTMsgPlaintext{
+func (r RTMsgBodyInternal__) Import() RTMsgBody {
+	return RTMsgBody{
 		T: r.T,
 		F_1__: (func(x *RTMsgPlaintextBasicInternal__) *RTMsgPlaintextBasic {
 			if x == nil {
@@ -724,10 +990,10 @@ func (r RTMsgPlaintextInternal__) Import() RTMsgPlaintext {
 		})(r.Switch__.F_2__),
 	}
 }
-func (r RTMsgPlaintext) Export() *RTMsgPlaintextInternal__ {
-	return &RTMsgPlaintextInternal__{
+func (r RTMsgBody) Export() *RTMsgBodyInternal__ {
+	return &RTMsgBodyInternal__{
 		T: r.T,
-		Switch__: RTMsgPlaintextInternalSwitch__{
+		Switch__: RTMsgBodyInternalSwitch__{
 			F_1__: (func(x *RTMsgPlaintextBasic) *RTMsgPlaintextBasicInternal__ {
 				if x == nil {
 					return nil
@@ -743,12 +1009,12 @@ func (r RTMsgPlaintext) Export() *RTMsgPlaintextInternal__ {
 		},
 	}
 }
-func (r *RTMsgPlaintext) Encode(enc rpc.Encoder) error {
+func (r *RTMsgBody) Encode(enc rpc.Encoder) error {
 	return enc.Encode(r.Export())
 }
 
-func (r *RTMsgPlaintext) Decode(dec rpc.Decoder) error {
-	var tmp RTMsgPlaintextInternal__
+func (r *RTMsgBody) Decode(dec rpc.Decoder) error {
+	var tmp RTMsgBodyInternal__
 	err := dec.Decode(&tmp)
 	if err != nil {
 		return err
@@ -757,12 +1023,12 @@ func (r *RTMsgPlaintext) Decode(dec rpc.Decoder) error {
 	return nil
 }
 
-var RTMsgPlaintextTypeUniqueID = rpc.TypeUniqueID(0xc830111a77ab24f6)
+var RTMsgBodyTypeUniqueID = rpc.TypeUniqueID(0xc830111a77ab24f6)
 
-func (r *RTMsgPlaintext) GetTypeUniqueID() rpc.TypeUniqueID {
-	return RTMsgPlaintextTypeUniqueID
+func (r *RTMsgBody) GetTypeUniqueID() rpc.TypeUniqueID {
+	return RTMsgBodyTypeUniqueID
 }
-func (r *RTMsgPlaintext) Bytes() []byte { return nil }
+func (r *RTMsgBody) Bytes() []byte { return nil }
 
 type RTChannelNameType int
 
@@ -986,18 +1252,18 @@ func (r *RTChannelDescPlaintext) GetTypeUniqueID() rpc.TypeUniqueID {
 }
 func (r *RTChannelDescPlaintext) Bytes() []byte { return nil }
 
-type RTMetadataSecretBox struct {
+type RTBoxRG struct {
 	Rg  RoleAndGen
 	Box SecretBox
 }
-type RTMetadataSecretBoxInternal__ struct {
+type RTBoxRGInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Rg      *RoleAndGenInternal__
 	Box     *SecretBoxInternal__
 }
 
-func (r RTMetadataSecretBoxInternal__) Import() RTMetadataSecretBox {
-	return RTMetadataSecretBox{
+func (r RTBoxRGInternal__) Import() RTBoxRG {
+	return RTBoxRG{
 		Rg: (func(x *RoleAndGenInternal__) (ret RoleAndGen) {
 			if x == nil {
 				return ret
@@ -1012,18 +1278,18 @@ func (r RTMetadataSecretBoxInternal__) Import() RTMetadataSecretBox {
 		})(r.Box),
 	}
 }
-func (r RTMetadataSecretBox) Export() *RTMetadataSecretBoxInternal__ {
-	return &RTMetadataSecretBoxInternal__{
+func (r RTBoxRG) Export() *RTBoxRGInternal__ {
+	return &RTBoxRGInternal__{
 		Rg:  r.Rg.Export(),
 		Box: r.Box.Export(),
 	}
 }
-func (r *RTMetadataSecretBox) Encode(enc rpc.Encoder) error {
+func (r *RTBoxRG) Encode(enc rpc.Encoder) error {
 	return enc.Encode(r.Export())
 }
 
-func (r *RTMetadataSecretBox) Decode(dec rpc.Decoder) error {
-	var tmp RTMetadataSecretBoxInternal__
+func (r *RTBoxRG) Decode(dec rpc.Decoder) error {
+	var tmp RTBoxRGInternal__
 	err := dec.Decode(&tmp)
 	if err != nil {
 		return err
@@ -1032,55 +1298,7 @@ func (r *RTMetadataSecretBox) Decode(dec rpc.Decoder) error {
 	return nil
 }
 
-func (r *RTMetadataSecretBox) Bytes() []byte { return nil }
-
-type RTChannelDescBox struct {
-	Rg  RoleAndGen
-	Box SecretBox
-}
-type RTChannelDescBoxInternal__ struct {
-	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
-	Rg      *RoleAndGenInternal__
-	Box     *SecretBoxInternal__
-}
-
-func (r RTChannelDescBoxInternal__) Import() RTChannelDescBox {
-	return RTChannelDescBox{
-		Rg: (func(x *RoleAndGenInternal__) (ret RoleAndGen) {
-			if x == nil {
-				return ret
-			}
-			return x.Import()
-		})(r.Rg),
-		Box: (func(x *SecretBoxInternal__) (ret SecretBox) {
-			if x == nil {
-				return ret
-			}
-			return x.Import()
-		})(r.Box),
-	}
-}
-func (r RTChannelDescBox) Export() *RTChannelDescBoxInternal__ {
-	return &RTChannelDescBoxInternal__{
-		Rg:  r.Rg.Export(),
-		Box: r.Box.Export(),
-	}
-}
-func (r *RTChannelDescBox) Encode(enc rpc.Encoder) error {
-	return enc.Encode(r.Export())
-}
-
-func (r *RTChannelDescBox) Decode(dec rpc.Decoder) error {
-	var tmp RTChannelDescBoxInternal__
-	err := dec.Decode(&tmp)
-	if err != nil {
-		return err
-	}
-	*r = tmp.Import()
-	return nil
-}
-
-func (r *RTChannelDescBox) Bytes() []byte { return nil }
+func (r *RTBoxRG) Bytes() []byte { return nil }
 
 type RTChannelSetVersion uint64
 type RTChannelSetVersionInternal__ uint64
@@ -1117,92 +1335,6 @@ func (r RTChannelSetVersion) Bytes() []byte {
 	return nil
 }
 
-type RTMessageMetadata struct {
-	MsgType                RTMsgType
-	MsgSeq                 RTMsgSeq
-	SenderPartyID          PartyID
-	SendTime               Time
-	FurtherUserAttribution *UID
-}
-type RTMessageMetadataInternal__ struct {
-	_struct                struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
-	MsgType                *RTMsgTypeInternal__
-	MsgSeq                 *RTMsgSeqInternal__
-	SenderPartyID          *PartyIDInternal__
-	SendTime               *TimeInternal__
-	FurtherUserAttribution *UIDInternal__
-}
-
-func (r RTMessageMetadataInternal__) Import() RTMessageMetadata {
-	return RTMessageMetadata{
-		MsgType: (func(x *RTMsgTypeInternal__) (ret RTMsgType) {
-			if x == nil {
-				return ret
-			}
-			return x.Import()
-		})(r.MsgType),
-		MsgSeq: (func(x *RTMsgSeqInternal__) (ret RTMsgSeq) {
-			if x == nil {
-				return ret
-			}
-			return x.Import()
-		})(r.MsgSeq),
-		SenderPartyID: (func(x *PartyIDInternal__) (ret PartyID) {
-			if x == nil {
-				return ret
-			}
-			return x.Import()
-		})(r.SenderPartyID),
-		SendTime: (func(x *TimeInternal__) (ret Time) {
-			if x == nil {
-				return ret
-			}
-			return x.Import()
-		})(r.SendTime),
-		FurtherUserAttribution: (func(x *UIDInternal__) *UID {
-			if x == nil {
-				return nil
-			}
-			tmp := (func(x *UIDInternal__) (ret UID) {
-				if x == nil {
-					return ret
-				}
-				return x.Import()
-			})(x)
-			return &tmp
-		})(r.FurtherUserAttribution),
-	}
-}
-func (r RTMessageMetadata) Export() *RTMessageMetadataInternal__ {
-	return &RTMessageMetadataInternal__{
-		MsgType:       r.MsgType.Export(),
-		MsgSeq:        r.MsgSeq.Export(),
-		SenderPartyID: r.SenderPartyID.Export(),
-		SendTime:      r.SendTime.Export(),
-		FurtherUserAttribution: (func(x *UID) *UIDInternal__ {
-			if x == nil {
-				return nil
-			}
-			return (*x).Export()
-		})(r.FurtherUserAttribution),
-	}
-}
-func (r *RTMessageMetadata) Encode(enc rpc.Encoder) error {
-	return enc.Encode(r.Export())
-}
-
-func (r *RTMessageMetadata) Decode(dec rpc.Decoder) error {
-	var tmp RTMessageMetadataInternal__
-	err := dec.Decode(&tmp)
-	if err != nil {
-		return err
-	}
-	*r = tmp.Import()
-	return nil
-}
-
-func (r *RTMessageMetadata) Bytes() []byte { return nil }
-
 type RTChannelClass int
 
 const (
@@ -1227,54 +1359,6 @@ func (r RTChannelClassInternal__) Import() RTChannelClass {
 func (r RTChannelClass) Export() *RTChannelClassInternal__ {
 	return ((*RTChannelClassInternal__)(&r))
 }
-
-type RTMsgBox struct {
-	Rg  RoleAndGen
-	Box SecretBox
-}
-type RTMsgBoxInternal__ struct {
-	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
-	Rg      *RoleAndGenInternal__
-	Box     *SecretBoxInternal__
-}
-
-func (r RTMsgBoxInternal__) Import() RTMsgBox {
-	return RTMsgBox{
-		Rg: (func(x *RoleAndGenInternal__) (ret RoleAndGen) {
-			if x == nil {
-				return ret
-			}
-			return x.Import()
-		})(r.Rg),
-		Box: (func(x *SecretBoxInternal__) (ret SecretBox) {
-			if x == nil {
-				return ret
-			}
-			return x.Import()
-		})(r.Box),
-	}
-}
-func (r RTMsgBox) Export() *RTMsgBoxInternal__ {
-	return &RTMsgBoxInternal__{
-		Rg:  r.Rg.Export(),
-		Box: r.Box.Export(),
-	}
-}
-func (r *RTMsgBox) Encode(enc rpc.Encoder) error {
-	return enc.Encode(r.Export())
-}
-
-func (r *RTMsgBox) Decode(dec rpc.Decoder) error {
-	var tmp RTMsgBoxInternal__
-	err := dec.Decode(&tmp)
-	if err != nil {
-		return err
-	}
-	*r = tmp.Import()
-	return nil
-}
-
-func (r *RTMsgBox) Bytes() []byte { return nil }
 
 type MsgBodyType int
 
@@ -1301,23 +1385,155 @@ func (m MsgBodyType) Export() *MsgBodyTypeInternal__ {
 	return ((*MsgBodyTypeInternal__)(&m))
 }
 
-type RTMsgBody struct {
+type RTMsgCiphertext struct {
+	T     BoxType
+	F_0__ *NaclCiphertext `json:"f0,omitempty"`
+}
+type RTMsgCiphertextInternal__ struct {
+	_struct  struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
+	T        BoxType
+	Switch__ RTMsgCiphertextInternalSwitch__
+}
+type RTMsgCiphertextInternalSwitch__ struct {
+	_struct struct{}                  `codec:",omitempty"` //lint:ignore U1000 msgpack internal field
+	F_0__   *NaclCiphertextInternal__ `codec:"0"`
+}
+
+func (r RTMsgCiphertext) GetT() (ret BoxType, err error) {
+	switch r.T {
+	case BoxType_NACL:
+		if r.F_0__ == nil {
+			return ret, errors.New("unexpected nil case for F_0__")
+		}
+	}
+	return r.T, nil
+}
+func (r RTMsgCiphertext) Nacl() NaclCiphertext {
+	if r.F_0__ == nil {
+		panic("unexpected nil case; should have been checked")
+	}
+	if r.T != BoxType_NACL {
+		panic(fmt.Sprintf("unexpected switch value (%v) when Nacl is called", r.T))
+	}
+	return *r.F_0__
+}
+func NewRTMsgCiphertextWithNacl(v NaclCiphertext) RTMsgCiphertext {
+	return RTMsgCiphertext{
+		T:     BoxType_NACL,
+		F_0__: &v,
+	}
+}
+func (r RTMsgCiphertextInternal__) Import() RTMsgCiphertext {
+	return RTMsgCiphertext{
+		T: r.T,
+		F_0__: (func(x *NaclCiphertextInternal__) *NaclCiphertext {
+			if x == nil {
+				return nil
+			}
+			tmp := (func(x *NaclCiphertextInternal__) (ret NaclCiphertext) {
+				if x == nil {
+					return ret
+				}
+				return x.Import()
+			})(x)
+			return &tmp
+		})(r.Switch__.F_0__),
+	}
+}
+func (r RTMsgCiphertext) Export() *RTMsgCiphertextInternal__ {
+	return &RTMsgCiphertextInternal__{
+		T: r.T,
+		Switch__: RTMsgCiphertextInternalSwitch__{
+			F_0__: (func(x *NaclCiphertext) *NaclCiphertextInternal__ {
+				if x == nil {
+					return nil
+				}
+				return (*x).Export()
+			})(r.F_0__),
+		},
+	}
+}
+func (r *RTMsgCiphertext) Encode(enc rpc.Encoder) error {
+	return enc.Encode(r.Export())
+}
+
+func (r *RTMsgCiphertext) Decode(dec rpc.Decoder) error {
+	var tmp RTMsgCiphertextInternal__
+	err := dec.Decode(&tmp)
+	if err != nil {
+		return err
+	}
+	*r = tmp.Import()
+	return nil
+}
+
+func (r *RTMsgCiphertext) Bytes() []byte { return nil }
+
+type RTMsgBox struct {
+	Ctext RTMsgCiphertext
+	Rg    RoleAndGen
+}
+type RTMsgBoxInternal__ struct {
+	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
+	Ctext   *RTMsgCiphertextInternal__
+	Rg      *RoleAndGenInternal__
+}
+
+func (r RTMsgBoxInternal__) Import() RTMsgBox {
+	return RTMsgBox{
+		Ctext: (func(x *RTMsgCiphertextInternal__) (ret RTMsgCiphertext) {
+			if x == nil {
+				return ret
+			}
+			return x.Import()
+		})(r.Ctext),
+		Rg: (func(x *RoleAndGenInternal__) (ret RoleAndGen) {
+			if x == nil {
+				return ret
+			}
+			return x.Import()
+		})(r.Rg),
+	}
+}
+func (r RTMsgBox) Export() *RTMsgBoxInternal__ {
+	return &RTMsgBoxInternal__{
+		Ctext: r.Ctext.Export(),
+		Rg:    r.Rg.Export(),
+	}
+}
+func (r *RTMsgBox) Encode(enc rpc.Encoder) error {
+	return enc.Encode(r.Export())
+}
+
+func (r *RTMsgBox) Decode(dec rpc.Decoder) error {
+	var tmp RTMsgBoxInternal__
+	err := dec.Decode(&tmp)
+	if err != nil {
+		return err
+	}
+	*r = tmp.Import()
+	return nil
+}
+
+func (r *RTMsgBox) Bytes() []byte { return nil }
+
+type RTMsgWrapper struct {
 	T     MsgBodyType
 	F_0__ *[]byte   `json:"f0,omitempty"`
 	F_1__ *RTMsgBox `json:"f1,omitempty"`
 }
-type RTMsgBodyInternal__ struct {
+type RTMsgWrapperInternal__ struct {
 	_struct  struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	T        MsgBodyType
-	Switch__ RTMsgBodyInternalSwitch__
+	Switch__ RTMsgWrapperInternalSwitch__
 }
-type RTMsgBodyInternalSwitch__ struct {
+type RTMsgWrapperInternalSwitch__ struct {
 	_struct struct{}            `codec:",omitempty"` //lint:ignore U1000 msgpack internal field
 	F_0__   *[]byte             `codec:"0"`
 	F_1__   *RTMsgBoxInternal__ `codec:"1"`
 }
 
-func (r RTMsgBody) GetT() (ret MsgBodyType, err error) {
+func (r RTMsgWrapper) GetT() (ret MsgBodyType, err error) {
 	switch r.T {
 	case MsgBodyType_Plaintext:
 		if r.F_0__ == nil {
@@ -1330,7 +1546,7 @@ func (r RTMsgBody) GetT() (ret MsgBodyType, err error) {
 	}
 	return r.T, nil
 }
-func (r RTMsgBody) Plaintext() []byte {
+func (r RTMsgWrapper) Plaintext() []byte {
 	if r.F_0__ == nil {
 		panic("unexpected nil case; should have been checked")
 	}
@@ -1339,7 +1555,7 @@ func (r RTMsgBody) Plaintext() []byte {
 	}
 	return *r.F_0__
 }
-func (r RTMsgBody) Encrypted() RTMsgBox {
+func (r RTMsgWrapper) Encrypted() RTMsgBox {
 	if r.F_1__ == nil {
 		panic("unexpected nil case; should have been checked")
 	}
@@ -1348,20 +1564,20 @@ func (r RTMsgBody) Encrypted() RTMsgBox {
 	}
 	return *r.F_1__
 }
-func NewRTMsgBodyWithPlaintext(v []byte) RTMsgBody {
-	return RTMsgBody{
+func NewRTMsgWrapperWithPlaintext(v []byte) RTMsgWrapper {
+	return RTMsgWrapper{
 		T:     MsgBodyType_Plaintext,
 		F_0__: &v,
 	}
 }
-func NewRTMsgBodyWithEncrypted(v RTMsgBox) RTMsgBody {
-	return RTMsgBody{
+func NewRTMsgWrapperWithEncrypted(v RTMsgBox) RTMsgWrapper {
+	return RTMsgWrapper{
 		T:     MsgBodyType_Encrypted,
 		F_1__: &v,
 	}
 }
-func (r RTMsgBodyInternal__) Import() RTMsgBody {
-	return RTMsgBody{
+func (r RTMsgWrapperInternal__) Import() RTMsgWrapper {
+	return RTMsgWrapper{
 		T:     r.T,
 		F_0__: r.Switch__.F_0__,
 		F_1__: (func(x *RTMsgBoxInternal__) *RTMsgBox {
@@ -1378,10 +1594,10 @@ func (r RTMsgBodyInternal__) Import() RTMsgBody {
 		})(r.Switch__.F_1__),
 	}
 }
-func (r RTMsgBody) Export() *RTMsgBodyInternal__ {
-	return &RTMsgBodyInternal__{
+func (r RTMsgWrapper) Export() *RTMsgWrapperInternal__ {
+	return &RTMsgWrapperInternal__{
 		T: r.T,
-		Switch__: RTMsgBodyInternalSwitch__{
+		Switch__: RTMsgWrapperInternalSwitch__{
 			F_0__: r.F_0__,
 			F_1__: (func(x *RTMsgBox) *RTMsgBoxInternal__ {
 				if x == nil {
@@ -1392,12 +1608,12 @@ func (r RTMsgBody) Export() *RTMsgBodyInternal__ {
 		},
 	}
 }
-func (r *RTMsgBody) Encode(enc rpc.Encoder) error {
+func (r *RTMsgWrapper) Encode(enc rpc.Encoder) error {
 	return enc.Encode(r.Export())
 }
 
-func (r *RTMsgBody) Decode(dec rpc.Decoder) error {
-	var tmp RTMsgBodyInternal__
+func (r *RTMsgWrapper) Decode(dec rpc.Decoder) error {
+	var tmp RTMsgWrapperInternal__
 	err := dec.Decode(&tmp)
 	if err != nil {
 		return err
@@ -1406,7 +1622,7 @@ func (r *RTMsgBody) Decode(dec rpc.Decoder) error {
 	return nil
 }
 
-func (r *RTMsgBody) Bytes() []byte { return nil }
+func (r *RTMsgWrapper) Bytes() []byte { return nil }
 
 type RTThreadDir int
 
@@ -1549,7 +1765,9 @@ func (r *RTInboxPollRes) Bytes() []byte { return nil }
 
 func init() {
 	rpc.AddUnique(RTKeyDerivationTypeUniqueID)
+	rpc.AddUnique(RTMsgNoncerTypeUniqueID)
 	rpc.AddUnique(RTMsgPlaintextTypeUniqueID)
+	rpc.AddUnique(RTMsgBodyTypeUniqueID)
 	rpc.AddUnique(RTChannelNamePlaintextTypeUniqueID)
 	rpc.AddUnique(RTChannelDescPlaintextTypeUniqueID)
 }

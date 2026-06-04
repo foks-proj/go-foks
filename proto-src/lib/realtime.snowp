@@ -21,10 +21,12 @@ typedef RTChannelDesc = Text;       // UTF-ok; arbitrary text; < 512 chars
 // Start higher than KV, so we can tell IDs apart without context
 enum RTIDType {
     Channel @16;
+    Msg @17;
 }
 
-typedef RTChannelIDShort = Int;    // random 63-bit, unique across all teams; BIGINT in SQL
+typedef RTChannelIDShort = Int;     // random 63-bit, unique across all teams; BIGINT in SQL
 typedef RTChannelID = Blob(16);     // Full channelID
+typedef RTMsgID = Blob(16);         // Full msgID
 typedef RTID = Blob(17);            // Generic Realtime ID
 
 
@@ -67,14 +69,41 @@ struct RTKeyDerivation @0xee6956bd3980334a {
     var @1 : RTKeyVar;
 }
 
+// prevSeq is the last message the server acked, that the client has seen.
+// prevID is the last message that the client has seen; they might not agree,
+// if for instance, the user is typing two messages rapidly.
+struct RTMsgMetadata {
+    msgID @0 : RTMsgID; // random per message --- crucial for security!!!
+    prevID @1 : RTMsgID;
+    prevSeq @2 : RTMsgSeq; 
+    sendTime @3 : Time;
+    typ @4 : RTMsgType;
+    furtherUserAttribution @5 : Option(UID);
+}
+
+// Fills in a few more fields that the server knows via mTLS parameters,
+// send args or via joins. But they all go into the nonce.
+struct RTMsgNoncer @0xd45941000217cf8a {
+    md @0 : RTMsgMetadata;
+    sender @1 : PartyID;
+    appID @2 : RTAppID;
+    team @3 : PartyID;
+    chid @4 : RTChannelID;
+}
+
+struct RTMsgPlaintext @0xd156b7500ebab236 {
+    md @0 : RTMsgMetadata;
+    body @1 : RTMsgBody;
+}
+
 typedef RTMsgPlaintextBasic = Blob;
 
 struct RTMsgPlaintextPegged {
     basic @0 : RTMsgPlaintextBasic;
-    replyTo @1 : RTMsgSeq;
+    replyTo @1 : RTMsgID;
 }
 
-variant RTMsgPlaintext switch (t : RTMsgType) @0xc830111a77ab24f6 {
+variant RTMsgBody switch (t : RTMsgType) @0xc830111a77ab24f6 {
     case Basic @1 : RTMsgPlaintextBasic;
     case Reply, Reactji, Edit @2 : RTMsgPlaintextPegged;
 }
@@ -98,38 +127,19 @@ variant RTChannelDescPlaintext switch (t : RTChannelDescType) @0xd14f88f5ae7aaec
     case Utf8v1 @1 : RTChannelDesc;    // simple utf-8 description (v1)
 }
 
-// For ChannelDesc and ChannelName
-struct RTMetadataSecretBox {
-    rg @0 : RoleAndGen;
-    box @1 : SecretBox;
-}
-
-struct RTChannelDescBox {
+// For ChannelDesc and ChannelName, and regular messages (so far).
+// Encrypted message body. Key derivation: per-channel symmetric key derived
+// from the parent team's PTK at rg (see design doc, "Crypto").
+struct RTBoxRG{
     rg @0 : RoleAndGen;
     box @1 : SecretBox;
 }
 
 typedef RTChannelSetVersion = Uint;
 
-struct RTMessageMetadata {
-    msgType @0 : RTMsgType;      // None if no message yet
-    msgSeq @1 : RTMsgSeq;        // 0 if no message yet
-    senderPartyID @2: PartyID;
-    sendTime @3 : Time;
-    furtherUserAttribution @4 : Option(UID); // for messages sent by teams
-}
-
 enum RTChannelClass {
     Bottom @0;
     Admin @1;
-}
-
-
-// Encrypted message body. Key derivation: per-channel symmetric key derived
-// from the parent team's PTK at rg (see design doc, "Crypto").
-struct RTMsgBox {
-    rg @0 : RoleAndGen;     // PTK role+gen used to derive the channel key
-    box @1 : SecretBox;
 }
 
 enum MsgBodyType {
@@ -137,9 +147,19 @@ enum MsgBodyType {
     Encrypted @1;
 }
 
+variant RTMsgCiphertext switch (t : BoxType) {
+    case NACL @0 : NaclCiphertext;
+}
+
+// Nonce is computed from Noncer, to save space.
+struct RTMsgBox {
+    ctext @0 : RTMsgCiphertext;
+    rg @1 : RoleAndGen;
+}
+
 // Variant so the server can author plaintext system messages (join/leave/etc.)
 // without holding a PTK. Mirrors foks_realtime.messages_enc vs messages_clear.
-variant RTMsgBody switch (t : MsgBodyType) {
+variant RTMsgWrapper switch (t : MsgBodyType) {
     case Plaintext @0 : Blob; // server-readable plaintext payload
     case Encrypted @1 : RTMsgBox;
 }

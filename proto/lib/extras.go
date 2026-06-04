@@ -5121,6 +5121,30 @@ func (v RTAppID) ExportToDB() (string, error) {
 	return "", DataError(fmt.Sprintf("bad RTAppID (%d) for DB", v))
 }
 
+func (t RTMsgType) ExportToDB() (string, error) {
+	switch t {
+	case RTMsgType_Basic:
+		return "text", nil
+	case RTMsgType_Edit:
+		return "edit", nil
+	case RTMsgType_Delete:
+		return "delete", nil
+	case RTMsgType_Reactji:
+		return "reactji", nil
+	case RTMsgType_Attachment:
+		return "attachment", nil
+	case RTMsgType_Reply:
+		return "reply", nil
+	case RTMsgType_System:
+		return "system", nil
+	case RTMsgType_Join:
+		return "join", nil
+	case RTMsgType_Leave:
+		return "leave", nil
+	}
+	return "", DataError(fmt.Sprintf("bad RTMsgType (%d) for DB", t))
+}
+
 func (t *RTMsgType) ImportFromDB(s string) error {
 	switch s {
 	case "text":
@@ -5176,5 +5200,44 @@ func (c *RTChannelClass) ImportFromDB(s string) error {
 	default:
 		return DataError(fmt.Sprintf("bad RTChannelClass (%s) in DB", s))
 	}
+	return nil
+}
+
+func (i RTMsgID) IsZero() bool {
+	for _, b := range i {
+		if b != 0 {
+			return false
+		}
+	}
+	return true
+}
+
+func (h StdHash) DomainSeparatedNaclNonce() *DomainSeparatedNaclNonce {
+	var ret DomainSeparatedNaclNonce
+	copy(ret[:], h[:])
+	return &ret
+}
+
+func (d *DomainSeparatedNaclNonce) ToRaw() *[24]byte {
+	return (*[24]byte)(d)
+}
+
+func (k *SecretBoxKey) ToRaw() *[32]byte {
+	return (*[32]byte)(k)
+}
+
+func (q RTMsgSeq) IsValid() bool {
+	return q > 0
+}
+
+func (q RTMsgSeq) Int64() int64 {
+	return int64(q)
+}
+
+func (r *RTMsgID) ImportFromBytes(b []byte) error {
+	if len(b) != len(r) {
+		return DataError("bad rt msg id")
+	}
+	copy((*r)[:], b[:])
 	return nil
 }

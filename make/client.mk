@@ -140,6 +140,10 @@ musl: musl-arm64 musl-amd64
 release-all: deb rpm darwin-zip brew musl
 	@echo "All release packages are ready in the build directory"
 
+.PHONY: client-test-compile
+client-test-compile:
+	(cd client/foks && go build)
+
 ##
 ##-----------------------------------------------------------------------
 ##

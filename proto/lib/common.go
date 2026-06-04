@@ -3189,6 +3189,41 @@ func (n NaclNonce) Bytes() []byte {
 	return (n)[:]
 }
 
+type DomainSeparatedNaclNonce [24]byte
+type DomainSeparatedNaclNonceInternal__ [24]byte
+
+func (d DomainSeparatedNaclNonce) Export() *DomainSeparatedNaclNonceInternal__ {
+	tmp := (([24]byte)(d))
+	return ((*DomainSeparatedNaclNonceInternal__)(&tmp))
+}
+func (d DomainSeparatedNaclNonceInternal__) Import() DomainSeparatedNaclNonce {
+	tmp := ([24]byte)(d)
+	return DomainSeparatedNaclNonce((func(x *[24]byte) (ret [24]byte) {
+		if x == nil {
+			return ret
+		}
+		return *x
+	})(&tmp))
+}
+
+func (d *DomainSeparatedNaclNonce) Encode(enc rpc.Encoder) error {
+	return enc.Encode(d.Export())
+}
+
+func (d *DomainSeparatedNaclNonce) Decode(dec rpc.Decoder) error {
+	var tmp DomainSeparatedNaclNonceInternal__
+	err := dec.Decode(&tmp)
+	if err != nil {
+		return err
+	}
+	*d = tmp.Import()
+	return nil
+}
+
+func (d DomainSeparatedNaclNonce) Bytes() []byte {
+	return (d)[:]
+}
+
 type BoxType int
 
 const (

@@ -18,13 +18,10 @@ struct RTInboxKey {
 // Send a message into an existing channel. Server fills insertTime, server-
 // side seq (and rejects if expectedSeq != server's next seq, if provided).
 struct RTSendArg {
-    channelID @0 : lib.RTChannelID;
-    typ @1 : lib.RTMsgType;
-    body @2 : lib.RTMsgBody;
-    sentAtTime @3 : lib.Time;
-    // If set, server requires next assigned seq == expectedSeq + 1; lets
-    // clients fail-fast on accidental concurrent sends. Optional in stage 1.
-    expectedPrevSeq @4 : Option(lib.RTMsgSeq);
+    md @0 : lib.RTMsgMetadata;
+    chid @1 : lib.RTChannelIDShort; // send short channel ID to save bytes
+    mw @2 : lib.RTMsgWrapper;
+    expectedPrevSeq @3 : lib.RTMsgSeq; // 0 if unspecified
 }
 
 struct RTSendRes {
@@ -53,15 +50,23 @@ struct RTPollInboxArg {
     timeout @2 : lib.DurationMilli;
 }
 
+struct RTLastMsg {
+    seq @0 : lib.RTMsgSeq;
+    typ @1 : lib.RTMsgType;
+    insertTime @2 : lib.Time;
+    sender @3 : Option(lib.PartyID);
+    furtherUserAttribution @4 : Option(lib.UID);
+}
+
 struct RTChannelMetadata @0xddf6b26b2ace1535 {
     id @0 : lib.RTChannelID;
     parentTeam @1 : lib.TeamID;
     appID @2 : lib.RTAppID;
-    seqno @3 : lib.RTChannelSeqno;       // CAS-bumps on metadata edits
-    nameBox @4 : lib.RTMetadataSecretBox;    // encrypted channel name
-    descBox @5 : Option(lib.RTMetadataSecretBox); // channel description (optional)
-    roles @6 : lib.RolePair;                   // read/write roles in parent team
-    lastMsg @7 : Option(lib.RTMessageMetadata); // or NULL if no messages sent
+    seqno @3 : lib.RTChannelSeqno;    // CAS-bumps on metadata edits
+    nameBox @4 : lib.RTBoxRG;         // encrypted channel name
+    descBox @5 : Option(lib.RTBoxRG); // channel description (optional)
+    roles @6 : lib.RolePair;          // read/write roles in parent team
+    lastMsg @7 : Option(RTLastMsg);   // or NULL if no messages sent
     ctime @8 : lib.Time;
     mtime @9 : lib.Time;
     updatedAt @10 : lib.RTChannelSetVersion;
@@ -74,15 +79,14 @@ struct RTChannelSet {
     mtime @2 : lib.Time;
 }
 
-struct RTMessage @0x7bcd22765c8cd757 {
-    channelID @0 : lib.RTChannelID;
-    seq @1 : lib.RTMsgSeq;
-    typ @2 : lib.RTMsgType;
-    body @3 : lib.RTMsgBody;
-    senderUid @4 : Option(lib.UID);          // null for server-authored
-    senderPartyID @5 : Option(lib.PartyID);  // may differ from senderUid (bots, teams)
-    sentAtTime @6 : lib.Time;                // client-asserted send time
-    insertTime @7 : lib.Time;                // server-asserted insert time
+// receiver already knows channelID, so we don't include it here
+// to shave bytes.
+struct RTMsg @0x7bcd22765c8cd757 {
+    md @0 : lib.RTMsgMetadata;
+    mw @1 : lib.RTMsgWrapper;
+    seq @2 : lib.RTMsgSeq;
+    sender @3 : Option(lib.PartyID);  // nil for server-authored
+    insertTime @4 : lib.Time;  // server-asserted insert time
 }
 
 // One channel's worth of inbox state for a particular user. Returned by
@@ -103,7 +107,7 @@ struct RTInboxDelta {
 }
 
 struct RTThreadPage {
-    msgs @0 : List(RTMessage);
+    msgs @0 : List(RTMsg);
     // True if this page reaches the natural endpoint of the requested range.
     // Client paginates by re-requesting from msgs[last].seq+1 (or -1).
     final @1 : Bool;

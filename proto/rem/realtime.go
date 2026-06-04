@@ -52,73 +52,53 @@ func (r *RTInboxKey) Decode(dec rpc.Decoder) error {
 func (r *RTInboxKey) Bytes() []byte { return nil }
 
 type RTSendArg struct {
-	ChannelID       lib.RTChannelID
-	Typ             lib.RTMsgType
-	Body            lib.RTMsgBody
-	SentAtTime      lib.Time
-	ExpectedPrevSeq *lib.RTMsgSeq
+	Md              lib.RTMsgMetadata
+	Chid            lib.RTChannelIDShort
+	Mw              lib.RTMsgWrapper
+	ExpectedPrevSeq lib.RTMsgSeq
 }
 type RTSendArgInternal__ struct {
 	_struct         struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
-	ChannelID       *lib.RTChannelIDInternal__
-	Typ             *lib.RTMsgTypeInternal__
-	Body            *lib.RTMsgBodyInternal__
-	SentAtTime      *lib.TimeInternal__
+	Md              *lib.RTMsgMetadataInternal__
+	Chid            *lib.RTChannelIDShortInternal__
+	Mw              *lib.RTMsgWrapperInternal__
 	ExpectedPrevSeq *lib.RTMsgSeqInternal__
 }
 
 func (r RTSendArgInternal__) Import() RTSendArg {
 	return RTSendArg{
-		ChannelID: (func(x *lib.RTChannelIDInternal__) (ret lib.RTChannelID) {
+		Md: (func(x *lib.RTMsgMetadataInternal__) (ret lib.RTMsgMetadata) {
 			if x == nil {
 				return ret
 			}
 			return x.Import()
-		})(r.ChannelID),
-		Typ: (func(x *lib.RTMsgTypeInternal__) (ret lib.RTMsgType) {
+		})(r.Md),
+		Chid: (func(x *lib.RTChannelIDShortInternal__) (ret lib.RTChannelIDShort) {
 			if x == nil {
 				return ret
 			}
 			return x.Import()
-		})(r.Typ),
-		Body: (func(x *lib.RTMsgBodyInternal__) (ret lib.RTMsgBody) {
+		})(r.Chid),
+		Mw: (func(x *lib.RTMsgWrapperInternal__) (ret lib.RTMsgWrapper) {
 			if x == nil {
 				return ret
 			}
 			return x.Import()
-		})(r.Body),
-		SentAtTime: (func(x *lib.TimeInternal__) (ret lib.Time) {
+		})(r.Mw),
+		ExpectedPrevSeq: (func(x *lib.RTMsgSeqInternal__) (ret lib.RTMsgSeq) {
 			if x == nil {
 				return ret
 			}
 			return x.Import()
-		})(r.SentAtTime),
-		ExpectedPrevSeq: (func(x *lib.RTMsgSeqInternal__) *lib.RTMsgSeq {
-			if x == nil {
-				return nil
-			}
-			tmp := (func(x *lib.RTMsgSeqInternal__) (ret lib.RTMsgSeq) {
-				if x == nil {
-					return ret
-				}
-				return x.Import()
-			})(x)
-			return &tmp
 		})(r.ExpectedPrevSeq),
 	}
 }
 func (r RTSendArg) Export() *RTSendArgInternal__ {
 	return &RTSendArgInternal__{
-		ChannelID:  r.ChannelID.Export(),
-		Typ:        r.Typ.Export(),
-		Body:       r.Body.Export(),
-		SentAtTime: r.SentAtTime.Export(),
-		ExpectedPrevSeq: (func(x *lib.RTMsgSeq) *lib.RTMsgSeqInternal__ {
-			if x == nil {
-				return nil
-			}
-			return (*x).Export()
-		})(r.ExpectedPrevSeq),
+		Md:              r.Md.Export(),
+		Chid:            r.Chid.Export(),
+		Mw:              r.Mw.Export(),
+		ExpectedPrevSeq: r.ExpectedPrevSeq.Export(),
 	}
 }
 func (r *RTSendArg) Encode(enc rpc.Encoder) error {
@@ -347,15 +327,112 @@ func (r *RTPollInboxArg) Decode(dec rpc.Decoder) error {
 
 func (r *RTPollInboxArg) Bytes() []byte { return nil }
 
+type RTLastMsg struct {
+	Seq                    lib.RTMsgSeq
+	Typ                    lib.RTMsgType
+	InsertTime             lib.Time
+	Sender                 *lib.PartyID
+	FurtherUserAttribution *lib.UID
+}
+type RTLastMsgInternal__ struct {
+	_struct                struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
+	Seq                    *lib.RTMsgSeqInternal__
+	Typ                    *lib.RTMsgTypeInternal__
+	InsertTime             *lib.TimeInternal__
+	Sender                 *lib.PartyIDInternal__
+	FurtherUserAttribution *lib.UIDInternal__
+}
+
+func (r RTLastMsgInternal__) Import() RTLastMsg {
+	return RTLastMsg{
+		Seq: (func(x *lib.RTMsgSeqInternal__) (ret lib.RTMsgSeq) {
+			if x == nil {
+				return ret
+			}
+			return x.Import()
+		})(r.Seq),
+		Typ: (func(x *lib.RTMsgTypeInternal__) (ret lib.RTMsgType) {
+			if x == nil {
+				return ret
+			}
+			return x.Import()
+		})(r.Typ),
+		InsertTime: (func(x *lib.TimeInternal__) (ret lib.Time) {
+			if x == nil {
+				return ret
+			}
+			return x.Import()
+		})(r.InsertTime),
+		Sender: (func(x *lib.PartyIDInternal__) *lib.PartyID {
+			if x == nil {
+				return nil
+			}
+			tmp := (func(x *lib.PartyIDInternal__) (ret lib.PartyID) {
+				if x == nil {
+					return ret
+				}
+				return x.Import()
+			})(x)
+			return &tmp
+		})(r.Sender),
+		FurtherUserAttribution: (func(x *lib.UIDInternal__) *lib.UID {
+			if x == nil {
+				return nil
+			}
+			tmp := (func(x *lib.UIDInternal__) (ret lib.UID) {
+				if x == nil {
+					return ret
+				}
+				return x.Import()
+			})(x)
+			return &tmp
+		})(r.FurtherUserAttribution),
+	}
+}
+func (r RTLastMsg) Export() *RTLastMsgInternal__ {
+	return &RTLastMsgInternal__{
+		Seq:        r.Seq.Export(),
+		Typ:        r.Typ.Export(),
+		InsertTime: r.InsertTime.Export(),
+		Sender: (func(x *lib.PartyID) *lib.PartyIDInternal__ {
+			if x == nil {
+				return nil
+			}
+			return (*x).Export()
+		})(r.Sender),
+		FurtherUserAttribution: (func(x *lib.UID) *lib.UIDInternal__ {
+			if x == nil {
+				return nil
+			}
+			return (*x).Export()
+		})(r.FurtherUserAttribution),
+	}
+}
+func (r *RTLastMsg) Encode(enc rpc.Encoder) error {
+	return enc.Encode(r.Export())
+}
+
+func (r *RTLastMsg) Decode(dec rpc.Decoder) error {
+	var tmp RTLastMsgInternal__
+	err := dec.Decode(&tmp)
+	if err != nil {
+		return err
+	}
+	*r = tmp.Import()
+	return nil
+}
+
+func (r *RTLastMsg) Bytes() []byte { return nil }
+
 type RTChannelMetadata struct {
 	Id         lib.RTChannelID
 	ParentTeam lib.TeamID
 	AppID      lib.RTAppID
 	Seqno      lib.RTChannelSeqno
-	NameBox    lib.RTMetadataSecretBox
-	DescBox    *lib.RTMetadataSecretBox
+	NameBox    lib.RTBoxRG
+	DescBox    *lib.RTBoxRG
 	Roles      lib.RolePair
-	LastMsg    *lib.RTMessageMetadata
+	LastMsg    *RTLastMsg
 	Ctime      lib.Time
 	Mtime      lib.Time
 	UpdatedAt  lib.RTChannelSetVersion
@@ -367,10 +444,10 @@ type RTChannelMetadataInternal__ struct {
 	ParentTeam *lib.TeamIDInternal__
 	AppID      *lib.RTAppIDInternal__
 	Seqno      *lib.RTChannelSeqnoInternal__
-	NameBox    *lib.RTMetadataSecretBoxInternal__
-	DescBox    *lib.RTMetadataSecretBoxInternal__
+	NameBox    *lib.RTBoxRGInternal__
+	DescBox    *lib.RTBoxRGInternal__
 	Roles      *lib.RolePairInternal__
-	LastMsg    *lib.RTMessageMetadataInternal__
+	LastMsg    *RTLastMsgInternal__
 	Ctime      *lib.TimeInternal__
 	Mtime      *lib.TimeInternal__
 	UpdatedAt  *lib.RTChannelSetVersionInternal__
@@ -403,17 +480,17 @@ func (r RTChannelMetadataInternal__) Import() RTChannelMetadata {
 			}
 			return x.Import()
 		})(r.Seqno),
-		NameBox: (func(x *lib.RTMetadataSecretBoxInternal__) (ret lib.RTMetadataSecretBox) {
+		NameBox: (func(x *lib.RTBoxRGInternal__) (ret lib.RTBoxRG) {
 			if x == nil {
 				return ret
 			}
 			return x.Import()
 		})(r.NameBox),
-		DescBox: (func(x *lib.RTMetadataSecretBoxInternal__) *lib.RTMetadataSecretBox {
+		DescBox: (func(x *lib.RTBoxRGInternal__) *lib.RTBoxRG {
 			if x == nil {
 				return nil
 			}
-			tmp := (func(x *lib.RTMetadataSecretBoxInternal__) (ret lib.RTMetadataSecretBox) {
+			tmp := (func(x *lib.RTBoxRGInternal__) (ret lib.RTBoxRG) {
 				if x == nil {
 					return ret
 				}
@@ -427,11 +504,11 @@ func (r RTChannelMetadataInternal__) Import() RTChannelMetadata {
 			}
 			return x.Import()
 		})(r.Roles),
-		LastMsg: (func(x *lib.RTMessageMetadataInternal__) *lib.RTMessageMetadata {
+		LastMsg: (func(x *RTLastMsgInternal__) *RTLastMsg {
 			if x == nil {
 				return nil
 			}
-			tmp := (func(x *lib.RTMessageMetadataInternal__) (ret lib.RTMessageMetadata) {
+			tmp := (func(x *RTLastMsgInternal__) (ret RTLastMsg) {
 				if x == nil {
 					return ret
 				}
@@ -472,14 +549,14 @@ func (r RTChannelMetadata) Export() *RTChannelMetadataInternal__ {
 		AppID:      r.AppID.Export(),
 		Seqno:      r.Seqno.Export(),
 		NameBox:    r.NameBox.Export(),
-		DescBox: (func(x *lib.RTMetadataSecretBox) *lib.RTMetadataSecretBoxInternal__ {
+		DescBox: (func(x *lib.RTBoxRG) *lib.RTBoxRGInternal__ {
 			if x == nil {
 				return nil
 			}
 			return (*x).Export()
 		})(r.DescBox),
 		Roles: r.Roles.Export(),
-		LastMsg: (func(x *lib.RTMessageMetadata) *lib.RTMessageMetadataInternal__ {
+		LastMsg: (func(x *RTLastMsg) *RTLastMsgInternal__ {
 			if x == nil {
 				return nil
 			}
@@ -590,67 +667,43 @@ func (r *RTChannelSet) Decode(dec rpc.Decoder) error {
 
 func (r *RTChannelSet) Bytes() []byte { return nil }
 
-type RTMessage struct {
-	ChannelID     lib.RTChannelID
-	Seq           lib.RTMsgSeq
-	Typ           lib.RTMsgType
-	Body          lib.RTMsgBody
-	SenderUid     *lib.UID
-	SenderPartyID *lib.PartyID
-	SentAtTime    lib.Time
-	InsertTime    lib.Time
+type RTMsg struct {
+	Md         lib.RTMsgMetadata
+	Mw         lib.RTMsgWrapper
+	Seq        lib.RTMsgSeq
+	Sender     *lib.PartyID
+	InsertTime lib.Time
 }
-type RTMessageInternal__ struct {
-	_struct       struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
-	ChannelID     *lib.RTChannelIDInternal__
-	Seq           *lib.RTMsgSeqInternal__
-	Typ           *lib.RTMsgTypeInternal__
-	Body          *lib.RTMsgBodyInternal__
-	SenderUid     *lib.UIDInternal__
-	SenderPartyID *lib.PartyIDInternal__
-	SentAtTime    *lib.TimeInternal__
-	InsertTime    *lib.TimeInternal__
+type RTMsgInternal__ struct {
+	_struct    struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
+	Md         *lib.RTMsgMetadataInternal__
+	Mw         *lib.RTMsgWrapperInternal__
+	Seq        *lib.RTMsgSeqInternal__
+	Sender     *lib.PartyIDInternal__
+	InsertTime *lib.TimeInternal__
 }
 
-func (r RTMessageInternal__) Import() RTMessage {
-	return RTMessage{
-		ChannelID: (func(x *lib.RTChannelIDInternal__) (ret lib.RTChannelID) {
+func (r RTMsgInternal__) Import() RTMsg {
+	return RTMsg{
+		Md: (func(x *lib.RTMsgMetadataInternal__) (ret lib.RTMsgMetadata) {
 			if x == nil {
 				return ret
 			}
 			return x.Import()
-		})(r.ChannelID),
+		})(r.Md),
+		Mw: (func(x *lib.RTMsgWrapperInternal__) (ret lib.RTMsgWrapper) {
+			if x == nil {
+				return ret
+			}
+			return x.Import()
+		})(r.Mw),
 		Seq: (func(x *lib.RTMsgSeqInternal__) (ret lib.RTMsgSeq) {
 			if x == nil {
 				return ret
 			}
 			return x.Import()
 		})(r.Seq),
-		Typ: (func(x *lib.RTMsgTypeInternal__) (ret lib.RTMsgType) {
-			if x == nil {
-				return ret
-			}
-			return x.Import()
-		})(r.Typ),
-		Body: (func(x *lib.RTMsgBodyInternal__) (ret lib.RTMsgBody) {
-			if x == nil {
-				return ret
-			}
-			return x.Import()
-		})(r.Body),
-		SenderUid: (func(x *lib.UIDInternal__) *lib.UID {
-			if x == nil {
-				return nil
-			}
-			tmp := (func(x *lib.UIDInternal__) (ret lib.UID) {
-				if x == nil {
-					return ret
-				}
-				return x.Import()
-			})(x)
-			return &tmp
-		})(r.SenderUid),
-		SenderPartyID: (func(x *lib.PartyIDInternal__) *lib.PartyID {
+		Sender: (func(x *lib.PartyIDInternal__) *lib.PartyID {
 			if x == nil {
 				return nil
 			}
@@ -661,13 +714,7 @@ func (r RTMessageInternal__) Import() RTMessage {
 				return x.Import()
 			})(x)
 			return &tmp
-		})(r.SenderPartyID),
-		SentAtTime: (func(x *lib.TimeInternal__) (ret lib.Time) {
-			if x == nil {
-				return ret
-			}
-			return x.Import()
-		})(r.SentAtTime),
+		})(r.Sender),
 		InsertTime: (func(x *lib.TimeInternal__) (ret lib.Time) {
 			if x == nil {
 				return ret
@@ -676,34 +723,26 @@ func (r RTMessageInternal__) Import() RTMessage {
 		})(r.InsertTime),
 	}
 }
-func (r RTMessage) Export() *RTMessageInternal__ {
-	return &RTMessageInternal__{
-		ChannelID: r.ChannelID.Export(),
-		Seq:       r.Seq.Export(),
-		Typ:       r.Typ.Export(),
-		Body:      r.Body.Export(),
-		SenderUid: (func(x *lib.UID) *lib.UIDInternal__ {
+func (r RTMsg) Export() *RTMsgInternal__ {
+	return &RTMsgInternal__{
+		Md:  r.Md.Export(),
+		Mw:  r.Mw.Export(),
+		Seq: r.Seq.Export(),
+		Sender: (func(x *lib.PartyID) *lib.PartyIDInternal__ {
 			if x == nil {
 				return nil
 			}
 			return (*x).Export()
-		})(r.SenderUid),
-		SenderPartyID: (func(x *lib.PartyID) *lib.PartyIDInternal__ {
-			if x == nil {
-				return nil
-			}
-			return (*x).Export()
-		})(r.SenderPartyID),
-		SentAtTime: r.SentAtTime.Export(),
+		})(r.Sender),
 		InsertTime: r.InsertTime.Export(),
 	}
 }
-func (r *RTMessage) Encode(enc rpc.Encoder) error {
+func (r *RTMsg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(r.Export())
 }
 
-func (r *RTMessage) Decode(dec rpc.Decoder) error {
-	var tmp RTMessageInternal__
+func (r *RTMsg) Decode(dec rpc.Decoder) error {
+	var tmp RTMsgInternal__
 	err := dec.Decode(&tmp)
 	if err != nil {
 		return err
@@ -712,12 +751,12 @@ func (r *RTMessage) Decode(dec rpc.Decoder) error {
 	return nil
 }
 
-var RTMessageTypeUniqueID = rpc.TypeUniqueID(0x7bcd22765c8cd757)
+var RTMsgTypeUniqueID = rpc.TypeUniqueID(0x7bcd22765c8cd757)
 
-func (r *RTMessage) GetTypeUniqueID() rpc.TypeUniqueID {
-	return RTMessageTypeUniqueID
+func (r *RTMsg) GetTypeUniqueID() rpc.TypeUniqueID {
+	return RTMsgTypeUniqueID
 }
-func (r *RTMessage) Bytes() []byte { return nil }
+func (r *RTMsg) Bytes() []byte { return nil }
 
 type RTInboxChannel struct {
 	Md           RTChannelMetadata
@@ -873,27 +912,27 @@ func (r *RTInboxDelta) Decode(dec rpc.Decoder) error {
 func (r *RTInboxDelta) Bytes() []byte { return nil }
 
 type RTThreadPage struct {
-	Msgs  []RTMessage
+	Msgs  []RTMsg
 	Final bool
 }
 type RTThreadPageInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
-	Msgs    *[](*RTMessageInternal__)
+	Msgs    *[](*RTMsgInternal__)
 	Final   *bool
 }
 
 func (r RTThreadPageInternal__) Import() RTThreadPage {
 	return RTThreadPage{
-		Msgs: (func(x *[](*RTMessageInternal__)) (ret []RTMessage) {
+		Msgs: (func(x *[](*RTMsgInternal__)) (ret []RTMsg) {
 			if x == nil || len(*x) == 0 {
 				return nil
 			}
-			ret = make([]RTMessage, len(*x))
+			ret = make([]RTMsg, len(*x))
 			for k, v := range *x {
 				if v == nil {
 					continue
 				}
-				ret[k] = (func(x *RTMessageInternal__) (ret RTMessage) {
+				ret[k] = (func(x *RTMsgInternal__) (ret RTMsg) {
 					if x == nil {
 						return ret
 					}
@@ -912,11 +951,11 @@ func (r RTThreadPageInternal__) Import() RTThreadPage {
 }
 func (r RTThreadPage) Export() *RTThreadPageInternal__ {
 	return &RTThreadPageInternal__{
-		Msgs: (func(x []RTMessage) *[](*RTMessageInternal__) {
+		Msgs: (func(x []RTMsg) *[](*RTMsgInternal__) {
 			if len(x) == 0 {
 				return nil
 			}
-			ret := make([](*RTMessageInternal__), len(x))
+			ret := make([](*RTMsgInternal__), len(x))
 			for k, v := range x {
 				ret[k] = v.Export()
 			}
@@ -1937,6 +1976,6 @@ func RealTimeProtocol(i RealTimeInterface) rpc.ProtocolV2 {
 
 func init() {
 	rpc.AddUnique(RTChannelMetadataTypeUniqueID)
-	rpc.AddUnique(RTMessageTypeUniqueID)
+	rpc.AddUnique(RTMsgTypeUniqueID)
 	rpc.AddUnique(RealTimeProtocolID)
 }
