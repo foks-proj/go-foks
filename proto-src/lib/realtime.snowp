@@ -98,10 +98,13 @@ variant RTChannelDescPlaintext switch (t : RTChannelDescType) @0xd14f88f5ae7aaec
     case Utf8v1 @1 : RTChannelDesc;    // simple utf-8 description (v1)
 }
 
-// For ChannelDesc and ChannelName, and regular messages (so far).
-// Encrypted message body. Key derivation: per-channel symmetric key derived
-// from the parent team's PTK at rg (see design doc, "Crypto").
-struct RTBoxRG{
+// For ChannelDesc and ChannelName
+struct RTMetadataSecretBox {
+    rg @0 : RoleAndGen;
+    box @1 : SecretBox;
+}
+
+struct RTChannelDescBox {
     rg @0 : RoleAndGen;
     box @1 : SecretBox;
 }
@@ -121,6 +124,14 @@ enum RTChannelClass {
     Admin @1;
 }
 
+
+// Encrypted message body. Key derivation: per-channel symmetric key derived
+// from the parent team's PTK at rg (see design doc, "Crypto").
+struct RTMsgBox {
+    rg @0 : RoleAndGen;     // PTK role+gen used to derive the channel key
+    box @1 : SecretBox;
+}
+
 enum MsgBodyType {
     Plaintext @0;
     Encrypted @1;
@@ -130,7 +141,7 @@ enum MsgBodyType {
 // without holding a PTK. Mirrors foks_realtime.messages_enc vs messages_clear.
 variant RTMsgBody switch (t : MsgBodyType) {
     case Plaintext @0 : Blob; // server-readable plaintext payload
-    case Encrypted @1 : RTBoxRG;
+    case Encrypted @1 : RTMsgBox;
 }
 
 enum RTThreadDir {

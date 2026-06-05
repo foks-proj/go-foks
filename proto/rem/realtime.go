@@ -352,8 +352,8 @@ type RTChannelMetadata struct {
 	ParentTeam lib.TeamID
 	AppID      lib.RTAppID
 	Seqno      lib.RTChannelSeqno
-	NameBox    lib.RTBoxRG
-	DescBox    *lib.RTBoxRG
+	NameBox    lib.RTMetadataSecretBox
+	DescBox    *lib.RTMetadataSecretBox
 	Roles      lib.RolePair
 	LastMsg    *lib.RTMessageMetadata
 	Ctime      lib.Time
@@ -367,8 +367,8 @@ type RTChannelMetadataInternal__ struct {
 	ParentTeam *lib.TeamIDInternal__
 	AppID      *lib.RTAppIDInternal__
 	Seqno      *lib.RTChannelSeqnoInternal__
-	NameBox    *lib.RTBoxRGInternal__
-	DescBox    *lib.RTBoxRGInternal__
+	NameBox    *lib.RTMetadataSecretBoxInternal__
+	DescBox    *lib.RTMetadataSecretBoxInternal__
 	Roles      *lib.RolePairInternal__
 	LastMsg    *lib.RTMessageMetadataInternal__
 	Ctime      *lib.TimeInternal__
@@ -403,17 +403,17 @@ func (r RTChannelMetadataInternal__) Import() RTChannelMetadata {
 			}
 			return x.Import()
 		})(r.Seqno),
-		NameBox: (func(x *lib.RTBoxRGInternal__) (ret lib.RTBoxRG) {
+		NameBox: (func(x *lib.RTMetadataSecretBoxInternal__) (ret lib.RTMetadataSecretBox) {
 			if x == nil {
 				return ret
 			}
 			return x.Import()
 		})(r.NameBox),
-		DescBox: (func(x *lib.RTBoxRGInternal__) *lib.RTBoxRG {
+		DescBox: (func(x *lib.RTMetadataSecretBoxInternal__) *lib.RTMetadataSecretBox {
 			if x == nil {
 				return nil
 			}
-			tmp := (func(x *lib.RTBoxRGInternal__) (ret lib.RTBoxRG) {
+			tmp := (func(x *lib.RTMetadataSecretBoxInternal__) (ret lib.RTMetadataSecretBox) {
 				if x == nil {
 					return ret
 				}
@@ -472,7 +472,7 @@ func (r RTChannelMetadata) Export() *RTChannelMetadataInternal__ {
 		AppID:      r.AppID.Export(),
 		Seqno:      r.Seqno.Export(),
 		NameBox:    r.NameBox.Export(),
-		DescBox: (func(x *lib.RTBoxRG) *lib.RTBoxRGInternal__ {
+		DescBox: (func(x *lib.RTMetadataSecretBox) *lib.RTMetadataSecretBoxInternal__ {
 			if x == nil {
 				return nil
 			}

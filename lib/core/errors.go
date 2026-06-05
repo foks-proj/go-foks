@@ -1349,32 +1349,10 @@ func (r RTChannelExistsError) Error() string {
 	return "channel already exists"
 }
 
-// RTRaceError signals a lost optimistic-concurrency race in the realtime
-// service. Which names the table that raced ("channels" or "messages") so the
-// retry logic and logs aren't misleadingly channel-specific.
-type RTRaceError struct {
-	Which string
-}
+type RTChannelRaceError struct{}
 
-func (r RTRaceError) Error() string {
-	return "race in realtime " + r.Which + " table"
-}
-
-// RTAmbiguousChannelError is returned when a channel is addressed by name only
-// but more than one channel (of different classes) shares that name. The caller
-// should retry with a channel class to disambiguate. Name is the ambiguous name.
-type RTAmbiguousChannelError struct {
-	Name string
-}
-
-func (r RTAmbiguousChannelError) Error() string {
-	return fmt.Sprintf("ambiguous channel name %q; specify a channel class", r.Name)
-}
-
-type RTNotFoundError string
-
-func (r RTNotFoundError) Error() string {
-	return "not found: " + string(r)
+func (r RTChannelRaceError) Error() string {
+	return "race when changing chat channels"
 }
 
 func ErrorToStatus(e error) proto.Status {
@@ -1577,12 +1555,8 @@ func ErrorToStatus(e error) proto.Status {
 		return proto.NewStatusWithRtGenericError(string(te))
 	case RTChannelExistsError:
 		return proto.NewStatusWithRtChannelExistsError()
-	case RTRaceError:
-		return proto.NewStatusWithRtRace(te.Which)
-	case RTAmbiguousChannelError:
-		return proto.NewStatusWithRtAmbiguousChannelError(te.Name)
-	case RTNotFoundError:
-		return proto.NewStatusWithRtNotFoundError(string(te))
+	case RTChannelRaceError:
+		return proto.NewStatusWithRtChannelRace()
 	case RPCEOFError:
 		return proto.NewStatusWithRpcEof()
 	case OverQuotaError:
@@ -2026,12 +2000,8 @@ func StatusToError(s proto.Status) error {
 		return RTChannelExistsError{}
 	case proto.StatusCode_RT_GENERIC_ERROR:
 		return RTGenericError(s.RtGenericError())
-	case proto.StatusCode_RT_RACE:
-		return RTRaceError{Which: s.RtRace()}
-	case proto.StatusCode_RT_AMBIGUOUS_CHANNEL_ERROR:
-		return RTAmbiguousChannelError{Name: s.RtAmbiguousChannelError()}
-	case proto.StatusCode_RT_NOT_FOUND_ERROR:
-		return RTNotFoundError(string(s.RtNotFoundError()))
+	case proto.StatusCode_RT_CHANNEL_RACE:
+		return RTChannelRaceError{}
 	default:
 		return errors.New(s.Default())
 	}

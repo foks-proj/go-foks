@@ -2,7 +2,6 @@ package librt
 
 import (
 	"errors"
-	"fmt"
 	"slices"
 	"strings"
 	"sync"
@@ -103,8 +102,7 @@ func (d *Minder) MakeChannelWithTestHooks(
 		if err == nil {
 			return ret, nil
 		}
-		var raceErr core.RTRaceError
-		if !errors.As(err, &raceErr) || i == numTries-1 {
+		if !errors.Is(err, core.RTChannelRaceError{}) || i == numTries-1 {
 			return nil, err
 		}
 
@@ -117,7 +115,7 @@ func (d *Minder) MakeChannelWithTestHooks(
 		time.Sleep(sleepDur)
 		sleepDur *= 2
 	}
-	return nil, core.RTRaceError{Which: "channels"}
+	return nil, core.RTChannelRaceError{}
 }
 
 func (d *Minder) makeChannelOneAttempt(
@@ -340,7 +338,7 @@ func (k *Minder) decryptChannelName(
 	m MetaContext,
 	rtp *RTParty,
 	appID proto.RTAppID,
-	enc proto.RTBoxRG,
+	enc proto.RTMetadataSecretBox,
 ) (
 	proto.RTChannelName,
 	error,
@@ -373,7 +371,7 @@ func (k *Minder) decryptChannelDesc(
 	m MetaContext,
 	rtp *RTParty,
 	appID proto.RTAppID,
-	enc *proto.RTBoxRG,
+	enc *proto.RTMetadataSecretBox,
 ) (
 	*proto.RTChannelDesc,
 	error,
@@ -507,248 +505,4 @@ func (k *Minder) listAllChannelsForTeam(
 	out.AppID = appID
 
 	return &out, nil
-}
-
-// ThreadMessage is a single decrypted message, as returned by GetThread.
-type ThreadMessage struct {
-	Seq           proto.RTMsgSeq
-	Typ           proto.RTMsgType
-	SenderUID     *proto.UID
-	SenderPartyID *proto.PartyID
-	SentAtTime    proto.Time
-	InsertTime    proto.Time
-	Body          []byte // decrypted plaintext (RTMsgType_Basic)
-}
-
-// resolveChannel finds a channel in `team` by name. A name can exist in more
-// than one class (e.g. an admin and a bottom "#general"); pass a non-nil klass
-// to disambiguate. With klass==nil, an ambiguous name returns
-// RTAmbiguousChannelError so the caller (or a UI) can retry with a class.
-func (d *Minder) resolveChannel(
-	m MetaContext,
-	rtp *RTParty,
-	appID proto.RTAppID,
-	name proto.RTChannelName,
-	klass *proto.RTChannelClass,
-) (
-	*lcl.RTChannelMetadataPlaintext,
-	error,
-) {
-	lst, err := d.listAllChannelsForTeam(m, rtp, appID)
-	if err != nil {
-		return nil, err
-	}
-	var found *lcl.RTChannelMetadataPlaintext
-	for i := range lst.Channels {
-		ch := &lst.Channels[i]
-		if ch.Name != name {
-			continue
-		}
-		if klass != nil && ch.Klass != *klass {
-			continue
-		}
-		if found != nil {
-			// Only reachable when klass==nil; a (name, class) pair is unique.
-			return nil, core.RTAmbiguousChannelError{Name: string(name)}
-		}
-		found = ch
-	}
-	if found == nil {
-		return nil, core.RTNotFoundError(fmt.Sprintf("channel '%s'", string(name)))
-	}
-	return found, nil
-}
-
-// sealMessage encrypts the message body under the channel's read role at the
-// current generation, so every reader of the channel can decrypt it.
-func (d *Minder) sealMessage(
-	m MetaContext,
-	rtp *RTParty,
-	appID proto.RTAppID,
-	readRole proto.Role,
-	body []byte,
-) (
-	*proto.RTBoxRG,
-	error,
-) {
-	keySeq, err := rtp.PLCNode().SKM().PrivateKeysForRole(m.Base(), readRole)
-	if err != nil {
-		return nil, err
-	}
-	keyMgr, err := NewKeyMgr(keySeq.Current(), appID)
-	if err != nil {
-		return nil, err
-	}
-	plain := proto.NewRTMsgPlaintextWithBasic(body)
-	return keyMgr.SealIntoSecretBox(proto.RTKeyType_Data, &plain)
-}
-
-// SendTestHooks lets tests perturb a send to exercise server-side validation.
-type SendTestHooks struct {
-	// EncryptRoleOverride encrypts the body at this role instead of the
-	// channel's read role, to test the server's encryption-role check.
-	EncryptRoleOverride *proto.Role
-}
-
-// Send encrypts and sends a basic message into the named channel of a team.
-// klass disambiguates when a name exists in more than one class; pass nil when
-// the name is unique.
-func (d *Minder) Send(
-	m MetaContext,
-	team *proto.FQTeamParsed,
-	appID proto.RTAppID,
-	channelName proto.RTChannelName,
-	klass *proto.RTChannelClass,
-	body []byte,
-) (
-	*rem.RTSendRes,
-	error,
-) {
-	return d.SendWithTestHooks(m, team, appID, channelName, klass, body, nil)
-}
-
-// SendWithTestHooks is Send with optional test perturbations.
-func (d *Minder) SendWithTestHooks(
-	m MetaContext,
-	team *proto.FQTeamParsed,
-	appID proto.RTAppID,
-	channelName proto.RTChannelName,
-	klass *proto.RTChannelClass,
-	body []byte,
-	test *SendTestHooks,
-) (
-	*rem.RTSendRes,
-	error,
-) {
-	if team == nil {
-		return nil, core.InternalError("team is required to send in Stage 1a")
-	}
-	rtp, err := d.base.GetParty(m.Base(), team)
-	if err != nil {
-		return nil, err
-	}
-	ch, err := d.resolveChannel(m, rtp, appID, channelName, klass)
-	if err != nil {
-		return nil, err
-	}
-	encryptRole := ch.Roles.Read
-	if test != nil && test.EncryptRoleOverride != nil {
-		encryptRole = *test.EncryptRoleOverride
-	}
-	box, err := d.sealMessage(m, rtp, appID, encryptRole, body)
-	if err != nil {
-		return nil, err
-	}
-	_, cli, err := d.clientLocal(m.Base(), d.au)
-	if err != nil {
-		return nil, err
-	}
-	res, err := cli.RtSend(m.Ctx(), rem.RTSendArg{
-		ChannelID:  ch.Id,
-		Typ:        proto.RTMsgType_Basic,
-		Body:       proto.NewRTMsgBodyWithEncrypted(*box),
-		SentAtTime: proto.ExportTime(time.Now()),
-	})
-	if err != nil {
-		return nil, err
-	}
-	return &res, nil
-}
-
-// openMessage decrypts a message body fetched from the server, using the key at
-// the role+gen stamped on the box.
-func (d *Minder) openMessage(
-	m MetaContext,
-	rtp *RTParty,
-	appID proto.RTAppID,
-	body proto.RTMsgBody,
-) (
-	[]byte,
-	error,
-) {
-	t, err := body.GetT()
-	if err != nil {
-		return nil, err
-	}
-	if t != proto.MsgBodyType_Encrypted {
-		return nil, core.VersionNotSupportedError("only encrypted message bodies are supported")
-	}
-	box := body.Encrypted()
-	kmgr, err := rtp.keysAtRoleGen(m, appID, box.Rg)
-	if err != nil {
-		return nil, err
-	}
-	var plain proto.RTMsgPlaintext
-	err = kmgr.OpenBox(&plain, box.Box, proto.RTKeyType_Data)
-	if err != nil {
-		return nil, err
-	}
-	pt, err := plain.GetT()
-	if err != nil {
-		return nil, err
-	}
-	if pt != proto.RTMsgType_Basic {
-		return nil, core.VersionNotSupportedError("only basic messages are supported")
-	}
-	return []byte(plain.Basic()), nil
-}
-
-// GetThread fetches and decrypts a page of messages from the named channel.
-// klass disambiguates when a name exists in more than one class; pass nil when
-// the name is unique.
-func (d *Minder) GetThread(
-	m MetaContext,
-	team *proto.FQTeamParsed,
-	appID proto.RTAppID,
-	channelName proto.RTChannelName,
-	klass *proto.RTChannelClass,
-	start proto.RTMsgSeq,
-	dir proto.RTThreadDir,
-	max uint64,
-) (
-	[]ThreadMessage,
-	bool,
-	error,
-) {
-	if team == nil {
-		return nil, false, core.InternalError("team is required to read in Stage 1a")
-	}
-	rtp, err := d.base.GetParty(m.Base(), team)
-	if err != nil {
-		return nil, false, err
-	}
-	ch, err := d.resolveChannel(m, rtp, appID, channelName, klass)
-	if err != nil {
-		return nil, false, err
-	}
-	_, cli, err := d.clientLocal(m.Base(), d.au)
-	if err != nil {
-		return nil, false, err
-	}
-	page, err := cli.RtGetThread(m.Ctx(), proto.RTThreadQuery{
-		ChannelID: ch.Id,
-		Start:     start,
-		Dir:       dir,
-		Max:       max,
-	})
-	if err != nil {
-		return nil, false, err
-	}
-	out := make([]ThreadMessage, 0, len(page.Msgs))
-	for _, msg := range page.Msgs {
-		body, err := d.openMessage(m, rtp, appID, msg.Body)
-		if err != nil {
-			return nil, false, err
-		}
-		out = append(out, ThreadMessage{
-			Seq:           msg.Seq,
-			Typ:           msg.Typ,
-			SenderUID:     msg.SenderUid,
-			SenderPartyID: msg.SenderPartyID,
-			SentAtTime:    msg.SentAtTime,
-			InsertTime:    msg.InsertTime,
-			Body:          body,
-		})
-	}
-	return out, page.Final, nil
 }

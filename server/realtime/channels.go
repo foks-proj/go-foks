@@ -239,7 +239,7 @@ func readAllChannels(
 			return nil, err
 		}
 		if len(descBoxRaw) > 0 {
-			var box proto.RTBoxRG
+			var box proto.RTMetadataSecretBox
 			err = core.DecodeFromBytes(&box, descBoxRaw)
 			if err != nil {
 				return nil, err
@@ -352,7 +352,7 @@ func (c *channelMaker) insertNewChannelSetRow(m shared.MetaContext) error {
 		c.vers,
 	)
 	if shared.IsDuplicateKeyError(err, "channel_sets_pkey") {
-		return core.RTRaceError{Which: "channels"}
+		return core.RTChannelRaceError{}
 	}
 	if err != nil {
 		return err
@@ -384,7 +384,7 @@ func (c *channelMaker) updateChannelSet(m shared.MetaContext) error {
 		return nil
 	}
 	if tag.RowsAffected() != 1 {
-		return core.RTRaceError{Which: "channels"}
+		return core.RTChannelRaceError{}
 	}
 	return nil
 }
@@ -456,7 +456,7 @@ func (c *channelMaker) insertChannel(m shared.MetaContext) error {
 		c.vers.ExportToDB(),
 	)
 	if shared.IsDuplicateKeyError(err, "channels_pkey") {
-		return core.RTRaceError{Which: "channels"}
+		return core.RTChannelRaceError{}
 	}
 	if err != nil {
 		return err
