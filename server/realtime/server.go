@@ -75,20 +75,10 @@ func (c *ClientConn) RtListAllChannelsForTeam(
 }
 
 func (c *ClientConn) RtSend(ctx context.Context, arg rem.RTSendArg) (res rem.RTSendRes, err error) {
-	m := shared.NewMetaContextConn(ctx, c)
-	ret, err := SendMessage(m, arg)
-	if err != nil {
-		return res, err
-	}
-	return *ret, nil
+	return res, core.NotImplementedError{}
 }
 func (c *ClientConn) RtGetThread(ctx context.Context, arg proto.RTThreadQuery) (res rem.RTThreadPage, err error) {
-	m := shared.NewMetaContextConn(ctx, c)
-	ret, err := GetThread(m, arg)
-	if err != nil {
-		return res, err
-	}
-	return *ret, nil
+	return res, core.NotImplementedError{}
 }
 func (c *ClientConn) RtGetInboxVersion(ctx context.Context, arg rem.RTInboxKey) (res proto.RTInboxVersion, err error) {
 	return res, core.NotImplementedError{}

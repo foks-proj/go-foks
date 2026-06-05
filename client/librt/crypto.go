@@ -67,7 +67,7 @@ func (k *KeyMgr) SealIntoSecretBox(
 	typ proto.RTKeyType,
 	dat core.CryptoPayloader,
 ) (
-	*proto.RTBoxRG,
+	*proto.RTMetadataSecretBox,
 	error,
 ) {
 	key, err := k.KeyForType(typ)
@@ -78,25 +78,9 @@ func (k *KeyMgr) SealIntoSecretBox(
 	if err != nil {
 		return nil, err
 	}
-	var ret proto.RTBoxRG
+	var ret proto.RTMetadataSecretBox
 	ret.Rg.Role = k.role
 	ret.Rg.Gen = k.gen
 	ret.Box = *box
 	return &ret, nil
-}
-
-func (k *KeyMgr) OpenBox(
-	out core.CryptoPayloader,
-	box proto.SecretBox,
-	typ proto.RTKeyType,
-) error {
-	key, err := k.KeyForType(typ)
-	if err != nil {
-		return err
-	}
-	err = core.OpenSecretBoxInto(out, box, key)
-	if err != nil {
-		return err
-	}
-	return nil
 }
