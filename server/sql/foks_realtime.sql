@@ -74,6 +74,7 @@ CREATE TABLE channels (
     write_role_viz_level SMALLINT NOT NULL,
     last_msg_type msg_type,
     last_msg_seq BIGINT, /* max(seq) delivered; 0 if none */
+    last_msg_id BYTEA, /* the ID of the last message delivered */
     last_sender_no INTEGER, /* -> channel_parties.party_no; NULL if no msg / server-authored */
     last_send_time TIMESTAMPTZ,
     ctime TIMESTAMPTZ NOT NULL,
@@ -114,6 +115,7 @@ CREATE TABLE messages_enc (
     short_host_id SMALLINT NOT NULL,
     channel_id BIGINT NOT NULL,
     seq BIGINT NOT NULL,
+    msg_id BYTEA NOT NULL, /* 16-byte random msg id, assigned by clients */
     typ msg_type NOT NULL,
     msg_box BYTEA NOT NULL,
     ptk_gen INTEGER NOT NULL,
@@ -122,9 +124,12 @@ CREATE TABLE messages_enc (
     sender_no INTEGER NOT NULL, /* -> channel_parties.party_no */
     sent_at_time TIMESTAMPTZ NOT NULL, /* client-asserted */
     insert_time TIMESTAMPTZ NOT NULL, /* server-asserted */
+    prev_msg_id BYTEA NOT NULL, /* previous msg id seen at time of send */
+    prev_seq BIGINT NOT NULL, /* previous msg seq seen at time of send */
     PRIMARY KEY(short_host_id, channel_id, seq),
     FOREIGN KEY(short_host_id, channel_id) REFERENCES channels(short_host_id, channel_id),
-    FOREIGN KEY(short_host_id, channel_id, sender_no) REFERENCES channel_parties(short_host_id, channel_id, party_no)
+    FOREIGN KEY(short_host_id, channel_id, sender_no) REFERENCES channel_parties(short_host_id, channel_id, party_no),
+    UNIQUE(msg_id)
 );
 
 /*

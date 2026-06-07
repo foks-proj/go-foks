@@ -4,3 +4,6 @@
 
 include make/client.mk
 include make/server.mk
+
+.PHONY: test-compile
+test-compile: client-test-compile server-test-compile

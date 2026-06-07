@@ -112,3 +112,7 @@ foks-tool-gh-push: foks-tool-linux
 
 .PHONY: foks-server-release
 foks-server-release: foks-tool-gh-push foks-server-docker-push
+
+.PHONY: server-test-compile
+server-test-compile:
+	(cd server/foks-server && go build)

@@ -63,11 +63,53 @@ func (k *KeyMgr) DataKey() (*proto.SecretBoxKey, error) {
 	return k.deriveKeyForType(proto.RTKeyType_Data)
 }
 
+func (k *KeyMgr) SealMsgWithNonce(
+	dat core.CryptoPayloader,
+	nonce *proto.DomainSeparatedNaclNonce,
+) (
+	*proto.RTMsgBox,
+	error,
+) {
+	key, err := k.DataKey()
+	if err != nil {
+		return nil, err
+	}
+	var ret proto.RTMsgBox
+	ctext, err := core.SealIntoSecretBoxWithDomainSeparatedNonceAndPadding(dat, nonce, key, 0)
+	if err != nil {
+		return nil, err
+	}
+	ret.Ctext = proto.NewRTMsgCiphertextWithNacl(ctext)
+	ret.Rg.Role = k.role
+	ret.Rg.Gen = k.gen
+	return &ret, nil
+}
+
+func (k *KeyMgr) OpenMsgWithNonce(
+	out core.CryptoPayloader,
+	ctxt proto.RTMsgCiphertext,
+	nonce *proto.DomainSeparatedNaclNonce,
+) error {
+	key, err := k.DataKey()
+	if err != nil {
+		return nil
+	}
+	typ, err := ctxt.GetT()
+	if err != nil {
+		return err
+	}
+	if typ != proto.BoxType_NACL {
+		return core.VersionNotSupportedError("only support Nacl secret box ciphertexts")
+	}
+	nclctxt := ctxt.Nacl()
+	return core.OpenSecretBoxWithDomainSeparatedNonceInto(out, nclctxt, nonce, key)
+}
+
 func (k *KeyMgr) SealIntoSecretBox(
 	typ proto.RTKeyType,
 	dat core.CryptoPayloader,
 ) (
-	*proto.RTMetadataSecretBox,
+	*proto.RTBoxRG,
 	error,
 ) {
 	key, err := k.KeyForType(typ)
@@ -78,9 +120,25 @@ func (k *KeyMgr) SealIntoSecretBox(
 	if err != nil {
 		return nil, err
 	}
-	var ret proto.RTMetadataSecretBox
+	var ret proto.RTBoxRG
 	ret.Rg.Role = k.role
 	ret.Rg.Gen = k.gen
 	ret.Box = *box
 	return &ret, nil
+}
+
+func (k *KeyMgr) OpenBox(
+	out core.CryptoPayloader,
+	box proto.SecretBox,
+	typ proto.RTKeyType,
+) error {
+	key, err := k.KeyForType(typ)
+	if err != nil {
+		return err
+	}
+	err = core.OpenSecretBoxInto(out, box, key)
+	if err != nil {
+		return err
+	}
+	return nil
 }

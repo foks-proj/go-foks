@@ -144,10 +144,10 @@ func readAllChannels(
 		partyIDRaw []byte,
 		uidRaw []byte,
 	) (
-		*proto.RTMessageMetadata,
+		*rem.RTLastMsg,
 		error,
 	) {
-		var ret proto.RTMessageMetadata
+		var ret rem.RTLastMsg
 		if msgType == nil &&
 			msgSeq == nil &&
 			sendTime == nil &&
@@ -158,20 +158,20 @@ func readAllChannels(
 		if msgType == nil {
 			return nil, core.BadServerDataError("nil last msgType unexpected")
 		}
-		err = ret.MsgType.ImportFromDB(*msgType)
+		err = ret.Typ.ImportFromDB(*msgType)
 		if err != nil {
 			return nil, err
 		}
 		if msgSeq == nil {
 			return nil, core.BadServerDataError("nil last msgSeq unexpected")
 		}
-		ret.MsgSeq = proto.RTMsgSeq(*msgSeq)
+		ret.Seq = proto.RTMsgSeq(*msgSeq)
 		if sendTime == nil {
 			return nil, core.BadServerDataError("nil last sendtime unexpected")
 		}
 
 		t := proto.ExportTime(*sendTime)
-		ret.SendTime = t
+		ret.InsertTime = t
 		if len(partyIDRaw) == 0 {
 			return nil, core.BadServerDataError("nil last sender unexpected")
 		}
@@ -181,7 +181,7 @@ func readAllChannels(
 		if err != nil {
 			return nil, err
 		}
-		ret.SenderPartyID = pid
+		ret.Sender = &pid
 
 		if uidRaw != nil {
 			var uid proto.UID
@@ -191,7 +191,6 @@ func readAllChannels(
 			}
 			ret.FurtherUserAttribution = &uid
 		}
-
 		return &ret, nil
 	}
 
@@ -239,7 +238,7 @@ func readAllChannels(
 			return nil, err
 		}
 		if len(descBoxRaw) > 0 {
-			var box proto.RTMetadataSecretBox
+			var box proto.RTBoxRG
 			err = core.DecodeFromBytes(&box, descBoxRaw)
 			if err != nil {
 				return nil, err
@@ -352,7 +351,7 @@ func (c *channelMaker) insertNewChannelSetRow(m shared.MetaContext) error {
 		c.vers,
 	)
 	if shared.IsDuplicateKeyError(err, "channel_sets_pkey") {
-		return core.RTChannelRaceError{}
+		return core.RTRaceError{Which: "channels"}
 	}
 	if err != nil {
 		return err
@@ -384,7 +383,7 @@ func (c *channelMaker) updateChannelSet(m shared.MetaContext) error {
 		return nil
 	}
 	if tag.RowsAffected() != 1 {
-		return core.RTChannelRaceError{}
+		return core.RTRaceError{Which: "channels"}
 	}
 	return nil
 }
@@ -456,7 +455,7 @@ func (c *channelMaker) insertChannel(m shared.MetaContext) error {
 		c.vers.ExportToDB(),
 	)
 	if shared.IsDuplicateKeyError(err, "channels_pkey") {
-		return core.RTChannelRaceError{}
+		return core.RTRaceError{Which: "channels"}
 	}
 	if err != nil {
 		return err

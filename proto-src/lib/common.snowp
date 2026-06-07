@@ -210,6 +210,7 @@ typedef HMAC = Blob(32);
 
 typedef NaclCiphertext = Blob;
 typedef NaclNonce = Blob(16); // Prefix with the 8-byte object ID
+typedef DomainSeparatedNaclNonce = Blob(24); // With domain-separation already baked in
 
 enum BoxType {
     NACL @0;
