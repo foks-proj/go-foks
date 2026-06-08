@@ -106,11 +106,32 @@ struct RTInboxDelta {
     channels @2 : List(RTInboxChannel);
 }
 
+// Contiguous-range portion of a thread query. Direction is implied.
+struct RTThreadRangeBookends {
+    start @0 : lib.RTMsgSeq;         // inclusive; cannot be 0
+    end @1 : lib.RTMsgSeq;           // inclusive; cannot be 0
+}
+
+struct RTThreadQuery {
+    channelID @0 : lib.RTChannelID;
+    bookends @1 : List(RTThreadRangeBookends);  // nil = skip the range query
+    seqs @2 : List(lib.RTMsgSeq);               // empty = skip the seq query
+}
+
+// Sequential set of messages
+struct RTMsgList {
+    lst @0 : List(RTMsg);
+}
+
 struct RTThreadPage {
-    msgs @0 : List(RTMsg);
-    // True if this page reaches the natural endpoint of the requested range.
-    // Client paginates by re-requesting from msgs[last].seq+1 (or -1).
-    final @1 : Bool;
+    // Result of the range query; empty if no range was requested. The client
+    // paginates by re-requesting from rangeMsgs[last].seq+1 (or -1).
+    // We can ask for one or more ranges, hence List of Lists.
+    rangeMsgs @0 : List(RTMsgList);
+    // Result of the seq query: found-only, in no particular order, each carrying
+    // its own seq so the caller can slot it back into the right hole. Seqs with
+    // no matching message are simply absent. Empty if no seqs were requested.
+    seqMsgs @1 : List(RTMsg);
 }
 
 protocol RealTime
@@ -149,7 +170,7 @@ protocol RealTime
 
     // Fetch a page of messages from a channel. User auth only.
     rtGetThread @4 (
-        q @0 : lib.RTThreadQuery
+        q @0 : RTThreadQuery
     ) -> RTThreadPage;
 
     // Get the current inbox head for this user+app (cheap no-op sync).
@@ -177,5 +198,14 @@ protocol RealTime
     rtSelectVHost @9 (
         host @0 : lib.HostID
     ) : RTSelectVhost;
+
+    // Get all the recent messages, starting with most recent, and stopping
+    // at stopAt (which can be 0). Only give back lim messages at most.
+    // Will be sent back in descending order.
+    rtGetThreadRecents @10 (
+        ch @0 : lib.RTChannelID,
+        stopAt @1 : lib.RTMsgSeq,
+        lim @2 : Uint
+    ) -> RTMsgList;
 
 }

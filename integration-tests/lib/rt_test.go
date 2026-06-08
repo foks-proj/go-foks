@@ -191,11 +191,12 @@ func TestRTMinderSendAndGetThread(t *testing.T) {
 		lastSeq = res.Seq
 	}
 
-	// Read them all back; they should decrypt and come in seq order.
-	msgs, final, err := minder.GetThread(mb, fqt, proto.RTAppID_Chat, "foo",
-		nil, 0, proto.RTThreadDir_Forward, 0)
+	// Read them all back; they should decrypt and come in seq order. We reached
+	// the far edge (end == lastSeq) exactly, so this is not a "final" short read.
+	msgs, final, err := minder.GetThreadBookended(mb, fqt, proto.RTAppID_Chat, "foo",
+		nil, 1, lastSeq)
 	require.NoError(t, err)
-	require.True(t, final)
+	require.False(t, final)
 	require.Len(t, msgs, len(bodies))
 	for i, b := range bodies {
 		require.Equal(t, proto.RTMsgSeq(i+1), msgs[i].Seq)
@@ -205,11 +206,12 @@ func TestRTMinderSendAndGetThread(t *testing.T) {
 		require.Equal(t, bluey.uid.ToPartyID(), *msgs[i].Sender)
 	}
 
-	// Reading from a later seq should yield only the tail.
-	msgs, final, err = minder.GetThread(mb, fqt, proto.RTAppID_Chat, "foo",
-		nil, 2, proto.RTThreadDir_Forward, 0)
+	// Reading a later sub-range should yield only the tail (served from cache,
+	// since the read above populated it).
+	msgs, final, err = minder.GetThreadBookended(mb, fqt, proto.RTAppID_Chat, "foo",
+		nil, 2, lastSeq)
 	require.NoError(t, err)
-	require.True(t, final)
+	require.False(t, final)
 	require.Len(t, msgs, 2)
 	require.Equal(t, proto.RTMsgSeq(2), msgs[0].Seq)
 	require.Equal(t, "second message", string(msgs[0].Body))
@@ -217,6 +219,192 @@ func TestRTMinderSendAndGetThread(t *testing.T) {
 	// Sending to a non-existent channel fails.
 	_, err = minder.Send(mb, fqt, proto.RTAppID_Chat, "nosuchchannel", nil, []byte("hi"))
 	require.Error(t, err)
+}
+
+// TestRTMinderGetMsgsBySeq exercises rtGetMsgs: fetching an arbitrary,
+// non-contiguous set of messages by seq, the way a client fills holes between
+// its local cache and a paged fetch. Seqs that don't exist are silently
+// dropped, so the result is found-only and not necessarily in request order.
+func TestRTMinderGetMsgsBySeq(t *testing.T) {
+	tew := testEnvBeta(t)
+	bluey := tew.NewTestUser(t)
+	tew.DirectDoubleMerklePokeInTest(t)
+	tm := tew.makeTeamForOwner(t, bluey)
+
+	mb := librt.NewMetaContext(tew.NewClientMetaContextWithEracer(t, bluey))
+	minder := librt.NewMinder(mb.G().ActiveUser())
+	fqt := tm.ToFQTeamParsed(t)
+
+	_, err := minder.MakeChannel(mb, fqt, proto.RTAppID_Chat, "foo", "the foo channel", proto.RolePairOpt{})
+	require.NoError(t, err)
+
+	bodies := []string{"one", "two", "three", "four", "five"}
+	for _, b := range bodies {
+		_, err := minder.Send(mb, fqt, proto.RTAppID_Chat, "foo", nil, []byte(b))
+		require.NoError(t, err)
+	}
+
+	// Ask for a non-contiguous subset (2 and 4) plus a seq that doesn't exist
+	// (99). We should get exactly seqs 2 and 4 back, each decrypting correctly;
+	// the missing seq is simply absent.
+	msgs, err := minder.GetMsgs(mb, fqt, proto.RTAppID_Chat, "foo", nil,
+		[]proto.RTMsgSeq{2, 4, 99})
+	require.NoError(t, err)
+	require.Len(t, msgs, 2)
+	bySeq := make(map[proto.RTMsgSeq]string, len(msgs))
+	for _, msg := range msgs {
+		require.Equal(t, proto.RTMsgType_Basic, msg.Typ)
+		require.NotNil(t, msg.Sender)
+		require.Equal(t, bluey.uid.ToPartyID(), *msg.Sender)
+		bySeq[msg.Seq] = string(msg.Body)
+	}
+	require.Equal(t, "two", bySeq[2])
+	require.Equal(t, "four", bySeq[4])
+
+	// An empty request yields nothing, not an error.
+	msgs, err = minder.GetMsgs(mb, fqt, proto.RTAppID_Chat, "foo", nil, nil)
+	require.NoError(t, err)
+	require.Len(t, msgs, 0)
+
+	// Requesting only missing seqs yields an empty result.
+	msgs, err = minder.GetMsgs(mb, fqt, proto.RTAppID_Chat, "foo", nil,
+		[]proto.RTMsgSeq{100, 101})
+	require.NoError(t, err)
+	require.Len(t, msgs, 0)
+}
+
+// TestRTMinderGetThreadBookendedHoleFilling exercises the partial-cache path of
+// GetThreadBookended: the local cache holds a sparse, non-contiguous subset, so
+// a bookended read must fetch the leading range, the trailing range, and the
+// interior hole(s) from the server and merge them back with the cached run into
+// one ordered thread. The empty-cache and full-cache-hit branches are covered
+// too (first vs. second read). Both paging directions are checked, since the
+// merge / bookend / sort math differs by direction.
+func TestRTMinderGetThreadBookendedHoleFilling(t *testing.T) {
+	tew := testEnvBeta(t)
+	bluey := tew.NewTestUser(t) // sender / team owner
+	coco := tew.NewTestUser(t)  // receiver / ordinary member
+	tew.DirectDoubleMerklePokeInTest(t)
+	tm := tew.makeTeamForOwner(t, bluey)
+	tm.makeChanges(
+		t, tew.MetaContext(), bluey,
+		[]proto.MemberRole{coco.toMemberRole(t, proto.DefaultRole, tm.hepks)}, nil,
+	)
+
+	mb := librt.NewMetaContext(tew.NewClientMetaContextWithEracer(t, bluey))
+	sender := librt.NewMinder(mb.G().ActiveUser())
+	mc := librt.NewMetaContext(tew.NewClientMetaContextWithEracer(t, coco))
+	receiver := librt.NewMinder(mc.G().ActiveUser())
+	fqt := tm.ToFQTeamParsed(t)
+
+	const n = 7
+
+	// setup: bluey creates a member-readable channel and sends n messages (seqs
+	// 1..n). coco is a *separate* client with her own local cache; she primes it
+	// with a non-contiguous subset {3,5}, leaving an interior hole at 4 and
+	// nothing cached outside [3,5]. Because the sender and receiver are different
+	// users, any sender-side caching never touches coco's cache, so the holes the
+	// bookended read must fill are exactly the ones set up here.
+	setup := func(ch proto.RTChannelName) {
+		_, err := sender.MakeChannel(mb, fqt, proto.RTAppID_Chat, ch, "hole-filling",
+			proto.RolePairOpt{Read: &proto.DefaultRole, Write: &proto.DefaultRole})
+		require.NoError(t, err)
+		for i := 1; i <= n; i++ {
+			res, err := sender.Send(mb, fqt, proto.RTAppID_Chat, ch, nil, []byte(fmt.Sprintf("msg-%d", i)))
+			require.NoError(t, err)
+			require.Equal(t, proto.RTMsgSeq(i), res.Seq)
+		}
+		primed, err := receiver.GetMsgs(mc, fqt, proto.RTAppID_Chat, ch, nil,
+			[]proto.RTMsgSeq{3, 5})
+		require.NoError(t, err)
+		require.Len(t, primed, 2)
+	}
+
+	check := func(t *testing.T, msgs []librt.ThreadMessage, wantSeqs ...int) {
+		require.Len(t, msgs, len(wantSeqs))
+		for i, s := range wantSeqs {
+			require.Equal(t, proto.RTMsgSeq(s), msgs[i].Seq)
+			require.Equal(t, fmt.Sprintf("msg-%d", s), string(msgs[i].Body))
+		}
+	}
+
+	t.Run("ascending", func(t *testing.T) {
+		setup("asc")
+
+		// coco's cache holds {3,5}. The server must supply leading [1,2], trailing
+		// [6,7], and the hole at 4; all of it merges into one ascending run.
+		msgs, final, err := receiver.GetThreadBookended(mc, fqt, proto.RTAppID_Chat, "asc",
+			nil, 1, n)
+		require.NoError(t, err)
+		require.False(t, final) // reached end (== n) exactly
+		check(t, msgs, 1, 2, 3, 4, 5, 6, 7)
+
+		// The read above cached everything, so the second read is a pure cache
+		// hit (no holes, no bookends).
+		msgs, _, err = receiver.GetThreadBookended(mc, fqt, proto.RTAppID_Chat, "asc",
+			nil, 1, n)
+		require.NoError(t, err)
+		check(t, msgs, 1, 2, 3, 4, 5, 6, 7)
+	})
+
+	t.Run("descending", func(t *testing.T) {
+		setup("desc")
+
+		// Same sparse cache {3,5}, but walk 7..1: leading bookend [7,6], trailing
+		// [2,1], hole 4, merged newest-first.
+		msgs, final, err := receiver.GetThreadBookended(mc, fqt, proto.RTAppID_Chat, "desc",
+			nil, n, 1)
+		require.NoError(t, err)
+		require.False(t, final) // reached end (== 1) exactly
+		check(t, msgs, 7, 6, 5, 4, 3, 2, 1)
+	})
+}
+
+// TestRTMinderSenderReadsAreCacheHits confirms that because Send populates the
+// sender's own read cache, the sender reading back exactly what it just sent is
+// served entirely from cache -- no server round-trip. It uses the Minder's
+// instrumentation counters to assert that (and a contrast read past the cached
+// range to prove the counter actually tracks round-trips).
+func TestRTMinderSenderReadsAreCacheHits(t *testing.T) {
+	tew := testEnvBeta(t)
+	bluey := tew.NewTestUser(t)
+	tew.DirectDoubleMerklePokeInTest(t)
+	tm := tew.makeTeamForOwner(t, bluey)
+
+	mb := librt.NewMetaContext(tew.NewClientMetaContextWithEracer(t, bluey))
+	minder := librt.NewMinder(mb.G().ActiveUser())
+	fqt := tm.ToFQTeamParsed(t)
+
+	_, err := minder.MakeChannel(mb, fqt, proto.RTAppID_Chat, "foo", "sender cache", proto.RolePairOpt{})
+	require.NoError(t, err)
+
+	const n = 5
+	for i := 1; i <= n; i++ {
+		res, err := minder.Send(mb, fqt, proto.RTAppID_Chat, "foo", nil, []byte(fmt.Sprintf("msg-%d", i)))
+		require.NoError(t, err)
+		require.Equal(t, proto.RTMsgSeq(i), res.Seq)
+	}
+
+	// Reading back the full range it just sent is a pure cache hit.
+	before := minder.Metrics()
+	msgs, final, err := minder.GetThreadBookended(mb, fqt, proto.RTAppID_Chat, "foo", nil, 1, n)
+	require.NoError(t, err)
+	require.False(t, final)
+	require.Len(t, msgs, n)
+	for i := 0; i < n; i++ {
+		require.Equal(t, proto.RTMsgSeq(i+1), msgs[i].Seq)
+		require.Equal(t, fmt.Sprintf("msg-%d", i+1), string(msgs[i].Body))
+	}
+	require.Equal(t, before.ServerThreadReads, minder.Metrics().ServerThreadReads,
+		"fully-cached read must not issue a server RtGetThread")
+
+	// Contrast: asking past the cached range forces a (trailing) server fetch, so
+	// the counter must advance by exactly one -- proving it tracks round-trips.
+	before = minder.Metrics()
+	_, _, err = minder.GetThreadBookended(mb, fqt, proto.RTAppID_Chat, "foo", nil, 1, n+1)
+	require.NoError(t, err)
+	require.Equal(t, before.ServerThreadReads+1, minder.Metrics().ServerThreadReads,
+		"a read past the cached range must issue exactly one server RtGetThread")
 }
 
 // TestRTSendReadPermissions exercises the server-side authorization machinery
@@ -279,8 +467,8 @@ func TestRTSendReadPermissions(t *testing.T) {
 	// --- read permission ---
 
 	// coco CAN read the admin-writable (but member-readable) channel.
-	msgs, _, err := minderCoco.GetThread(mc, fqt, proto.RTAppID_Chat, "announce",
-		nil, 0, proto.RTThreadDir_Forward, 0)
+	msgs, err := minderCoco.GetThreadRecentMsgs(mc, fqt, proto.RTAppID_Chat, "announce",
+		nil, 0)
 	require.NoError(t, err)
 	require.Len(t, msgs, 1)
 	require.Equal(t, "official notice", string(msgs[0].Body))
@@ -293,8 +481,8 @@ func TestRTSendReadPermissions(t *testing.T) {
 	}
 
 	// ...and reading its thread fails: she can't resolve a channel she can't see.
-	_, _, err = minderCoco.GetThread(mc, fqt, proto.RTAppID_Chat, "brass",
-		nil, 0, proto.RTThreadDir_Forward, 0)
+	_, err = minderCoco.GetThreadRecentMsgs(mc, fqt, proto.RTAppID_Chat, "brass",
+		nil, 0)
 	require.Equal(t, core.RTNotFoundError("channel 'brass'"), err)
 }
 
@@ -328,8 +516,8 @@ func TestRTSendEncryptionRole(t *testing.T) {
 	require.Equal(t, core.BadArgsError("message must be encrypted at the channel's read role"), err)
 
 	// The rejected message was not persisted: only the one good message remains.
-	msgs, _, err := minder.GetThread(mb, fqt, proto.RTAppID_Chat, "general",
-		nil, 0, proto.RTThreadDir_Forward, 0)
+	msgs, err := minder.GetThreadRecentMsgs(mb, fqt, proto.RTAppID_Chat, "general",
+		nil, 0)
 	require.NoError(t, err)
 	require.Len(t, msgs, 1)
 	require.Equal(t, "hi", string(msgs[0].Body))
@@ -362,8 +550,7 @@ func TestRTChannelDisambiguation(t *testing.T) {
 	// Addressing by name alone can't choose between them.
 	_, err = minder.Send(mb, fqt, proto.RTAppID_Chat, "general", nil, []byte("hi"))
 	require.Equal(t, core.RTAmbiguousChannelError{Name: "general"}, err)
-	_, _, err = minder.GetThread(mb, fqt, proto.RTAppID_Chat, "general", nil,
-		0, proto.RTThreadDir_Forward, 0)
+	_, err = minder.GetThreadRecentMsgs(mb, fqt, proto.RTAppID_Chat, "general", nil, 0)
 	require.Equal(t, core.RTAmbiguousChannelError{Name: "general"}, err)
 
 	// A class disambiguates, and each channel keeps its own thread.
@@ -372,14 +559,12 @@ func TestRTChannelDisambiguation(t *testing.T) {
 	_, err = minder.Send(mb, fqt, proto.RTAppID_Chat, "general", &bottom, []byte("bottom msg"))
 	require.NoError(t, err)
 
-	adminMsgs, _, err := minder.GetThread(mb, fqt, proto.RTAppID_Chat, "general", &admin,
-		0, proto.RTThreadDir_Forward, 0)
+	adminMsgs, err := minder.GetThreadRecentMsgs(mb, fqt, proto.RTAppID_Chat, "general", &admin, 0)
 	require.NoError(t, err)
 	require.Len(t, adminMsgs, 1)
 	require.Equal(t, "admin msg", string(adminMsgs[0].Body))
 
-	bottomMsgs, _, err := minder.GetThread(mb, fqt, proto.RTAppID_Chat, "general", &bottom,
-		0, proto.RTThreadDir_Forward, 0)
+	bottomMsgs, err := minder.GetThreadRecentMsgs(mb, fqt, proto.RTAppID_Chat, "general", &bottom, 0)
 	require.NoError(t, err)
 	require.Len(t, bottomMsgs, 1)
 	require.Equal(t, "bottom msg", string(bottomMsgs[0].Body))

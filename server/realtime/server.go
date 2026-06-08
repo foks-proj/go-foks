@@ -82,7 +82,7 @@ func (c *ClientConn) RtSend(ctx context.Context, arg rem.RTSendArg) (res rem.RTS
 	}
 	return *ret, nil
 }
-func (c *ClientConn) RtGetThread(ctx context.Context, arg proto.RTThreadQuery) (res rem.RTThreadPage, err error) {
+func (c *ClientConn) RtGetThread(ctx context.Context, arg rem.RTThreadQuery) (res rem.RTThreadPage, err error) {
 	m := shared.NewMetaContextConn(ctx, c)
 	ret, err := GetThread(m, arg)
 	if err != nil {
@@ -104,6 +104,20 @@ func (c *ClientConn) RtPollInbox(ctx context.Context, arg rem.RTPollInboxArg) (r
 }
 func (c *ClientConn) RtSelectVHost(ctx context.Context, arg proto.HostID) error {
 	return core.NotImplementedError{}
+}
+func (c *ClientConn) RtGetThreadRecents(
+	ctx context.Context,
+	arg rem.RtGetThreadRecentsArg,
+) (
+	res rem.RTMsgList,
+	err error,
+) {
+	m := shared.NewMetaContextConn(ctx, c)
+	ret, err := GetThreadRecents(m, arg)
+	if err != nil {
+		return res, err
+	}
+	return *ret, nil
 }
 
 var _ shared.RPCServer = (*Server)(nil)
