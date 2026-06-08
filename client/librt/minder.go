@@ -806,12 +806,32 @@ func (d *Minder) GetThread(
 	if err != nil {
 		return nil, false, err
 	}
-	out := make([]ThreadMessage, 0, len(page.Msgs))
-	cachePuts := make([]proto.RTMsgCachedWithSeq, 0, len(page.Msgs))
-	for _, msg := range page.Msgs {
-		body, cm, err := d.openMessage(m, rtp, appID, msg, ch.Id)
+	out, err := d.decodeAndCacheMsgs(m, rtp, appID, ch.Id, page.Msgs)
+	if err != nil {
+		return nil, false, err
+	}
+	return out, page.Final, nil
+}
+
+// decodeAndCacheMsgs decrypts each server message into a ThreadMessage for the
+// caller and writes the decrypted bodies into the local cache. Shared by
+// GetThread (paged range) and GetMsgs (arbitrary set of seqs).
+func (d *Minder) decodeAndCacheMsgs(
+	m MetaContext,
+	rtp *RTParty,
+	appID proto.RTAppID,
+	chid proto.RTChannelID,
+	msgs []rem.RTMsg,
+) (
+	[]ThreadMessage,
+	error,
+) {
+	out := make([]ThreadMessage, 0, len(msgs))
+	cachePuts := make([]proto.RTMsgCachedWithSeq, 0, len(msgs))
+	for _, msg := range msgs {
+		body, cm, err := d.openMessage(m, rtp, appID, msg, chid)
 		if err != nil {
-			return nil, false, err
+			return nil, err
 		}
 		out = append(out, ThreadMessage{
 			Seq:                      msg.Seq,
@@ -827,9 +847,52 @@ func (d *Minder) GetThread(
 			Seq: msg.Seq,
 		})
 	}
-	err = dbPutMsgs(m, d.au, cachePuts)
+	err := dbPutMsgs(m, d.au, cachePuts)
 	if err != nil {
-		return nil, false, err
+		return nil, err
 	}
-	return out, page.Final, nil
+	return out, nil
+}
+
+// GetMsgs fetches and decrypts an arbitrary set of messages from the named
+// channel by seq. Used to fill holes between locally-cached messages and a
+// paged GetThread fetch. Only messages that exist server-side are returned
+// (each carries its own Seq); requested seqs with no message are omitted, so
+// the result may be shorter than `seqs` and in unspecified order. klass
+// disambiguates when a name exists in more than one class; pass nil when the
+// name is unique.
+func (d *Minder) GetMsgs(
+	m MetaContext,
+	team *proto.FQTeamParsed,
+	appID proto.RTAppID,
+	channelName proto.RTChannelName,
+	klass *proto.RTChannelClass,
+	seqs []proto.RTMsgSeq,
+) (
+	[]ThreadMessage,
+	error,
+) {
+	if team == nil {
+		return nil, core.InternalError("team is required to read in Stage 1a")
+	}
+	rtp, err := d.base.GetParty(m.Base(), team)
+	if err != nil {
+		return nil, err
+	}
+	ch, err := d.resolveChannel(m, rtp, appID, channelName, klass)
+	if err != nil {
+		return nil, err
+	}
+	_, cli, err := d.clientLocal(m.Base(), d.au)
+	if err != nil {
+		return nil, err
+	}
+	res, err := cli.RtGetMsgs(m.Ctx(), rem.RTGetMsgsArg{
+		ChannelID: ch.Id,
+		Seqs:      seqs,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return d.decodeAndCacheMsgs(m, rtp, appID, ch.Id, res.Msgs)
 }

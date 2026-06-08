@@ -113,6 +113,21 @@ struct RTThreadPage {
     final @1 : Bool;
 }
 
+// Fetch an arbitrary (not necessarily contiguous) set of messages by seq. Used
+// to fill "holes" between locally-cached messages and what a paged rtGetThread
+// returned from the server.
+struct RTGetMsgsArg {
+    channelID @0 : lib.RTChannelID;
+    seqs @1 : List(lib.RTMsgSeq);
+}
+
+// Only messages that were found are returned, in no particular order; each
+// carries its own seq, so the caller slots it back into the right hole. Seqs
+// in the request with no matching message are simply absent from msgs.
+struct RTGetMsgsRes {
+    msgs @0 : List(RTMsg);
+}
+
 protocol RealTime
     errors lib.Status
     argHeader lib.Header
@@ -177,5 +192,12 @@ protocol RealTime
     rtSelectVHost @9 (
         host @0 : lib.HostID
     ) : RTSelectVhost;
+
+    // Fetch an arbitrary set of messages by seq, to fill holes between cached
+    // and remote-fetched ranges. Only found messages are returned (each carries
+    // its seq); missing seqs are silently omitted. User auth only.
+    rtGetMsgs @10 (
+        rtarg @0 : RTGetMsgsArg
+    ) -> RTGetMsgsRes;
 
 }

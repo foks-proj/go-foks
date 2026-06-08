@@ -345,69 +345,21 @@ func loadChannelForRead(
 	return team, readRole, nil
 }
 
-// readThread pulls one page of messages from messages_enc, joining
-// channel_parties to recover sender attribution.
-func readThread(
-	m shared.MetaContext,
-	db shared.Querier,
-	q proto.RTThreadQuery,
-) (
-	[]rem.RTMsg,
-	error,
-) {
-	max := q.Max
-	if max == 0 || max > defaultThreadPage {
-		max = defaultThreadPage
-	}
-	channelID := int64(q.ChannelID.Short())
+// threadMsgSelect is the column list + sender-attribution join shared by every
+// message read (range fetch and by-seq fetch). Callers append their own WHERE /
+// ORDER BY / LIMIT clause; $1/$2 are reserved for short_host_id/channel_id.
+const threadMsgSelect = `SELECT me.seq, me.msg_id, me.typ, me.msg_box, me.ptk_gen,
+              me.role_type, me.viz_level, me.sent_at_time, me.insert_time,
+              me.prev_msg_id, me.prev_seq,
+              cp.party_id, cp.uid
+       FROM messages_enc me
+       JOIN channel_parties cp ON
+           cp.short_host_id = me.short_host_id
+           AND cp.channel_id = me.channel_id
+           AND cp.party_no = me.sender_no`
 
-	// Forward = ascending seq from `start` (inclusive); Backward = descending
-	// seq from `start` (or the head when start==0).
-	var sql string
-	switch q.Dir {
-	case proto.RTThreadDir_Backward:
-		sql = `SELECT me.seq, me.msg_id, me.typ, me.msg_box, me.ptk_gen,
-		              me.role_type, me.viz_level, me.sent_at_time, me.insert_time,
-		              me.prev_msg_id, me.prev_seq,
-		              cp.party_id, cp.uid
-		       FROM messages_enc me
-		       JOIN channel_parties cp ON
-		           cp.short_host_id = me.short_host_id
-		           AND cp.channel_id = me.channel_id
-		           AND cp.party_no = me.sender_no
-		       WHERE me.short_host_id=$1 AND me.channel_id=$2
-		         AND ($3 = 0 OR me.seq <= $3)
-		       ORDER BY me.seq DESC
-		       LIMIT $4`
-	default:
-		sql = `SELECT me.seq, me.msg_id, me.typ, me.msg_box, me.ptk_gen,
-		              me.role_type, me.viz_level, me.sent_at_time, me.insert_time,
-		              me.prev_msg_id, me.prev_seq,
-		              cp.party_id, cp.uid
-		       FROM messages_enc me
-		       JOIN channel_parties cp ON
-		           cp.short_host_id = me.short_host_id
-		           AND cp.channel_id = me.channel_id
-		           AND cp.party_no = me.sender_no
-		       WHERE me.short_host_id=$1 AND me.channel_id=$2
-		         AND me.seq >= $3
-		       ORDER BY me.seq ASC
-		       LIMIT $4`
-	}
-
-	rows, err := db.Query(
-		m.Ctx(),
-		sql,
-		m.ShortHostID(),
-		channelID,
-		int64(q.Start),
-		int64(max),
-	)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
+// scanThreadMsgs decodes rows produced by a threadMsgSelect query into RTMsgs.
+func scanThreadMsgs(rows pgx.Rows) ([]rem.RTMsg, error) {
 	var ret []rem.RTMsg
 	for rows.Next() {
 		var (
@@ -422,7 +374,7 @@ func readThread(
 			prevSeq              int64
 			partyIDRaw, uidRaw   []byte
 		)
-		err = rows.Scan(
+		err := rows.Scan(
 			&seq, &msgIDRaw, &typRaw, &msgBoxRaw, &ptkGen,
 			&roleType, &vizLevel, &sentAtTime, &insertTm,
 			&prevMsgIDRaw, &prevSeq,
@@ -491,10 +443,96 @@ func readThread(
 		}
 		ret = append(ret, msg)
 	}
-	if err = rows.Err(); err != nil {
+	if err := rows.Err(); err != nil {
 		return nil, err
 	}
 	return ret, nil
+}
+
+// readThread pulls one page of messages from messages_enc, joining
+// channel_parties to recover sender attribution.
+func readThread(
+	m shared.MetaContext,
+	db shared.Querier,
+	q proto.RTThreadQuery,
+) (
+	[]rem.RTMsg,
+	error,
+) {
+	max := q.Max
+	if max == 0 || max > defaultThreadPage {
+		max = defaultThreadPage
+	}
+	channelID := int64(q.ChannelID.Short())
+
+	// Forward = ascending seq from `start` (inclusive); Backward = descending
+	// seq from `start` (or the head when start==0).
+	var sql string
+	switch q.Dir {
+	case proto.RTThreadDir_Backward:
+		sql = threadMsgSelect + `
+		       WHERE me.short_host_id=$1 AND me.channel_id=$2
+		         AND ($3 = 0 OR me.seq <= $3)
+		       ORDER BY me.seq DESC
+		       LIMIT $4`
+	default:
+		sql = threadMsgSelect + `
+		       WHERE me.short_host_id=$1 AND me.channel_id=$2
+		         AND me.seq >= $3
+		       ORDER BY me.seq ASC
+		       LIMIT $4`
+	}
+
+	rows, err := db.Query(
+		m.Ctx(),
+		sql,
+		m.ShortHostID(),
+		channelID,
+		int64(q.Start),
+		int64(max),
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	return scanThreadMsgs(rows)
+}
+
+// readMsgsBySeq fetches the messages whose seq is in `seqs`. Seqs with no
+// matching message are simply absent from the result; order is unspecified
+// (each RTMsg carries its own seq, so the caller can slot it back into place).
+func readMsgsBySeq(
+	m shared.MetaContext,
+	db shared.Querier,
+	channelID int64,
+	seqs []proto.RTMsgSeq,
+) (
+	[]rem.RTMsg,
+	error,
+) {
+	if len(seqs) == 0 {
+		return nil, nil
+	}
+	v := make([]int64, len(seqs))
+	for i, s := range seqs {
+		v[i] = int64(s)
+	}
+	rows, err := db.Query(
+		m.Ctx(),
+		threadMsgSelect+`
+		       WHERE me.short_host_id=$1 AND me.channel_id=$2
+		         AND me.seq = ANY($3)`,
+		m.ShortHostID(),
+		channelID,
+		v,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	return scanThreadMsgs(rows)
 }
 
 // GetThread fetches a page of messages from a channel, after checking that the
@@ -547,4 +585,57 @@ func GetThread(
 		Final: uint64(len(msgs)) < max,
 	}
 	return &ret, nil
+}
+
+// maxMsgsBySeq bounds a single rtGetMsgs request, so a client can't ask for an
+// unbounded set of seqs in one round trip.
+const maxMsgsBySeq = 512
+
+// GetMsgs fetches an arbitrary set of messages by seq, after checking that the
+// authenticated user (m.UID()) is authorized to read the channel. Used to fill
+// holes between locally-cached messages and a paged remote fetch. Only found
+// messages are returned; missing seqs are silently omitted.
+func GetMsgs(
+	m shared.MetaContext,
+	arg rem.RTGetMsgsArg,
+) (
+	*rem.RTGetMsgsRes,
+	error,
+) {
+	if len(arg.Seqs) > maxMsgsBySeq {
+		return nil, core.BadArgsError("too many seqs requested")
+	}
+
+	rtdb, err := m.Db(shared.DbTypeRealTime)
+	if err != nil {
+		return nil, err
+	}
+	defer rtdb.Release()
+	userdb, err := m.Db(shared.DbTypeUsers)
+	if err != nil {
+		return nil, err
+	}
+	defer userdb.Release()
+
+	team, readRole, err := loadChannelForRead(m, rtdb, int64(arg.ChannelID.Short()))
+	if err != nil {
+		return nil, err
+	}
+	role, err := AuthorizeUserForTeam(m, userdb, team)
+	if err != nil {
+		return nil, err
+	}
+	readRoleKey, err := core.ImportRole(readRole)
+	if err != nil {
+		return nil, err
+	}
+	if role.LessThan(*readRoleKey) {
+		return nil, core.PermissionError("user role too low to read channel")
+	}
+
+	msgs, err := readMsgsBySeq(m, rtdb, int64(arg.ChannelID.Short()), arg.Seqs)
+	if err != nil {
+		return nil, err
+	}
+	return &rem.RTGetMsgsRes{Msgs: msgs}, nil
 }

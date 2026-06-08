@@ -980,6 +980,135 @@ func (r *RTThreadPage) Decode(dec rpc.Decoder) error {
 
 func (r *RTThreadPage) Bytes() []byte { return nil }
 
+type RTGetMsgsArg struct {
+	ChannelID lib.RTChannelID
+	Seqs      []lib.RTMsgSeq
+}
+type RTGetMsgsArgInternal__ struct {
+	_struct   struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
+	ChannelID *lib.RTChannelIDInternal__
+	Seqs      *[](*lib.RTMsgSeqInternal__)
+}
+
+func (r RTGetMsgsArgInternal__) Import() RTGetMsgsArg {
+	return RTGetMsgsArg{
+		ChannelID: (func(x *lib.RTChannelIDInternal__) (ret lib.RTChannelID) {
+			if x == nil {
+				return ret
+			}
+			return x.Import()
+		})(r.ChannelID),
+		Seqs: (func(x *[](*lib.RTMsgSeqInternal__)) (ret []lib.RTMsgSeq) {
+			if x == nil || len(*x) == 0 {
+				return nil
+			}
+			ret = make([]lib.RTMsgSeq, len(*x))
+			for k, v := range *x {
+				if v == nil {
+					continue
+				}
+				ret[k] = (func(x *lib.RTMsgSeqInternal__) (ret lib.RTMsgSeq) {
+					if x == nil {
+						return ret
+					}
+					return x.Import()
+				})(v)
+			}
+			return ret
+		})(r.Seqs),
+	}
+}
+func (r RTGetMsgsArg) Export() *RTGetMsgsArgInternal__ {
+	return &RTGetMsgsArgInternal__{
+		ChannelID: r.ChannelID.Export(),
+		Seqs: (func(x []lib.RTMsgSeq) *[](*lib.RTMsgSeqInternal__) {
+			if len(x) == 0 {
+				return nil
+			}
+			ret := make([](*lib.RTMsgSeqInternal__), len(x))
+			for k, v := range x {
+				ret[k] = v.Export()
+			}
+			return &ret
+		})(r.Seqs),
+	}
+}
+func (r *RTGetMsgsArg) Encode(enc rpc.Encoder) error {
+	return enc.Encode(r.Export())
+}
+
+func (r *RTGetMsgsArg) Decode(dec rpc.Decoder) error {
+	var tmp RTGetMsgsArgInternal__
+	err := dec.Decode(&tmp)
+	if err != nil {
+		return err
+	}
+	*r = tmp.Import()
+	return nil
+}
+
+func (r *RTGetMsgsArg) Bytes() []byte { return nil }
+
+type RTGetMsgsRes struct {
+	Msgs []RTMsg
+}
+type RTGetMsgsResInternal__ struct {
+	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
+	Msgs    *[](*RTMsgInternal__)
+}
+
+func (r RTGetMsgsResInternal__) Import() RTGetMsgsRes {
+	return RTGetMsgsRes{
+		Msgs: (func(x *[](*RTMsgInternal__)) (ret []RTMsg) {
+			if x == nil || len(*x) == 0 {
+				return nil
+			}
+			ret = make([]RTMsg, len(*x))
+			for k, v := range *x {
+				if v == nil {
+					continue
+				}
+				ret[k] = (func(x *RTMsgInternal__) (ret RTMsg) {
+					if x == nil {
+						return ret
+					}
+					return x.Import()
+				})(v)
+			}
+			return ret
+		})(r.Msgs),
+	}
+}
+func (r RTGetMsgsRes) Export() *RTGetMsgsResInternal__ {
+	return &RTGetMsgsResInternal__{
+		Msgs: (func(x []RTMsg) *[](*RTMsgInternal__) {
+			if len(x) == 0 {
+				return nil
+			}
+			ret := make([](*RTMsgInternal__), len(x))
+			for k, v := range x {
+				ret[k] = v.Export()
+			}
+			return &ret
+		})(r.Msgs),
+	}
+}
+func (r *RTGetMsgsRes) Encode(enc rpc.Encoder) error {
+	return enc.Encode(r.Export())
+}
+
+func (r *RTGetMsgsRes) Decode(dec rpc.Decoder) error {
+	var tmp RTGetMsgsResInternal__
+	err := dec.Decode(&tmp)
+	if err != nil {
+		return err
+	}
+	*r = tmp.Import()
+	return nil
+}
+
+func (r *RTGetMsgsRes) Bytes() []byte { return nil }
+
 var RealTimeProtocolID rpc.ProtocolUniqueID = rpc.ProtocolUniqueID(0x4f58e7d4)
 
 type RtNewChannelArg struct {
@@ -1390,6 +1519,45 @@ func (r *RTSelectVhost) Decode(dec rpc.Decoder) error {
 
 func (r *RTSelectVhost) Bytes() []byte { return nil }
 
+type RtGetMsgsArg struct {
+	Rtarg RTGetMsgsArg
+}
+type RtGetMsgsArgInternal__ struct {
+	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
+	Rtarg   *RTGetMsgsArgInternal__
+}
+
+func (r RtGetMsgsArgInternal__) Import() RtGetMsgsArg {
+	return RtGetMsgsArg{
+		Rtarg: (func(x *RTGetMsgsArgInternal__) (ret RTGetMsgsArg) {
+			if x == nil {
+				return ret
+			}
+			return x.Import()
+		})(r.Rtarg),
+	}
+}
+func (r RtGetMsgsArg) Export() *RtGetMsgsArgInternal__ {
+	return &RtGetMsgsArgInternal__{
+		Rtarg: r.Rtarg.Export(),
+	}
+}
+func (r *RtGetMsgsArg) Encode(enc rpc.Encoder) error {
+	return enc.Encode(r.Export())
+}
+
+func (r *RtGetMsgsArg) Decode(dec rpc.Decoder) error {
+	var tmp RtGetMsgsArgInternal__
+	err := dec.Decode(&tmp)
+	if err != nil {
+		return err
+	}
+	*r = tmp.Import()
+	return nil
+}
+
+func (r *RtGetMsgsArg) Bytes() []byte { return nil }
+
 type RealTimeInterface interface {
 	RtNewChannel(context.Context, RtNewChannelArg) error
 	RtGetChannel(context.Context, lib.RTChannelID) (RTChannelMetadata, error)
@@ -1401,6 +1569,7 @@ type RealTimeInterface interface {
 	RtReadThrough(context.Context, RTReadThroughArg) error
 	RtPollInbox(context.Context, RTPollInboxArg) (lib.RTInboxPollRes, error)
 	RtSelectVHost(context.Context, lib.HostID) error
+	RtGetMsgs(context.Context, RTGetMsgsArg) (RTGetMsgsRes, error)
 	ErrorWrapper() func(error) lib.Status
 	CheckArgHeader(ctx context.Context, h lib.Header) error
 	MakeResHeader() lib.Header
@@ -1675,6 +1844,30 @@ func (c RealTimeClient) RtSelectVHost(ctx context.Context, host lib.HostID) (err
 			return
 		}
 	}
+	return
+}
+func (c RealTimeClient) RtGetMsgs(ctx context.Context, rtarg RTGetMsgsArg) (res RTGetMsgsRes, err error) {
+	arg := RtGetMsgsArg{
+		Rtarg: rtarg,
+	}
+	warg := &rpc.DataWrap[lib.Header, *RtGetMsgsArgInternal__]{
+		Data: arg.Export(),
+	}
+	if c.MakeArgHeader != nil {
+		warg.Header = c.MakeArgHeader()
+	}
+	var tmp rpc.DataWrap[lib.Header, RTGetMsgsResInternal__]
+	err = c.Cli.Call2(ctx, rpc.NewMethodV2(RealTimeProtocolID, 10, "RealTime.rtGetMsgs"), warg, &tmp, 0*time.Millisecond, realTimeErrorUnwrapperAdapter{h: c.ErrorUnwrapper})
+	if err != nil {
+		return
+	}
+	if c.CheckResHeader != nil {
+		err = c.CheckResHeader(ctx, tmp.Header)
+		if err != nil {
+			return
+		}
+	}
+	res = tmp.Data.Import()
 	return
 }
 func RealTimeProtocol(i RealTimeInterface) rpc.ProtocolV2 {
@@ -1968,6 +2161,35 @@ func RealTimeProtocol(i RealTimeInterface) rpc.ProtocolV2 {
 					},
 				},
 				Name: "rtSelectVHost",
+			},
+			10: {
+				ServeHandlerDescription: rpc.ServeHandlerDescription{
+					MakeArg: func() interface{} {
+						var ret rpc.DataWrap[lib.Header, *RtGetMsgsArgInternal__]
+						return &ret
+					},
+					Handler: func(ctx context.Context, args interface{}) (interface{}, error) {
+						typedWrappedArg, ok := args.(*rpc.DataWrap[lib.Header, *RtGetMsgsArgInternal__])
+						if !ok {
+							err := rpc.NewTypeError((*rpc.DataWrap[lib.Header, *RtGetMsgsArgInternal__])(nil), args)
+							return nil, err
+						}
+						if err := i.CheckArgHeader(ctx, typedWrappedArg.Header); err != nil {
+							return nil, err
+						}
+						typedArg := typedWrappedArg.Data
+						tmp, err := i.RtGetMsgs(ctx, (typedArg.Import()).Rtarg)
+						if err != nil {
+							return nil, err
+						}
+						ret := rpc.DataWrap[lib.Header, *RTGetMsgsResInternal__]{
+							Data:   tmp.Export(),
+							Header: i.MakeResHeader(),
+						}
+						return &ret, nil
+					},
+				},
+				Name: "rtGetMsgs",
 			},
 		},
 		WrapError: RealTimeMakeGenericErrorWrapper(i.ErrorWrapper()),

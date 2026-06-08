@@ -219,6 +219,58 @@ func TestRTMinderSendAndGetThread(t *testing.T) {
 	require.Error(t, err)
 }
 
+// TestRTMinderGetMsgsBySeq exercises rtGetMsgs: fetching an arbitrary,
+// non-contiguous set of messages by seq, the way a client fills holes between
+// its local cache and a paged fetch. Seqs that don't exist are silently
+// dropped, so the result is found-only and not necessarily in request order.
+func TestRTMinderGetMsgsBySeq(t *testing.T) {
+	tew := testEnvBeta(t)
+	bluey := tew.NewTestUser(t)
+	tew.DirectDoubleMerklePokeInTest(t)
+	tm := tew.makeTeamForOwner(t, bluey)
+
+	mb := librt.NewMetaContext(tew.NewClientMetaContextWithEracer(t, bluey))
+	minder := librt.NewMinder(mb.G().ActiveUser())
+	fqt := tm.ToFQTeamParsed(t)
+
+	_, err := minder.MakeChannel(mb, fqt, proto.RTAppID_Chat, "foo", "the foo channel", proto.RolePairOpt{})
+	require.NoError(t, err)
+
+	bodies := []string{"one", "two", "three", "four", "five"}
+	for _, b := range bodies {
+		_, err := minder.Send(mb, fqt, proto.RTAppID_Chat, "foo", nil, []byte(b))
+		require.NoError(t, err)
+	}
+
+	// Ask for a non-contiguous subset (2 and 4) plus a seq that doesn't exist
+	// (99). We should get exactly seqs 2 and 4 back, each decrypting correctly;
+	// the missing seq is simply absent.
+	msgs, err := minder.GetMsgs(mb, fqt, proto.RTAppID_Chat, "foo", nil,
+		[]proto.RTMsgSeq{2, 4, 99})
+	require.NoError(t, err)
+	require.Len(t, msgs, 2)
+	bySeq := make(map[proto.RTMsgSeq]string, len(msgs))
+	for _, msg := range msgs {
+		require.Equal(t, proto.RTMsgType_Basic, msg.Typ)
+		require.NotNil(t, msg.Sender)
+		require.Equal(t, bluey.uid.ToPartyID(), *msg.Sender)
+		bySeq[msg.Seq] = string(msg.Body)
+	}
+	require.Equal(t, "two", bySeq[2])
+	require.Equal(t, "four", bySeq[4])
+
+	// An empty request yields nothing, not an error.
+	msgs, err = minder.GetMsgs(mb, fqt, proto.RTAppID_Chat, "foo", nil, nil)
+	require.NoError(t, err)
+	require.Len(t, msgs, 0)
+
+	// Requesting only missing seqs yields an empty result.
+	msgs, err = minder.GetMsgs(mb, fqt, proto.RTAppID_Chat, "foo", nil,
+		[]proto.RTMsgSeq{100, 101})
+	require.NoError(t, err)
+	require.Len(t, msgs, 0)
+}
+
 // TestRTSendReadPermissions exercises the server-side authorization machinery
 // for send (write role) and read (read role / channel class), from the point of
 // view of a low-privilege member who must be *denied* — the cases the
