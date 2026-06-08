@@ -73,6 +73,9 @@ const (
 	DataType_KVNSName             DataType = 71
 	DataType_KVSymlink            DataType = 72
 	DataType_KVGitRefSet          DataType = 73
+	DataType_RTThreadMetadata     DataType = 97
+	DataType_RTThreadMsgData      DataType = 98
+	DataType_RTOutboxMsg          DataType = 99
 )
 
 var DataTypeMap = map[string]DataType{
@@ -100,6 +103,9 @@ var DataTypeMap = map[string]DataType{
 	"KVNSName":             71,
 	"KVSymlink":            72,
 	"KVGitRefSet":          73,
+	"RTThreadMetadata":     97,
+	"RTThreadMsgData":      98,
+	"RTOutboxMsg":          99,
 }
 var DataTypeRevMap = map[DataType]string{
 	0:  "None",
@@ -126,6 +132,9 @@ var DataTypeRevMap = map[DataType]string{
 	71: "KVNSName",
 	72: "KVSymlink",
 	73: "KVGitRefSet",
+	97: "RTThreadMetadata",
+	98: "RTThreadMsgData",
+	99: "RTOutboxMsg",
 }
 
 type DataTypeInternal__ DataType

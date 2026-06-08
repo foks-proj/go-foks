@@ -721,6 +721,10 @@ func (t Time) ToSecondsFloat() float64 {
 	return float64(t) / 1000.0
 }
 
+func (t Time) ToInt64() int64 {
+	return int64(t)
+}
+
 func Today() Date {
 	n := time.Now()
 	return Date{

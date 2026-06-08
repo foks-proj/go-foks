@@ -704,6 +704,7 @@ func (d *Minder) openMessage(
 	ch proto.RTChannelID,
 ) (
 	[]byte,
+	*proto.RTMsgCached,
 	error,
 ) {
 	team := rtp.PLCNode().FQParty().Party
@@ -718,35 +719,39 @@ func (d *Minder) openMessage(
 	}
 	nn, err := cookNonce(&noncer)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	typ, err := msg.Mw.GetT()
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	if typ != proto.MsgBodyType_Encrypted {
-		return nil, core.VersionNotSupportedError("only encrypted message bodies are supported")
+		return nil, nil, core.VersionNotSupportedError("only encrypted message bodies are supported")
 	}
 	box := msg.Mw.Encrypted()
 
 	kmgr, err := rtp.keysAtRoleGen(m, appID, box.Rg)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	var body proto.RTMsgBody
 	err = kmgr.OpenMsgWithNonce(&body, box.Ctext, nn)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	pt, err := body.GetT()
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	if pt != proto.RTMsgType_Basic {
-		return nil, core.VersionNotSupportedError("only basic messages are supported")
+		return nil, nil, core.VersionNotSupportedError("only basic messages are supported")
 	}
 	basic := body.Basic()
-	return basic.Bytes(), nil
+	cm := proto.RTMsgCached{
+		Md: noncer,
+		Mw: msg.Mw,
+	}
+	return basic.Bytes(), &cm, nil
 }
 
 // GetThread fetches and decrypts a page of messages from the named channel.
@@ -791,8 +796,9 @@ func (d *Minder) GetThread(
 		return nil, false, err
 	}
 	out := make([]ThreadMessage, 0, len(page.Msgs))
+	cachePuts := make([]proto.RTMsgCachedWithSeq, 0, len(page.Msgs))
 	for _, msg := range page.Msgs {
-		body, err := d.openMessage(m, rtp, appID, msg, ch.Id)
+		body, cm, err := d.openMessage(m, rtp, appID, msg, ch.Id)
 		if err != nil {
 			return nil, false, err
 		}
@@ -805,6 +811,14 @@ func (d *Minder) GetThread(
 			InsertTime:               msg.InsertTime,
 			Body:                     body,
 		})
+		cachePuts = append(cachePuts, proto.RTMsgCachedWithSeq{
+			Cm:  *cm,
+			Seq: msg.Seq,
+		})
+	}
+	err = dbPutMsgs(m, d.au, cachePuts)
+	if err != nil {
+		return nil, false, err
 	}
 	return out, page.Final, nil
 }

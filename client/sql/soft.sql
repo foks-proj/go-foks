@@ -58,6 +58,7 @@ CREATE TABLE IF NOT EXISTS ranged_data (
     idx INTEGER NOT NULL,
     val BLOB, 
     ctime INTEGER NOT NULL,
+    mtime INTEGER NOT NULL,
     PRIMARY KEY(scope_id, typ, key, idx),
     FOREIGN KEY(scope_id) REFERENCES scope(id)
 ) STRICT;

@@ -183,3 +183,13 @@ struct RTInboxPollRes {
     bumped @0 : Bool;                  // false if returned due to timeout
     inboxVersion @1 : RTInboxVersion;  // current head (== since if !bumped)
 }
+
+struct RTMsgCached {
+    md @0 : RTMsgNoncer;
+    mw @1 : RTMsgWrapper;
+}
+
+struct RTMsgCachedWithSeq {
+    cm @0 : RTMsgCached;
+    seq @1 : RTMsgSeq; // server-assigned sequence number
+}

@@ -811,7 +811,7 @@ func (d *DB) PutTx(m MetaContext, rows []PutArg) error {
 				rkey = key
 				q = `INSERT INTO ranged_data(scope_id, typ, key, idx, val, ctime, mtime)
 				     VALUES($1, $2, $3, $4, $5, $6, $6)
-				     ON CONFLICT(scope_id, typ, key)
+				     ON CONFLICT(scope_id, typ, key, idx)
 					 DO UPDATE SET val=$5, mtime=$6`
 				args = []any{
 					int(scopeIDs[i]),

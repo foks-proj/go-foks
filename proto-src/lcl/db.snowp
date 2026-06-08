@@ -33,6 +33,10 @@ enum DataType {
     KVNSName @71;
     KVSymlink @72;
     KVGitRefSet @73;
+
+    RTThreadMetadata @97;
+    RTThreadMsgData @98;
+    RTOutboxMsg @99;
 }
 
 typedef ScopeLabel = Blob;
