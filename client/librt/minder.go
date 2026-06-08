@@ -691,6 +691,17 @@ func (d *Minder) SendWithTestHooks(
 	if err != nil {
 		return nil, err
 	}
+	err = dbPutMsgToOutbox(
+		m,
+		d.au,
+		proto.RTMsgCached{
+			Md: noncer,
+			Mw: mw,
+		},
+	)
+	if err != nil {
+		return nil, err
+	}
 	return &res, nil
 }
 

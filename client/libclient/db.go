@@ -596,14 +596,21 @@ func (r *DBRange[T, TP]) Get(
 	lo int64,
 	hi int64,
 	lim int64,
+	asc bool,
 ) ([]T, error) {
 	var ret []T
 	r.db.Lock()
 	defer r.db.Unlock()
 
+	ord := "ASC"
+	if !asc {
+		ord = "DESC"
+	}
+
 	q := `SELECT val FROM ranged_data 
 	      WHERE scope_id=$1 AND typ=$2 AND key=$3
-		  AND idx>=$4 AND idx<=$5`
+		  AND idx>=$4 AND idx<=$5
+		  ORDER BY idx ` + ord
 	args := []any{int(r.scope), r.typ, r.key.ExportToDB(), lo, hi}
 	if lim > 0 {
 		q += " LIMIT $6"
