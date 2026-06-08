@@ -7,6 +7,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -209,6 +210,7 @@ type PutArg struct {
 	Val     core.Codecable
 	Counter *int64
 	Set     bool
+	Idx     *int64
 }
 
 func (g *GlobalContext) DbPut(ctx context.Context, which DbType, row PutArg) error {
@@ -529,6 +531,147 @@ func (d *DB) Get(
 	return ret, nil
 }
 
+type DBRange[
+	T any,
+	PT interface {
+		*T
+		core.CryptoPayloader
+	},
+] struct {
+	db    *DB
+	scope lcl.ScopeID
+	typ   lcl.DataType
+	key   proto.DbKey
+}
+
+func NewDBRange[
+	T any,
+	PT interface {
+		*T
+		core.CryptoPayloader
+	},
+](
+	m MetaContext,
+	d *DB,
+	scope Scoper,
+	typ lcl.DataType,
+	gkey any,
+) (*DBRange[T, PT], error) {
+	d.Lock()
+	defer d.Unlock()
+
+	key, err := core.NewDbKey(gkey)
+	if err != nil {
+		return nil, err
+	}
+
+	if scope == nil {
+		return nil, core.InternalError("scope is nil")
+	}
+	if typ == lcl.DataType_None {
+		return nil, core.InternalError("type is none")
+	}
+
+	scopeID, err := d.getScopeID(m.Ctx(), scope)
+	if err != nil {
+		return nil, err
+	}
+
+	return &DBRange[T, PT]{
+		db:    d,
+		scope: scopeID,
+		key:   key,
+	}, nil
+}
+
+func (r *DBRange[T, TP]) Min(m MetaContext) (int64, error) {
+	return r.idxFunc(m, "MIN")
+}
+func (r *DBRange[T, TP]) Max(m MetaContext) (int64, error) {
+	return r.idxFunc(m, "MAX")
+}
+
+func (r *DBRange[T, TP]) Get(
+	m MetaContext,
+	lo int64,
+	hi int64,
+	lim int64,
+) ([]T, error) {
+	var ret []T
+	r.db.Lock()
+	defer r.db.Unlock()
+
+	q := `SELECT val FROM ranged_data 
+	      WHERE scope_id=$1 AND typ=$2 AND key=$3
+		  AND idx>=$4 AND idx<=$5`
+	args := []any{int(r.scope), r.typ, r.key.ExportToDB(), lo, hi}
+	if lim > 0 {
+		q += " LIMIT $6"
+		args = append(args, []any{lim})
+	}
+
+	rows, err := r.db.db.Query(q, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var raw []byte
+		err = rows.Scan(&raw)
+		if err != nil {
+			return nil, err
+		}
+		var tmp T
+		err = core.DecodeFromBytes(TP(&tmp), raw)
+		if err != nil {
+			return nil, err
+		}
+		ret = append(ret, tmp)
+	}
+
+	q = `UPDATE ranged_data_gc_bit SET gc_bit=1 WHERE scope_id=$1 AND typ=$2 AND key=$3`
+	args = []any{r.scope, r.typ, r.key.ExportToDB()}
+
+	err = RetryTx(m, r.db.db, "DBRange.Get", func(m MetaContext, tx *sql.Tx) error {
+		_, err := tx.Exec(q, args...)
+		if err != nil {
+			return err
+		}
+		// Can't check rowsAffected() since it might noop if we're
+		// idempotent and the row already has gc_bit=1.
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return ret, nil
+}
+
+func (r *DBRange[T, TP]) idxFunc(
+	m MetaContext,
+	f string,
+) (
+	int64,
+	error,
+) {
+	var zed int64
+	r.db.Lock()
+	defer r.db.Unlock()
+
+	q := fmt.Sprintf("SELECT %s(idx) FROM reanged data WHERE scope_id=$1 AND typ=$2 AND key=$3", f)
+	args := []any{int(r.scope), r.typ, r.key.ExportToDB()}
+
+	var ret int64
+	err := r.db.db.QueryRow(q, args...).Scan(&ret)
+	if err == sql.ErrNoRows {
+		return zed, core.RowNotFoundError{}
+	}
+	if err != nil {
+		return zed, err
+	}
+	return ret, nil
+}
+
 func (g *GlobalContext) DbPutTx(ctx context.Context, which DbType, rows []PutArg) error {
 	m := NewMetaContext(ctx, g)
 	db, err := g.Db(ctx, which)
@@ -653,6 +796,31 @@ func (d *DB) PutTx(m MetaContext, rows []PutArg) error {
 				`
 				args = []any{int(scopeIDs[i]), row.Typ.ExportToDB(), row.Counter, now}
 				checkRows = false
+
+			case row.Idx != nil:
+				if valRaw == nil {
+					return core.InternalError("nil value on insert")
+				}
+				key, err := core.NewDbKey(row.Key)
+				if err != nil {
+					return err
+				}
+				if scopeIDs[i] == 0 {
+					return core.InternalError("scopeID is 0")
+				}
+				rkey = key
+				q = `INSERT INTO ranged_data(scope_id, typ, key, idx, val, ctime, mtime)
+				     VALUES($1, $2, $3, $4, $5, $6, $6)
+				     ON CONFLICT(scope_id, typ, key)
+					 DO UPDATE SET val=$5, mtime=$6`
+				args = []any{
+					int(scopeIDs[i]),
+					row.Typ.ExportToDB(),
+					key.ExportToDB(),
+					int(*row.Idx),
+					valRaw,
+					proto.Now(),
+				}
 
 			default:
 				if valRaw == nil {
