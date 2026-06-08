@@ -1764,13 +1764,15 @@ func (r *RTInboxPollRes) Decode(dec rpc.Decoder) error {
 func (r *RTInboxPollRes) Bytes() []byte { return nil }
 
 type RTMsgCached struct {
-	Md RTMsgNoncer
-	Mw RTMsgWrapper
+	Md  RTMsgNoncer
+	Mw  RTMsgWrapper
+	Sit Time
 }
 type RTMsgCachedInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Md      *RTMsgNoncerInternal__
 	Mw      *RTMsgWrapperInternal__
+	Sit     *TimeInternal__
 }
 
 func (r RTMsgCachedInternal__) Import() RTMsgCached {
@@ -1787,12 +1789,19 @@ func (r RTMsgCachedInternal__) Import() RTMsgCached {
 			}
 			return x.Import()
 		})(r.Mw),
+		Sit: (func(x *TimeInternal__) (ret Time) {
+			if x == nil {
+				return ret
+			}
+			return x.Import()
+		})(r.Sit),
 	}
 }
 func (r RTMsgCached) Export() *RTMsgCachedInternal__ {
 	return &RTMsgCachedInternal__{
-		Md: r.Md.Export(),
-		Mw: r.Mw.Export(),
+		Md:  r.Md.Export(),
+		Mw:  r.Mw.Export(),
+		Sit: r.Sit.Export(),
 	}
 }
 func (r *RTMsgCached) Encode(enc rpc.Encoder) error {

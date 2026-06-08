@@ -705,9 +705,7 @@ func (d *Minder) SendWithTestHooks(
 	return &res, nil
 }
 
-// openMessage decrypts a message body fetched from the server, using the key at
-// the role+gen stamped on the box.
-func (d *Minder) openMessage(
+func (d *Minder) openMessageWithRTMsg(
 	m MetaContext,
 	rtp *RTParty,
 	appID proto.RTAppID,
@@ -718,28 +716,49 @@ func (d *Minder) openMessage(
 	*proto.RTMsgCached,
 	error,
 ) {
+	return d.openMessage(m, rtp, appID,
+		msg.Md, msg.Mw, msg.Sender, msg.InsertTime, ch,
+	)
+}
+
+// openMessage decrypts a message body fetched from the server, using the key at
+// the role+gen stamped on the box.
+func (d *Minder) openMessage(
+	m MetaContext,
+	rtp *RTParty,
+	appID proto.RTAppID,
+	md proto.RTMsgMetadata,
+	mw proto.RTMsgWrapper,
+	sender *proto.PartyID,
+	serverInsertTime proto.Time,
+	ch proto.RTChannelID,
+) (
+	[]byte,
+	*proto.RTMsgCached,
+	error,
+) {
 	team := rtp.PLCNode().FQParty().Party
 	noncer := proto.RTMsgNoncer{
-		Md:    msg.Md,
+		Md:    md,
 		AppID: appID,
 		Team:  team,
 		Chid:  ch,
 	}
-	if msg.Sender != nil {
-		noncer.Sender = *msg.Sender
+	if sender != nil {
+		noncer.Sender = *sender
 	}
 	nn, err := cookNonce(&noncer)
 	if err != nil {
 		return nil, nil, err
 	}
-	typ, err := msg.Mw.GetT()
+	typ, err := mw.GetT()
 	if err != nil {
 		return nil, nil, err
 	}
 	if typ != proto.MsgBodyType_Encrypted {
 		return nil, nil, core.VersionNotSupportedError("only encrypted message bodies are supported")
 	}
-	box := msg.Mw.Encrypted()
+	box := mw.Encrypted()
 
 	kmgr, err := rtp.keysAtRoleGen(m, appID, box.Rg)
 	if err != nil {
@@ -759,8 +778,9 @@ func (d *Minder) openMessage(
 	}
 	basic := body.Basic()
 	cm := proto.RTMsgCached{
-		Md: noncer,
-		Mw: msg.Mw,
+		Md:  noncer,
+		Mw:  mw,
+		Sit: serverInsertTime,
 	}
 	return basic.Bytes(), &cm, nil
 }
@@ -793,6 +813,7 @@ func (d *Minder) GetThread(
 	if err != nil {
 		return nil, false, err
 	}
+
 	_, cli, err := d.clientLocal(m.Base(), d.au)
 	if err != nil {
 		return nil, false, err
@@ -829,7 +850,7 @@ func (d *Minder) decodeAndCacheMsgs(
 	out := make([]ThreadMessage, 0, len(msgs))
 	cachePuts := make([]proto.RTMsgCachedWithSeq, 0, len(msgs))
 	for _, msg := range msgs {
-		body, cm, err := d.openMessage(m, rtp, appID, msg, chid)
+		body, cm, err := d.openMessageWithRTMsg(m, rtp, appID, msg, chid)
 		if err != nil {
 			return nil, err
 		}

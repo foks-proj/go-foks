@@ -73,3 +73,54 @@ func dbPutMsgToOutbox(
 	}
 	return nil
 }
+
+func dbGetMsgs(
+	m MetaContext,
+	au *libclient.UserContext,
+	chid proto.RTChannelID,
+	lo proto.RTMsgSeq,
+	hi proto.RTMsgSeq,
+	lim uint,
+	direction proto.RTThreadDir,
+) (
+	[]proto.RTMsgCachedWithSeq,
+	error,
+) {
+	db, err := m.G().Db(m.Ctx(), libclient.DbTypeSoft)
+	if err != nil {
+		return nil, err
+	}
+	scope := au.FQParty()
+	rng, err := libclient.NewDBRange[proto.RTMsgCached, *proto.RTMsgCached](
+		m.Base(),
+		db,
+		&scope,
+		lcl.DataType_RTThreadMetadata,
+		chid,
+	)
+	if err != nil {
+		return nil, err
+	}
+	msgs, idx, err := rng.Get(
+		m.Base(),
+		int64(lo),
+		int64(hi),
+		int64(lim),
+		direction.IsAscending(),
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	// Now zip the indices back into the results, as they were returned
+	// in a parallel list.
+	ret := make([]proto.RTMsgCachedWithSeq, len(msgs))
+	for i, msg := range msgs {
+		ret[i] = proto.RTMsgCachedWithSeq{
+			Cm:  msg,
+			Seq: proto.RTMsgSeq(idx[i]),
+		}
+	}
+
+	return ret, nil
+}

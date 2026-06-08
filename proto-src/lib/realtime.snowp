@@ -184,9 +184,12 @@ struct RTInboxPollRes {
     inboxVersion @1 : RTInboxVersion;  // current head (== since if !bumped)
 }
 
+// RTMsgCached does know what its sequence is, but we index by seqno,
+// so we don't need to store it here.
 struct RTMsgCached {
     md @0 : RTMsgNoncer;
     mw @1 : RTMsgWrapper;
+    sit @2 : Time; // server-insert-time 
 }
 
 struct RTMsgCachedWithSeq {

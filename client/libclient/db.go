@@ -535,7 +535,7 @@ type DBRange[
 	T any,
 	PT interface {
 		*T
-		core.CryptoPayloader
+		core.Codecable
 	},
 ] struct {
 	db    *DB
@@ -548,7 +548,7 @@ func NewDBRange[
 	T any,
 	PT interface {
 		*T
-		core.CryptoPayloader
+		core.Codecable
 	},
 ](
 	m MetaContext,
@@ -597,8 +597,13 @@ func (r *DBRange[T, TP]) Get(
 	hi int64,
 	lim int64,
 	asc bool,
-) ([]T, error) {
+) (
+	[]T,
+	[]int64,
+	error,
+) {
 	var ret []T
+	var idxList []int64
 	r.db.Lock()
 	defer r.db.Unlock()
 
@@ -607,7 +612,7 @@ func (r *DBRange[T, TP]) Get(
 		ord = "DESC"
 	}
 
-	q := `SELECT val FROM ranged_data 
+	q := `SELECT idx,val FROM ranged_data 
 	      WHERE scope_id=$1 AND typ=$2 AND key=$3
 		  AND idx>=$4 AND idx<=$5
 		  ORDER BY idx ` + ord
@@ -619,21 +624,23 @@ func (r *DBRange[T, TP]) Get(
 
 	rows, err := r.db.db.Query(q, args...)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	defer rows.Close()
 	for rows.Next() {
 		var raw []byte
-		err = rows.Scan(&raw)
+		var idx int64
+		err = rows.Scan(&idx, &raw)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 		var tmp T
 		err = core.DecodeFromBytes(TP(&tmp), raw)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 		ret = append(ret, tmp)
+		idxList = append(idxList, idx)
 	}
 
 	q = `UPDATE ranged_data_gc_bit SET gc_bit=1 WHERE scope_id=$1 AND typ=$2 AND key=$3`
@@ -649,9 +656,9 @@ func (r *DBRange[T, TP]) Get(
 		return nil
 	})
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-	return ret, nil
+	return ret, idxList, nil
 }
 
 func (r *DBRange[T, TP]) idxFunc(

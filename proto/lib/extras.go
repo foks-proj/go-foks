@@ -5245,3 +5245,7 @@ func (r *RTMsgID) ImportFromBytes(b []byte) error {
 	copy((*r)[:], b[:])
 	return nil
 }
+
+func (d RTThreadDir) IsAscending() bool {
+	return d == RTThreadDir_Forward
+}
