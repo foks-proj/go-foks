@@ -1649,28 +1649,20 @@ func (r RTThreadDir) Export() *RTThreadDirInternal__ {
 	return ((*RTThreadDirInternal__)(&r))
 }
 
-type RTThreadQuery struct {
-	ChannelID RTChannelID
-	Start     RTMsgSeq
-	Dir       RTThreadDir
-	Max       uint64
+type RTThreadRange struct {
+	Start RTMsgSeq
+	Dir   RTThreadDir
+	Max   uint64
 }
-type RTThreadQueryInternal__ struct {
-	_struct   struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
-	ChannelID *RTChannelIDInternal__
-	Start     *RTMsgSeqInternal__
-	Dir       *RTThreadDirInternal__
-	Max       *uint64
+type RTThreadRangeInternal__ struct {
+	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
+	Start   *RTMsgSeqInternal__
+	Dir     *RTThreadDirInternal__
+	Max     *uint64
 }
 
-func (r RTThreadQueryInternal__) Import() RTThreadQuery {
-	return RTThreadQuery{
-		ChannelID: (func(x *RTChannelIDInternal__) (ret RTChannelID) {
-			if x == nil {
-				return ret
-			}
-			return x.Import()
-		})(r.ChannelID),
+func (r RTThreadRangeInternal__) Import() RTThreadRange {
+	return RTThreadRange{
 		Start: (func(x *RTMsgSeqInternal__) (ret RTMsgSeq) {
 			if x == nil {
 				return ret
@@ -1691,12 +1683,100 @@ func (r RTThreadQueryInternal__) Import() RTThreadQuery {
 		})(r.Max),
 	}
 }
+func (r RTThreadRange) Export() *RTThreadRangeInternal__ {
+	return &RTThreadRangeInternal__{
+		Start: r.Start.Export(),
+		Dir:   r.Dir.Export(),
+		Max:   &r.Max,
+	}
+}
+func (r *RTThreadRange) Encode(enc rpc.Encoder) error {
+	return enc.Encode(r.Export())
+}
+
+func (r *RTThreadRange) Decode(dec rpc.Decoder) error {
+	var tmp RTThreadRangeInternal__
+	err := dec.Decode(&tmp)
+	if err != nil {
+		return err
+	}
+	*r = tmp.Import()
+	return nil
+}
+
+func (r *RTThreadRange) Bytes() []byte { return nil }
+
+type RTThreadQuery struct {
+	ChannelID RTChannelID
+	Range     *RTThreadRange
+	Seqs      []RTMsgSeq
+}
+type RTThreadQueryInternal__ struct {
+	_struct   struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
+	ChannelID *RTChannelIDInternal__
+	Range     *RTThreadRangeInternal__
+	Seqs      *[](*RTMsgSeqInternal__)
+}
+
+func (r RTThreadQueryInternal__) Import() RTThreadQuery {
+	return RTThreadQuery{
+		ChannelID: (func(x *RTChannelIDInternal__) (ret RTChannelID) {
+			if x == nil {
+				return ret
+			}
+			return x.Import()
+		})(r.ChannelID),
+		Range: (func(x *RTThreadRangeInternal__) *RTThreadRange {
+			if x == nil {
+				return nil
+			}
+			tmp := (func(x *RTThreadRangeInternal__) (ret RTThreadRange) {
+				if x == nil {
+					return ret
+				}
+				return x.Import()
+			})(x)
+			return &tmp
+		})(r.Range),
+		Seqs: (func(x *[](*RTMsgSeqInternal__)) (ret []RTMsgSeq) {
+			if x == nil || len(*x) == 0 {
+				return nil
+			}
+			ret = make([]RTMsgSeq, len(*x))
+			for k, v := range *x {
+				if v == nil {
+					continue
+				}
+				ret[k] = (func(x *RTMsgSeqInternal__) (ret RTMsgSeq) {
+					if x == nil {
+						return ret
+					}
+					return x.Import()
+				})(v)
+			}
+			return ret
+		})(r.Seqs),
+	}
+}
 func (r RTThreadQuery) Export() *RTThreadQueryInternal__ {
 	return &RTThreadQueryInternal__{
 		ChannelID: r.ChannelID.Export(),
-		Start:     r.Start.Export(),
-		Dir:       r.Dir.Export(),
-		Max:       &r.Max,
+		Range: (func(x *RTThreadRange) *RTThreadRangeInternal__ {
+			if x == nil {
+				return nil
+			}
+			return (*x).Export()
+		})(r.Range),
+		Seqs: (func(x []RTMsgSeq) *[](*RTMsgSeqInternal__) {
+			if len(x) == 0 {
+				return nil
+			}
+			ret := make([](*RTMsgSeqInternal__), len(x))
+			for k, v := range x {
+				ret[k] = v.Export()
+			}
+			return &ret
+		})(r.Seqs),
 	}
 }
 func (r *RTThreadQuery) Encode(enc rpc.Encoder) error {

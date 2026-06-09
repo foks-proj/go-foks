@@ -827,14 +827,16 @@ func (d *Minder) GetThread(
 	}
 	page, err := cli.RtGetThread(m.Ctx(), proto.RTThreadQuery{
 		ChannelID: ch.Id,
-		Start:     start,
-		Dir:       dir,
-		Max:       max,
+		Range: &proto.RTThreadRange{
+			Start: start,
+			Dir:   dir,
+			Max:   max,
+		},
 	})
 	if err != nil {
 		return nil, false, err
 	}
-	out, err := d.decodeAndCacheMsgs(m, rtp, appID, ch.Id, page.Msgs)
+	out, err := d.decodeAndCacheMsgs(m, rtp, appID, ch.Id, page.RangeMsgs)
 	if err != nil {
 		return nil, false, err
 	}
@@ -945,12 +947,12 @@ func (d *Minder) GetMsgs(
 	if err != nil {
 		return nil, err
 	}
-	res, err := cli.RtGetMsgs(m.Ctx(), rem.RTGetMsgsArg{
+	page, err := cli.RtGetThread(m.Ctx(), proto.RTThreadQuery{
 		ChannelID: ch.Id,
 		Seqs:      seqs,
 	})
 	if err != nil {
 		return nil, err
 	}
-	return d.decodeAndCacheMsgs(m, rtp, appID, ch.Id, res.Msgs)
+	return d.decodeAndCacheMsgs(m, rtp, appID, ch.Id, page.SeqMsgs)
 }

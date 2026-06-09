@@ -105,14 +105,6 @@ func (c *ClientConn) RtPollInbox(ctx context.Context, arg rem.RTPollInboxArg) (r
 func (c *ClientConn) RtSelectVHost(ctx context.Context, arg proto.HostID) error {
 	return core.NotImplementedError{}
 }
-func (c *ClientConn) RtGetMsgs(ctx context.Context, arg rem.RTGetMsgsArg) (res rem.RTGetMsgsRes, err error) {
-	m := shared.NewMetaContextConn(ctx, c)
-	ret, err := GetMsgs(m, arg)
-	if err != nil {
-		return res, err
-	}
-	return *ret, nil
-}
 
 var _ shared.RPCServer = (*Server)(nil)
 

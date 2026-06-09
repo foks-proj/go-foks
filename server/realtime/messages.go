@@ -449,26 +449,32 @@ func scanThreadMsgs(rows pgx.Rows) ([]rem.RTMsg, error) {
 	return ret, nil
 }
 
-// readThread pulls one page of messages from messages_enc, joining
+// cappedThreadMax clamps a client-requested range size to defaultThreadPage,
+// treating 0 (unspecified) as "use the default".
+func cappedThreadMax(max uint64) uint64 {
+	if max == 0 || max > defaultThreadPage {
+		return defaultThreadPage
+	}
+	return max
+}
+
+// readThread pulls one contiguous page of messages from messages_enc, joining
 // channel_parties to recover sender attribution.
 func readThread(
 	m shared.MetaContext,
 	db shared.Querier,
-	q proto.RTThreadQuery,
+	channelID int64,
+	rng proto.RTThreadRange,
 ) (
 	[]rem.RTMsg,
 	error,
 ) {
-	max := q.Max
-	if max == 0 || max > defaultThreadPage {
-		max = defaultThreadPage
-	}
-	channelID := int64(q.ChannelID.Short())
+	max := cappedThreadMax(rng.Max)
 
 	// Forward = ascending seq from `start` (inclusive); Backward = descending
 	// seq from `start` (or the head when start==0).
 	var sql string
-	switch q.Dir {
+	switch rng.Dir {
 	case proto.RTThreadDir_Backward:
 		sql = threadMsgSelect + `
 		       WHERE me.short_host_id=$1 AND me.channel_id=$2
@@ -488,7 +494,7 @@ func readThread(
 		sql,
 		m.ShortHostID(),
 		channelID,
-		int64(q.Start),
+		int64(rng.Start),
 		int64(max),
 	)
 	if err != nil {
@@ -535,8 +541,15 @@ func readMsgsBySeq(
 	return scanThreadMsgs(rows)
 }
 
-// GetThread fetches a page of messages from a channel, after checking that the
-// authenticated user (m.UID()) is authorized to read it.
+// maxMsgsBySeq bounds the seq-list portion of a single rtGetThread request, so
+// a client can't ask for an unbounded set of seqs in one round trip.
+const maxMsgsBySeq = 512
+
+// GetThread answers a thread query after checking that the authenticated user
+// (m.UID()) is authorized to read the channel. A query may carry a contiguous
+// range, an explicit set of seqs (to fill holes between cached and
+// remote-fetched ranges), or both; the two are answered into separate result
+// lists. Seq lookups are found-only: missing seqs are silently omitted.
 func GetThread(
 	m shared.MetaContext,
 	q proto.RTThreadQuery,
@@ -544,6 +557,10 @@ func GetThread(
 	*rem.RTThreadPage,
 	error,
 ) {
+	if len(q.Seqs) > maxMsgsBySeq {
+		return nil, core.BadArgsError("too many seqs requested")
+	}
+
 	rtdb, err := m.Db(shared.DbTypeRealTime)
 	if err != nil {
 		return nil, err
@@ -571,71 +588,29 @@ func GetThread(
 		return nil, core.PermissionError("user role too low to read channel")
 	}
 
-	max := q.Max
-	if max == 0 || max > defaultThreadPage {
-		max = defaultThreadPage
-	}
-	msgs, err := readThread(m, rtdb, q)
-	if err != nil {
-		return nil, err
-	}
-	ret := rem.RTThreadPage{
-		Msgs: msgs,
+	channelID := int64(q.ChannelID.Short())
+
+	// `final` only describes the range query; with no range requested it's moot,
+	// so report true (nothing more to page).
+	ret := rem.RTThreadPage{Final: true}
+
+	if q.Range != nil {
+		msgs, err := readThread(m, rtdb, channelID, *q.Range)
+		if err != nil {
+			return nil, err
+		}
+		ret.RangeMsgs = msgs
 		// A short page means we reached the end of the requested range.
-		Final: uint64(len(msgs)) < max,
+		ret.Final = uint64(len(msgs)) < cappedThreadMax(q.Range.Max)
 	}
+
+	if len(q.Seqs) > 0 {
+		msgs, err := readMsgsBySeq(m, rtdb, channelID, q.Seqs)
+		if err != nil {
+			return nil, err
+		}
+		ret.SeqMsgs = msgs
+	}
+
 	return &ret, nil
-}
-
-// maxMsgsBySeq bounds a single rtGetMsgs request, so a client can't ask for an
-// unbounded set of seqs in one round trip.
-const maxMsgsBySeq = 512
-
-// GetMsgs fetches an arbitrary set of messages by seq, after checking that the
-// authenticated user (m.UID()) is authorized to read the channel. Used to fill
-// holes between locally-cached messages and a paged remote fetch. Only found
-// messages are returned; missing seqs are silently omitted.
-func GetMsgs(
-	m shared.MetaContext,
-	arg rem.RTGetMsgsArg,
-) (
-	*rem.RTGetMsgsRes,
-	error,
-) {
-	if len(arg.Seqs) > maxMsgsBySeq {
-		return nil, core.BadArgsError("too many seqs requested")
-	}
-
-	rtdb, err := m.Db(shared.DbTypeRealTime)
-	if err != nil {
-		return nil, err
-	}
-	defer rtdb.Release()
-	userdb, err := m.Db(shared.DbTypeUsers)
-	if err != nil {
-		return nil, err
-	}
-	defer userdb.Release()
-
-	team, readRole, err := loadChannelForRead(m, rtdb, int64(arg.ChannelID.Short()))
-	if err != nil {
-		return nil, err
-	}
-	role, err := AuthorizeUserForTeam(m, userdb, team)
-	if err != nil {
-		return nil, err
-	}
-	readRoleKey, err := core.ImportRole(readRole)
-	if err != nil {
-		return nil, err
-	}
-	if role.LessThan(*readRoleKey) {
-		return nil, core.PermissionError("user role too low to read channel")
-	}
-
-	msgs, err := readMsgsBySeq(m, rtdb, int64(arg.ChannelID.Short()), arg.Seqs)
-	if err != nil {
-		return nil, err
-	}
-	return &rem.RTGetMsgsRes{Msgs: msgs}, nil
 }

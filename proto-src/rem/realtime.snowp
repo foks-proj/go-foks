@@ -107,25 +107,16 @@ struct RTInboxDelta {
 }
 
 struct RTThreadPage {
-    msgs @0 : List(RTMsg);
-    // True if this page reaches the natural endpoint of the requested range.
-    // Client paginates by re-requesting from msgs[last].seq+1 (or -1).
+    // Result of the range query; empty if no range was requested. The client
+    // paginates by re-requesting from rangeMsgs[last].seq+1 (or -1).
+    rangeMsgs @0 : List(RTMsg);
+    // True if the range reached the natural endpoint of the requested range.
+    // Always true / irrelevant when no range was requested.
     final @1 : Bool;
-}
-
-// Fetch an arbitrary (not necessarily contiguous) set of messages by seq. Used
-// to fill "holes" between locally-cached messages and what a paged rtGetThread
-// returned from the server.
-struct RTGetMsgsArg {
-    channelID @0 : lib.RTChannelID;
-    seqs @1 : List(lib.RTMsgSeq);
-}
-
-// Only messages that were found are returned, in no particular order; each
-// carries its own seq, so the caller slots it back into the right hole. Seqs
-// in the request with no matching message are simply absent from msgs.
-struct RTGetMsgsRes {
-    msgs @0 : List(RTMsg);
+    // Result of the seq query: found-only, in no particular order, each carrying
+    // its own seq so the caller can slot it back into the right hole. Seqs with
+    // no matching message are simply absent. Empty if no seqs were requested.
+    seqMsgs @2 : List(RTMsg);
 }
 
 protocol RealTime
@@ -192,12 +183,5 @@ protocol RealTime
     rtSelectVHost @9 (
         host @0 : lib.HostID
     ) : RTSelectVhost;
-
-    // Fetch an arbitrary set of messages by seq, to fill holes between cached
-    // and remote-fetched ranges. Only found messages are returned (each carries
-    // its seq); missing seqs are silently omitted. User auth only.
-    rtGetMsgs @10 (
-        rtarg @0 : RTGetMsgsArg
-    ) -> RTGetMsgsRes;
 
 }

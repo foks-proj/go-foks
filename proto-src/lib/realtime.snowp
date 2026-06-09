@@ -169,11 +169,20 @@ enum RTThreadDir {
     Backward @1;  // decreasing seq (newer -> older)
 }
 
+// Contiguous-range portion of a thread query.
+struct RTThreadRange {
+    start @0 : RTMsgSeq;         // inclusive; 0 = from start (forward) or head (backward)
+    dir @1 : RTThreadDir;
+    max @2 : Uint;               // max messages for the range; server may return fewer
+}
+
+// A single thread query can ask for a contiguous range, an explicit set of
+// seqs (to fill "holes" between cached and remote-fetched ranges), or both at
+// once; the two are answered independently into separate result lists.
 struct RTThreadQuery {
     channelID @0 : RTChannelID;
-    start @1 : RTMsgSeq;         // inclusive; 0 = from start (forward) or head (backward)
-    dir @2 : RTThreadDir;
-    max @3 : Uint;               // max messages this page; server may return fewer
+    range @1 : Option(RTThreadRange);  // nil = skip the range query
+    seqs @2 : List(RTMsgSeq);          // empty = skip the seq query
 }
 
 // Subscribe long-poll: server returns when inbox advances past `since` OR the
