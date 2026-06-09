@@ -789,6 +789,12 @@ func (d *Minder) openMessage(
 // GetThread fetches and decrypts a page of messages from the named channel.
 // klass disambiguates when a name exists in more than one class; pass nil when
 // the name is unique.
+//
+// Here is the overall algorithm:
+//   - fecth from local DB
+//   - fetch from server after the max (or min) message, and plug in any holes
+//   - check that prev pointers align with server sequencing.
+//   - cache any newly downloaded messages
 func (d *Minder) GetThread(
 	m MetaContext,
 	team *proto.FQTeamParsed,
