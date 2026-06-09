@@ -12,6 +12,7 @@ import (
 	"github.com/foks-proj/go-foks/lib/chains"
 	"github.com/foks-proj/go-foks/lib/core"
 	"github.com/foks-proj/go-foks/proto/lcl"
+	"github.com/foks-proj/go-foks/proto/lib"
 	proto "github.com/foks-proj/go-foks/proto/lib"
 	"github.com/foks-proj/go-foks/proto/rem"
 )
@@ -832,6 +833,36 @@ func (d *Minder) GetThread(
 		return nil, false, err
 	}
 	return out, page.Final, nil
+}
+
+func (d *Minder) decodeMsgs(
+	m MetaContext,
+	rtp *RTParty,
+	appID proto.RTAppID,
+	chid proto.RTChannelID,
+	msgs []lib.RTMsgCachedWithSeq,
+) (
+	[]ThreadMessage,
+	error,
+) {
+	out := make([]ThreadMessage, 0, len(msgs))
+	for _, msg := range msgs {
+		body, cm, err := d.openMessage(m, rtp, appID,
+			msg.Cm.Md.Md, msg.Cm.Mw, &msg.Cm.Md.Sender, msg.Cm.Sit, chid)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, ThreadMessage{
+			Seq:                      msg.Seq,
+			Typ:                      cm.Md.Md.Typ,
+			Sender:                   &cm.Md.Sender,
+			SenderFurtherAttribution: cm.Md.Md.FurtherUserAttribution,
+			SentAtTime:               cm.Md.Md.SendTime,
+			InsertTime:               cm.Sit,
+			Body:                     body,
+		})
+	}
+	return out, nil
 }
 
 // decodeAndCacheMsgs decrypts each server message into a ThreadMessage for the
