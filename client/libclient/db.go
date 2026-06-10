@@ -593,8 +593,7 @@ func (r *DBRange[T, TP]) Max(m MetaContext) (int64, error) {
 
 func (r *DBRange[T, TP]) Get(
 	m MetaContext,
-	lo int64,
-	hi int64,
+	start int64,
 	lim int64,
 	asc bool,
 ) (
@@ -608,19 +607,23 @@ func (r *DBRange[T, TP]) Get(
 	defer r.db.Unlock()
 
 	ord := "ASC"
+	ineq := ">="
 	if !asc {
 		ord = "DESC"
+		ineq = "<="
 	}
 
-	q := `SELECT idx,val FROM ranged_data 
-	      WHERE scope_id=$1 AND typ=$2 AND key=$3
-		  AND idx>=$4 AND idx<=$5
-		  ORDER BY idx ` + ord
-	args := []any{int(r.scope), r.typ, r.key.ExportToDB(), lo, hi}
-	if lim > 0 {
-		q += " LIMIT $6"
-		args = append(args, []any{lim})
+	if lim == 0 {
+		lim = 100
 	}
+
+	q := fmt.Sprintf(
+		`SELECT idx,val FROM ranged_data 
+	      WHERE scope_id=$1 AND typ=$2 AND key=$3
+		  AND idx %s $4
+		  ORDER BY idx %s
+		  LIMIT $5`, ineq, ord)
+	args := []any{int(r.scope), r.typ, r.key.ExportToDB(), start, lim}
 
 	rows, err := r.db.db.Query(q, args...)
 	if err != nil {

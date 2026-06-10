@@ -786,6 +786,48 @@ func (d *Minder) openMessage(
 	return basic.Bytes(), &cm, nil
 }
 
+func findHoles(
+	v []ThreadMessage,
+	start proto.RTMsgSeq,
+	dir proto.RTThreadDir,
+) (
+	[]proto.RTMsgSeq,
+	proto.RTMsgSeq,
+	error,
+) {
+	var end proto.RTMsgSeq
+	if len(v) == 0 {
+		return nil, end, nil
+	}
+	if len(v) == 1 {
+		return nil, v[0].Seq, nil
+	}
+
+	var lst proto.RTMsgSeq
+	for i, x := range v {
+		if i > 0 && !dir.IsOrdered(lst, x.Seq) {
+			return nil, end, core.InternalError("bad ordering of messages")
+		}
+		lst = x.Seq
+	}
+	end = lst
+
+	nxt := int(start)
+	var ret []proto.RTMsgSeq
+	inc := dir.Inc()
+
+	for _, x := range v {
+		for x.Seq.Int() != nxt && nxt != end.Int() {
+			// We don't consider RTMsgSeq==0 a valid msg seq ID
+			if nxt > 0 {
+				ret = append(ret, proto.RTMsgSeq(nxt))
+			}
+			nxt += inc
+		}
+	}
+	return ret, end, nil
+}
+
 // GetThread fetches and decrypts a page of messages from the named channel.
 // klass disambiguates when a name exists in more than one class; pass nil when
 // the name is unique.
@@ -825,6 +867,35 @@ func (d *Minder) GetThread(
 	if err != nil {
 		return nil, false, err
 	}
+
+	cachedMsgsEnc, err := dbGetMsgs(
+		m, d.au,
+		ch.Id,
+		start,
+		max,
+		dir,
+	)
+	if err != nil {
+		return nil, false, err
+	}
+
+	out, err := d.decodeMsgs(
+		m,
+		rtp,
+		appID,
+		ch.Id,
+		cachedMsgsEnc,
+	)
+	holes, end, err := findHoles(out, start, dir)
+	if err != nil {
+		return nil, false, err
+	}
+
+	// We had everything in cache!
+	if len(holes) == 0 && len(out) == int(max) {
+		return out, false, nil
+	}
+
 	page, err := cli.RtGetThread(m.Ctx(), proto.RTThreadQuery{
 		ChannelID: ch.Id,
 		Range: &proto.RTThreadRange{
@@ -836,7 +907,7 @@ func (d *Minder) GetThread(
 	if err != nil {
 		return nil, false, err
 	}
-	out, err := d.decodeAndCacheMsgs(m, rtp, appID, ch.Id, page.RangeMsgs)
+	out, err = d.decodeAndCacheMsgs(m, rtp, appID, ch.Id, page.RangeMsgs)
 	if err != nil {
 		return nil, false, err
 	}

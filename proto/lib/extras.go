@@ -5249,3 +5249,36 @@ func (r *RTMsgID) ImportFromBytes(b []byte) error {
 func (d RTThreadDir) IsAscending() bool {
 	return d == RTThreadDir_Forward
 }
+
+func (d RTThreadDir) Inc() int {
+	ret := 1
+	if d == RTThreadDir_Backward {
+		ret = -1
+	}
+	return ret
+}
+
+func (d RTThreadDir) IsOrdered(a, b RTMsgSeq) bool {
+	switch d {
+	case RTThreadDir_Forward:
+		return a < b
+	case RTThreadDir_Backward:
+		return a > b
+	default:
+		return false
+	}
+}
+
+func (r RTMsgSeq) Int() int {
+	return int(r)
+}
+
+func (d RTThreadDir) Jump(start RTMsgSeq, i int) RTMsgSeq {
+	end := int(start) + i*d.Inc()
+	if end < 0 {
+		end = 0
+	}
+	return RTMsgSeq(end)
+}
+
+var RTMsgSeqFirst = RTMsgSeq(1)

@@ -78,9 +78,8 @@ func dbGetMsgs(
 	m MetaContext,
 	au *libclient.UserContext,
 	chid proto.RTChannelID,
-	lo proto.RTMsgSeq,
-	hi proto.RTMsgSeq,
-	lim uint,
+	start proto.RTMsgSeq,
+	lim uint64,
 	direction proto.RTThreadDir,
 ) (
 	[]proto.RTMsgCachedWithSeq,
@@ -103,8 +102,7 @@ func dbGetMsgs(
 	}
 	msgs, idx, err := rng.Get(
 		m.Base(),
-		int64(lo),
-		int64(hi),
+		int64(start),
 		int64(lim),
 		direction.IsAscending(),
 	)
