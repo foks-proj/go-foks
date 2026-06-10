@@ -911,19 +911,164 @@ func (r *RTInboxDelta) Decode(dec rpc.Decoder) error {
 
 func (r *RTInboxDelta) Bytes() []byte { return nil }
 
-type RTThreadPage struct {
-	RangeMsgs []RTMsg
-	SeqMsgs   []RTMsg
+type RTThreadRangeBookends struct {
+	Start RTMsgSeq
+	End   RTMsgSeq
 }
-type RTThreadPageInternal__ struct {
-	_struct   struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
-	RangeMsgs *[](*RTMsgInternal__)
-	SeqMsgs   *[](*RTMsgInternal__)
+type RTThreadRangeBookendsInternal__ struct {
+	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
+	Start   *RTMsgSeqInternal__
+	End     *RTMsgSeqInternal__
 }
 
-func (r RTThreadPageInternal__) Import() RTThreadPage {
-	return RTThreadPage{
-		RangeMsgs: (func(x *[](*RTMsgInternal__)) (ret []RTMsg) {
+func (r RTThreadRangeBookendsInternal__) Import() RTThreadRangeBookends {
+	return RTThreadRangeBookends{
+		Start: (func(x *RTMsgSeqInternal__) (ret RTMsgSeq) {
+			if x == nil {
+				return ret
+			}
+			return x.Import()
+		})(r.Start),
+		End: (func(x *RTMsgSeqInternal__) (ret RTMsgSeq) {
+			if x == nil {
+				return ret
+			}
+			return x.Import()
+		})(r.End),
+	}
+}
+func (r RTThreadRangeBookends) Export() *RTThreadRangeBookendsInternal__ {
+	return &RTThreadRangeBookendsInternal__{
+		Start: r.Start.Export(),
+		End:   r.End.Export(),
+	}
+}
+func (r *RTThreadRangeBookends) Encode(enc rpc.Encoder) error {
+	return enc.Encode(r.Export())
+}
+
+func (r *RTThreadRangeBookends) Decode(dec rpc.Decoder) error {
+	var tmp RTThreadRangeBookendsInternal__
+	err := dec.Decode(&tmp)
+	if err != nil {
+		return err
+	}
+	*r = tmp.Import()
+	return nil
+}
+
+func (r *RTThreadRangeBookends) Bytes() []byte { return nil }
+
+type RTThreadQuery struct {
+	ChannelID lib.RTChannelID
+	Bookends  []RTThreadRangeBookends
+	Seqs      []lib.RTMsgSeq
+}
+type RTThreadQueryInternal__ struct {
+	_struct   struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
+	ChannelID *lib.RTChannelIDInternal__
+	Bookends  *[](*RTThreadRangeBookendsInternal__)
+	Seqs      *[](*lib.RTMsgSeqInternal__)
+}
+
+func (r RTThreadQueryInternal__) Import() RTThreadQuery {
+	return RTThreadQuery{
+		ChannelID: (func(x *lib.RTChannelIDInternal__) (ret lib.RTChannelID) {
+			if x == nil {
+				return ret
+			}
+			return x.Import()
+		})(r.ChannelID),
+		Bookends: (func(x *[](*RTThreadRangeBookendsInternal__)) (ret []RTThreadRangeBookends) {
+			if x == nil || len(*x) == 0 {
+				return nil
+			}
+			ret = make([]RTThreadRangeBookends, len(*x))
+			for k, v := range *x {
+				if v == nil {
+					continue
+				}
+				ret[k] = (func(x *RTThreadRangeBookendsInternal__) (ret RTThreadRangeBookends) {
+					if x == nil {
+						return ret
+					}
+					return x.Import()
+				})(v)
+			}
+			return ret
+		})(r.Bookends),
+		Seqs: (func(x *[](*lib.RTMsgSeqInternal__)) (ret []lib.RTMsgSeq) {
+			if x == nil || len(*x) == 0 {
+				return nil
+			}
+			ret = make([]lib.RTMsgSeq, len(*x))
+			for k, v := range *x {
+				if v == nil {
+					continue
+				}
+				ret[k] = (func(x *lib.RTMsgSeqInternal__) (ret lib.RTMsgSeq) {
+					if x == nil {
+						return ret
+					}
+					return x.Import()
+				})(v)
+			}
+			return ret
+		})(r.Seqs),
+	}
+}
+func (r RTThreadQuery) Export() *RTThreadQueryInternal__ {
+	return &RTThreadQueryInternal__{
+		ChannelID: r.ChannelID.Export(),
+		Bookends: (func(x []RTThreadRangeBookends) *[](*RTThreadRangeBookendsInternal__) {
+			if len(x) == 0 {
+				return nil
+			}
+			ret := make([](*RTThreadRangeBookendsInternal__), len(x))
+			for k, v := range x {
+				ret[k] = v.Export()
+			}
+			return &ret
+		})(r.Bookends),
+		Seqs: (func(x []lib.RTMsgSeq) *[](*lib.RTMsgSeqInternal__) {
+			if len(x) == 0 {
+				return nil
+			}
+			ret := make([](*lib.RTMsgSeqInternal__), len(x))
+			for k, v := range x {
+				ret[k] = v.Export()
+			}
+			return &ret
+		})(r.Seqs),
+	}
+}
+func (r *RTThreadQuery) Encode(enc rpc.Encoder) error {
+	return enc.Encode(r.Export())
+}
+
+func (r *RTThreadQuery) Decode(dec rpc.Decoder) error {
+	var tmp RTThreadQueryInternal__
+	err := dec.Decode(&tmp)
+	if err != nil {
+		return err
+	}
+	*r = tmp.Import()
+	return nil
+}
+
+func (r *RTThreadQuery) Bytes() []byte { return nil }
+
+type RTMsgList struct {
+	Lst []RTMsg
+}
+type RTMsgListInternal__ struct {
+	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
+	Lst     *[](*RTMsgInternal__)
+}
+
+func (r RTMsgListInternal__) Import() RTMsgList {
+	return RTMsgList{
+		Lst: (func(x *[](*RTMsgInternal__)) (ret []RTMsg) {
 			if x == nil || len(*x) == 0 {
 				return nil
 			}
@@ -933,6 +1078,68 @@ func (r RTThreadPageInternal__) Import() RTThreadPage {
 					continue
 				}
 				ret[k] = (func(x *RTMsgInternal__) (ret RTMsg) {
+					if x == nil {
+						return ret
+					}
+					return x.Import()
+				})(v)
+			}
+			return ret
+		})(r.Lst),
+	}
+}
+func (r RTMsgList) Export() *RTMsgListInternal__ {
+	return &RTMsgListInternal__{
+		Lst: (func(x []RTMsg) *[](*RTMsgInternal__) {
+			if len(x) == 0 {
+				return nil
+			}
+			ret := make([](*RTMsgInternal__), len(x))
+			for k, v := range x {
+				ret[k] = v.Export()
+			}
+			return &ret
+		})(r.Lst),
+	}
+}
+func (r *RTMsgList) Encode(enc rpc.Encoder) error {
+	return enc.Encode(r.Export())
+}
+
+func (r *RTMsgList) Decode(dec rpc.Decoder) error {
+	var tmp RTMsgListInternal__
+	err := dec.Decode(&tmp)
+	if err != nil {
+		return err
+	}
+	*r = tmp.Import()
+	return nil
+}
+
+func (r *RTMsgList) Bytes() []byte { return nil }
+
+type RTThreadPage struct {
+	RangeMsgs []RTMsgList
+	SeqMsgs   []RTMsg
+}
+type RTThreadPageInternal__ struct {
+	_struct   struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
+	RangeMsgs *[](*RTMsgListInternal__)
+	SeqMsgs   *[](*RTMsgInternal__)
+}
+
+func (r RTThreadPageInternal__) Import() RTThreadPage {
+	return RTThreadPage{
+		RangeMsgs: (func(x *[](*RTMsgListInternal__)) (ret []RTMsgList) {
+			if x == nil || len(*x) == 0 {
+				return nil
+			}
+			ret = make([]RTMsgList, len(*x))
+			for k, v := range *x {
+				if v == nil {
+					continue
+				}
+				ret[k] = (func(x *RTMsgListInternal__) (ret RTMsgList) {
 					if x == nil {
 						return ret
 					}
@@ -963,11 +1170,11 @@ func (r RTThreadPageInternal__) Import() RTThreadPage {
 }
 func (r RTThreadPage) Export() *RTThreadPageInternal__ {
 	return &RTThreadPageInternal__{
-		RangeMsgs: (func(x []RTMsg) *[](*RTMsgInternal__) {
+		RangeMsgs: (func(x []RTMsgList) *[](*RTMsgListInternal__) {
 			if len(x) == 0 {
 				return nil
 			}
-			ret := make([](*RTMsgInternal__), len(x))
+			ret := make([](*RTMsgListInternal__), len(x))
 			for k, v := range x {
 				ret[k] = v.Export()
 			}
@@ -1178,16 +1385,16 @@ func (r *RtSendArg) Decode(dec rpc.Decoder) error {
 func (r *RtSendArg) Bytes() []byte { return nil }
 
 type RtGetThreadArg struct {
-	Q lib.RTThreadQuery
+	Q RTThreadQuery
 }
 type RtGetThreadArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
-	Q       *lib.RTThreadQueryInternal__
+	Q       *RTThreadQueryInternal__
 }
 
 func (r RtGetThreadArgInternal__) Import() RtGetThreadArg {
 	return RtGetThreadArg{
-		Q: (func(x *lib.RTThreadQueryInternal__) (ret lib.RTThreadQuery) {
+		Q: (func(x *RTThreadQueryInternal__) (ret RTThreadQuery) {
 			if x == nil {
 				return ret
 			}
@@ -1411,17 +1618,75 @@ func (r *RTSelectVhost) Decode(dec rpc.Decoder) error {
 
 func (r *RTSelectVhost) Bytes() []byte { return nil }
 
+type RtGetThreadRecentsArg struct {
+	Ch     lib.RTChannelID
+	StopAt lib.RTMsgSeq
+	Lim    uint64
+}
+type RtGetThreadRecentsArgInternal__ struct {
+	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
+	Ch      *lib.RTChannelIDInternal__
+	StopAt  *lib.RTMsgSeqInternal__
+	Lim     *uint64
+}
+
+func (r RtGetThreadRecentsArgInternal__) Import() RtGetThreadRecentsArg {
+	return RtGetThreadRecentsArg{
+		Ch: (func(x *lib.RTChannelIDInternal__) (ret lib.RTChannelID) {
+			if x == nil {
+				return ret
+			}
+			return x.Import()
+		})(r.Ch),
+		StopAt: (func(x *lib.RTMsgSeqInternal__) (ret lib.RTMsgSeq) {
+			if x == nil {
+				return ret
+			}
+			return x.Import()
+		})(r.StopAt),
+		Lim: (func(x *uint64) (ret uint64) {
+			if x == nil {
+				return ret
+			}
+			return *x
+		})(r.Lim),
+	}
+}
+func (r RtGetThreadRecentsArg) Export() *RtGetThreadRecentsArgInternal__ {
+	return &RtGetThreadRecentsArgInternal__{
+		Ch:     r.Ch.Export(),
+		StopAt: r.StopAt.Export(),
+		Lim:    &r.Lim,
+	}
+}
+func (r *RtGetThreadRecentsArg) Encode(enc rpc.Encoder) error {
+	return enc.Encode(r.Export())
+}
+
+func (r *RtGetThreadRecentsArg) Decode(dec rpc.Decoder) error {
+	var tmp RtGetThreadRecentsArgInternal__
+	err := dec.Decode(&tmp)
+	if err != nil {
+		return err
+	}
+	*r = tmp.Import()
+	return nil
+}
+
+func (r *RtGetThreadRecentsArg) Bytes() []byte { return nil }
+
 type RealTimeInterface interface {
 	RtNewChannel(context.Context, RtNewChannelArg) error
 	RtGetChannel(context.Context, lib.RTChannelID) (RTChannelMetadata, error)
 	RtListAllChannelsForTeam(context.Context, RtListAllChannelsForTeamArg) (RTChannelSet, error)
 	RtSend(context.Context, RTSendArg) (RTSendRes, error)
-	RtGetThread(context.Context, lib.RTThreadQuery) (RTThreadPage, error)
+	RtGetThread(context.Context, RTThreadQuery) (RTThreadPage, error)
 	RtGetInboxVersion(context.Context, RTInboxKey) (lib.RTInboxVersion, error)
 	RtGetChangedThreads(context.Context, RTGetChangedThreadsArg) (RTInboxDelta, error)
 	RtReadThrough(context.Context, RTReadThroughArg) error
 	RtPollInbox(context.Context, RTPollInboxArg) (lib.RTInboxPollRes, error)
 	RtSelectVHost(context.Context, lib.HostID) error
+	RtGetThreadRecents(context.Context, RtGetThreadRecentsArg) (RTMsgList, error)
 	ErrorWrapper() func(error) lib.Status
 	CheckArgHeader(ctx context.Context, h lib.Header) error
 	MakeResHeader() lib.Header
@@ -1556,7 +1821,7 @@ func (c RealTimeClient) RtSend(ctx context.Context, rtarg RTSendArg) (res RTSend
 	res = tmp.Data.Import()
 	return
 }
-func (c RealTimeClient) RtGetThread(ctx context.Context, q lib.RTThreadQuery) (res RTThreadPage, err error) {
+func (c RealTimeClient) RtGetThread(ctx context.Context, q RTThreadQuery) (res RTThreadPage, err error) {
 	arg := RtGetThreadArg{
 		Q: q,
 	}
@@ -1696,6 +1961,27 @@ func (c RealTimeClient) RtSelectVHost(ctx context.Context, host lib.HostID) (err
 			return
 		}
 	}
+	return
+}
+func (c RealTimeClient) RtGetThreadRecents(ctx context.Context, arg RtGetThreadRecentsArg) (res RTMsgList, err error) {
+	warg := &rpc.DataWrap[lib.Header, *RtGetThreadRecentsArgInternal__]{
+		Data: arg.Export(),
+	}
+	if c.MakeArgHeader != nil {
+		warg.Header = c.MakeArgHeader()
+	}
+	var tmp rpc.DataWrap[lib.Header, RTMsgListInternal__]
+	err = c.Cli.Call2(ctx, rpc.NewMethodV2(RealTimeProtocolID, 10, "RealTime.rtGetThreadRecents"), warg, &tmp, 0*time.Millisecond, realTimeErrorUnwrapperAdapter{h: c.ErrorUnwrapper})
+	if err != nil {
+		return
+	}
+	if c.CheckResHeader != nil {
+		err = c.CheckResHeader(ctx, tmp.Header)
+		if err != nil {
+			return
+		}
+	}
+	res = tmp.Data.Import()
 	return
 }
 func RealTimeProtocol(i RealTimeInterface) rpc.ProtocolV2 {
@@ -1989,6 +2275,35 @@ func RealTimeProtocol(i RealTimeInterface) rpc.ProtocolV2 {
 					},
 				},
 				Name: "rtSelectVHost",
+			},
+			10: {
+				ServeHandlerDescription: rpc.ServeHandlerDescription{
+					MakeArg: func() interface{} {
+						var ret rpc.DataWrap[lib.Header, *RtGetThreadRecentsArgInternal__]
+						return &ret
+					},
+					Handler: func(ctx context.Context, args interface{}) (interface{}, error) {
+						typedWrappedArg, ok := args.(*rpc.DataWrap[lib.Header, *RtGetThreadRecentsArgInternal__])
+						if !ok {
+							err := rpc.NewTypeError((*rpc.DataWrap[lib.Header, *RtGetThreadRecentsArgInternal__])(nil), args)
+							return nil, err
+						}
+						if err := i.CheckArgHeader(ctx, typedWrappedArg.Header); err != nil {
+							return nil, err
+						}
+						typedArg := typedWrappedArg.Data
+						tmp, err := i.RtGetThreadRecents(ctx, (typedArg.Import()))
+						if err != nil {
+							return nil, err
+						}
+						ret := rpc.DataWrap[lib.Header, *RTMsgListInternal__]{
+							Data:   tmp.Export(),
+							Header: i.MakeResHeader(),
+						}
+						return &ret, nil
+					},
+				},
+				Name: "rtGetThreadRecents",
 			},
 		},
 		WrapError: RealTimeMakeGenericErrorWrapper(i.ErrorWrapper()),

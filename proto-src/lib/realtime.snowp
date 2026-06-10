@@ -195,7 +195,7 @@ struct RTThreadRangeBookends {
 // once; the two are answered independently into separate result lists.
 struct RTThreadQuery {
     channelID @0 : RTChannelID;
-    range @1 : Option(RTThreadRange);  // nil = skip the range query
+    bookends @1 : List(RTThreadRangeBookends);  // nil = skip the range query
     seqs @2 : List(RTMsgSeq);          // empty = skip the seq query
 }
 

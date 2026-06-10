@@ -1895,13 +1895,13 @@ func (r *RTThreadRangeBookends) Bytes() []byte { return nil }
 
 type RTThreadQuery struct {
 	ChannelID RTChannelID
-	Range     *RTThreadRange
+	Bookends  []RTThreadRangeBookends
 	Seqs      []RTMsgSeq
 }
 type RTThreadQueryInternal__ struct {
 	_struct   struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	ChannelID *RTChannelIDInternal__
-	Range     *RTThreadRangeInternal__
+	Bookends  *[](*RTThreadRangeBookendsInternal__)
 	Seqs      *[](*RTMsgSeqInternal__)
 }
 
@@ -1913,18 +1913,24 @@ func (r RTThreadQueryInternal__) Import() RTThreadQuery {
 			}
 			return x.Import()
 		})(r.ChannelID),
-		Range: (func(x *RTThreadRangeInternal__) *RTThreadRange {
-			if x == nil {
+		Bookends: (func(x *[](*RTThreadRangeBookendsInternal__)) (ret []RTThreadRangeBookends) {
+			if x == nil || len(*x) == 0 {
 				return nil
 			}
-			tmp := (func(x *RTThreadRangeInternal__) (ret RTThreadRange) {
-				if x == nil {
-					return ret
+			ret = make([]RTThreadRangeBookends, len(*x))
+			for k, v := range *x {
+				if v == nil {
+					continue
 				}
-				return x.Import()
-			})(x)
-			return &tmp
-		})(r.Range),
+				ret[k] = (func(x *RTThreadRangeBookendsInternal__) (ret RTThreadRangeBookends) {
+					if x == nil {
+						return ret
+					}
+					return x.Import()
+				})(v)
+			}
+			return ret
+		})(r.Bookends),
 		Seqs: (func(x *[](*RTMsgSeqInternal__)) (ret []RTMsgSeq) {
 			if x == nil || len(*x) == 0 {
 				return nil
@@ -1948,12 +1954,16 @@ func (r RTThreadQueryInternal__) Import() RTThreadQuery {
 func (r RTThreadQuery) Export() *RTThreadQueryInternal__ {
 	return &RTThreadQueryInternal__{
 		ChannelID: r.ChannelID.Export(),
-		Range: (func(x *RTThreadRange) *RTThreadRangeInternal__ {
-			if x == nil {
+		Bookends: (func(x []RTThreadRangeBookends) *[](*RTThreadRangeBookendsInternal__) {
+			if len(x) == 0 {
 				return nil
 			}
-			return (*x).Export()
-		})(r.Range),
+			ret := make([](*RTThreadRangeBookendsInternal__), len(x))
+			for k, v := range x {
+				ret[k] = v.Export()
+			}
+			return &ret
+		})(r.Bookends),
 		Seqs: (func(x []RTMsgSeq) *[](*RTMsgSeqInternal__) {
 			if len(x) == 0 {
 				return nil
