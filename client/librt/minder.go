@@ -788,44 +788,54 @@ func (d *Minder) openMessage(
 
 func findHoles(
 	v []ThreadMessage,
-	start proto.RTMsgSeq,
-	dir proto.RTThreadDir,
 ) (
 	[]proto.RTMsgSeq,
-	proto.RTMsgSeq,
 	error,
 ) {
-	var end proto.RTMsgSeq
-	if len(v) == 0 {
-		return nil, end, nil
-	}
-	if len(v) == 1 {
-		return nil, v[0].Seq, nil
+	if len(v) <= 1 {
+		return nil, nil
 	}
 
-	var lst proto.RTMsgSeq
-	for i, x := range v {
-		if i > 0 && !dir.IsOrdered(lst, x.Seq) {
-			return nil, end, core.InternalError("bad ordering of messages")
+	signMatch := func(a, b int) bool {
+		return (a < 0) == (b < 0)
+	}
+
+	signum := func(a int) int {
+		if a < 0 {
+			return -1
 		}
-		lst = x.Seq
+		if a > 0 {
+			return 1
+		}
+		return 0
 	}
-	end = lst
 
-	nxt := int(start)
 	var ret []proto.RTMsgSeq
-	inc := dir.Inc()
 
-	for _, x := range v {
-		for x.Seq.Int() != nxt && nxt != end.Int() {
-			// We don't consider RTMsgSeq==0 a valid msg seq ID
-			if nxt > 0 {
-				ret = append(ret, proto.RTMsgSeq(nxt))
-			}
-			nxt += inc
+	var ptr int
+	start := int(v[0].Seq)
+	end := int(core.Last(v).Seq)
+	diff := end - start
+	inc := signum(diff)
+	var lst int
+
+	for i := start; i != end; i += inc {
+		seq := v[ptr].Seq
+		if !seq.IsValid() {
+			return nil, core.BadServerDataError("msg with invalid seqno")
 		}
+		iseq := seq.Int()
+		if iseq != i {
+			ret = append(ret, proto.RTMsgSeq(i))
+		} else {
+			ptr++
+		}
+		if lst > 0 && !signMatch(inc, iseq-lst) {
+			return nil, core.BadServerDataError("non-monotonic thread msg sequence")
+		}
+		lst = iseq
 	}
-	return ret, end, nil
+	return ret, nil
 }
 
 type threadDirection int
@@ -894,7 +904,7 @@ func (d *Minder) GetThreadBookended(
 		ch.Id,
 		cachedMsgsEnc,
 	)
-	holes, end, err := findHoles(out, start, dir)
+	holes, err := findHoles(out)
 	if err != nil {
 		return nil, false, err
 	}
