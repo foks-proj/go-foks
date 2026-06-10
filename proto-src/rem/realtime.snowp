@@ -110,13 +110,10 @@ struct RTThreadPage {
     // Result of the range query; empty if no range was requested. The client
     // paginates by re-requesting from rangeMsgs[last].seq+1 (or -1).
     rangeMsgs @0 : List(RTMsg);
-    // True if the range reached the natural endpoint of the requested range.
-    // Always true / irrelevant when no range was requested.
-    final @1 : Bool;
     // Result of the seq query: found-only, in no particular order, each carrying
     // its own seq so the caller can slot it back into the right hole. Seqs with
     // no matching message are simply absent. Empty if no seqs were requested.
-    seqMsgs @2 : List(RTMsg);
+    seqMsgs @1 : List(RTMsg);
 }
 
 protocol RealTime

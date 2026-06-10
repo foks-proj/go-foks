@@ -828,24 +828,33 @@ func findHoles(
 	return ret, end, nil
 }
 
-// GetThread fetches and decrypts a page of messages from the named channel.
+type threadDirection int
+
+const (
+	tdAsc  threadDirection = 1
+	tdDesc threadDirection = 2
+)
+
+// GetThreadBookened fetches and decrypts a page of messages from the named channel.
 // klass disambiguates when a name exists in more than one class; pass nil when
 // the name is unique.
+//
+// The limits are given by inclusive bookends. The direction is infered from the
+// ordering of the bookends.
 //
 // Here is the overall algorithm:
 //   - fecth from local DB
 //   - fetch from server after the max (or min) message, and plug in any holes
 //   - check that prev pointers align with server sequencing.
 //   - cache any newly downloaded messages
-func (d *Minder) GetThread(
+func (d *Minder) GetThreadBookended(
 	m MetaContext,
 	team *proto.FQTeamParsed,
 	appID proto.RTAppID,
 	channelName proto.RTChannelName,
 	klass *proto.RTChannelClass,
 	start proto.RTMsgSeq,
-	dir proto.RTThreadDir,
-	max uint64,
+	end proto.RTMsgSeq,
 ) (
 	[]ThreadMessage,
 	bool,
@@ -868,12 +877,11 @@ func (d *Minder) GetThread(
 		return nil, false, err
 	}
 
-	cachedMsgsEnc, err := dbGetMsgs(
+	cachedMsgsEnc, err := cacheDBGetMsgs(
 		m, d.au,
 		ch.Id,
 		start,
-		max,
-		dir,
+		end,
 	)
 	if err != nil {
 		return nil, false, err
@@ -892,7 +900,7 @@ func (d *Minder) GetThread(
 	}
 
 	// We had everything in cache!
-	if len(holes) == 0 && len(out) == int(max) {
+	if len(holes) == 0 && end == dir.Jump(start, int(max)) {
 		return out, false, nil
 	}
 

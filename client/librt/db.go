@@ -74,13 +74,12 @@ func dbPutMsgToOutbox(
 	return nil
 }
 
-func dbGetMsgs(
+func cacheDBGetMsgs(
 	m MetaContext,
 	au *libclient.UserContext,
 	chid proto.RTChannelID,
 	start proto.RTMsgSeq,
-	lim uint64,
-	direction proto.RTThreadDir,
+	end proto.RTMsgSeq,
 ) (
 	[]proto.RTMsgCachedWithSeq,
 	error,
@@ -102,9 +101,8 @@ func dbGetMsgs(
 	}
 	msgs, idx, err := rng.Get(
 		m.Base(),
-		int64(start),
-		int64(lim),
-		direction.IsAscending(),
+		start.Int64(),
+		end.Int64(),
 	)
 	if err != nil {
 		return nil, err

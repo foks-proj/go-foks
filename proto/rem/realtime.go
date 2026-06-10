@@ -913,13 +913,11 @@ func (r *RTInboxDelta) Bytes() []byte { return nil }
 
 type RTThreadPage struct {
 	RangeMsgs []RTMsg
-	Final     bool
 	SeqMsgs   []RTMsg
 }
 type RTThreadPageInternal__ struct {
 	_struct   struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	RangeMsgs *[](*RTMsgInternal__)
-	Final     *bool
 	SeqMsgs   *[](*RTMsgInternal__)
 }
 
@@ -943,12 +941,6 @@ func (r RTThreadPageInternal__) Import() RTThreadPage {
 			}
 			return ret
 		})(r.RangeMsgs),
-		Final: (func(x *bool) (ret bool) {
-			if x == nil {
-				return ret
-			}
-			return *x
-		})(r.Final),
 		SeqMsgs: (func(x *[](*RTMsgInternal__)) (ret []RTMsg) {
 			if x == nil || len(*x) == 0 {
 				return nil
@@ -981,7 +973,6 @@ func (r RTThreadPage) Export() *RTThreadPageInternal__ {
 			}
 			return &ret
 		})(r.RangeMsgs),
-		Final: &r.Final,
 		SeqMsgs: (func(x []RTMsg) *[](*RTMsgInternal__) {
 			if len(x) == 0 {
 				return nil

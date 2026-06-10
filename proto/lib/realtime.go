@@ -1649,45 +1649,184 @@ func (r RTThreadDir) Export() *RTThreadDirInternal__ {
 	return ((*RTThreadDirInternal__)(&r))
 }
 
-type RTThreadRange struct {
-	Start RTMsgSeq
-	Dir   RTThreadDir
-	Max   uint64
+type RTThreadRangeType int
+
+const (
+	RTThreadRangeType_Bookends RTThreadRangeType = 0
+	RTThreadRangeType_Newest   RTThreadRangeType = 1
+)
+
+var RTThreadRangeTypeMap = map[string]RTThreadRangeType{
+	"Bookends": 0,
+	"Newest":   1,
 }
-type RTThreadRangeInternal__ struct {
-	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
-	Start   *RTMsgSeqInternal__
-	Dir     *RTThreadDirInternal__
-	Max     *uint64
+var RTThreadRangeTypeRevMap = map[RTThreadRangeType]string{
+	0: "Bookends",
+	1: "Newest",
 }
 
-func (r RTThreadRangeInternal__) Import() RTThreadRange {
-	return RTThreadRange{
-		Start: (func(x *RTMsgSeqInternal__) (ret RTMsgSeq) {
-			if x == nil {
-				return ret
-			}
-			return x.Import()
-		})(r.Start),
-		Dir: (func(x *RTThreadDirInternal__) (ret RTThreadDir) {
-			if x == nil {
-				return ret
-			}
-			return x.Import()
-		})(r.Dir),
-		Max: (func(x *uint64) (ret uint64) {
+type RTThreadRangeTypeInternal__ RTThreadRangeType
+
+func (r RTThreadRangeTypeInternal__) Import() RTThreadRangeType {
+	return RTThreadRangeType(r)
+}
+func (r RTThreadRangeType) Export() *RTThreadRangeTypeInternal__ {
+	return ((*RTThreadRangeTypeInternal__)(&r))
+}
+
+type RTThreadRangeNewest struct {
+	Num    uint64
+	StopAt RTMegSeq
+}
+type RTThreadRangeNewestInternal__ struct {
+	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
+	Num     *uint64
+	StopAt  *RTMegSeqInternal__
+}
+
+func (r RTThreadRangeNewestInternal__) Import() RTThreadRangeNewest {
+	return RTThreadRangeNewest{
+		Num: (func(x *uint64) (ret uint64) {
 			if x == nil {
 				return ret
 			}
 			return *x
-		})(r.Max),
+		})(r.Num),
+		StopAt: (func(x *RTMegSeqInternal__) (ret RTMegSeq) {
+			if x == nil {
+				return ret
+			}
+			return x.Import()
+		})(r.StopAt),
+	}
+}
+func (r RTThreadRangeNewest) Export() *RTThreadRangeNewestInternal__ {
+	return &RTThreadRangeNewestInternal__{
+		Num:    &r.Num,
+		StopAt: r.StopAt.Export(),
+	}
+}
+func (r *RTThreadRangeNewest) Encode(enc rpc.Encoder) error {
+	return enc.Encode(r.Export())
+}
+
+func (r *RTThreadRangeNewest) Decode(dec rpc.Decoder) error {
+	var tmp RTThreadRangeNewestInternal__
+	err := dec.Decode(&tmp)
+	if err != nil {
+		return err
+	}
+	*r = tmp.Import()
+	return nil
+}
+
+func (r *RTThreadRangeNewest) Bytes() []byte { return nil }
+
+type RTThreadRange struct {
+	T     RTThreadRangeType
+	F_0__ *RTThreadRangeBookends `json:"f0,omitempty"`
+	F_1__ *RTThreadRangeNewest   `json:"f1,omitempty"`
+}
+type RTThreadRangeInternal__ struct {
+	_struct  struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
+	T        RTThreadRangeType
+	Switch__ RTThreadRangeInternalSwitch__
+}
+type RTThreadRangeInternalSwitch__ struct {
+	_struct struct{}                         `codec:",omitempty"` //lint:ignore U1000 msgpack internal field
+	F_0__   *RTThreadRangeBookendsInternal__ `codec:"0"`
+	F_1__   *RTThreadRangeNewestInternal__   `codec:"1"`
+}
+
+func (r RTThreadRange) GetT() (ret RTThreadRangeType, err error) {
+	switch r.T {
+	case RTThreadRangeType_Bookends:
+		if r.F_0__ == nil {
+			return ret, errors.New("unexpected nil case for F_0__")
+		}
+	case RTThreadRangeType_Newest:
+		if r.F_1__ == nil {
+			return ret, errors.New("unexpected nil case for F_1__")
+		}
+	}
+	return r.T, nil
+}
+func (r RTThreadRange) Bookends() RTThreadRangeBookends {
+	if r.F_0__ == nil {
+		panic("unexpected nil case; should have been checked")
+	}
+	if r.T != RTThreadRangeType_Bookends {
+		panic(fmt.Sprintf("unexpected switch value (%v) when Bookends is called", r.T))
+	}
+	return *r.F_0__
+}
+func (r RTThreadRange) Newest() RTThreadRangeNewest {
+	if r.F_1__ == nil {
+		panic("unexpected nil case; should have been checked")
+	}
+	if r.T != RTThreadRangeType_Newest {
+		panic(fmt.Sprintf("unexpected switch value (%v) when Newest is called", r.T))
+	}
+	return *r.F_1__
+}
+func NewRTThreadRangeWithBookends(v RTThreadRangeBookends) RTThreadRange {
+	return RTThreadRange{
+		T:     RTThreadRangeType_Bookends,
+		F_0__: &v,
+	}
+}
+func NewRTThreadRangeWithNewest(v RTThreadRangeNewest) RTThreadRange {
+	return RTThreadRange{
+		T:     RTThreadRangeType_Newest,
+		F_1__: &v,
+	}
+}
+func (r RTThreadRangeInternal__) Import() RTThreadRange {
+	return RTThreadRange{
+		T: r.T,
+		F_0__: (func(x *RTThreadRangeBookendsInternal__) *RTThreadRangeBookends {
+			if x == nil {
+				return nil
+			}
+			tmp := (func(x *RTThreadRangeBookendsInternal__) (ret RTThreadRangeBookends) {
+				if x == nil {
+					return ret
+				}
+				return x.Import()
+			})(x)
+			return &tmp
+		})(r.Switch__.F_0__),
+		F_1__: (func(x *RTThreadRangeNewestInternal__) *RTThreadRangeNewest {
+			if x == nil {
+				return nil
+			}
+			tmp := (func(x *RTThreadRangeNewestInternal__) (ret RTThreadRangeNewest) {
+				if x == nil {
+					return ret
+				}
+				return x.Import()
+			})(x)
+			return &tmp
+		})(r.Switch__.F_1__),
 	}
 }
 func (r RTThreadRange) Export() *RTThreadRangeInternal__ {
 	return &RTThreadRangeInternal__{
-		Start: r.Start.Export(),
-		Dir:   r.Dir.Export(),
-		Max:   &r.Max,
+		T: r.T,
+		Switch__: RTThreadRangeInternalSwitch__{
+			F_0__: (func(x *RTThreadRangeBookends) *RTThreadRangeBookendsInternal__ {
+				if x == nil {
+					return nil
+				}
+				return (*x).Export()
+			})(r.F_0__),
+			F_1__: (func(x *RTThreadRangeNewest) *RTThreadRangeNewestInternal__ {
+				if x == nil {
+					return nil
+				}
+				return (*x).Export()
+			})(r.F_1__),
+		},
 	}
 }
 func (r *RTThreadRange) Encode(enc rpc.Encoder) error {
@@ -1705,6 +1844,54 @@ func (r *RTThreadRange) Decode(dec rpc.Decoder) error {
 }
 
 func (r *RTThreadRange) Bytes() []byte { return nil }
+
+type RTThreadRangeBookends struct {
+	Start RTMsgSeq
+	End   RTMsgSeq
+}
+type RTThreadRangeBookendsInternal__ struct {
+	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
+	Start   *RTMsgSeqInternal__
+	End     *RTMsgSeqInternal__
+}
+
+func (r RTThreadRangeBookendsInternal__) Import() RTThreadRangeBookends {
+	return RTThreadRangeBookends{
+		Start: (func(x *RTMsgSeqInternal__) (ret RTMsgSeq) {
+			if x == nil {
+				return ret
+			}
+			return x.Import()
+		})(r.Start),
+		End: (func(x *RTMsgSeqInternal__) (ret RTMsgSeq) {
+			if x == nil {
+				return ret
+			}
+			return x.Import()
+		})(r.End),
+	}
+}
+func (r RTThreadRangeBookends) Export() *RTThreadRangeBookendsInternal__ {
+	return &RTThreadRangeBookendsInternal__{
+		Start: r.Start.Export(),
+		End:   r.End.Export(),
+	}
+}
+func (r *RTThreadRangeBookends) Encode(enc rpc.Encoder) error {
+	return enc.Encode(r.Export())
+}
+
+func (r *RTThreadRangeBookends) Decode(dec rpc.Decoder) error {
+	var tmp RTThreadRangeBookendsInternal__
+	err := dec.Decode(&tmp)
+	if err != nil {
+		return err
+	}
+	*r = tmp.Import()
+	return nil
+}
+
+func (r *RTThreadRangeBookends) Bytes() []byte { return nil }
 
 type RTThreadQuery struct {
 	ChannelID RTChannelID

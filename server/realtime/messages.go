@@ -1,6 +1,7 @@
 package realtime
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/foks-proj/go-foks/lib/core"
@@ -13,6 +14,7 @@ import (
 // defaultThreadPage bounds a single rtGetThread page when the client doesn't
 // ask for a specific size (max=0).
 const defaultThreadPage = 100
+const maxThreadPage = 1000
 
 // messageSender sends one message into a channel. All work happens inside a
 // single realtime-DB transaction; we lock the channels row up front with
@@ -463,39 +465,60 @@ func cappedThreadMax(max uint64) uint64 {
 func readThread(
 	m shared.MetaContext,
 	db shared.Querier,
-	channelID int64,
+	channelID proto.RTChannelID,
 	rng proto.RTThreadRange,
 ) (
 	[]rem.RTMsg,
 	error,
 ) {
-	max := cappedThreadMax(rng.Max)
+	typ, err := rng.GetT()
+	if err != nil {
+		return nil, err
+	}
 
-	// Forward = ascending seq from `start` (inclusive); Backward = descending
-	// seq from `start` (or the head when start==0).
-	var sql string
-	switch rng.Dir {
-	case proto.RTThreadDir_Backward:
-		sql = threadMsgSelect + `
-		       WHERE me.short_host_id=$1 AND me.channel_id=$2
-		         AND ($3 = 0 OR me.seq <= $3)
-		       ORDER BY me.seq DESC
-		       LIMIT $4`
+	q := threadMsgSelect + " WHERE me.short_host_id=$1 AND me.channel_id=$2 "
+	args := []any{m.ShortHostID(), channelID.Short().Int64()}
+
+	switch typ {
+	case proto.RTThreadRangeType_Newest:
+		newst := rng.Newest()
+		q += ` AND me.seq >= $3
+		   ORDER BY me.seq DESC
+		   LIMIT $4
+		`
+		args = append(args, []any{
+			newst.StopAt.Int64(),
+			cappedThreadMax(newst.Num),
+		})
+	case proto.RTThreadRangeType_Bookends:
+		bookends := rng.Bookends()
+		var order string
+		var bottom, top proto.RTMsgSeq
+		if bookends.Start < bookends.End {
+			bottom = bookends.Start
+			top = bookends.End
+			order = "ASC"
+		} else {
+			bottom = bookends.End
+			top = bookends.Start
+			order = "DESC"
+		}
+		if top-bottom > maxThreadPage {
+			return nil, core.BadArgsError("message fetch range too wide")
+		}
+		args = append(args, []any{
+			bottom.Int64(),
+			top.Int64(),
+		})
+		q += fmt.Sprintf(" AND me.seq >= $1 AND me.seq <= $2 ORDER BY me.seq %s", order)
 	default:
-		sql = threadMsgSelect + `
-		       WHERE me.short_host_id=$1 AND me.channel_id=$2
-		         AND me.seq >= $3
-		       ORDER BY me.seq ASC
-		       LIMIT $4`
+		return nil, core.BadArgsError("unknown thread range type")
 	}
 
 	rows, err := db.Query(
 		m.Ctx(),
-		sql,
-		m.ShortHostID(),
-		channelID,
-		int64(rng.Start),
-		int64(max),
+		q,
+		args...,
 	)
 	if err != nil {
 		return nil, err
@@ -511,7 +534,7 @@ func readThread(
 func readMsgsBySeq(
 	m shared.MetaContext,
 	db shared.Querier,
-	channelID int64,
+	channelID proto.RTChannelID,
 	seqs []proto.RTMsgSeq,
 ) (
 	[]rem.RTMsg,
@@ -530,7 +553,7 @@ func readMsgsBySeq(
 		       WHERE me.short_host_id=$1 AND me.channel_id=$2
 		         AND me.seq = ANY($3)`,
 		m.ShortHostID(),
-		channelID,
+		channelID.Short().Int64(),
 		v,
 	)
 	if err != nil {
@@ -588,11 +611,9 @@ func GetThread(
 		return nil, core.PermissionError("user role too low to read channel")
 	}
 
-	channelID := int64(q.ChannelID.Short())
+	channelID := q.ChannelID
 
-	// `final` only describes the range query; with no range requested it's moot,
-	// so report true (nothing more to page).
-	ret := rem.RTThreadPage{Final: true}
+	ret := rem.RTThreadPage{}
 
 	if q.Range != nil {
 		msgs, err := readThread(m, rtdb, channelID, *q.Range)
@@ -600,8 +621,6 @@ func GetThread(
 			return nil, err
 		}
 		ret.RangeMsgs = msgs
-		// A short page means we reached the end of the requested range.
-		ret.Final = uint64(len(msgs)) < cappedThreadMax(q.Range.Max)
 	}
 
 	if len(q.Seqs) > 0 {

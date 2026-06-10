@@ -5282,3 +5282,7 @@ func (d RTThreadDir) Jump(start RTMsgSeq, i int) RTMsgSeq {
 }
 
 var RTMsgSeqFirst = RTMsgSeq(1)
+
+func (r RTChannelIDShort) Int64() int64 {
+	return int64(r)
+}
