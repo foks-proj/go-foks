@@ -912,24 +912,24 @@ func (r *RTInboxDelta) Decode(dec rpc.Decoder) error {
 func (r *RTInboxDelta) Bytes() []byte { return nil }
 
 type RTThreadRangeBookends struct {
-	Start RTMsgSeq
-	End   RTMsgSeq
+	Start lib.RTMsgSeq
+	End   lib.RTMsgSeq
 }
 type RTThreadRangeBookendsInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
-	Start   *RTMsgSeqInternal__
-	End     *RTMsgSeqInternal__
+	Start   *lib.RTMsgSeqInternal__
+	End     *lib.RTMsgSeqInternal__
 }
 
 func (r RTThreadRangeBookendsInternal__) Import() RTThreadRangeBookends {
 	return RTThreadRangeBookends{
-		Start: (func(x *RTMsgSeqInternal__) (ret RTMsgSeq) {
+		Start: (func(x *lib.RTMsgSeqInternal__) (ret lib.RTMsgSeq) {
 			if x == nil {
 				return ret
 			}
 			return x.Import()
 		})(r.Start),
-		End: (func(x *RTMsgSeqInternal__) (ret RTMsgSeq) {
+		End: (func(x *lib.RTMsgSeqInternal__) (ret lib.RTMsgSeq) {
 			if x == nil {
 				return ret
 			}

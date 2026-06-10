@@ -169,36 +169,6 @@ enum RTThreadDir {
     Backward @1;  // decreasing seq (newer -> older)
 }
 
-enum RTThreadRangeType {
-    Bookends @0;
-    Newest @1;
-}
-
-struct RTThreadRangeNewest {
-    num @0 : Uint;
-    stopAt @1 : RTMegSeq;
-}
-
-variant RTThreadRange switch (t : RTThreadRangeType) {
-    case Bookends @0: RTThreadRangeBookends;
-    case Newest @1 : RTThreadRangeNewest;
-}
-
-// Contiguous-range portion of a thread query. Direction is implied.
-struct RTThreadRangeBookends {
-    start @0 : RTMsgSeq;         // inclusive; cannot be 0
-    end @1 : RTMsgSeq;           // inclusive; cannot be 0
-}
-
-// A single thread query can ask for a contiguous range, an explicit set of
-// seqs (to fill "holes" between cached and remote-fetched ranges), or both at
-// once; the two are answered independently into separate result lists.
-struct RTThreadQuery {
-    channelID @0 : RTChannelID;
-    bookends @1 : List(RTThreadRangeBookends);  // nil = skip the range query
-    seqs @2 : List(RTMsgSeq);          // empty = skip the seq query
-}
-
 // Subscribe long-poll: server returns when inbox advances past `since` OR the
 // timeout elapses. Cheap stand-in for true server-push until Stage 2c wires up
 // Redis pub/sub and a callback protocol.

@@ -462,58 +462,38 @@ func cappedThreadMax(max uint64) uint64 {
 
 // readThread pulls one contiguous page of messages from messages_enc, joining
 // channel_parties to recover sender attribution.
-func readThread(
+func readThreadBookends(
 	m shared.MetaContext,
 	db shared.Querier,
 	channelID proto.RTChannelID,
-	rng proto.RTThreadRange,
+	bookends rem.RTThreadRangeBookends,
 ) (
 	[]rem.RTMsg,
 	error,
 ) {
-	typ, err := rng.GetT()
-	if err != nil {
-		return nil, err
-	}
 
 	q := threadMsgSelect + " WHERE me.short_host_id=$1 AND me.channel_id=$2 "
 	args := []any{m.ShortHostID(), channelID.Short().Int64()}
 
-	switch typ {
-	case proto.RTThreadRangeType_Newest:
-		newst := rng.Newest()
-		q += ` AND me.seq >= $3
-		   ORDER BY me.seq DESC
-		   LIMIT $4
-		`
-		args = append(args, []any{
-			newst.StopAt.Int64(),
-			cappedThreadMax(newst.Num),
-		})
-	case proto.RTThreadRangeType_Bookends:
-		bookends := rng.Bookends()
-		var order string
-		var bottom, top proto.RTMsgSeq
-		if bookends.Start < bookends.End {
-			bottom = bookends.Start
-			top = bookends.End
-			order = "ASC"
-		} else {
-			bottom = bookends.End
-			top = bookends.Start
-			order = "DESC"
-		}
-		if top-bottom > maxThreadPage {
-			return nil, core.BadArgsError("message fetch range too wide")
-		}
-		args = append(args, []any{
-			bottom.Int64(),
-			top.Int64(),
-		})
-		q += fmt.Sprintf(" AND me.seq >= $1 AND me.seq <= $2 ORDER BY me.seq %s", order)
-	default:
-		return nil, core.BadArgsError("unknown thread range type")
+	var order string
+	var bottom, top proto.RTMsgSeq
+	if bookends.Start < bookends.End {
+		bottom = bookends.Start
+		top = bookends.End
+		order = "ASC"
+	} else {
+		bottom = bookends.End
+		top = bookends.Start
+		order = "DESC"
 	}
+	if top-bottom > maxThreadPage {
+		return nil, core.BadArgsError("message fetch range too wide")
+	}
+	args = append(args, []any{
+		bottom.Int64(),
+		top.Int64(),
+	})
+	q += fmt.Sprintf(" AND me.seq >= $1 AND me.seq <= $2 ORDER BY me.seq %s", order)
 
 	rows, err := db.Query(
 		m.Ctx(),
@@ -575,7 +555,7 @@ const maxMsgsBySeq = 512
 // lists. Seq lookups are found-only: missing seqs are silently omitted.
 func GetThread(
 	m shared.MetaContext,
-	q proto.RTThreadQuery,
+	q rem.RTThreadQuery,
 ) (
 	*rem.RTThreadPage,
 	error,
@@ -615,12 +595,12 @@ func GetThread(
 
 	ret := rem.RTThreadPage{}
 
-	if q.Range != nil {
-		msgs, err := readThread(m, rtdb, channelID, *q.Range)
+	for _, rng := range q.Bookends {
+		msgs, err := readThreadBookends(m, rtdb, channelID, rng)
 		if err != nil {
 			return nil, err
 		}
-		ret.RangeMsgs = msgs
+		ret.RangeMsgs = append(ret.RangeMsgs, rem.RTMsgList{Lst: msgs})
 	}
 
 	if len(q.Seqs) > 0 {
