@@ -9,6 +9,7 @@ import (
 	"github.com/foks-proj/go-foks/proto/rem"
 	"github.com/foks-proj/go-foks/server/shared"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 // defaultThreadPage bounds a single rtGetThread page when the client doesn't
@@ -460,6 +461,38 @@ func cappedThreadMax(max uint64) uint64 {
 	return max
 }
 
+func readThreadRecents(
+	m shared.MetaContext,
+	db shared.Querier,
+	channelID proto.RTChannelID,
+	stopAt proto.RTMsgSeq,
+	lim uint64,
+) (
+	[]rem.RTMsg,
+	error,
+) {
+	lim = cappedThreadMax(lim)
+	q := threadMsgSelect +
+		` WHERE me.short_host_id=$1 AND me.channel_id=$2 
+	  AND idx >= $3
+	  ORDER by idx DESC LIMIT $4`
+	args := []any{m.ShortHostID(), channelID.Short().Int64(),
+		stopAt.Int64(),
+		lim,
+	}
+	rows, err := db.Query(
+		m.Ctx(),
+		q,
+		args...,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	return scanThreadMsgs(rows)
+}
+
 // readThread pulls one contiguous page of messages from messages_enc, joining
 // channel_parties to recover sender attribution.
 func readThreadBookends(
@@ -546,7 +579,39 @@ func readMsgsBySeq(
 
 // maxMsgsBySeq bounds the seq-list portion of a single rtGetThread request, so
 // a client can't ask for an unbounded set of seqs in one round trip.
-const maxMsgsBySeq = 512
+const maxMsgsBySeq = 4096
+
+func GetThreadRecents(
+	m shared.MetaContext,
+	arg rem.RtGetThreadRecentsArg,
+) (
+	*rem.RTMsgList,
+	error,
+) {
+	channelID := arg.Ch
+	var retp *rem.RTMsgList
+	err := getThreadGeneric(
+		m,
+		channelID,
+		func(
+			rtdb *pgxpool.Conn,
+		) error {
+			msgs, err := readThreadRecents(m, rtdb, channelID, arg.StopAt, arg.Lim)
+			if err != nil {
+				return err
+			}
+			ret := rem.RTMsgList{
+				Lst: msgs,
+			}
+			retp = &ret
+			return nil
+		},
+	)
+	if err != nil {
+		return nil, err
+	}
+	return retp, nil
+}
 
 // GetThread answers a thread query after checking that the authenticated user
 // (m.UID()) is authorized to read the channel. A query may carry a contiguous
@@ -560,56 +625,82 @@ func GetThread(
 	*rem.RTThreadPage,
 	error,
 ) {
-	if len(q.Seqs) > maxMsgsBySeq {
-		return nil, core.BadArgsError("too many seqs requested")
+	channelID := q.ChannelID
+	var retp *rem.RTThreadPage
+
+	err := getThreadGeneric(
+		m,
+		channelID,
+		func(
+			rtdb *pgxpool.Conn,
+		) error {
+			if len(q.Seqs) > maxMsgsBySeq {
+				return core.BadArgsError("too many seqs requested")
+			}
+
+			ret := rem.RTThreadPage{}
+
+			for _, rng := range q.Bookends {
+				msgs, err := readThreadBookends(m, rtdb, channelID, rng)
+				if err != nil {
+					return err
+				}
+				ret.RangeMsgs = append(ret.RangeMsgs, rem.RTMsgList{Lst: msgs})
+			}
+
+			if len(q.Seqs) > 0 {
+				msgs, err := readMsgsBySeq(m, rtdb, channelID, q.Seqs)
+				if err != nil {
+					return err
+				}
+				ret.SeqMsgs = msgs
+			}
+			retp = &ret
+			return nil
+		},
+	)
+	if err != nil {
+		return nil, err
 	}
+	return retp, nil
+}
+
+func getThreadGeneric(
+	m shared.MetaContext,
+	chid proto.RTChannelID,
+	fn func(rtdb *pgxpool.Conn) error,
+) error {
 
 	rtdb, err := m.Db(shared.DbTypeRealTime)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	defer rtdb.Release()
 	userdb, err := m.Db(shared.DbTypeUsers)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	defer userdb.Release()
 
-	team, readRole, err := loadChannelForRead(m, rtdb, int64(q.ChannelID.Short()))
+	team, readRole, err := loadChannelForRead(m, rtdb, chid.Short().Int64())
 	if err != nil {
-		return nil, err
+		return err
 	}
 	role, err := AuthorizeUserForTeam(m, userdb, team)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	readRoleKey, err := core.ImportRole(readRole)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	if role.LessThan(*readRoleKey) {
-		return nil, core.PermissionError("user role too low to read channel")
+		return core.PermissionError("user role too low to read channel")
 	}
 
-	channelID := q.ChannelID
-
-	ret := rem.RTThreadPage{}
-
-	for _, rng := range q.Bookends {
-		msgs, err := readThreadBookends(m, rtdb, channelID, rng)
-		if err != nil {
-			return nil, err
-		}
-		ret.RangeMsgs = append(ret.RangeMsgs, rem.RTMsgList{Lst: msgs})
+	err = fn(rtdb)
+	if err != nil {
+		return err
 	}
-
-	if len(q.Seqs) > 0 {
-		msgs, err := readMsgsBySeq(m, rtdb, channelID, q.Seqs)
-		if err != nil {
-			return nil, err
-		}
-		ret.SeqMsgs = msgs
-	}
-
-	return &ret, nil
+	return nil
 }
