@@ -790,10 +790,11 @@ func findHoles(
 	v []ThreadMessage,
 ) (
 	[]proto.RTMsgSeq,
+	int,
 	error,
 ) {
 	if len(v) <= 1 {
-		return nil, nil
+		return nil, 0, nil
 	}
 
 	signMatch := func(a, b int) bool {
@@ -822,7 +823,7 @@ func findHoles(
 	for i := start; i != end; i += inc {
 		seq := v[ptr].Seq
 		if !seq.IsValid() {
-			return nil, core.BadServerDataError("msg with invalid seqno")
+			return nil, 0, core.BadServerDataError("msg with invalid seqno")
 		}
 		iseq := seq.Int()
 		if iseq != i {
@@ -831,19 +832,12 @@ func findHoles(
 			ptr++
 		}
 		if lst > 0 && !signMatch(inc, iseq-lst) {
-			return nil, core.BadServerDataError("non-monotonic thread msg sequence")
+			return nil, 0, core.BadServerDataError("non-monotonic thread msg sequence")
 		}
 		lst = iseq
 	}
-	return ret, nil
+	return ret, inc, nil
 }
-
-type threadDirection int
-
-const (
-	tdAsc  threadDirection = 1
-	tdDesc threadDirection = 2
-)
 
 // GetThreadBookened fetches and decrypts a page of messages from the named channel.
 // klass disambiguates when a name exists in more than one class; pass nil when
@@ -873,6 +867,9 @@ func (d *Minder) GetThreadBookended(
 	if team == nil {
 		return nil, false, core.InternalError("team is required to read in Stage 1a")
 	}
+	if start == end {
+		return nil, false, core.InternalError("no messages in range")
+	}
 	rtp, err := d.base.GetParty(m.Base(), team)
 	if err != nil {
 		return nil, false, err
@@ -897,39 +894,81 @@ func (d *Minder) GetThreadBookended(
 		return nil, false, err
 	}
 
-	out, err := d.decodeMsgs(
+	cached, err := d.decodeMsgs(
 		m,
 		rtp,
 		appID,
 		ch.Id,
 		cachedMsgsEnc,
 	)
-	holes, err := findHoles(out)
+	holes, inc, err := findHoles(cached)
 	if err != nil {
 		return nil, false, err
 	}
 
+	cachedStart := cached[0].Seq
+	cachedEnd := core.Last(cached).Seq
+
 	// We had everything in cache!
-	if len(holes) == 0 && end == dir.Jump(start, int(max)) {
-		return out, false, nil
+	if len(holes) == 0 && start == cachedStart && end == cachedEnd {
+		return cached, false, nil
 	}
 
-	page, err := cli.RtGetThread(m.Ctx(), proto.RTThreadQuery{
+	var bookends []rem.RTThreadRangeBookends
+	if start != cachedStart {
+		bookends = append(bookends,
+			rem.RTThreadRangeBookends{
+				Start: start,
+				End:   proto.RTMsgSeq(int(cachedStart) - inc),
+			},
+		)
+	}
+	if cachedEnd != end {
+		bookends = append(bookends,
+			rem.RTThreadRangeBookends{
+				Start: proto.RTMsgSeq(int(cachedEnd) + inc),
+				End:   end,
+			},
+		)
+	}
+
+	page, err := cli.RtGetThread(m.Ctx(), rem.RTThreadQuery{
 		ChannelID: ch.Id,
-		Range: &proto.RTThreadRange{
-			Start: start,
-			Dir:   dir,
-			Max:   max,
-		},
+		Bookends:  bookends,
+		Seqs:      holes,
 	})
 	if err != nil {
 		return nil, false, err
 	}
-	out, err = d.decodeAndCacheMsgs(m, rtp, appID, ch.Id, page.RangeMsgs)
+
+	ret := cached
+	for _, r := range page.RangeMsgs {
+		tmp, err := d.decodeAndCacheMsgs(m, rtp, appID, ch.Id, r.Lst)
+		if err != nil {
+			return nil, false, err
+		}
+		ret = append(ret, tmp...)
+	}
+	tmp, err := d.decodeAndCacheMsgs(m, rtp, appID, ch.Id, page.SeqMsgs)
 	if err != nil {
 		return nil, false, err
 	}
-	return out, page.Final, nil
+	ret = append(ret, tmp...)
+
+	// Note we can do better than this, since we can merge all ~4 slices
+	// linearly, but for now, let's do the naive thing, it simplifies the code.
+	slices.SortFunc(ret,
+		func(a, b ThreadMessage) int {
+			return (a.Seq.Int() - b.Seq.Int()) * inc
+		},
+	)
+
+	// if we got a short read, then it's the "final" in the sequence, since we cannot
+	// fill up the window. Note though that the short read is a function of either the start
+	// or end, depending on sort order.
+	isFinal := (inc < 0 && ret[0].Seq < start) || (inc > 0 && core.Last(ret).Seq < end)
+
+	return ret, isFinal, nil
 }
 
 func (d *Minder) decodeMsgs(
@@ -1036,7 +1075,7 @@ func (d *Minder) GetMsgs(
 	if err != nil {
 		return nil, err
 	}
-	page, err := cli.RtGetThread(m.Ctx(), proto.RTThreadQuery{
+	page, err := cli.RtGetThread(m.Ctx(), rem.RTThreadQuery{
 		ChannelID: ch.Id,
 		Seqs:      seqs,
 	})
