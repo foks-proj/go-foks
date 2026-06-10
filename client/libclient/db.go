@@ -600,8 +600,6 @@ func (r *DBRange[T, TP]) Get(
 	[]int64,
 	error,
 ) {
-	var ret []T
-	var idxList []int64
 	r.db.Lock()
 	defer r.db.Unlock()
 
@@ -623,7 +621,35 @@ func (r *DBRange[T, TP]) Get(
 		  AND idx >= $4 AND idx <= $5
 		  ORDER BY idx ` + ord
 	args := []any{int(r.scope), r.typ, r.key.ExportToDB(), lo, hi}
+	return r.get(m, q, args)
+}
 
+func (r *DBRange[T, TP]) GetNMax(
+	m MetaContext,
+	n int64,
+) (
+	[]T,
+	[]int64,
+	error,
+) {
+	q := `SELECT idx, val FROM ranged_data
+	WHERE scope_id=$1 AND typ=$2 AND key=$3
+	ORDER BY idx DESC LIMIT $4`
+	args := []any{int(r.scope), r.typ, r.key.ExportToDB(), n}
+	return r.get(m, q, args)
+}
+
+func (r *DBRange[T, TP]) get(
+	m MetaContext,
+	q string,
+	args []any,
+) (
+	[]T,
+	[]int64,
+	error,
+) {
+	var ret []T
+	var idxList []int64
 	rows, err := r.db.db.Query(q, args...)
 	if err != nil {
 		return nil, nil, err

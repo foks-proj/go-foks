@@ -839,6 +839,36 @@ func findHoles(
 	return ret, inc, nil
 }
 
+func (d *Minder) initReq(
+	m MetaContext,
+	team *proto.FQTeamParsed,
+	appID proto.RTAppID,
+	channelName proto.RTChannelName,
+	klass *proto.RTChannelClass,
+) (
+	*RTParty,
+	*lcl.RTChannelMetadataPlaintext,
+	*rem.RealTimeClient,
+	error,
+) {
+	if team == nil {
+		return nil, nil, nil, core.InternalError("team is required to read in Stage 1a")
+	}
+	rtp, err := d.base.GetParty(m.Base(), team)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+	ch, err := d.resolveChannel(m, rtp, appID, channelName, klass)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+	_, cli, err := d.clientLocal(m.Base(), d.au)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+	return rtp, ch, cli, nil
+}
+
 // GetThreadBookened fetches and decrypts a page of messages from the named channel.
 // klass disambiguates when a name exists in more than one class; pass nil when
 // the name is unique.
@@ -870,16 +900,7 @@ func (d *Minder) GetThreadBookended(
 	if start == end {
 		return nil, false, core.InternalError("no messages in range")
 	}
-	rtp, err := d.base.GetParty(m.Base(), team)
-	if err != nil {
-		return nil, false, err
-	}
-	ch, err := d.resolveChannel(m, rtp, appID, channelName, klass)
-	if err != nil {
-		return nil, false, err
-	}
-
-	_, cli, err := d.clientLocal(m.Base(), d.au)
+	rtp, ch, cli, err := d.initReq(m, team, appID, channelName, klass)
 	if err != nil {
 		return nil, false, err
 	}
@@ -969,6 +990,34 @@ func (d *Minder) GetThreadBookended(
 	isFinal := (inc < 0 && ret[0].Seq < start) || (inc > 0 && core.Last(ret).Seq < end)
 
 	return ret, isFinal, nil
+}
+
+// Get the num most recent messages that we don't already have.
+func (d *Minder) GetThreadRecentMsgs(
+	m MetaContext,
+	team *proto.FQTeamParsed,
+	appID proto.RTAppID,
+	channelName proto.RTChannelName,
+	klass *proto.RTChannelClass,
+	start proto.RTMsgSeq,
+	num uint,
+) (
+	[]ThreadMessage,
+	error,
+) {
+	if num == 0 {
+		num = 128
+	}
+	rtp, ch, cli, err := d.initReq(m, team, appID, channelName, klass)
+	if err != nil {
+		return nil, err
+	}
+	use := func(a any) {}
+	use(rtp)
+	use(ch)
+	use(cli)
+
+	return nil, core.NotImplementedError{}
 }
 
 func (d *Minder) decodeMsgs(
