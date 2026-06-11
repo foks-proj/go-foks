@@ -1649,72 +1649,6 @@ func (r RTThreadDir) Export() *RTThreadDirInternal__ {
 	return ((*RTThreadDirInternal__)(&r))
 }
 
-type RTThreadQuery struct {
-	ChannelID RTChannelID
-	Start     RTMsgSeq
-	Dir       RTThreadDir
-	Max       uint64
-}
-type RTThreadQueryInternal__ struct {
-	_struct   struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
-	ChannelID *RTChannelIDInternal__
-	Start     *RTMsgSeqInternal__
-	Dir       *RTThreadDirInternal__
-	Max       *uint64
-}
-
-func (r RTThreadQueryInternal__) Import() RTThreadQuery {
-	return RTThreadQuery{
-		ChannelID: (func(x *RTChannelIDInternal__) (ret RTChannelID) {
-			if x == nil {
-				return ret
-			}
-			return x.Import()
-		})(r.ChannelID),
-		Start: (func(x *RTMsgSeqInternal__) (ret RTMsgSeq) {
-			if x == nil {
-				return ret
-			}
-			return x.Import()
-		})(r.Start),
-		Dir: (func(x *RTThreadDirInternal__) (ret RTThreadDir) {
-			if x == nil {
-				return ret
-			}
-			return x.Import()
-		})(r.Dir),
-		Max: (func(x *uint64) (ret uint64) {
-			if x == nil {
-				return ret
-			}
-			return *x
-		})(r.Max),
-	}
-}
-func (r RTThreadQuery) Export() *RTThreadQueryInternal__ {
-	return &RTThreadQueryInternal__{
-		ChannelID: r.ChannelID.Export(),
-		Start:     r.Start.Export(),
-		Dir:       r.Dir.Export(),
-		Max:       &r.Max,
-	}
-}
-func (r *RTThreadQuery) Encode(enc rpc.Encoder) error {
-	return enc.Encode(r.Export())
-}
-
-func (r *RTThreadQuery) Decode(dec rpc.Decoder) error {
-	var tmp RTThreadQueryInternal__
-	err := dec.Decode(&tmp)
-	if err != nil {
-		return err
-	}
-	*r = tmp.Import()
-	return nil
-}
-
-func (r *RTThreadQuery) Bytes() []byte { return nil }
-
 type RTInboxPollRes struct {
 	Bumped       bool
 	InboxVersion RTInboxVersion
@@ -1762,6 +1696,111 @@ func (r *RTInboxPollRes) Decode(dec rpc.Decoder) error {
 }
 
 func (r *RTInboxPollRes) Bytes() []byte { return nil }
+
+type RTMsgCached struct {
+	Md  RTMsgNoncer
+	Mw  RTMsgWrapper
+	Sit Time
+}
+type RTMsgCachedInternal__ struct {
+	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
+	Md      *RTMsgNoncerInternal__
+	Mw      *RTMsgWrapperInternal__
+	Sit     *TimeInternal__
+}
+
+func (r RTMsgCachedInternal__) Import() RTMsgCached {
+	return RTMsgCached{
+		Md: (func(x *RTMsgNoncerInternal__) (ret RTMsgNoncer) {
+			if x == nil {
+				return ret
+			}
+			return x.Import()
+		})(r.Md),
+		Mw: (func(x *RTMsgWrapperInternal__) (ret RTMsgWrapper) {
+			if x == nil {
+				return ret
+			}
+			return x.Import()
+		})(r.Mw),
+		Sit: (func(x *TimeInternal__) (ret Time) {
+			if x == nil {
+				return ret
+			}
+			return x.Import()
+		})(r.Sit),
+	}
+}
+func (r RTMsgCached) Export() *RTMsgCachedInternal__ {
+	return &RTMsgCachedInternal__{
+		Md:  r.Md.Export(),
+		Mw:  r.Mw.Export(),
+		Sit: r.Sit.Export(),
+	}
+}
+func (r *RTMsgCached) Encode(enc rpc.Encoder) error {
+	return enc.Encode(r.Export())
+}
+
+func (r *RTMsgCached) Decode(dec rpc.Decoder) error {
+	var tmp RTMsgCachedInternal__
+	err := dec.Decode(&tmp)
+	if err != nil {
+		return err
+	}
+	*r = tmp.Import()
+	return nil
+}
+
+func (r *RTMsgCached) Bytes() []byte { return nil }
+
+type RTMsgCachedWithSeq struct {
+	Cm  RTMsgCached
+	Seq RTMsgSeq
+}
+type RTMsgCachedWithSeqInternal__ struct {
+	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
+	Cm      *RTMsgCachedInternal__
+	Seq     *RTMsgSeqInternal__
+}
+
+func (r RTMsgCachedWithSeqInternal__) Import() RTMsgCachedWithSeq {
+	return RTMsgCachedWithSeq{
+		Cm: (func(x *RTMsgCachedInternal__) (ret RTMsgCached) {
+			if x == nil {
+				return ret
+			}
+			return x.Import()
+		})(r.Cm),
+		Seq: (func(x *RTMsgSeqInternal__) (ret RTMsgSeq) {
+			if x == nil {
+				return ret
+			}
+			return x.Import()
+		})(r.Seq),
+	}
+}
+func (r RTMsgCachedWithSeq) Export() *RTMsgCachedWithSeqInternal__ {
+	return &RTMsgCachedWithSeqInternal__{
+		Cm:  r.Cm.Export(),
+		Seq: r.Seq.Export(),
+	}
+}
+func (r *RTMsgCachedWithSeq) Encode(enc rpc.Encoder) error {
+	return enc.Encode(r.Export())
+}
+
+func (r *RTMsgCachedWithSeq) Decode(dec rpc.Decoder) error {
+	var tmp RTMsgCachedWithSeqInternal__
+	err := dec.Decode(&tmp)
+	if err != nil {
+		return err
+	}
+	*r = tmp.Import()
+	return nil
+}
+
+func (r *RTMsgCachedWithSeq) Bytes() []byte { return nil }
 
 func init() {
 	rpc.AddUnique(RTKeyDerivationTypeUniqueID)

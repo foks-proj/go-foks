@@ -6,12 +6,14 @@ import (
 	"slices"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/foks-proj/go-foks/client/libclient"
 	"github.com/foks-proj/go-foks/lib/chains"
 	"github.com/foks-proj/go-foks/lib/core"
 	"github.com/foks-proj/go-foks/proto/lcl"
+	"github.com/foks-proj/go-foks/proto/lib"
 	proto "github.com/foks-proj/go-foks/proto/lib"
 	"github.com/foks-proj/go-foks/proto/rem"
 )
@@ -51,6 +53,29 @@ type Minder struct {
 
 	localCliMu sync.Mutex
 	localCli   *rem.RealTimeClient
+
+	// Always-on instrumentation counters; read via Metrics(). Useful for tests
+	// and debugging (e.g. asserting a read was served entirely from cache).
+	serverThreadReads atomic.Int64
+	serverRecentReads atomic.Int64
+}
+
+// MinderMetrics is a snapshot of a Minder's instrumentation counters.
+type MinderMetrics struct {
+	// ServerThreadReads counts RtGetThread RPCs issued (bookended ranges and/or
+	// explicit seq fills). A read served entirely from the local cache does not
+	// increment this.
+	ServerThreadReads int64
+	// ServerRecentReads counts RtGetThreadRecents RPCs issued.
+	ServerRecentReads int64
+}
+
+// Metrics returns a snapshot of the Minder's instrumentation counters.
+func (d *Minder) Metrics() MinderMetrics {
+	return MinderMetrics{
+		ServerThreadReads: d.serverThreadReads.Load(),
+		ServerRecentReads: d.serverRecentReads.Load(),
+	}
 }
 
 func NewMinder(au *libclient.UserContext) *Minder {
@@ -683,6 +708,21 @@ func (d *Minder) SendWithTestHooks(
 		return nil, err
 	}
 	mw := proto.NewRTMsgWrapperWithEncrypted(*box)
+
+	msgCached := proto.RTMsgCached{
+		Md: noncer,
+		Mw: mw,
+	}
+
+	err = dbPutMsgToOutbox(
+		m,
+		d.au,
+		msgCached,
+	)
+	if err != nil {
+		return nil, err
+	}
+
 	res, err := cli.RtSend(m.Ctx(), rem.RTSendArg{
 		Md:   md,
 		Mw:   mw,
@@ -691,7 +731,37 @@ func (d *Minder) SendWithTestHooks(
 	if err != nil {
 		return nil, err
 	}
+
+	// The server assigns the insert time; record it so the cached copy matches
+	// what a server-fetched read would carry.
+	msgCached.Sit = res.InsertTime
+	msgCachedSeq := proto.RTMsgCachedWithSeq{
+		Cm:  msgCached,
+		Seq: res.Seq,
+	}
+
+	err = dbPutMsgs(m, d.au, []proto.RTMsgCachedWithSeq{msgCachedSeq})
+	if err != nil {
+		return nil, err
+	}
+
 	return &res, nil
+}
+
+func (d *Minder) openMessageWithRTMsg(
+	m MetaContext,
+	rtp *RTParty,
+	appID proto.RTAppID,
+	msg rem.RTMsg,
+	ch proto.RTChannelID,
+) (
+	[]byte,
+	*proto.RTMsgCached,
+	error,
+) {
+	return d.openMessage(m, rtp, appID,
+		msg.Md, msg.Mw, msg.Sender, msg.InsertTime, ch,
+	)
 }
 
 // openMessage decrypts a message body fetched from the server, using the key at
@@ -700,67 +770,212 @@ func (d *Minder) openMessage(
 	m MetaContext,
 	rtp *RTParty,
 	appID proto.RTAppID,
-	msg rem.RTMsg,
+	md proto.RTMsgMetadata,
+	mw proto.RTMsgWrapper,
+	sender *proto.PartyID,
+	serverInsertTime proto.Time,
 	ch proto.RTChannelID,
 ) (
 	[]byte,
+	*proto.RTMsgCached,
 	error,
 ) {
 	team := rtp.PLCNode().FQParty().Party
 	noncer := proto.RTMsgNoncer{
-		Md:    msg.Md,
+		Md:    md,
 		AppID: appID,
 		Team:  team,
 		Chid:  ch,
 	}
-	if msg.Sender != nil {
-		noncer.Sender = *msg.Sender
+	if sender != nil {
+		noncer.Sender = *sender
 	}
 	nn, err := cookNonce(&noncer)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-	typ, err := msg.Mw.GetT()
+	typ, err := mw.GetT()
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	if typ != proto.MsgBodyType_Encrypted {
-		return nil, core.VersionNotSupportedError("only encrypted message bodies are supported")
+		return nil, nil, core.VersionNotSupportedError("only encrypted message bodies are supported")
 	}
-	box := msg.Mw.Encrypted()
+	box := mw.Encrypted()
 
 	kmgr, err := rtp.keysAtRoleGen(m, appID, box.Rg)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	var body proto.RTMsgBody
 	err = kmgr.OpenMsgWithNonce(&body, box.Ctext, nn)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	pt, err := body.GetT()
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	if pt != proto.RTMsgType_Basic {
-		return nil, core.VersionNotSupportedError("only basic messages are supported")
+		return nil, nil, core.VersionNotSupportedError("only basic messages are supported")
 	}
 	basic := body.Basic()
-	return basic.Bytes(), nil
+	cm := proto.RTMsgCached{
+		Md:  noncer,
+		Mw:  mw,
+		Sit: serverInsertTime,
+	}
+	return basic.Bytes(), &cm, nil
 }
 
-// GetThread fetches and decrypts a page of messages from the named channel.
+func merge(
+	left []ThreadMessage,
+	right []ThreadMessage,
+	inc int, // -1 for descending, 1 for ascending
+) []ThreadMessage {
+	ret := make([]ThreadMessage, len(left)+len(right))
+	var i, l, r int
+	for l < len(left) || r < len(right) {
+		if l == len(left) {
+			ret[i] = right[r]
+			r++
+		} else if r == len(right) {
+			ret[i] = left[l]
+			l++
+		} else {
+			leftLess := (left[l].Seq < right[r].Seq)
+			if (leftLess && inc > 0) || (!leftLess && inc < 0) {
+				ret[i] = left[l]
+				l++
+			} else {
+				ret[i] = right[r]
+				r++
+			}
+		}
+		i++
+	}
+	return ret
+
+}
+
+// findHoles returns the seqs missing from v, where v is a run of messages that
+// must be strictly monotonic (sorted, no duplicates) in either direction. A run
+// that isn't strictly monotonic is rejected as bad server data.
+func findHoles(
+	v []ThreadMessage,
+) (
+	[]proto.RTMsgSeq,
+	error,
+) {
+	if len(v) <= 1 {
+		return nil, nil
+	}
+
+	signMatch := func(a, b int) bool {
+		return (a < 0) == (b < 0)
+	}
+
+	start := int(v[0].Seq)
+	end := int(core.Last(v).Seq)
+	inc := 1
+	if end < start {
+		inc = -1
+	}
+
+	// Validate the run is strictly monotonic in `inc`'s direction (and that
+	// every seq is valid) up front, so the hole walk below can trust it. This
+	// catches duplicates (delta 0) and out-of-order seqs.
+	for i, msg := range v {
+		if !msg.Seq.IsValid() {
+			return nil, core.BadServerDataError("msg with invalid seqno")
+		}
+		if i == 0 {
+			continue
+		}
+		d := msg.Seq.Int() - v[i-1].Seq.Int()
+		if d == 0 || !signMatch(inc, d) {
+			return nil, core.BadServerDataError("non-monotonic thread msg sequence")
+		}
+	}
+
+	// Walk start..end inclusive; any index not present in v is a hole. v is
+	// monotonic, so a single forward cursor tracks the next present seq.
+	var ret []proto.RTMsgSeq
+	var ptr int
+	for i := start; i != end; i += inc {
+		if v[ptr].Seq.Int() == i {
+			ptr++
+		} else {
+			ret = append(ret, proto.RTMsgSeq(i))
+		}
+	}
+	return ret, nil
+}
+
+func (d *Minder) initReq(
+	m MetaContext,
+	team *proto.FQTeamParsed,
+	appID proto.RTAppID,
+	channelName proto.RTChannelName,
+	klass *proto.RTChannelClass,
+) (
+	*RTParty,
+	*lcl.RTChannelMetadataPlaintext,
+	*rem.RealTimeClient,
+	error,
+) {
+	if team == nil {
+		return nil, nil, nil, core.InternalError("team is required to read in Stage 1a")
+	}
+	rtp, err := d.base.GetParty(m.Base(), team)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+	ch, err := d.resolveChannel(m, rtp, appID, channelName, klass)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+	_, cli, err := d.clientLocal(m.Base(), d.au)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+	return rtp, ch, cli, nil
+}
+
+// if inc > 1, sort ascending
+// if inc < 1, sort descending
+func sortMsgs(v []ThreadMessage, inc int) error {
+	if inc == 0 {
+		return core.InternalError("bad sort direction")
+	}
+	slices.SortFunc(v,
+		func(a, b ThreadMessage) int {
+			return (a.Seq.Int() - b.Seq.Int()) * inc
+		},
+	)
+	return nil
+}
+
+// GetThreadBookened fetches and decrypts a page of messages from the named channel.
 // klass disambiguates when a name exists in more than one class; pass nil when
 // the name is unique.
-func (d *Minder) GetThread(
+//
+// The limits are given by inclusive bookends. The direction is infered from the
+// ordering of the bookends.
+//
+// Here is the overall algorithm:
+//   - fecth from local DB
+//   - fetch from server after the max (or min) message, and plug in any holes
+//   - check that prev pointers align with server sequencing.
+//   - cache any newly downloaded messages
+func (d *Minder) GetThreadBookended(
 	m MetaContext,
 	team *proto.FQTeamParsed,
 	appID proto.RTAppID,
 	channelName proto.RTChannelName,
 	klass *proto.RTChannelClass,
 	start proto.RTMsgSeq,
-	dir proto.RTThreadDir,
-	max uint64,
+	end proto.RTMsgSeq,
 ) (
 	[]ThreadMessage,
 	bool,
@@ -769,32 +984,279 @@ func (d *Minder) GetThread(
 	if team == nil {
 		return nil, false, core.InternalError("team is required to read in Stage 1a")
 	}
-	rtp, err := d.base.GetParty(m.Base(), team)
+	if start == end {
+		return nil, false, core.InternalError("no messages in range")
+	}
+
+	// Direction is implied by the ordering of the bookends; the request is
+	// authoritative. Cached rows come back in this same order (DBRange.Get
+	// orders by start vs end), so cached[0] is the `start` side throughout.
+	inc := 1
+	if end < start {
+		inc = -1
+	}
+
+	rtp, ch, cli, err := d.initReq(m, team, appID, channelName, klass)
 	if err != nil {
 		return nil, false, err
 	}
-	ch, err := d.resolveChannel(m, rtp, appID, channelName, klass)
+
+	cachedMsgsEnc, err := dbGetMsgs(
+		m, d.au,
+		ch.Id,
+		start,
+		end,
+	)
 	if err != nil {
 		return nil, false, err
 	}
-	_, cli, err := d.clientLocal(m.Base(), d.au)
+
+	cached, err := d.decodeMsgs(
+		m,
+		rtp,
+		appID,
+		ch.Id,
+		cachedMsgsEnc,
+	)
 	if err != nil {
 		return nil, false, err
 	}
-	page, err := cli.RtGetThread(m.Ctx(), proto.RTThreadQuery{
+	holes, err := findHoles(cached)
+	if err != nil {
+		return nil, false, err
+	}
+
+	var bookends []rem.RTThreadRangeBookends
+	if len(cached) > 0 {
+
+		cachedStart := cached[0].Seq
+		cachedEnd := core.Last(cached).Seq
+
+		// We had everything in cache!
+		if len(holes) == 0 && start == cachedStart && end == cachedEnd {
+			return cached, false, nil
+		}
+
+		if start != cachedStart {
+			bookends = append(bookends,
+				rem.RTThreadRangeBookends{
+					Start: start,
+					End:   proto.RTMsgSeq(int(cachedStart) - inc),
+				},
+			)
+		}
+		if cachedEnd != end {
+			bookends = append(bookends,
+				rem.RTThreadRangeBookends{
+					Start: proto.RTMsgSeq(int(cachedEnd) + inc),
+					End:   end,
+				},
+			)
+		}
+	} else {
+		bookends = []rem.RTThreadRangeBookends{{Start: start, End: end}}
+		cached = []ThreadMessage{}
+	}
+
+	d.serverThreadReads.Add(1)
+	page, err := cli.RtGetThread(m.Ctx(), rem.RTThreadQuery{
 		ChannelID: ch.Id,
-		Start:     start,
-		Dir:       dir,
-		Max:       max,
+		Bookends:  bookends,
+		Seqs:      holes,
 	})
 	if err != nil {
 		return nil, false, err
 	}
-	out := make([]ThreadMessage, 0, len(page.Msgs))
-	for _, msg := range page.Msgs {
-		body, err := d.openMessage(m, rtp, appID, msg, ch.Id)
+
+	ret := cached
+	for _, r := range page.RangeMsgs {
+		tmp, err := d.decodeAndCacheMsgs(m, rtp, appID, ch.Id, r.Lst)
 		if err != nil {
 			return nil, false, err
+		}
+		ret = merge(ret, tmp, inc)
+	}
+
+	tmp, err := d.decodeAndCacheMsgs(m, rtp, appID, ch.Id, page.SeqMsgs)
+	if err != nil {
+		return nil, false, err
+	}
+
+	// we have to sort these messages as they come back randomly from the server.
+	// since we are going to merge them just below
+	err = sortMsgs(tmp, inc)
+	if err != nil {
+		return nil, false, err
+	}
+
+	ret = merge(ret, tmp, inc)
+
+	// "final" means there's nothing more in the paging direction: we failed to
+	// reach the far (`end`) edge, so the thread ran out before it. After the sort
+	// Last(ret) is always the `end` side (smallest seq when descending, largest
+	// when ascending). A short read at the `start` side instead just means
+	// `start` overshot the live head, which isn't final. Empty => nothing in
+	// range, so final.
+	isFinal := len(ret) == 0 ||
+		(inc > 0 && core.Last(ret).Seq < end) ||
+		(inc < 0 && core.Last(ret).Seq > end)
+
+	return ret, isFinal, nil
+}
+
+// Get the num most recent messages that we don't already have.
+func (d *Minder) GetThreadRecentMsgs(
+	m MetaContext,
+	team *proto.FQTeamParsed,
+	appID proto.RTAppID,
+	channelName proto.RTChannelName,
+	klass *proto.RTChannelClass,
+	num uint,
+) (
+	[]ThreadMessage,
+	error,
+) {
+	if num == 0 {
+		num = 128
+	}
+	inc := -1
+	rtp, ch, cli, err := d.initReq(m, team, appID, channelName, klass)
+	if err != nil {
+		return nil, err
+	}
+
+	cachedMsgsEnc, err := dbGetRecentMsgs(
+		m,
+		d.au,
+		ch.Id,
+		num,
+	)
+	if err != nil {
+		return nil, err
+	}
+	cached, err := d.decodeMsgs(
+		m,
+		rtp,
+		appID,
+		ch.Id,
+		cachedMsgsEnc,
+	)
+	if err != nil {
+		return nil, err
+	}
+	var stopAt proto.RTMsgSeq
+	if len(cached) > 0 {
+		stopAt = cached[0].Seq
+	}
+	d.serverRecentReads.Add(1)
+	fresh, err := cli.RtGetThreadRecents(
+		m.Ctx(),
+		rem.RtGetThreadRecentsArg{
+			Ch:     ch.Id,
+			StopAt: stopAt,
+			Lim:    uint64(num),
+		},
+	)
+	if err != nil {
+		return nil, err
+	}
+	freshPlain, err := d.decodeAndCacheMsgs(m, rtp, appID, ch.Id, fresh.Lst)
+	if err != nil {
+		return nil, err
+	}
+
+	// All of the fresh messages fill up the window, so can just return here.
+	if len(freshPlain) >= int(num) {
+		return freshPlain, nil
+	}
+
+	// in order, but with holes
+	combined := append(freshPlain, cached...)
+	holes, err := findHoles(combined)
+	if err != nil {
+		return nil, err
+	}
+	if len(holes) == 0 {
+		end := min(int(num), len(combined))
+		return combined[0:end], nil
+	}
+
+	d.serverThreadReads.Add(1)
+	fillers, err := cli.RtGetThread(
+		m.Ctx(),
+		rem.RTThreadQuery{
+			ChannelID: ch.Id,
+			Seqs:      holes,
+		},
+	)
+	if err != nil {
+		return nil, err
+	}
+	fillerPlain, err := d.decodeAndCacheMsgs(m, rtp, appID, ch.Id, fillers.SeqMsgs)
+	if err != nil {
+		return nil, err
+	}
+	// we have to sort these messages as they come back randomly from the server.
+	// since we are going to merge them just below
+	err = sortMsgs(fillerPlain, inc)
+	if err != nil {
+		return nil, err
+	}
+	ret := merge(combined, fillerPlain, inc)
+	// Trim to the requested window, matching the no-holes path above.
+	end := min(int(num), len(ret))
+	return ret[0:end], nil
+}
+
+func (d *Minder) decodeMsgs(
+	m MetaContext,
+	rtp *RTParty,
+	appID proto.RTAppID,
+	chid proto.RTChannelID,
+	msgs []lib.RTMsgCachedWithSeq,
+) (
+	[]ThreadMessage,
+	error,
+) {
+	out := make([]ThreadMessage, 0, len(msgs))
+	for _, msg := range msgs {
+		body, cm, err := d.openMessage(m, rtp, appID,
+			msg.Cm.Md.Md, msg.Cm.Mw, &msg.Cm.Md.Sender, msg.Cm.Sit, chid)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, ThreadMessage{
+			Seq:                      msg.Seq,
+			Typ:                      cm.Md.Md.Typ,
+			Sender:                   &cm.Md.Sender,
+			SenderFurtherAttribution: cm.Md.Md.FurtherUserAttribution,
+			SentAtTime:               cm.Md.Md.SendTime,
+			InsertTime:               cm.Sit,
+			Body:                     body,
+		})
+	}
+	return out, nil
+}
+
+// decodeAndCacheMsgs decrypts each server message into a ThreadMessage for the
+// caller and writes the decrypted bodies into the local cache. Shared by
+// GetThread (paged range) and GetMsgs (arbitrary set of seqs).
+func (d *Minder) decodeAndCacheMsgs(
+	m MetaContext,
+	rtp *RTParty,
+	appID proto.RTAppID,
+	chid proto.RTChannelID,
+	msgs []rem.RTMsg,
+) (
+	[]ThreadMessage,
+	error,
+) {
+	out := make([]ThreadMessage, 0, len(msgs))
+	cachePuts := make([]proto.RTMsgCachedWithSeq, 0, len(msgs))
+	for _, msg := range msgs {
+		body, cm, err := d.openMessageWithRTMsg(m, rtp, appID, msg, chid)
+		if err != nil {
+			return nil, err
 		}
 		out = append(out, ThreadMessage{
 			Seq:                      msg.Seq,
@@ -805,6 +1267,58 @@ func (d *Minder) GetThread(
 			InsertTime:               msg.InsertTime,
 			Body:                     body,
 		})
+		cachePuts = append(cachePuts, proto.RTMsgCachedWithSeq{
+			Cm:  *cm,
+			Seq: msg.Seq,
+		})
 	}
-	return out, page.Final, nil
+	err := dbPutMsgs(m, d.au, cachePuts)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// GetMsgs fetches and decrypts an arbitrary set of messages from the named
+// channel by seq. Used to fill holes between locally-cached messages and a
+// paged GetThread fetch. Only messages that exist server-side are returned
+// (each carries its own Seq); requested seqs with no message are omitted, so
+// the result may be shorter than `seqs` and in unspecified order. klass
+// disambiguates when a name exists in more than one class; pass nil when the
+// name is unique.
+func (d *Minder) GetMsgs(
+	m MetaContext,
+	team *proto.FQTeamParsed,
+	appID proto.RTAppID,
+	channelName proto.RTChannelName,
+	klass *proto.RTChannelClass,
+	seqs []proto.RTMsgSeq,
+) (
+	[]ThreadMessage,
+	error,
+) {
+	if team == nil {
+		return nil, core.InternalError("team is required to read in Stage 1a")
+	}
+	rtp, err := d.base.GetParty(m.Base(), team)
+	if err != nil {
+		return nil, err
+	}
+	ch, err := d.resolveChannel(m, rtp, appID, channelName, klass)
+	if err != nil {
+		return nil, err
+	}
+	_, cli, err := d.clientLocal(m.Base(), d.au)
+	if err != nil {
+		return nil, err
+	}
+	d.serverThreadReads.Add(1)
+	page, err := cli.RtGetThread(m.Ctx(), rem.RTThreadQuery{
+		ChannelID: ch.Id,
+		Seqs:      seqs,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return d.decodeAndCacheMsgs(m, rtp, appID, ch.Id, page.SeqMsgs)
 }
