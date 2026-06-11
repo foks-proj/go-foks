@@ -1377,6 +1377,12 @@ func (r RTNotFoundError) Error() string {
 	return "not found: " + string(r)
 }
 
+type RTMsgOrderError string
+
+func (r RTMsgOrderError) Error() string {
+	return "bad message ordering: " + string(r)
+}
+
 func ErrorToStatus(e error) proto.Status {
 
 	switch {
@@ -1583,6 +1589,8 @@ func ErrorToStatus(e error) proto.Status {
 		return proto.NewStatusWithRtAmbiguousChannelError(te.Name)
 	case RTNotFoundError:
 		return proto.NewStatusWithRtNotFoundError(string(te))
+	case RTMsgOrderError:
+		return proto.NewStatusWithRtMsgOrderError(string(te))
 	case RPCEOFError:
 		return proto.NewStatusWithRpcEof()
 	case OverQuotaError:
@@ -2032,6 +2040,8 @@ func StatusToError(s proto.Status) error {
 		return RTAmbiguousChannelError{Name: s.RtAmbiguousChannelError()}
 	case proto.StatusCode_RT_NOT_FOUND_ERROR:
 		return RTNotFoundError(string(s.RtNotFoundError()))
+	case proto.StatusCode_RT_MSG_ORDER_ERROR:
+		return RTMsgOrderError(string(s.RtMsgOrderError()))
 	default:
 		return errors.New(s.Default())
 	}

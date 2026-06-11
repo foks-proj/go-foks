@@ -58,6 +58,36 @@ type Minder struct {
 	// and debugging (e.g. asserting a read was served entirely from cache).
 	serverThreadReads atomic.Int64
 	serverRecentReads atomic.Int64
+
+	msgIDCache *LRU[proto.RTMsgID, proto.RTMsgSeq]
+
+	testHooks *MinderTestHooks
+}
+
+// MinderTestHooks lets tests perturb a Minder. A nil Minder.testHooks, or a nil
+// individual hook, is a no-op. The intended use is to simulate a malicious or
+// buggy server by rewriting its responses in place before the client decodes
+// and verifies them.
+type MinderTestHooks struct {
+	// MutateReadRes, if set, rewrites each RtGetThread response.
+	MutateReadRes func(*rem.RTThreadPage)
+	// MutateRecentsRes, if set, rewrites each RtGetThreadRecents response.
+	MutateRecentsRes func(*rem.RTMsgList)
+}
+
+// SetTestHooks installs (or, with nil, clears) test hooks on the Minder.
+func (d *Minder) SetTestHooks(h *MinderTestHooks) { d.testHooks = h }
+
+func (d *Minder) hookReadRes(p *rem.RTThreadPage) {
+	if d.testHooks != nil && d.testHooks.MutateReadRes != nil {
+		d.testHooks.MutateReadRes(p)
+	}
+}
+
+func (d *Minder) hookRecentsRes(l *rem.RTMsgList) {
+	if d.testHooks != nil && d.testHooks.MutateRecentsRes != nil {
+		d.testHooks.MutateRecentsRes(l)
+	}
 }
 
 // MinderMetrics is a snapshot of a Minder's instrumentation counters.
@@ -82,7 +112,10 @@ func NewMinder(au *libclient.UserContext) *Minder {
 	if au == nil {
 		panic("nil active user")
 	}
-	ret := &Minder{au: au}
+	ret := &Minder{
+		au:         au,
+		msgIDCache: NewLRU[proto.RTMsgID, proto.RTMsgSeq](10_000),
+	}
 	ret.base = libclient.NewBaseMinder(
 		au,
 		func(n *RTParty) {},
@@ -537,6 +570,9 @@ func (k *Minder) listAllChannelsForTeam(
 // ThreadMessage is a single decrypted message, as returned by GetThread.
 type ThreadMessage struct {
 	Seq                      proto.RTMsgSeq
+	MsgID                    proto.RTMsgID  // this message's random id
+	PrevID                   proto.RTMsgID  // id the sender chained off of (zero if none)
+	PrevSeq                  proto.RTMsgSeq // seq the sender chained off of (0 if none)
 	Typ                      proto.RTMsgType
 	Sender                   *proto.PartyID
 	SenderFurtherAttribution *proto.UID
@@ -650,6 +686,17 @@ func (d *Minder) Send(
 	return d.SendWithTestHooks(m, team, appID, channelName, klass, body, nil)
 }
 
+func (d *Minder) cacheMsgID(
+	q proto.RTMsgSeq,
+	i proto.RTMsgID,
+) error {
+	existing := d.msgIDCache.Put(i, q)
+	if existing != nil && *existing != q {
+		return core.RTMsgOrderError(fmt.Sprintf("conflicting msgIDs for sequence %d", q))
+	}
+	return nil
+}
+
 // SendWithTestHooks is Send with optional test perturbations.
 func (d *Minder) SendWithTestHooks(
 	m MetaContext,
@@ -689,6 +736,17 @@ func (d *Minder) SendWithTestHooks(
 	err = core.RandomFill(md.MsgID[:])
 	if err != nil {
 		return nil, err
+	}
+
+	lastMsg, err := dbGetLastMsg(m, d.au, ch.Id)
+	if err != nil {
+		return nil, err
+	}
+	var prevSeq proto.RTMsgSeq
+	if lastMsg != nil {
+		md.PrevSeq = lastMsg.Seq
+		md.PrevID = lastMsg.Cm.Md.Md.MsgID
+		prevSeq = md.PrevSeq
 	}
 
 	noncer := proto.RTMsgNoncer{
@@ -740,7 +798,16 @@ func (d *Minder) SendWithTestHooks(
 		Seq: res.Seq,
 	}
 
-	err = dbPutMsgs(m, d.au, []proto.RTMsgCachedWithSeq{msgCachedSeq})
+	if prevSeq.IsValid() && res.Seq <= prevSeq {
+		return nil, core.RTMsgOrderError(
+			fmt.Sprintf(
+				"sent message has sequence (%d) <= last seen (%d)",
+				res.Seq.Int(), prevSeq.Int(),
+			),
+		)
+	}
+
+	err = d.dbPutMsgs(m, []proto.RTMsgCachedWithSeq{msgCachedSeq})
 	if err != nil {
 		return nil, err
 	}
@@ -956,6 +1023,16 @@ func sortMsgs(v []ThreadMessage, inc int) error {
 	return nil
 }
 
+type msgSession struct {
+	idMap map[proto.RTMsgID]proto.RTMsgSeq
+}
+
+func newMsgSession() *msgSession {
+	return &msgSession{
+		idMap: make(map[proto.RTMsgID]proto.RTMsgSeq),
+	}
+}
+
 // GetThreadBookened fetches and decrypts a page of messages from the named channel.
 // klass disambiguates when a name exists in more than one class; pass nil when
 // the name is unique.
@@ -987,6 +1064,8 @@ func (d *Minder) GetThreadBookended(
 	if start == end {
 		return nil, false, core.InternalError("no messages in range")
 	}
+
+	sess := newMsgSession()
 
 	// Direction is implied by the ordering of the bookends; the request is
 	// authoritative. Cached rows come back in this same order (DBRange.Get
@@ -1032,7 +1111,8 @@ func (d *Minder) GetThreadBookended(
 		cachedStart := cached[0].Seq
 		cachedEnd := core.Last(cached).Seq
 
-		// We had everything in cache!
+		// We had everything in cache! Cached messages were validated when they
+		// were first ingested, so by the trust model we don't re-verify here.
 		if len(holes) == 0 && start == cachedStart && end == cachedEnd {
 			return cached, false, nil
 		}
@@ -1067,17 +1147,23 @@ func (d *Minder) GetThreadBookended(
 	if err != nil {
 		return nil, false, err
 	}
+	d.hookReadRes(&page)
+
+	err = sess.loadFromServer(extractAllSeqIDPairsFromRTThreadPage(&page))
+	if err != nil {
+		return nil, false, err
+	}
 
 	ret := cached
 	for _, r := range page.RangeMsgs {
-		tmp, err := d.decodeAndCacheMsgs(m, rtp, appID, ch.Id, r.Lst)
+		tmp, err := d.decodeAndCacheServerMsgs(m, sess, rtp, appID, ch.Id, r.Lst)
 		if err != nil {
 			return nil, false, err
 		}
 		ret = merge(ret, tmp, inc)
 	}
 
-	tmp, err := d.decodeAndCacheMsgs(m, rtp, appID, ch.Id, page.SeqMsgs)
+	tmp, err := d.decodeAndCacheServerMsgs(m, sess, rtp, appID, ch.Id, page.SeqMsgs)
 	if err != nil {
 		return nil, false, err
 	}
@@ -1125,6 +1211,8 @@ func (d *Minder) GetThreadRecentMsgs(
 		return nil, err
 	}
 
+	sess := newMsgSession()
+
 	cachedMsgsEnc, err := dbGetRecentMsgs(
 		m,
 		d.au,
@@ -1160,7 +1248,12 @@ func (d *Minder) GetThreadRecentMsgs(
 	if err != nil {
 		return nil, err
 	}
-	freshPlain, err := d.decodeAndCacheMsgs(m, rtp, appID, ch.Id, fresh.Lst)
+	d.hookRecentsRes(&fresh)
+	err = sess.loadFromServer(extractAllSeqIDPairsFromMsgList(fresh.Lst))
+	if err != nil {
+		return nil, err
+	}
+	freshPlain, err := d.decodeAndCacheServerMsgs(m, sess, rtp, appID, ch.Id, fresh.Lst)
 	if err != nil {
 		return nil, err
 	}
@@ -1192,7 +1285,17 @@ func (d *Minder) GetThreadRecentMsgs(
 	if err != nil {
 		return nil, err
 	}
-	fillerPlain, err := d.decodeAndCacheMsgs(m, rtp, appID, ch.Id, fillers.SeqMsgs)
+	d.hookReadRes(&fillers)
+	// Same session as the recents fetch above (additive, no reset), so the
+	// fillers are cross-checked against the recents page: equivocation between
+	// the two batches and prev pointers from a filler into a recents message are
+	// both caught here.
+	err = sess.loadFromServer(extractAllSeqIDPairsFromRTThreadPage(&fillers))
+	if err != nil {
+		return nil, err
+	}
+
+	fillerPlain, err := d.decodeAndCacheServerMsgs(m, sess, rtp, appID, ch.Id, fillers.SeqMsgs)
 	if err != nil {
 		return nil, err
 	}
@@ -1227,6 +1330,9 @@ func (d *Minder) decodeMsgs(
 		}
 		out = append(out, ThreadMessage{
 			Seq:                      msg.Seq,
+			MsgID:                    cm.Md.Md.MsgID,
+			PrevID:                   cm.Md.Md.PrevID,
+			PrevSeq:                  cm.Md.Md.PrevSeq,
 			Typ:                      cm.Md.Md.Typ,
 			Sender:                   &cm.Md.Sender,
 			SenderFurtherAttribution: cm.Md.Md.FurtherUserAttribution,
@@ -1238,11 +1344,83 @@ func (d *Minder) decodeMsgs(
 	return out, nil
 }
 
-// decodeAndCacheMsgs decrypts each server message into a ThreadMessage for the
+func (d *Minder) validateMetadata(
+	m MetaContext,
+	sess *msgSession,
+	chid proto.RTChannelID,
+	q proto.RTMsgSeq,
+	prevSeq proto.RTMsgSeq,
+	prevID proto.RTMsgID,
+) error {
+	if !prevSeq.IsValid() {
+		return nil
+	}
+	if q <= prevSeq {
+		return core.RTMsgOrderError(
+			fmt.Sprintf("server returned msg @%d <= prev @%d", q, prevSeq),
+		)
+	}
+	if prevID.IsZero() {
+		return core.RTMsgOrderError("need a prevID if prev sequence is specified")
+	}
+	found, ok := sess.idMap[prevID]
+	if ok && found != prevSeq {
+		s, err := prevID.RTID().StringErr()
+		if err != nil {
+			s = "msg error: " + err.Error()
+		}
+		return core.RTMsgOrderError(
+			fmt.Sprintf("disagreement for id=%s; %d != %d", s, found, prevSeq),
+		)
+	}
+	err := d.validateMsgSeqToIDMapping(m, chid, prevSeq, prevID)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (d *Minder) decodeAndVerifyMsg(
+	m MetaContext,
+	sess *msgSession,
+	rtp *RTParty,
+	appID proto.RTAppID,
+	chid proto.RTChannelID,
+	msg rem.RTMsg,
+) (
+	*ThreadMessage,
+	*proto.RTMsgCached,
+	error,
+) {
+	body, cm, err := d.openMessageWithRTMsg(m, rtp, appID, msg, chid)
+	if err != nil {
+		return nil, nil, err
+	}
+	err = d.validateMetadata(m, sess, chid, msg.Seq, msg.Md.PrevSeq, msg.Md.PrevID)
+	if err != nil {
+		return nil, nil, err
+	}
+	ret := ThreadMessage{
+		Seq:                      msg.Seq,
+		MsgID:                    msg.Md.MsgID,
+		PrevID:                   msg.Md.PrevID,
+		PrevSeq:                  msg.Md.PrevSeq,
+		Typ:                      msg.Md.Typ,
+		Sender:                   msg.Sender,
+		SenderFurtherAttribution: msg.Md.FurtherUserAttribution,
+		SentAtTime:               msg.Md.SendTime,
+		InsertTime:               msg.InsertTime,
+		Body:                     body,
+	}
+	return &ret, cm, nil
+}
+
+// decodeAndCacheServerMsgs decrypts each server message into a ThreadMessage for the
 // caller and writes the decrypted bodies into the local cache. Shared by
 // GetThread (paged range) and GetMsgs (arbitrary set of seqs).
-func (d *Minder) decodeAndCacheMsgs(
+func (d *Minder) decodeAndCacheServerMsgs(
 	m MetaContext,
+	sess *msgSession,
 	rtp *RTParty,
 	appID proto.RTAppID,
 	chid proto.RTChannelID,
@@ -1254,25 +1432,17 @@ func (d *Minder) decodeAndCacheMsgs(
 	out := make([]ThreadMessage, 0, len(msgs))
 	cachePuts := make([]proto.RTMsgCachedWithSeq, 0, len(msgs))
 	for _, msg := range msgs {
-		body, cm, err := d.openMessageWithRTMsg(m, rtp, appID, msg, chid)
+		tm, cm, err := d.decodeAndVerifyMsg(m, sess, rtp, appID, chid, msg)
 		if err != nil {
 			return nil, err
 		}
-		out = append(out, ThreadMessage{
-			Seq:                      msg.Seq,
-			Typ:                      msg.Md.Typ,
-			Sender:                   msg.Sender,
-			SenderFurtherAttribution: msg.Md.FurtherUserAttribution,
-			SentAtTime:               msg.Md.SendTime,
-			InsertTime:               msg.InsertTime,
-			Body:                     body,
-		})
+		out = append(out, *tm)
 		cachePuts = append(cachePuts, proto.RTMsgCachedWithSeq{
 			Cm:  *cm,
 			Seq: msg.Seq,
 		})
 	}
-	err := dbPutMsgs(m, d.au, cachePuts)
+	err := d.dbPutMsgs(m, cachePuts)
 	if err != nil {
 		return nil, err
 	}
@@ -1300,6 +1470,7 @@ func (d *Minder) GetMsgs(
 	if team == nil {
 		return nil, core.InternalError("team is required to read in Stage 1a")
 	}
+	sess := newMsgSession()
 	rtp, err := d.base.GetParty(m.Base(), team)
 	if err != nil {
 		return nil, err
@@ -1320,5 +1491,112 @@ func (d *Minder) GetMsgs(
 	if err != nil {
 		return nil, err
 	}
-	return d.decodeAndCacheMsgs(m, rtp, appID, ch.Id, page.SeqMsgs)
+	d.hookReadRes(&page)
+	err = sess.loadFromServer(extractAllSeqIDPairsFromRTThreadPage(&page))
+	if err != nil {
+		return nil, err
+	}
+	return d.decodeAndCacheServerMsgs(m, sess, rtp, appID, ch.Id, page.SeqMsgs)
+}
+
+func (d *Minder) dbPutMsgs(
+	m MetaContext,
+	v []proto.RTMsgCachedWithSeq,
+) error {
+	for _, x := range v {
+		err := d.cacheMsgID(x.Seq, x.Cm.Md.Md.MsgID)
+		if err != nil {
+			return err
+		}
+	}
+	return dbPutMsgs(m, d.au, v)
+}
+
+func (d *Minder) validateMsgSeqToIDMapping(
+	m MetaContext,
+	chid proto.RTChannelID,
+	q proto.RTMsgSeq,
+	i proto.RTMsgID,
+) error {
+	tmp, ok := d.msgIDCache.Get(i)
+
+	if ok {
+		if tmp == q {
+			return nil
+		}
+		s, err := i.RTID().StringErr()
+		if err != nil {
+			s = "msg encode error: " + err.Error()
+		}
+		return core.RTMsgOrderError(
+			fmt.Sprintf(
+				"bad mapping: expected %s -> %d but got %d",
+				s, i, tmp,
+			))
+	}
+
+	msgs, err := dbGetMsgs(m, d.au, chid, q, q)
+	if err != nil {
+		return err
+	}
+	if len(msgs) == 0 {
+		// We don't have the prev message anywhere we can consult (this page, the
+		// id-cache, or the local DB), so we can't check that prevID maps to
+		// prevSeq -- accept it. Known gap: the message is then cached as
+		// "validated", and per the trust model (cached == already-validated) we
+		// never recheck it, even if we later learn the prev's seq->id mapping and
+		// could retroactively catch a lie.
+		// TODO(chat): revisit prev pointers when their target later becomes known.
+		return nil
+	}
+	if len(msgs) != 1 {
+		return core.RTMsgOrderError(fmt.Sprintf("too many rows for seq=%d", q))
+	}
+	msg := msgs[0]
+	if !msg.Cm.Md.Md.MsgID.Eq(i) {
+		return core.RTMsgOrderError(fmt.Sprintf("msg ID clash for seq=%d", q))
+	}
+	return nil
+}
+
+type seqIDPair struct {
+	id  proto.RTMsgID
+	seq proto.RTMsgSeq
+}
+
+func (s *msgSession) loadFromServer(v []seqIDPair) error {
+	for _, x := range v {
+		existing, ok := s.idMap[x.id]
+		if ok && existing != x.seq {
+			s, err := x.id.RTID().StringErr()
+			if err != nil {
+				s = "id error: " + err.Error()
+			}
+			return core.RTMsgOrderError(
+				fmt.Sprintf("conflicting sequence numbers for msg ID %s", s),
+			)
+		}
+		s.idMap[x.id] = x.seq
+	}
+	return nil
+}
+
+func extractAllSeqIDPairsFromMsgList(l []rem.RTMsg) []seqIDPair {
+	ret := make([]seqIDPair, 0, len(l))
+	for _, m := range l {
+		ret = append(ret, seqIDPair{seq: m.Seq, id: m.Md.MsgID})
+	}
+	return ret
+
+}
+
+func extractAllSeqIDPairsFromRTThreadPage(p *rem.RTThreadPage) []seqIDPair {
+	var ret []seqIDPair
+	for _, r := range p.RangeMsgs {
+		tmp := extractAllSeqIDPairsFromMsgList(r.Lst)
+		ret = append(ret, tmp...)
+	}
+	tmp := extractAllSeqIDPairsFromMsgList(p.SeqMsgs)
+	ret = append(ret, tmp...)
+	return ret
 }
