@@ -2,11 +2,13 @@ package lib
 
 import (
 	"fmt"
+	"slices"
 	"testing"
 
 	"github.com/foks-proj/go-foks/client/librt"
 	"github.com/foks-proj/go-foks/lib/core"
 	proto "github.com/foks-proj/go-foks/proto/lib"
+	"github.com/foks-proj/go-foks/proto/rem"
 	"github.com/stretchr/testify/require"
 )
 
@@ -405,6 +407,269 @@ func TestRTMinderSenderReadsAreCacheHits(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, before.ServerThreadReads+1, minder.Metrics().ServerThreadReads,
 		"a read past the cached range must issue exactly one server RtGetThread")
+}
+
+// TestRTMinderPrevPointers checks that a sender chains each message's
+// prevSeq/prevID onto its predecessor when it has one (and leaves them zero for
+// the very first message in the channel), and that a receiver fetching the
+// thread from the server sees that same chain. Asserting on the receiver
+// (server-decode path) and the sender (on-send cache-decode path) also confirms
+// the two paths agree.
+func TestRTMinderPrevPointers(t *testing.T) {
+	tew := testEnvBeta(t)
+	bluey := tew.NewTestUser(t) // sender / team owner
+	coco := tew.NewTestUser(t)  // receiver / ordinary member
+	tew.DirectDoubleMerklePokeInTest(t)
+	tm := tew.makeTeamForOwner(t, bluey)
+	tm.makeChanges(
+		t, tew.MetaContext(), bluey,
+		[]proto.MemberRole{coco.toMemberRole(t, proto.DefaultRole, tm.hepks)}, nil,
+	)
+
+	mb := librt.NewMetaContext(tew.NewClientMetaContextWithEracer(t, bluey))
+	sender := librt.NewMinder(mb.G().ActiveUser())
+	mc := librt.NewMetaContext(tew.NewClientMetaContextWithEracer(t, coco))
+	receiver := librt.NewMinder(mc.G().ActiveUser())
+	fqt := tm.ToFQTeamParsed(t)
+
+	_, err := sender.MakeChannel(mb, fqt, proto.RTAppID_Chat, "foo", "prev pointers",
+		proto.RolePairOpt{Read: &proto.DefaultRole, Write: &proto.DefaultRole})
+	require.NoError(t, err)
+
+	const n = 4
+	for i := 1; i <= n; i++ {
+		res, err := sender.Send(mb, fqt, proto.RTAppID_Chat, "foo", nil, []byte(fmt.Sprintf("msg-%d", i)))
+		require.NoError(t, err)
+		require.Equal(t, proto.RTMsgSeq(i), res.Seq)
+	}
+
+	var zeroID proto.RTMsgID
+	assertChain := func(t *testing.T, who string, msgs []librt.ThreadMessage) {
+		require.Len(t, msgs, n, who)
+		for i, msg := range msgs {
+			require.Equal(t, proto.RTMsgSeq(i+1), msg.Seq, who)
+			require.NotEqual(t, zeroID, msg.MsgID, "%s: msg %d should carry a real id", who, i+1)
+			if i == 0 {
+				// First message in the channel: the sender had no predecessor.
+				require.Equal(t, proto.RTMsgSeq(0), msg.PrevSeq, "%s: first msg prevSeq", who)
+				require.Equal(t, zeroID, msg.PrevID, "%s: first msg prevID", who)
+			} else {
+				// Otherwise prev points at the immediately preceding message.
+				require.Equal(t, msgs[i-1].Seq, msg.PrevSeq, "%s: msg %d prevSeq", who, i+1)
+				require.Equal(t, msgs[i-1].MsgID, msg.PrevID, "%s: msg %d prevID", who, i+1)
+			}
+		}
+	}
+
+	// Receiver fetches from the server (cold cache) and must see the chain the
+	// sender stamped on each message.
+	got, _, err := receiver.GetThreadBookended(mc, fqt, proto.RTAppID_Chat, "foo", nil, 1, n)
+	require.NoError(t, err)
+	assertChain(t, "receiver", got)
+
+	// The sender's own read (served from its on-send cache) agrees.
+	got, _, err = sender.GetThreadBookended(mb, fqt, proto.RTAppID_Chat, "foo", nil, 1, n)
+	require.NoError(t, err)
+	assertChain(t, "sender", got)
+}
+
+// TestRTMinderEvilServerOrdering simulates a malicious server by installing a
+// Minder test hook that rewrites the server's read response in place, then
+// checks the client's ingest-time verification catches the tampering. Only
+// fields outside the encryption nonce can be tampered without breaking
+// decryption -- in practice the server-assigned `seq` and message structure --
+// so these are the realistic attacks: relabeling seqs (reordering), delivering
+// one message under two seqs (equivocation), and making a prev pointer disagree
+// with where its target now sits.
+func TestRTMinderEvilServerOrdering(t *testing.T) {
+	tew := testEnvBeta(t)
+	bluey := tew.NewTestUser(t) // honest sender / team owner
+	coco := tew.NewTestUser(t)  // reader, fed lies by the "evil server"
+	tew.DirectDoubleMerklePokeInTest(t)
+	tm := tew.makeTeamForOwner(t, bluey)
+	tm.makeChanges(
+		t, tew.MetaContext(), bluey,
+		[]proto.MemberRole{coco.toMemberRole(t, proto.DefaultRole, tm.hepks)}, nil,
+	)
+
+	mb := librt.NewMetaContext(tew.NewClientMetaContextWithEracer(t, bluey))
+	sender := librt.NewMinder(mb.G().ActiveUser())
+	mc := librt.NewMetaContext(tew.NewClientMetaContextWithEracer(t, coco))
+	fqt := tm.ToFQTeamParsed(t)
+
+	_, err := sender.MakeChannel(mb, fqt, proto.RTAppID_Chat, "foo", "evil server",
+		proto.RolePairOpt{Read: &proto.DefaultRole, Write: &proto.DefaultRole})
+	require.NoError(t, err)
+
+	const n = 4
+	for i := 1; i <= n; i++ {
+		_, err := sender.Send(mb, fqt, proto.RTAppID_Chat, "foo", nil, []byte(fmt.Sprintf("msg-%d", i)))
+		require.NoError(t, err)
+	}
+	allSeqs := []proto.RTMsgSeq{1, 2, 3, 4}
+
+	// read fetches the messages on a *fresh* receiver (empty caches) with the
+	// given response-mutating hook installed.
+	read := func(mut func(*rem.RTThreadPage)) ([]librt.ThreadMessage, error) {
+		recv := librt.NewMinder(mc.G().ActiveUser())
+		recv.SetTestHooks(&librt.MinderTestHooks{MutateReadRes: mut})
+		return recv.GetMsgs(mc, fqt, proto.RTAppID_Chat, "foo", nil, allSeqs)
+	}
+	requireOrderErr := func(t *testing.T, err error) {
+		require.Error(t, err)
+		var oe core.RTMsgOrderError
+		require.ErrorAs(t, err, &oe)
+	}
+	// relabel the message currently at seq `from` to seq `to`.
+	setSeq := func(p *rem.RTThreadPage, from, to int) {
+		for i := range p.SeqMsgs {
+			if p.SeqMsgs[i].Seq == proto.RTMsgSeq(from) {
+				p.SeqMsgs[i].Seq = proto.RTMsgSeq(to)
+			}
+		}
+	}
+
+	t.Run("seq_at_or_below_prev", func(t *testing.T) {
+		// msg @2's authenticated prev is @1; relabel it @1 so seq <= prevSeq.
+		_, err := read(func(p *rem.RTThreadPage) { setSeq(p, 2, 1) })
+		requireOrderErr(t, err)
+	})
+
+	t.Run("same_msg_two_seqs", func(t *testing.T) {
+		// Deliver msg @1 a second time under a different seq: its (authenticated)
+		// id is now claimed at two sequence numbers.
+		_, err := read(func(p *rem.RTThreadPage) {
+			for _, msg := range p.SeqMsgs {
+				if msg.Seq == 1 {
+					dup := msg
+					dup.Seq = 99
+					p.SeqMsgs = append(p.SeqMsgs, dup)
+					break
+				}
+			}
+		})
+		requireOrderErr(t, err)
+	})
+
+	t.Run("prev_pointer_disagreement", func(t *testing.T) {
+		// Move msg @1 to seq @50. msg @2's prev still points at id(1)->seq 1,
+		// which no longer matches where 1 sits in this page.
+		_, err := read(func(p *rem.RTThreadPage) { setSeq(p, 1, 50) })
+		requireOrderErr(t, err)
+	})
+
+	t.Run("benign_reorder_ok", func(t *testing.T) {
+		// Reversing the (unordered) seq list changes nothing the verifier cares
+		// about, so an honest-but-shuffled response must still succeed. Proves
+		// the hook fires without the verifier false-positiving.
+		out, err := read(func(p *rem.RTThreadPage) { slices.Reverse(p.SeqMsgs) })
+		require.NoError(t, err)
+		require.Len(t, out, n)
+	})
+}
+
+// TestRTMinderEvilServerRecentsHoleFill drives verification through the
+// recents + hole-fill path (the one that previously passed a nil session). It
+// forces a hole by dropping a message from the recents response, which makes
+// the client fetch a filler -- then it tampers with that filler. It also checks
+// the cross-batch case the shared session enables: a filler that equivocates
+// with a message from the recents batch.
+func TestRTMinderEvilServerRecentsHoleFill(t *testing.T) {
+	tew := testEnvBeta(t)
+	bluey := tew.NewTestUser(t) // honest sender / team owner
+	coco := tew.NewTestUser(t)  // reader, fed lies by the "evil server"
+	tew.DirectDoubleMerklePokeInTest(t)
+	tm := tew.makeTeamForOwner(t, bluey)
+	tm.makeChanges(
+		t, tew.MetaContext(), bluey,
+		[]proto.MemberRole{coco.toMemberRole(t, proto.DefaultRole, tm.hepks)}, nil,
+	)
+
+	mb := librt.NewMetaContext(tew.NewClientMetaContextWithEracer(t, bluey))
+	sender := librt.NewMinder(mb.G().ActiveUser())
+	mc := librt.NewMetaContext(tew.NewClientMetaContextWithEracer(t, coco))
+	fqt := tm.ToFQTeamParsed(t)
+
+	const n = 4
+	// populate creates a fresh channel and sends n messages into it. Each subtest
+	// uses its own channel because GetThreadRecentMsgs caches the recents portion
+	// even when a later filler fetch fails -- a shared channel would let one
+	// subtest's cache advance `stopAt` for the next, suppressing its hole/filler.
+	populate := func(ch proto.RTChannelName) {
+		_, err := sender.MakeChannel(mb, fqt, proto.RTAppID_Chat, ch, "evil recents",
+			proto.RolePairOpt{Read: &proto.DefaultRole, Write: &proto.DefaultRole})
+		require.NoError(t, err)
+		for i := 1; i <= n; i++ {
+			_, err := sender.Send(mb, fqt, proto.RTAppID_Chat, ch, nil, []byte(fmt.Sprintf("msg-%d", i)))
+			require.NoError(t, err)
+		}
+	}
+
+	requireOrderErr := func(t *testing.T, err error) {
+		require.Error(t, err)
+		var oe core.RTMsgOrderError
+		require.ErrorAs(t, err, &oe)
+	}
+	// readRecents reads channel `ch` on a fresh receiver, dropping seq `dropSeq`
+	// from the recents response (to force a hole + filler fetch) and applying
+	// `fillerMut` to the filler response.
+	readRecents := func(ch proto.RTChannelName, dropSeq int, fillerMut func(*rem.RTThreadPage)) ([]librt.ThreadMessage, error) {
+		recv := librt.NewMinder(mc.G().ActiveUser())
+		recv.SetTestHooks(&librt.MinderTestHooks{
+			MutateRecentsRes: func(l *rem.RTMsgList) {
+				l.Lst = slices.DeleteFunc(l.Lst, func(msg rem.RTMsg) bool {
+					return msg.Seq == proto.RTMsgSeq(dropSeq)
+				})
+			},
+			MutateReadRes: fillerMut,
+		})
+		return recv.GetThreadRecentMsgs(mc, fqt, proto.RTAppID_Chat, ch, nil, 0)
+	}
+
+	t.Run("tampered_filler", func(t *testing.T) {
+		populate("foo")
+		// Hole at 2 -> client fetches the filler for seq 2; relabel it seq 1 so
+		// seq <= prevSeq. The filler is verified at ingest, not silently trusted.
+		_, err := readRecents("foo", 2, func(p *rem.RTThreadPage) {
+			for i := range p.SeqMsgs {
+				if p.SeqMsgs[i].Seq == 2 {
+					p.SeqMsgs[i].Seq = 1
+				}
+			}
+		})
+		requireOrderErr(t, err)
+	})
+
+	t.Run("filler_equivocates_with_recents", func(t *testing.T) {
+		populate("bar")
+		// Hole at 2, but the filler page *also* re-delivers msg @3 (which was in
+		// the recents batch) under a bogus seq. Because the holes fetch shares the
+		// recents session, the id(3)->{3,77} disagreement must be caught.
+		var captured *rem.RTMsg
+		recv := librt.NewMinder(mc.G().ActiveUser())
+		recv.SetTestHooks(&librt.MinderTestHooks{
+			MutateRecentsRes: func(l *rem.RTMsgList) {
+				for i := range l.Lst {
+					if l.Lst[i].Seq == 3 {
+						tmp := l.Lst[i]
+						captured = &tmp
+					}
+				}
+				l.Lst = slices.DeleteFunc(l.Lst, func(msg rem.RTMsg) bool {
+					return msg.Seq == 2
+				})
+			},
+			MutateReadRes: func(p *rem.RTThreadPage) {
+				if captured != nil {
+					dup := *captured
+					dup.Seq = 77
+					p.SeqMsgs = append(p.SeqMsgs, dup)
+				}
+			},
+		})
+		_, err := recv.GetThreadRecentMsgs(mc, fqt, proto.RTAppID_Chat, "bar", nil, 0)
+		requireOrderErr(t, err)
+	})
 }
 
 // TestRTSendReadPermissions exercises the server-side authorization machinery

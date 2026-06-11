@@ -140,6 +140,25 @@ func dbGetMsgs(
 	)
 }
 
+func dbGetLastMsg(
+	m MetaContext,
+	au *libclient.UserContext,
+	chid proto.RTChannelID,
+) (
+	*proto.RTMsgCachedWithSeq,
+	error,
+) {
+	tmp, err := dbGetRecentMsgs(m, au, chid, 1)
+	if err != nil {
+		return nil, err
+	}
+	if len(tmp) < 1 {
+		return nil, nil
+	}
+	return &tmp[0], nil
+
+}
+
 func dbGetRecentMsgs(
 	m MetaContext,
 	au *libclient.UserContext,

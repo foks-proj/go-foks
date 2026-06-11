@@ -155,6 +155,7 @@ const (
 	StatusCode_RT_RACE                                 StatusCode = 12003
 	StatusCode_RT_AMBIGUOUS_CHANNEL_ERROR              StatusCode = 12004
 	StatusCode_RT_NOT_FOUND_ERROR                      StatusCode = 12005
+	StatusCode_RT_MSG_ORDER_ERROR                      StatusCode = 12006
 )
 
 var StatusCodeMap = map[string]StatusCode{
@@ -301,6 +302,7 @@ var StatusCodeMap = map[string]StatusCode{
 	"RT_RACE":                                 12003,
 	"RT_AMBIGUOUS_CHANNEL_ERROR":              12004,
 	"RT_NOT_FOUND_ERROR":                      12005,
+	"RT_MSG_ORDER_ERROR":                      12006,
 }
 var StatusCodeRevMap = map[StatusCode]string{
 	0:     "OK",
@@ -446,6 +448,7 @@ var StatusCodeRevMap = map[StatusCode]string{
 	12003: "RT_RACE",
 	12004: "RT_AMBIGUOUS_CHANNEL_ERROR",
 	12005: "RT_NOT_FOUND_ERROR",
+	12006: "RT_MSG_ORDER_ERROR",
 }
 
 type StatusCodeInternal__ StatusCode
@@ -1244,7 +1247,7 @@ func (s Status) GetSc() (ret StatusCode, err error) {
 	switch s.Sc {
 	case StatusCode_OK, StatusCode_AUTH_ERROR, StatusCode_TIMEOUT_ERROR, StatusCode_REPLAY_ERROR, StatusCode_BAD_PASSPHRASE_ERROR, StatusCode_RATE_LIMIT_ERROR, StatusCode_TX_RETRY_ERROR, StatusCode_WRONG_USER_ERROR, StatusCode_BAD_INVITE_CODE_ERROR, StatusCode_NOT_IMPLEMENTED, StatusCode_USERNAME_IN_USE_ERROR, StatusCode_MERKLE_NO_ROOT_ERROR, StatusCode_NO_DEFAULT_HOST_ERROR, StatusCode_KEY_IN_USE_ERROR, StatusCode_MERKLE_LEAF_NOT_FOUND_ERROR, StatusCode_USER_NOT_FOUND_ERROR, StatusCode_ROW_NOT_FOUND_ERROR, StatusCode_KEX_BAD_SECRET, StatusCode_PASSPHRASE_LOCKED_ERROR, StatusCode_NO_ACTIVE_USER_ERROR, StatusCode_SIGNING_KEY_NOT_FULLY_PROVISIONED_ERROR, StatusCode_CANCELED_INPUT_ERROR, StatusCode_TESTING_ONLY_ERROR, StatusCode_PASSPHRASE_NOT_FOUND_ERROR, StatusCode_RPC_EOF, StatusCode_TEAM_NOT_FOUND_ERROR, StatusCode_TEAM_NO_SRC_ROLE_ERROR, StatusCode_NEED_LOGIN_ERROR, StatusCode_BAD_RANGE_ERROR, StatusCode_HOSTID_NOT_FOUND_ERROR, StatusCode_KV_UPLOAD_IN_PROGRESS_ERROR, StatusCode_KV_EXISTS_ERROR, StatusCode_KV_NEED_FILE_ERROR, StatusCode_KV_NEED_DIR_ERROR, StatusCode_KV_PATH_TOO_DEEP_ERROR, StatusCode_KV_LOCK_ALREADY_HELD_ERROR, StatusCode_KV_LOCK_TIMEOUT_ERROR, StatusCode_KV_RMDIR_NEED_RECURSIVE_ERROR, StatusCode_CONTEXT_CANCELED_ERROR, StatusCode_NETWORK_CONDITIONER_ERROR, StatusCode_WEB_SESSION_NOT_FOUND_ERROR, StatusCode_NO_ACTIVE_PLAN_ERROR, StatusCode_OVER_QUOTA_ERROR, StatusCode_PLAN_EXISTS_ERROR, StatusCode_EXPIRED_ERROR, StatusCode_STRIPE_SESSION_EXISTS_ERROR, StatusCode_SSO_IDP_LOCKED_ERROR, StatusCode_TEAM_INVITE_ALREADY_ACCEPTED_ERROR, StatusCode_DEVICE_ALREADY_PROVISIONED_ERROR, StatusCode_KV_NOT_AVAILABLE_ERROR, StatusCode_YUBI_DEFAULT_MANAGEMENT_KEY_ERROR, StatusCode_YUBI_BAD_PIN_FORMAT_ERROR, StatusCode_YUBI_PIN_REQUIRED_ERROR, StatusCode_YUBI_DEFAULT_PIN_ERROR, StatusCode_BOT_TOKEN_LOCKED_ERROR, StatusCode_RT_CHANNEL_EXISTS_ERROR:
 		break
-	case StatusCode_TLS_ERROR, StatusCode_CONFIG_ERROR, StatusCode_DUPLICATE_ERROR, StatusCode_RESERVATION_ERROR, StatusCode_LINK_ERROR, StatusCode_VALIDATION_ERROR, StatusCode_VERIFY_ERROR, StatusCode_X509_ERROR, StatusCode_PERMISSION_ERROR, StatusCode_PREV_ERROR, StatusCode_BOX_ERROR, StatusCode_INSERT_ERROR, StatusCode_UPDATE_ERROR, StatusCode_REVOKE_ERROR, StatusCode_COMMITMENT_ERROR, StatusCode_YUBI_ERROR, StatusCode_HOSTCHAIN_ERROR, StatusCode_GRANT_ERROR, StatusCode_NO_CHANGE_ERROR, StatusCode_BAD_ARGS_ERROR, StatusCode_KEY_NOT_FOUND_ERROR, StatusCode_PROTO_DATA_ERROR, StatusCode_HOST_MISMATCH_ERROR, StatusCode_BAD_FORMAT_ERROR, StatusCode_AMBIGUOUS_ERROR, StatusCode_ROLE_ERROR, StatusCode_REVOKE_RACE_ERROR, StatusCode_MERKLE_VERIFY_ERROR, StatusCode_TEAM_ERROR, StatusCode_TEAM_RACE_ERROR, StatusCode_TEAM_BEARER_TOKEN_STALE_ERROR, StatusCode_TEAM_CERT_ERROR, StatusCode_TEAM_ROSTER_ERROR, StatusCode_TEAM_KEY_ERROR, StatusCode_TEAM_INDEX_RANGE_ERROR, StatusCode_TEAM_REMOVAL_KEY_ERROR, StatusCode_TEAM_EXPLORE_ERROR, StatusCode_GENERIC_NOT_FOUND_ERROR, StatusCode_KV_UPLOAD_ERROR, StatusCode_KV_RACE_ERROR, StatusCode_KV_PATH_ERROR, StatusCode_KV_MKDIR_ERROR, StatusCode_KV_TYPE_ERROR, StatusCode_KV_NOENT_ERROR, StatusCode_GIT_GENERIC_ERROR, StatusCode_GIT_BAD_PATH_ERROR, StatusCode_UPGRADE_NEEDED_ERROR, StatusCode_VERSION_NOT_SUPPORTED_ERROR, StatusCode_HOST_IN_USE_ERROR, StatusCode_OAUTH2_ERROR, StatusCode_KV_ABS_PATH_ERROR, StatusCode_YUBI_BUS_ERROR, StatusCode_KEYCHAIN_ERROR, StatusCode_AGENT_CONNECT_ERROR, StatusCode_BOT_TOKEN_ERROR, StatusCode_GIT_BAD_HEAD_ERROR, StatusCode_GIT_BAD_REF_NAME_ERROR, StatusCode_INTERNAL_ERROR, StatusCode_RT_GENERIC_ERROR, StatusCode_RT_RACE, StatusCode_RT_AMBIGUOUS_CHANNEL_ERROR, StatusCode_RT_NOT_FOUND_ERROR:
+	case StatusCode_TLS_ERROR, StatusCode_CONFIG_ERROR, StatusCode_DUPLICATE_ERROR, StatusCode_RESERVATION_ERROR, StatusCode_LINK_ERROR, StatusCode_VALIDATION_ERROR, StatusCode_VERIFY_ERROR, StatusCode_X509_ERROR, StatusCode_PERMISSION_ERROR, StatusCode_PREV_ERROR, StatusCode_BOX_ERROR, StatusCode_INSERT_ERROR, StatusCode_UPDATE_ERROR, StatusCode_REVOKE_ERROR, StatusCode_COMMITMENT_ERROR, StatusCode_YUBI_ERROR, StatusCode_HOSTCHAIN_ERROR, StatusCode_GRANT_ERROR, StatusCode_NO_CHANGE_ERROR, StatusCode_BAD_ARGS_ERROR, StatusCode_KEY_NOT_FOUND_ERROR, StatusCode_PROTO_DATA_ERROR, StatusCode_HOST_MISMATCH_ERROR, StatusCode_BAD_FORMAT_ERROR, StatusCode_AMBIGUOUS_ERROR, StatusCode_ROLE_ERROR, StatusCode_REVOKE_RACE_ERROR, StatusCode_MERKLE_VERIFY_ERROR, StatusCode_TEAM_ERROR, StatusCode_TEAM_RACE_ERROR, StatusCode_TEAM_BEARER_TOKEN_STALE_ERROR, StatusCode_TEAM_CERT_ERROR, StatusCode_TEAM_ROSTER_ERROR, StatusCode_TEAM_KEY_ERROR, StatusCode_TEAM_INDEX_RANGE_ERROR, StatusCode_TEAM_REMOVAL_KEY_ERROR, StatusCode_TEAM_EXPLORE_ERROR, StatusCode_GENERIC_NOT_FOUND_ERROR, StatusCode_KV_UPLOAD_ERROR, StatusCode_KV_RACE_ERROR, StatusCode_KV_PATH_ERROR, StatusCode_KV_MKDIR_ERROR, StatusCode_KV_TYPE_ERROR, StatusCode_KV_NOENT_ERROR, StatusCode_GIT_GENERIC_ERROR, StatusCode_GIT_BAD_PATH_ERROR, StatusCode_UPGRADE_NEEDED_ERROR, StatusCode_VERSION_NOT_SUPPORTED_ERROR, StatusCode_HOST_IN_USE_ERROR, StatusCode_OAUTH2_ERROR, StatusCode_KV_ABS_PATH_ERROR, StatusCode_YUBI_BUS_ERROR, StatusCode_KEYCHAIN_ERROR, StatusCode_AGENT_CONNECT_ERROR, StatusCode_BOT_TOKEN_ERROR, StatusCode_GIT_BAD_HEAD_ERROR, StatusCode_GIT_BAD_REF_NAME_ERROR, StatusCode_INTERNAL_ERROR, StatusCode_RT_GENERIC_ERROR, StatusCode_RT_RACE, StatusCode_RT_AMBIGUOUS_CHANNEL_ERROR, StatusCode_RT_NOT_FOUND_ERROR, StatusCode_RT_MSG_ORDER_ERROR:
 		if s.F_1__ == nil {
 			return ret, errors.New("unexpected nil case for F_1__")
 		}
@@ -1894,6 +1897,15 @@ func (s Status) RtNotFoundError() string {
 	}
 	if s.Sc != StatusCode_RT_NOT_FOUND_ERROR {
 		panic(fmt.Sprintf("unexpected switch value (%v) when RtNotFoundError is called", s.Sc))
+	}
+	return *s.F_1__
+}
+func (s Status) RtMsgOrderError() string {
+	if s.F_1__ == nil {
+		panic("unexpected nil case; should have been checked")
+	}
+	if s.Sc != StatusCode_RT_MSG_ORDER_ERROR {
+		panic(fmt.Sprintf("unexpected switch value (%v) when RtMsgOrderError is called", s.Sc))
 	}
 	return *s.F_1__
 }
@@ -2759,6 +2771,12 @@ func NewStatusWithRtAmbiguousChannelError(v string) Status {
 func NewStatusWithRtNotFoundError(v string) Status {
 	return Status{
 		Sc:    StatusCode_RT_NOT_FOUND_ERROR,
+		F_1__: &v,
+	}
+}
+func NewStatusWithRtMsgOrderError(v string) Status {
+	return Status{
+		Sc:    StatusCode_RT_MSG_ORDER_ERROR,
 		F_1__: &v,
 	}
 }

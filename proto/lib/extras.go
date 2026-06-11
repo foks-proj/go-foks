@@ -5060,6 +5060,13 @@ func (i RTChannelID) RTID() RTID {
 	return ret
 }
 
+func (i RTMsgID) RTID() RTID {
+	var ret RTID
+	ret[0] = byte(RTIDType_Msg)
+	copy(ret[1:], i[:])
+	return ret
+}
+
 func (r RTID) RTChannelID() *RTChannelID {
 	if r[0] != byte(RTIDType_Channel) {
 		return nil
@@ -5285,4 +5292,8 @@ var RTMsgSeqFirst = RTMsgSeq(1)
 
 func (r RTChannelIDShort) Int64() int64 {
 	return int64(r)
+}
+
+func (i RTMsgID) Eq(j RTMsgID) bool {
+	return hmac.Equal(i[:], j[:])
 }
