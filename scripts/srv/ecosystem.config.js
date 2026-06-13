@@ -47,6 +47,7 @@ function apps() {
     app('kv_store', 'kv-store'),
     app('autocert', 'autocert'),
     bash_app('ssh-tun', 'ssh-tun.sh'),
+    app('realtime', 'realtime'),
   ].concat(lcl.beacon ? [app('beacon', 'beacon')] : [])
    .concat(lcl.quota ? [app('quota','quota')] : [])
    .concat(lcl.web ? [app('web', 'web')] : [])

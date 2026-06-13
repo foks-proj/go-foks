@@ -272,6 +272,24 @@ func readAllChannels(
 			return nil, err
 		}
 
+		// The channel name is sealed at the class floor, so its name (and very
+		// existence) is visible to everyone the class gate admits -- this is
+		// needed for name-collision detection at create time, since names are
+		// ciphertext the server can't dedupe itself. The description and
+		// last-message preview, however, are sealed at the finer read role: don't
+		// hand them to a caller whose team role is below it. They couldn't decrypt
+		// the description anyway (it would only panic/err on the client), and the
+		// last-message metadata would leak channel activity they can't read.
+		readRoleKey, err := core.ImportRole(md.Roles.Read)
+		if err != nil {
+			return nil, err
+		}
+		if role.LessThan(*readRoleKey) {
+			md.DescBox = nil
+			md.LastMsg = nil
+			md.Unreadable = true
+		}
+
 		ret = append(ret, md)
 	}
 	if err = rows.Err(); err != nil {

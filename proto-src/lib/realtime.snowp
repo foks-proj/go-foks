@@ -138,8 +138,9 @@ struct RTBoxRG{
 typedef RTChannelSetVersion = Uint;
 
 enum RTChannelClass {
-    Bottom @0;
-    Admin @1;
+    None @0;
+    Bottom @1;
+    Admin @2;
 }
 
 enum MsgBodyType {

@@ -1338,17 +1338,20 @@ func (r RTChannelSetVersion) Bytes() []byte {
 type RTChannelClass int
 
 const (
-	RTChannelClass_Bottom RTChannelClass = 0
-	RTChannelClass_Admin  RTChannelClass = 1
+	RTChannelClass_None   RTChannelClass = 0
+	RTChannelClass_Bottom RTChannelClass = 1
+	RTChannelClass_Admin  RTChannelClass = 2
 )
 
 var RTChannelClassMap = map[string]RTChannelClass{
-	"Bottom": 0,
-	"Admin":  1,
+	"None":   0,
+	"Bottom": 1,
+	"Admin":  2,
 }
 var RTChannelClassRevMap = map[RTChannelClass]string{
-	0: "Bottom",
-	1: "Admin",
+	0: "None",
+	1: "Bottom",
+	2: "Admin",
 }
 
 type RTChannelClassInternal__ RTChannelClass

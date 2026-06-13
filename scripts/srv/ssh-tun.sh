@@ -30,6 +30,7 @@ ssh -N ${key} \
     -R $(proxy_pair merkle_query) \
     -R $(proxy_pair beacon) \
     -R $(proxy_pair kv_store) \
+    -R $(proxy_pair realtime) \
     -R *:80:localhost:${HTTP_LOCAL_PORT} \
     -R *:443:localhost:${HTTPS_LOCAL_PORT} \
     root@${SSH_PROXY_HOSTNAME}

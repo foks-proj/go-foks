@@ -142,7 +142,7 @@ func outputTable(
 	}
 	t.SetStyle(table.StyleLight)
 	dat := t.Render()
-	_, err := m.G().UIs().Terminal.OutputStream().Write([]byte(dat))
+	_, err := m.G().UIs().Terminal.OutputStream().Write([]byte(dat + "\n"))
 	return err
 
 }
@@ -696,10 +696,7 @@ func outputTeamListMembershipsTable(
 // displayRTChannelName renders a channel name for the console; the default
 // (empty) channel is shown as "#general".
 func displayRTChannelName(n proto.RTChannelName) string {
-	if n.IsEmpty() {
-		return "#general"
-	}
-	return "#" + string(n)
+	return n.DecorateToString()
 }
 
 type rtChannelRow struct {

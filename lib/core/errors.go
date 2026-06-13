@@ -1364,11 +1364,11 @@ func (r RTRaceError) Error() string {
 // but more than one channel (of different classes) shares that name. The caller
 // should retry with a channel class to disambiguate. Name is the ambiguous name.
 type RTAmbiguousChannelError struct {
-	Name string
+	Name proto.RTChannelName
 }
 
 func (r RTAmbiguousChannelError) Error() string {
-	return fmt.Sprintf("ambiguous channel name %q; specify a channel class", r.Name)
+	return fmt.Sprintf("ambiguous channel name %q; specify a channel class", r.Name.DecorateToString())
 }
 
 type RTNotFoundError string
@@ -1586,7 +1586,7 @@ func ErrorToStatus(e error) proto.Status {
 	case RTRaceError:
 		return proto.NewStatusWithRtRace(te.Which)
 	case RTAmbiguousChannelError:
-		return proto.NewStatusWithRtAmbiguousChannelError(te.Name)
+		return proto.NewStatusWithRtAmbiguousChannelError(string(te.Name))
 	case RTNotFoundError:
 		return proto.NewStatusWithRtNotFoundError(string(te))
 	case RTMsgOrderError:
@@ -2037,7 +2037,7 @@ func StatusToError(s proto.Status) error {
 	case proto.StatusCode_RT_RACE:
 		return RTRaceError{Which: s.RtRace()}
 	case proto.StatusCode_RT_AMBIGUOUS_CHANNEL_ERROR:
-		return RTAmbiguousChannelError{Name: s.RtAmbiguousChannelError()}
+		return RTAmbiguousChannelError{Name: proto.RTChannelName(s.RtAmbiguousChannelError())}
 	case proto.StatusCode_RT_NOT_FOUND_ERROR:
 		return RTNotFoundError(string(s.RtNotFoundError()))
 	case proto.StatusCode_RT_MSG_ORDER_ERROR:

@@ -140,7 +140,7 @@ func ParseDbType(s string) (DbType, error) {
 		return DbTypeBeacon, nil
 	case "kv-store":
 		return DbTypeKVStore, nil
-	case "real-time":
+	case "realtime":
 		return DbTypeRealTime, nil
 	default:
 		return DbTypeNone, errors.New("unknown DB type: " + s)

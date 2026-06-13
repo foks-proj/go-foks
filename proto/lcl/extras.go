@@ -199,3 +199,26 @@ func (s *SKMWK) UnmarshalJSON(dat []byte) error { return lib.UnmarshalJsonFixed(
 func (a KVRestAuthToken) String() string {
 	return string(a)
 }
+
+func (r RTChannelSpecifier) StringErr() (string, error) {
+	t, err := r.GetT()
+	if err != nil {
+		return "", err
+	}
+	switch t {
+	case RTChannelSpecifierType_ID:
+		return r.Id().StringErr()
+	case RTChannelSpecifierType_Name:
+		return string(r.Name().Name), nil
+	default:
+		return "<unknown>", nil
+	}
+}
+
+func (r RTChannelSpecifier) String() string {
+	s, err := r.StringErr()
+	if err != nil {
+		return fmt.Sprintf("error: %s", err.Error())
+	}
+	return s
+}
