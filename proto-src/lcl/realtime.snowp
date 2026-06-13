@@ -18,6 +18,8 @@ struct RTChannelMetadataPlaintext {
     roles @5 : lib.RolePair;
     klass @6 : lib.RTChannelClass;
     updatedAt @7 : lib.RTChannelSetVersion;
+    unreadable @8 : Bool; // caller can't read this channel (role below read role);
+                          // kept for name-collision detection, hidden from the inbox
 }
 
 struct RTChannelSetForTeam {
@@ -25,6 +27,25 @@ struct RTChannelSetForTeam {
     vers @1 : lib.RTChannelSetVersion;
     appID @2 : lib.RTAppID;
     team @3 : lib.TeamID;
+}
+
+// A decrypted message as presented to the CLI / app layer.
+struct RTMsgView {
+    seq @0 : lib.RTMsgSeq;
+    msgID @1 : lib.RTMsgID;
+    prevID @2 : lib.RTMsgID;
+    prevSeq @3 : lib.RTMsgSeq;
+    typ @4 : lib.RTMsgType;
+    sender @5 : Option(lib.PartyID);   // nil for server-authored
+    sentAtTime @6 : lib.Time;          // client-asserted
+    insertTime @7 : lib.Time;          // server-asserted
+    body @8 : Blob;                    // decrypted plaintext (basic messages)
+    senderName @9 : Option(lib.NameUtf8); // resolved by agent via user load; nil if unresolvable
+}
+
+struct RTThreadView {
+    msgs @0 : List(RTMsgView);
+    atBeginning @1 : Bool; // page reached the start of the thread; no older messages
 }
 
 protocol RealTime
@@ -40,5 +61,16 @@ protocol RealTime
     clientRTListChannelsForTeam @1 (
         cfg @0 : RTConfig /* contains team and AppID to list channels */
     ) -> RTChannelSetForTeam;
+
+    clientRTSend @2 (
+        cfg @0 : RTConfig, /* contains team, AppID and channel to send into */
+        body @1 : Blob     /* plaintext message body */
+    ) -> lib.RTMsgSeq;     /* server-assigned sequence number */
+
+    clientRTGetThread @3 (
+        cfg @0 : RTConfig,      /* contains team, AppID and channel to read */
+        num @1 : Uint,          /* max messages in the page; 0 = default */
+        before @2 : lib.RTMsgSeq /* page messages older than this seq (exclusive); 0 = most recent */
+    ) -> RTThreadView;
 
 }

@@ -62,4 +62,42 @@ func (c *AgentConn) ClientRTListChannelsForTeam(
 	return *lst, nil
 }
 
+func (c *AgentConn) ClientRTSend(
+	ctx context.Context,
+	arg lcl.ClientRTSendArg,
+) (
+	proto.RTMsgSeq,
+	error,
+) {
+	var zed proto.RTMsgSeq
+	m, minder, err := c.rtInit(ctx, arg.Cfg)
+	if err != nil {
+		return zed, err
+	}
+	res, err := minder.Send(m, arg.Cfg.Team, arg.Cfg.AppID, arg.Cfg.Channel, nil, arg.Body)
+	if err != nil {
+		return zed, err
+	}
+	return res.Seq, nil
+}
+
+func (c *AgentConn) ClientRTGetThread(
+	ctx context.Context,
+	arg lcl.ClientRTGetThreadArg,
+) (
+	lcl.RTThreadView,
+	error,
+) {
+	var zed lcl.RTThreadView
+	m, minder, err := c.rtInit(ctx, arg.Cfg)
+	if err != nil {
+		return zed, err
+	}
+	view, err := minder.GetThreadView(m, arg.Cfg.Team, arg.Cfg.AppID, arg.Cfg.Channel, nil, arg.Before, uint(arg.Num))
+	if err != nil {
+		return zed, err
+	}
+	return *view, nil
+}
+
 var _ lcl.RealTimeInterface = (*AgentConn)(nil)
