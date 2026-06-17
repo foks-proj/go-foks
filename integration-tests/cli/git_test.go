@@ -548,3 +548,34 @@ func TestEmptyFile(t *testing.T) {
 	sr2.Git(t, "clone", sr.Origin(), ".")
 	sr2.ReadFile(t, "f1", "")
 }
+
+func TestGitDeleteRepo(t *testing.T) {
+	gte, cleanup := newGitTestEnv(t)
+	defer cleanup()
+	au := gte.newAgentAndUser(t)
+	sr := gte.NewScratchRepo(t)
+
+	// Create repository.
+	sr.Git(t, "init")
+	merklePoke(t)
+	au.agent.runCmd(t, nil, "git", "create", gte.Desc.RepoName)
+
+	// List repos and assert it is present.
+	var allRepos []proto.GitURL
+	au.agent.runCmdToJSON(t, &allRepos, "git", "ls", "--json")
+	require.Len(t, allRepos, 1)
+	require.Equal(t, proto.GitRepo(gte.Desc.RepoName), allRepos[0].Repo)
+
+	// Delete repository.
+	merklePoke(t)
+	out := au.agent.runCmdToBytes(t, "git", "delete", gte.Desc.RepoName)
+	require.Contains(t, string(out), fmt.Sprintf("Deleted: %s", gte.Desc.RepoName))
+
+	// List repos and assert it is empty.
+	au.agent.runCmdToJSON(t, &allRepos, "git", "ls", "--json")
+	require.Len(t, allRepos, 0)
+
+	// Deleting non-existent repository should fail.
+	err := au.agent.runCmdErr(nil, "git", "delete", "nonexistent-repo")
+	require.Error(t, err)
+}

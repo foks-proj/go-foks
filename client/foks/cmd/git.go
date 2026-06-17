@@ -98,6 +98,50 @@ func gitCreate(m libclient.MetaContext, top *cobra.Command) {
 	)
 }
 
+func gitDelete(m libclient.MetaContext, top *cobra.Command) {
+	quickGitCmd(m, top,
+		"delete reponame", []string{"rm", "remove"},
+		"Delete a git repository",
+		"Delete a git repository",
+		quickKVOpts{
+			SupportReadRole:  true,
+			SupportWriteRole: true,
+		},
+		nil,
+		func(arg []string, cfg lcl.KVConfig, cli lcl.GitClient) error {
+			if len(arg) != 1 {
+				return ArgsError("expected exactly one argument -- the repo name")
+			}
+			name, err := libgit.NormalizedRepoName(arg[0])
+			if err != nil {
+				return err
+			}
+			gp := libgit.NewGitPath(name)
+			path := gp.PrefixJoined()
+			cfg.Recursive = true
+			kvCli := lcl.KVClient{
+				Cli:            cli.Cli,
+				ErrorUnwrapper: lcl.KVErrorUnwrapper(cli.ErrorUnwrapper),
+				MakeArgHeader:  cli.MakeArgHeader,
+				CheckResHeader: cli.CheckResHeader,
+			}
+			err = kvCli.ClientKVRm(m.Ctx(), lcl.ClientKVRmArg{
+				Cfg:  cfg,
+				Path: path,
+			})
+			if err != nil {
+				return err
+			}
+			m.G().UIs().Terminal.Printf("Deleted: %s\n", name)
+			err = PartingConsoleMessage(m)
+			if err != nil {
+				return err
+			}
+			return nil
+		},
+	)
+}
+
 func gitShellConfig(m libclient.MetaContext, top *cobra.Command) {
 	quickCmd(m, top,
 		"shell-config",
@@ -270,6 +314,7 @@ func gitCmd(m libclient.MetaContext) *cobra.Command {
 		},
 	}
 	gitCreate(m, top)
+	gitDelete(m, top)
 	gitShellConfig(m, top)
 	gitLs(m, top)
 	gitGetDefaultBranch(m, top)
