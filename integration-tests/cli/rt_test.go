@@ -33,7 +33,7 @@ func TestRTChannelMakeAndList(t *testing.T) {
 	b.runCmdToJSON(t, &teamRes, "team", "create", tm)
 	merklePoke(t)
 
-	// Without read/write roles, `new-channel` creates admin-class channels.
+	// Without read/write roles, `new-channel` creates admin-tier channels.
 	b.runCmd(t, nil, "rt", "new-channel", "-t", tm, "--name", "foo", "--description", "foobars and doobars")
 	b.runCmd(t, nil, "rt", "new-channel", "-t", tm, "--name", "hotels", "--description", "zips and dips and blips")
 	// The default channel has the empty name and (necessarily) no description.
@@ -49,15 +49,15 @@ func TestRTChannelMakeAndList(t *testing.T) {
 	b.runCmdToJSON(t, &set, "rt", "list-channels", "-t", tm)
 	require.Len(t, set.Channels, 3)
 
-	// Channels come back sorted by class (admin first) and then by name; the
+	// Channels come back sorted by tier (admin first) and then by name; the
 	// default channel's empty name sorts first.
-	assertChannel := func(idx int, klass proto.RTChannelClass, name proto.RTChannelName) {
-		require.Equal(t, klass, set.Channels[idx].Klass)
+	assertChannel := func(idx int, tier proto.RTChannelTier, name proto.RTChannelName) {
+		require.Equal(t, tier, set.Channels[idx].Tier)
 		require.Equal(t, name, set.Channels[idx].Name)
 	}
-	assertChannel(0, proto.RTChannelClass_Admin, "")
-	assertChannel(1, proto.RTChannelClass_Admin, "foo")
-	assertChannel(2, proto.RTChannelClass_Admin, "hotels")
+	assertChannel(0, proto.RTChannelTier_Admin, "")
+	assertChannel(1, proto.RTChannelTier_Admin, "foo")
+	assertChannel(2, proto.RTChannelTier_Admin, "hotels")
 
 	// The columnar text output renders the default channel as "#general" and
 	// prefixes named channels with "#".
@@ -265,7 +265,7 @@ func TestRTChannelNameNoHashPrefix(t *testing.T) {
 }
 
 // TestRTChannelNameCaseFoldCollision verifies channel names are case-folded:
-// "bar" and "Bar" both normalize to "bar", so within the same class the second
+// "bar" and "Bar" both normalize to "bar", so within the same tier the second
 // create collides with the first.
 func TestRTChannelNameCaseFoldCollision(t *testing.T) {
 	bob := makeBobAndHisAgent(t)
@@ -282,7 +282,7 @@ func TestRTChannelNameCaseFoldCollision(t *testing.T) {
 
 	b.runCmd(t, nil, "rt", "new-channel", "-t", tm, "--name", "bar")
 
-	// "Bar" normalizes to "bar" -- same name, same (admin) class -> collision.
+	// "Bar" normalizes to "bar" -- same name, same (admin) tier -> collision.
 	err := b.runCmdErr(nil, "rt", "new-channel", "-t", tm, "--name", "Bar")
 	require.Error(t, err)
 	require.Equal(t, core.RTChannelExistsError{}, err)
@@ -294,12 +294,12 @@ func TestRTChannelNameCaseFoldCollision(t *testing.T) {
 	require.Equal(t, proto.RTChannelName("bar"), set.Channels[0].Name)
 }
 
-// TestRTChannelClassFlag exercises the --channel-class flag on `rt send` / `rt
-// read`. A name may live in two classes at once (an admin "dup" and a
-// bottom/member "dup"); without a class the name is ambiguous, and the flag
-// ("a"/"admin" vs "d"/"default"/"bottom") picks one. An unknown class is a
+// TestRTChannelTierFlag exercises the --channel-tier flag on `rt send` / `rt
+// read`. A name may live in two tiers at once (an admin "dup" and a
+// bottom/member "dup"); without a tier the name is ambiguous, and the flag
+// ("a"/"admin" vs "d"/"default"/"bottom") picks one. An unknown tier is a
 // bad-args error.
-func TestRTChannelClassFlag(t *testing.T) {
+func TestRTChannelTierFlag(t *testing.T) {
 	bob := makeBobAndHisAgent(t)
 	b := bob.agent
 	defer b.stop(t)
@@ -312,7 +312,7 @@ func TestRTChannelClassFlag(t *testing.T) {
 	b.runCmdToJSON(t, &teamRes, "team", "create", tm)
 	merklePoke(t)
 
-	// "dup" in two classes: no roles -> admin class; member roles -> bottom class.
+	// "dup" in two tiers: no roles -> admin tier; member roles -> bottom tier.
 	b.runCmd(t, nil, "rt", "new-channel", "-t", tm, "--name", "dup")
 	b.runCmd(t, nil, "rt", "new-channel", "-t", tm, "--name", "dup",
 		"--read-role", "m/0", "--write-role", "m/0")
@@ -321,30 +321,30 @@ func TestRTChannelClassFlag(t *testing.T) {
 	b.runCmdToJSON(t, &set, "rt", "list-channels", "-t", tm)
 	require.Len(t, set.Channels, 2)
 
-	// Addressing "dup" with no class is ambiguous.
-	err := b.runCmdErr(nil, "rt", "send", "-t", tm, "--channel", "dup", "no class")
+	// Addressing "dup" with no tier is ambiguous.
+	err := b.runCmdErr(nil, "rt", "send", "-t", tm, "--channel", "dup", "no tier")
 	require.Error(t, err)
 	require.Equal(t, core.RTAmbiguousChannelError{Name: "dup"}, err)
 
-	// The flag disambiguates: short and long forms of each class.
-	b.runCmd(t, nil, "rt", "send", "-t", tm, "--channel", "dup", "--channel-class", "a", "to admin")
-	b.runCmd(t, nil, "rt", "send", "-t", tm, "--channel", "dup", "--channel-class", "d", "to bottom")
+	// The flag disambiguates: short and long forms of each tier.
+	b.runCmd(t, nil, "rt", "send", "-t", tm, "--channel", "dup", "--channel-tier", "a", "to admin")
+	b.runCmd(t, nil, "rt", "send", "-t", tm, "--channel", "dup", "--channel-tier", "d", "to bottom")
 
-	// Each class's channel holds only its own message.
+	// Each tier's channel holds only its own message.
 	var adminThread lcl.RTThreadView
-	b.runCmdToJSON(t, &adminThread, "rt", "read", "-t", tm, "--channel", "dup", "--channel-class", "admin")
+	b.runCmdToJSON(t, &adminThread, "rt", "read", "-t", tm, "--channel", "dup", "--channel-tier", "admin")
 	require.Len(t, adminThread.Msgs, 1)
 	require.Equal(t, "to admin", string(adminThread.Msgs[0].Body))
 
 	var bottomThread lcl.RTThreadView
-	b.runCmdToJSON(t, &bottomThread, "rt", "read", "-t", tm, "--channel", "dup", "--channel-class", "bottom")
+	b.runCmdToJSON(t, &bottomThread, "rt", "read", "-t", tm, "--channel", "dup", "--channel-tier", "bottom")
 	require.Len(t, bottomThread.Msgs, 1)
 	require.Equal(t, "to bottom", string(bottomThread.Msgs[0].Body))
 
-	// An unrecognized class is a bad-args error.
-	err = b.runCmdErr(nil, "rt", "send", "-t", tm, "--channel", "dup", "--channel-class", "bogus", "nope")
+	// An unrecognized tier is a bad-args error.
+	err = b.runCmdErr(nil, "rt", "send", "-t", tm, "--channel", "dup", "--channel-tier", "bogus", "nope")
 	require.Error(t, err)
-	require.Equal(t, core.BadArgsError("bad channel class"), err)
+	require.Equal(t, core.BadArgsError("bad channel tier"), err)
 }
 
 // TestRTReadPaging walks backwards through a thread with `rt read --before`,
@@ -406,9 +406,9 @@ func TestRTReadPaging(t *testing.T) {
 }
 
 // TestRTUnreadableChannelHiddenFromInbox checks the server's read-role gating of
-// the channel list within the member tier. A bottom-class channel is sealed at
-// member viz 5; a member at viz 0 still receives it (the class gate admits all
-// members to bottom-class channels) but is below the read role, so its
+// the channel list within the member tier. A bottom-tier channel is sealed at
+// member viz 5; a member at viz 0 still receives it (the tier gate admits all
+// members to bottom-tier channels) but is below the read role, so its
 // description/last-message are withheld and it's flagged unreadable and hidden
 // from the inbox. Its name is still returned, though, so client-side collision
 // detection reserves it -- the lower member can't create a same-named channel.
@@ -460,7 +460,7 @@ func TestRTUnreadableChannelHiddenFromInbox(t *testing.T) {
 	z := admit("m/5")
 	defer z.stop(t)
 
-	// A bottom-class channel readable only at member viz 5.
+	// A bottom-tier channel readable only at member viz 5.
 	x.runCmd(t, nil, "rt", "new-channel", "-t", tm, "--name", "secret",
 		"--description", "eyes only", "--read-role", "m/5", "--write-role", "m/5")
 
@@ -484,7 +484,7 @@ func TestRTUnreadableChannelHiddenFromInbox(t *testing.T) {
 	y.runCmdToJSON(t, &yset, "rt", "list-channels", "-t", tm)
 	require.Len(t, yset.Channels, 0)
 
-	// ...but the name is still reserved: y can't create a colliding bottom-class
+	// ...but the name is still reserved: y can't create a colliding bottom-tier
 	// "secret" channel, because collision detection still sees it.
 	err = y.runCmdErr(nil, "rt", "new-channel", "-t", tm, "--name", "secret")
 	require.Error(t, err)

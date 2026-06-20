@@ -17,24 +17,24 @@ type quickRTOpts struct {
 
 func parseChannelSpecifier(
 	nameOrId string,
-	klass string,
+	tierStr string,
 ) (
 	*lcl.RTChannelSpecifier,
 	error,
 ) {
 	none := lcl.NewRTChannelSpecifierDefault(lcl.RTChannelSpecifierType_None)
-	if nameOrId == "" && klass == "" {
+	if nameOrId == "" && tierStr == "" {
 		return &none, nil
 	}
-	cc := proto.RTChannelClass_None
-	if len(klass) > 0 {
-		switch klass {
+	tier := proto.RTChannelTier_None
+	if len(tierStr) > 0 {
+		switch tierStr {
 		case "a", "admin":
-			cc = proto.RTChannelClass_Admin
+			tier = proto.RTChannelTier_Admin
 		case "d", "default", "bottom":
-			cc = proto.RTChannelClass_Bottom
+			tier = proto.RTChannelTier_Bottom
 		default:
-			return nil, core.BadArgsError("bad channel class")
+			return nil, core.BadArgsError("bad channel tier")
 		}
 	}
 
@@ -65,18 +65,18 @@ func parseChannelSpecifier(
 	}
 	switch {
 	case chid != nil:
-		if cc != proto.RTChannelClass_None {
+		if tier != proto.RTChannelTier_None {
 			return nil, core.BadArgsError(
-				"cannot specify channel ID and class together",
+				"cannot specify channel ID and tier together",
 			)
 		}
 		tmp := lcl.NewRTChannelSpecifierWithId(*chid)
 		ret = &tmp
-	case !cn.IsEmpty() || cc != proto.RTChannelClass_None:
+	case !cn.IsEmpty() || tier != proto.RTChannelTier_None:
 		tmp := lcl.NewRTChannelSpecifierWithName(
-			lcl.RTChannelNameAndClass{
-				Name:  cn,
-				Klass: cc,
+			lcl.RTChannelNameAndTier{
+				Name: cn,
+				Tier: tier,
 			},
 		)
 		ret = &tmp
@@ -102,7 +102,7 @@ func quickRTCmd(
 		long = short
 	}
 	var teamStr string
-	var rrs, wrs, chs, chcs string
+	var rrs, wrs, chs, chTier string
 	var rr, wr *proto.Role
 	run := func(cmd *cobra.Command, arg []string) error {
 		var fqt *proto.FQTeamParsed
@@ -131,7 +131,7 @@ func quickRTCmd(
 		}
 		chsp, err := parseChannelSpecifier(
 			chs,
-			chcs,
+			chTier,
 		)
 		if err != nil {
 			return err
@@ -170,7 +170,7 @@ func quickRTCmd(
 	}
 	if opts.SupportChannel {
 		cmd.Flags().StringVar(&chs, "channel", "", "specify channel name (with '#') or channel ID (#general by default)")
-		cmd.Flags().StringVar(&chcs, "channel-class", "", "disambiguate with channel class (can be \"a\"/\"admin\" or \"d\"/\"default\")")
+		cmd.Flags().StringVar(&chTier, "channel-tier", "", "disambiguate with channel tier (can be \"a\"/\"admin\" or \"d\"/\"default\")")
 	}
 	if setup != nil {
 		setup(cmd)
@@ -216,7 +216,7 @@ func rtNewChannel(m libclient.MetaContext, top *cobra.Command) {
 				return ArgsError("can only specify a description if not the default channel")
 			}
 			cfg.Channel = lcl.NewRTChannelSpecifierWithName(
-				lcl.RTChannelNameAndClass{
+				lcl.RTChannelNameAndTier{
 					Name: ch,
 				},
 			)
@@ -247,7 +247,7 @@ func rtListChannels(m libclient.MetaContext, top *cobra.Command) {
 		m, top,
 		"list-channels", []string{"ls-channels", "channels"},
 		"list the channels in a team",
-		"list the channels in a team, sorted by channel class and name",
+		"list the channels in a team, sorted by channel tier and name",
 		quickRTOpts{},
 		nil,
 		func(args []string, cfg lcl.RTConfig, cli lcl.RealTimeClient) error {

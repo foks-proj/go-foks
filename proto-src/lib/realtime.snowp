@@ -137,7 +137,7 @@ struct RTBoxRG{
 
 typedef RTChannelSetVersion = Uint;
 
-enum RTChannelClass {
+enum RTChannelTier {
     None @0;
     Bottom @1;
     Admin @2;

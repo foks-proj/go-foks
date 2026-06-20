@@ -436,7 +436,7 @@ type RTChannelMetadata struct {
 	Ctime      lib.Time
 	Mtime      lib.Time
 	UpdatedAt  lib.RTChannelSetVersion
-	Klass      lib.RTChannelClass
+	Tier       lib.RTChannelTier
 	Unreadable bool
 }
 type RTChannelMetadataInternal__ struct {
@@ -452,7 +452,7 @@ type RTChannelMetadataInternal__ struct {
 	Ctime      *lib.TimeInternal__
 	Mtime      *lib.TimeInternal__
 	UpdatedAt  *lib.RTChannelSetVersionInternal__
-	Klass      *lib.RTChannelClassInternal__
+	Tier       *lib.RTChannelTierInternal__
 	Unreadable *bool
 }
 
@@ -536,12 +536,12 @@ func (r RTChannelMetadataInternal__) Import() RTChannelMetadata {
 			}
 			return x.Import()
 		})(r.UpdatedAt),
-		Klass: (func(x *lib.RTChannelClassInternal__) (ret lib.RTChannelClass) {
+		Tier: (func(x *lib.RTChannelTierInternal__) (ret lib.RTChannelTier) {
 			if x == nil {
 				return ret
 			}
 			return x.Import()
-		})(r.Klass),
+		})(r.Tier),
 		Unreadable: (func(x *bool) (ret bool) {
 			if x == nil {
 				return ret
@@ -573,7 +573,7 @@ func (r RTChannelMetadata) Export() *RTChannelMetadataInternal__ {
 		Ctime:      r.Ctime.Export(),
 		Mtime:      r.Mtime.Export(),
 		UpdatedAt:  r.UpdatedAt.Export(),
-		Klass:      r.Klass.Export(),
+		Tier:       r.Tier.Export(),
 		Unreadable: &r.Unreadable,
 	}
 }

@@ -5182,34 +5182,34 @@ func (t *RTMsgType) ImportFromDB(s string) error {
 	return nil
 }
 
-func (c RTChannelClass) String() string {
+func (c RTChannelTier) String() string {
 	switch c {
-	case RTChannelClass_Bottom:
+	case RTChannelTier_Bottom:
 		return "bottom"
-	case RTChannelClass_Admin:
+	case RTChannelTier_Admin:
 		return "admin"
 	}
 	return "error"
 }
 
-func (c RTChannelClass) ExportToDB() (string, error) {
+func (c RTChannelTier) ExportToDB() (string, error) {
 	switch c {
-	case RTChannelClass_Bottom:
+	case RTChannelTier_Bottom:
 		return "bottom", nil
-	case RTChannelClass_Admin:
+	case RTChannelTier_Admin:
 		return "admin", nil
 	}
-	return "", DataError(fmt.Sprintf("bad RTChannelClass (%d) for DB", c))
+	return "", DataError(fmt.Sprintf("bad RTChannelTier (%d) for DB", c))
 }
 
-func (c *RTChannelClass) ImportFromDB(s string) error {
+func (c *RTChannelTier) ImportFromDB(s string) error {
 	switch s {
 	case "bottom":
-		*c = RTChannelClass_Bottom
+		*c = RTChannelTier_Bottom
 	case "admin":
-		*c = RTChannelClass_Admin
+		*c = RTChannelTier_Admin
 	default:
-		return DataError(fmt.Sprintf("bad RTChannelClass (%s) in DB", s))
+		return DataError(fmt.Sprintf("bad RTChannelTier (%s) in DB", s))
 	}
 	return nil
 }

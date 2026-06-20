@@ -13,44 +13,44 @@ import (
 
 import lib "github.com/foks-proj/go-foks/proto/lib"
 
-type RTChannelNameAndClass struct {
-	Name  lib.RTChannelName
-	Klass lib.RTChannelClass
+type RTChannelNameAndTier struct {
+	Name lib.RTChannelName
+	Tier lib.RTChannelTier
 }
-type RTChannelNameAndClassInternal__ struct {
+type RTChannelNameAndTierInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Name    *lib.RTChannelNameInternal__
-	Klass   *lib.RTChannelClassInternal__
+	Tier    *lib.RTChannelTierInternal__
 }
 
-func (r RTChannelNameAndClassInternal__) Import() RTChannelNameAndClass {
-	return RTChannelNameAndClass{
+func (r RTChannelNameAndTierInternal__) Import() RTChannelNameAndTier {
+	return RTChannelNameAndTier{
 		Name: (func(x *lib.RTChannelNameInternal__) (ret lib.RTChannelName) {
 			if x == nil {
 				return ret
 			}
 			return x.Import()
 		})(r.Name),
-		Klass: (func(x *lib.RTChannelClassInternal__) (ret lib.RTChannelClass) {
+		Tier: (func(x *lib.RTChannelTierInternal__) (ret lib.RTChannelTier) {
 			if x == nil {
 				return ret
 			}
 			return x.Import()
-		})(r.Klass),
+		})(r.Tier),
 	}
 }
-func (r RTChannelNameAndClass) Export() *RTChannelNameAndClassInternal__ {
-	return &RTChannelNameAndClassInternal__{
-		Name:  r.Name.Export(),
-		Klass: r.Klass.Export(),
+func (r RTChannelNameAndTier) Export() *RTChannelNameAndTierInternal__ {
+	return &RTChannelNameAndTierInternal__{
+		Name: r.Name.Export(),
+		Tier: r.Tier.Export(),
 	}
 }
-func (r *RTChannelNameAndClass) Encode(enc rpc.Encoder) error {
+func (r *RTChannelNameAndTier) Encode(enc rpc.Encoder) error {
 	return enc.Encode(r.Export())
 }
 
-func (r *RTChannelNameAndClass) Decode(dec rpc.Decoder) error {
-	var tmp RTChannelNameAndClassInternal__
+func (r *RTChannelNameAndTier) Decode(dec rpc.Decoder) error {
+	var tmp RTChannelNameAndTierInternal__
 	err := dec.Decode(&tmp)
 	if err != nil {
 		return err
@@ -59,7 +59,7 @@ func (r *RTChannelNameAndClass) Decode(dec rpc.Decoder) error {
 	return nil
 }
 
-func (r *RTChannelNameAndClass) Bytes() []byte { return nil }
+func (r *RTChannelNameAndTier) Bytes() []byte { return nil }
 
 type RTChannelSpecifierType int
 
@@ -91,8 +91,8 @@ func (r RTChannelSpecifierType) Export() *RTChannelSpecifierTypeInternal__ {
 
 type RTChannelSpecifier struct {
 	T     RTChannelSpecifierType
-	F_1__ *lib.RTChannelID       `json:"f1,omitempty"`
-	F_2__ *RTChannelNameAndClass `json:"f2,omitempty"`
+	F_1__ *lib.RTChannelID      `json:"f1,omitempty"`
+	F_2__ *RTChannelNameAndTier `json:"f2,omitempty"`
 }
 type RTChannelSpecifierInternal__ struct {
 	_struct  struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
@@ -100,9 +100,9 @@ type RTChannelSpecifierInternal__ struct {
 	Switch__ RTChannelSpecifierInternalSwitch__
 }
 type RTChannelSpecifierInternalSwitch__ struct {
-	_struct struct{}                         `codec:",omitempty"` //lint:ignore U1000 msgpack internal field
-	F_1__   *lib.RTChannelIDInternal__       `codec:"1"`
-	F_2__   *RTChannelNameAndClassInternal__ `codec:"2"`
+	_struct struct{}                        `codec:",omitempty"` //lint:ignore U1000 msgpack internal field
+	F_1__   *lib.RTChannelIDInternal__      `codec:"1"`
+	F_2__   *RTChannelNameAndTierInternal__ `codec:"2"`
 }
 
 func (r RTChannelSpecifier) GetT() (ret RTChannelSpecifierType, err error) {
@@ -129,7 +129,7 @@ func (r RTChannelSpecifier) Id() lib.RTChannelID {
 	}
 	return *r.F_1__
 }
-func (r RTChannelSpecifier) Name() RTChannelNameAndClass {
+func (r RTChannelSpecifier) Name() RTChannelNameAndTier {
 	if r.F_2__ == nil {
 		panic("unexpected nil case; should have been checked")
 	}
@@ -144,7 +144,7 @@ func NewRTChannelSpecifierWithId(v lib.RTChannelID) RTChannelSpecifier {
 		F_1__: &v,
 	}
 }
-func NewRTChannelSpecifierWithName(v RTChannelNameAndClass) RTChannelSpecifier {
+func NewRTChannelSpecifierWithName(v RTChannelNameAndTier) RTChannelSpecifier {
 	return RTChannelSpecifier{
 		T:     RTChannelSpecifierType_Name,
 		F_2__: &v,
@@ -170,11 +170,11 @@ func (r RTChannelSpecifierInternal__) Import() RTChannelSpecifier {
 			})(x)
 			return &tmp
 		})(r.Switch__.F_1__),
-		F_2__: (func(x *RTChannelNameAndClassInternal__) *RTChannelNameAndClass {
+		F_2__: (func(x *RTChannelNameAndTierInternal__) *RTChannelNameAndTier {
 			if x == nil {
 				return nil
 			}
-			tmp := (func(x *RTChannelNameAndClassInternal__) (ret RTChannelNameAndClass) {
+			tmp := (func(x *RTChannelNameAndTierInternal__) (ret RTChannelNameAndTier) {
 				if x == nil {
 					return ret
 				}
@@ -194,7 +194,7 @@ func (r RTChannelSpecifier) Export() *RTChannelSpecifierInternal__ {
 				}
 				return (*x).Export()
 			})(r.F_1__),
-			F_2__: (func(x *RTChannelNameAndClass) *RTChannelNameAndClassInternal__ {
+			F_2__: (func(x *RTChannelNameAndTier) *RTChannelNameAndTierInternal__ {
 				if x == nil {
 					return nil
 				}
@@ -303,7 +303,7 @@ type RTChannelMetadataPlaintext struct {
 	Name       lib.RTChannelName
 	Desc       *lib.RTChannelDesc
 	Roles      lib.RolePair
-	Klass      lib.RTChannelClass
+	Tier       lib.RTChannelTier
 	UpdatedAt  lib.RTChannelSetVersion
 	Unreadable bool
 }
@@ -315,7 +315,7 @@ type RTChannelMetadataPlaintextInternal__ struct {
 	Name       *lib.RTChannelNameInternal__
 	Desc       *lib.RTChannelDescInternal__
 	Roles      *lib.RolePairInternal__
-	Klass      *lib.RTChannelClassInternal__
+	Tier       *lib.RTChannelTierInternal__
 	UpdatedAt  *lib.RTChannelSetVersionInternal__
 	Unreadable *bool
 }
@@ -364,12 +364,12 @@ func (r RTChannelMetadataPlaintextInternal__) Import() RTChannelMetadataPlaintex
 			}
 			return x.Import()
 		})(r.Roles),
-		Klass: (func(x *lib.RTChannelClassInternal__) (ret lib.RTChannelClass) {
+		Tier: (func(x *lib.RTChannelTierInternal__) (ret lib.RTChannelTier) {
 			if x == nil {
 				return ret
 			}
 			return x.Import()
-		})(r.Klass),
+		})(r.Tier),
 		UpdatedAt: (func(x *lib.RTChannelSetVersionInternal__) (ret lib.RTChannelSetVersion) {
 			if x == nil {
 				return ret
@@ -397,7 +397,7 @@ func (r RTChannelMetadataPlaintext) Export() *RTChannelMetadataPlaintextInternal
 			return (*x).Export()
 		})(r.Desc),
 		Roles:      r.Roles.Export(),
-		Klass:      r.Klass.Export(),
+		Tier:       r.Tier.Export(),
 		UpdatedAt:  r.UpdatedAt.Export(),
 		Unreadable: &r.Unreadable,
 	}

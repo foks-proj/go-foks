@@ -89,25 +89,25 @@ func TestRTMinderMakeChannelSimple(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, lst.Channels, 6)
 
-	assertChannel := func(idx int, klass proto.RTChannelClass, name proto.RTChannelName) {
-		require.Equal(t, lst.Channels[idx].Klass, klass)
+	assertChannel := func(idx int, tier proto.RTChannelTier, name proto.RTChannelName) {
+		require.Equal(t, lst.Channels[idx].Tier, tier)
 		require.Equal(t, lst.Channels[idx].Name, name)
 	}
 
-	assertChannel(0, proto.RTChannelClass_Admin, "")
-	assertChannel(1, proto.RTChannelClass_Admin, "foo")
-	assertChannel(2, proto.RTChannelClass_Admin, "hotels")
-	assertChannel(3, proto.RTChannelClass_Bottom, "")
-	assertChannel(4, proto.RTChannelClass_Bottom, "alumni")
-	assertChannel(5, proto.RTChannelClass_Bottom, "hotels")
+	assertChannel(0, proto.RTChannelTier_Admin, "")
+	assertChannel(1, proto.RTChannelTier_Admin, "foo")
+	assertChannel(2, proto.RTChannelTier_Admin, "hotels")
+	assertChannel(3, proto.RTChannelTier_Bottom, "")
+	assertChannel(4, proto.RTChannelTier_Bottom, "alumni")
+	assertChannel(5, proto.RTChannelTier_Bottom, "hotels")
 
 	lst, err = minderCoco.ListAllChannelsForTeam(mc, fqt, proto.RTAppID_Chat)
 	require.NoError(t, err)
 	require.Len(t, lst.Channels, 3)
 
-	assertChannel(0, proto.RTChannelClass_Bottom, "")
-	assertChannel(1, proto.RTChannelClass_Bottom, "alumni")
-	assertChannel(2, proto.RTChannelClass_Bottom, "hotels")
+	assertChannel(0, proto.RTChannelTier_Bottom, "")
+	assertChannel(1, proto.RTChannelTier_Bottom, "alumni")
+	assertChannel(2, proto.RTChannelTier_Bottom, "hotels")
 
 	// now we'll test the race-and-retry features
 	ch1 := make(chan struct{})
@@ -161,13 +161,13 @@ func TestRTMinderMakeChannelSimple(t *testing.T) {
 	lst, err = minderCoco.ListAllChannelsForTeam(mc, fqt, proto.RTAppID_Chat)
 	require.NoError(t, err)
 	require.Len(t, lst.Channels, 4)
-	assertChannel(3, proto.RTChannelClass_Bottom, "zd")
+	assertChannel(3, proto.RTChannelTier_Bottom, "zd")
 
 	lst, err = minderBluey.ListAllChannelsForTeam(mb, fqt, proto.RTAppID_Chat)
 	require.NoError(t, err)
 	require.Len(t, lst.Channels, 8)
-	assertChannel(3, proto.RTChannelClass_Admin, "zc")
-	assertChannel(7, proto.RTChannelClass_Bottom, "zd")
+	assertChannel(3, proto.RTChannelTier_Admin, "zc")
+	assertChannel(7, proto.RTChannelTier_Bottom, "zd")
 }
 
 // TestRTMinderGeneralNameReserved checks the minder reserves the "general"
@@ -204,7 +204,7 @@ func TestRTMinderGeneralNameReserved(t *testing.T) {
 
 // TestRTMinderChannelNameCaseFoldCollision checks the minder's collision
 // detection normalizes case: "bar" and "Bar" are the same name within the same
-// class, so the second create collides. (Companion to the same-case collisions
+// tier, so the second create collides. (Companion to the same-case collisions
 // in TestRTMinderMakeChannelSimple.)
 func TestRTMinderChannelNameCaseFoldCollision(t *testing.T) {
 	tew := testEnvBeta(t)
@@ -219,7 +219,7 @@ func TestRTMinderChannelNameCaseFoldCollision(t *testing.T) {
 	_, err := minder.MakeChannel(mb, fqt, proto.RTAppID_Chat, "bar", "the bar channel", proto.RolePairOpt{})
 	require.NoError(t, err)
 
-	// "Bar" normalizes to "bar" -- same name, same (admin) class -> collision.
+	// "Bar" normalizes to "bar" -- same name, same (admin) tier -> collision.
 	_, err = minder.MakeChannel(mb, fqt, proto.RTAppID_Chat, "Bar", "the BAR channel", proto.RolePairOpt{})
 	require.Equal(t, core.RTChannelExistsError{}, err)
 
@@ -232,7 +232,7 @@ func TestRTMinderChannelNameCaseFoldCollision(t *testing.T) {
 
 func makeChannelSpecifier(nm proto.RTChannelName) lcl.RTChannelSpecifier {
 	return lcl.NewRTChannelSpecifierWithName(
-		lcl.RTChannelNameAndClass{
+		lcl.RTChannelNameAndTier{
 			Name: nm,
 		},
 	)
@@ -242,11 +242,11 @@ func makeChannelSpecifierWithString(s string) lcl.RTChannelSpecifier {
 	return makeChannelSpecifier(proto.RTChannelName(s))
 }
 
-func makeChannelSpecifierWithClass(s string, kls proto.RTChannelClass) lcl.RTChannelSpecifier {
+func makeChannelSpecifierWithTier(s string, kls proto.RTChannelTier) lcl.RTChannelSpecifier {
 	return lcl.NewRTChannelSpecifierWithName(
-		lcl.RTChannelNameAndClass{
-			Name:  proto.RTChannelName(s),
-			Klass: kls,
+		lcl.RTChannelNameAndTier{
+			Name: proto.RTChannelName(s),
+			Tier: kls,
 		},
 	)
 }
@@ -786,7 +786,7 @@ func TestRTMinderEvilServerRecentsHoleFill(t *testing.T) {
 }
 
 // TestRTSendReadPermissions exercises the server-side authorization machinery
-// for send (write role) and read (read role / channel class), from the point of
+// for send (write role) and read (read role / channel tier), from the point of
 // view of a low-privilege member who must be *denied* — the cases the
 // owner-only happy-path tests never reach.
 func TestRTSendReadPermissions(t *testing.T) {
@@ -822,7 +822,7 @@ func TestRTSendReadPermissions(t *testing.T) {
 		proto.RolePairOpt{Read: &proto.DefaultRole, Write: &proto.DefaultRole})
 	require.NoError(t, err)
 
-	// "brass": an admin-class channel coco shouldn't even be able to see.
+	// "brass": an admin-tier channel coco shouldn't even be able to see.
 	_, err = minderBluey.MakeChannel(mb, fqt, proto.RTAppID_Chat, "brass",
 		"admins only",
 		proto.RolePairOpt{Read: &proto.AdminRole, Write: &proto.AdminRole})
@@ -855,7 +855,7 @@ func TestRTSendReadPermissions(t *testing.T) {
 	require.Len(t, msgs, 1)
 	require.Equal(t, "official notice", string(msgs[0].Body))
 
-	// coco can't even see the admin-class channel, so she can't address it.
+	// coco can't even see the admin-tier channel, so she can't address it.
 	lst, err := minderCoco.ListAllChannelsForTeam(mc, fqt, proto.RTAppID_Chat)
 	require.NoError(t, err)
 	for _, ch := range lst.Channels {
@@ -909,7 +909,7 @@ func TestRTSendEncryptionRole(t *testing.T) {
 }
 
 // TestRTChannelDisambiguation covers a name shared by an admin and a bottom
-// channel: addressing by name alone is ambiguous, but a channel class resolves
+// channel: addressing by name alone is ambiguous, but a channel tier resolves
 // it to exactly one channel.
 func TestRTChannelDisambiguation(t *testing.T) {
 	tew := testEnvBeta(t)
@@ -921,7 +921,7 @@ func TestRTChannelDisambiguation(t *testing.T) {
 	minder := librt.NewMinder(mb.G().ActiveUser())
 	fqt := tm.ToFQTeamParsed(t)
 
-	// Two channels both named "general": one admin-class, one bottom-class.
+	// Two channels both named "general": one admin-tier, one bottom-tier.
 	_, err := minder.MakeChannel(mb, fqt, proto.RTAppID_Chat, "", "for admins",
 		proto.RolePairOpt{Read: &proto.AdminRole})
 	require.NoError(t, err)
@@ -929,8 +929,8 @@ func TestRTChannelDisambiguation(t *testing.T) {
 		proto.RolePairOpt{Read: &proto.DefaultRole})
 	require.NoError(t, err)
 
-	admin := proto.RTChannelClass_Admin
-	bottom := proto.RTChannelClass_Bottom
+	admin := proto.RTChannelTier_Admin
+	bottom := proto.RTChannelTier_Bottom
 
 	// Addressing by name alone can't choose between them.
 	_, err = minder.Send(mb, fqt, proto.RTAppID_Chat,
@@ -940,22 +940,22 @@ func TestRTChannelDisambiguation(t *testing.T) {
 		makeChannelSpecifierWithString(""), 0)
 	require.Equal(t, core.RTAmbiguousChannelError{Name: ""}, err)
 
-	// A class disambiguates, and each channel keeps its own thread.
+	// A tier disambiguates, and each channel keeps its own thread.
 	_, err = minder.Send(mb, fqt, proto.RTAppID_Chat,
-		makeChannelSpecifierWithClass("", admin),
+		makeChannelSpecifierWithTier("", admin),
 		[]byte("admin msg"))
 	require.NoError(t, err)
 	_, err = minder.Send(mb, fqt, proto.RTAppID_Chat,
-		makeChannelSpecifierWithClass("", bottom),
+		makeChannelSpecifierWithTier("", bottom),
 		[]byte("bottom msg"))
 	require.NoError(t, err)
 
-	adminMsgs, err := minder.GetThreadRecentMsgs(mb, fqt, proto.RTAppID_Chat, makeChannelSpecifierWithClass("", admin), 0)
+	adminMsgs, err := minder.GetThreadRecentMsgs(mb, fqt, proto.RTAppID_Chat, makeChannelSpecifierWithTier("", admin), 0)
 	require.NoError(t, err)
 	require.Len(t, adminMsgs, 1)
 	require.Equal(t, "admin msg", string(adminMsgs[0].Body))
 
-	bottomMsgs, err := minder.GetThreadRecentMsgs(mb, fqt, proto.RTAppID_Chat, makeChannelSpecifierWithClass("", bottom), 0)
+	bottomMsgs, err := minder.GetThreadRecentMsgs(mb, fqt, proto.RTAppID_Chat, makeChannelSpecifierWithTier("", bottom), 0)
 	require.NoError(t, err)
 	require.Len(t, bottomMsgs, 1)
 	require.Equal(t, "bottom msg", string(bottomMsgs[0].Body))
