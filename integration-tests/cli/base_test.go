@@ -436,6 +436,14 @@ func (a *testAgent) runCmdToJSON(
 }
 
 func (a *testAgent) runAgent(t *testing.T) {
+	// Make sure any previous agent on this socket is fully gone before we
+	// start. Otherwise the readiness probe below can connect to the old,
+	// still-closing listener and return too early -- the stop-then-restart
+	// race that a plain dial-up check (#261) doesn't cover. This is a no-op
+	// (one immediately-failing dial) when nothing is listening, so the wait
+	// only happens on an actual restart, not on a first start or teardown.
+	sock := a.socketPath(t)
+	a.waitForSocketDown(t, sock)
 	// Agent runs in the background; grab its global context though
 	// so we can manipulate it (and break it) in tests.
 	go func() {
@@ -448,19 +456,23 @@ func (a *testAgent) runAgent(t *testing.T) {
 			t.Fail()
 		}
 	}()
-	a.waitForSocket(t)
+	a.waitForSocketUp(t, sock)
 }
 
 func (a *testAgent) runAgentWithHook(
 	t *testing.T,
 	hook func(libclient.MetaContext) error,
 ) {
+	sock := a.socketPath(t)
+	a.waitForSocketDown(t, sock)
 	// Agent runs in the background
 	go a.runCmd(t, hook, "agent")
-	a.waitForSocket(t)
+	a.waitForSocketUp(t, sock)
 }
 
-func (a *testAgent) waitForSocket(t *testing.T) {
+// socketPath returns the agent's configured unix socket path. It reads config
+// only, so it works whether or not an agent is currently running.
+func (a *testAgent) socketPath(t *testing.T) string {
 	var tui terminalUI
 	a.runCmd(t, func(m libclient.MetaContext) error {
 		uis := m.G().UIs()
@@ -468,12 +480,14 @@ func (a *testAgent) waitForSocket(t *testing.T) {
 		m.G().SetUIs(uis)
 		return nil
 	}, "ctl", "socket")
-	sock := tui.TrimmedString()
+	return tui.TrimmedString()
+}
 
-	// Poll until the agent is actually accepting connections, not just until
-	// the socket file exists. A stale socket file from a previous agent run
-	// can satisfy os.Stat before the new listener is up, leading to a flaky
-	// "failed to connect to agent" on the next CLI invocation.
+// waitForSocketUp polls until the agent is actually accepting connections, not
+// just until the socket file exists. A stale socket file from a previous agent
+// run can satisfy os.Stat before the new listener is up, leading to a flaky
+// "failed to connect to agent" on the next CLI invocation.
+func (a *testAgent) waitForSocketUp(t *testing.T, sock string) {
 	wait := time.Millisecond * 1
 	for i := 0; i < 20; i++ {
 		conn, err := net.DialTimeout("unix", sock, 50*time.Millisecond)
@@ -487,6 +501,25 @@ func (a *testAgent) waitForSocket(t *testing.T) {
 		}
 	}
 	t.Fatal("agent socket not reachable")
+}
+
+// waitForSocketDown polls until nothing is listening on the agent socket. It
+// returns immediately when the socket already refuses connections, so the only
+// time it actually waits is right after a stop, when the previous agent's
+// listener is still closing -- exactly the case a restart needs to serialize on.
+func (a *testAgent) waitForSocketDown(t *testing.T, sock string) {
+	deadline := time.Now().Add(5 * time.Second)
+	for {
+		conn, err := net.DialTimeout("unix", sock, 50*time.Millisecond)
+		if err != nil {
+			return
+		}
+		_ = conn.Close()
+		if time.Now().After(deadline) {
+			t.Fatal("agent socket still reachable; previous agent did not shut down")
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
 }
 
 func (a *testAgent) stop(t *testing.T) {
