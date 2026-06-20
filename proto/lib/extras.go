@@ -5297,3 +5297,24 @@ func (r RTChannelIDShort) Int64() int64 {
 func (i RTMsgID) Eq(j RTMsgID) bool {
 	return hmac.Equal(i[:], j[:])
 }
+
+func (i RTChannelID) Eq(j RTChannelID) bool {
+	return hmac.Equal(i[:], j[:])
+}
+
+func (n RTChannelName) Eq(p RTChannelName) bool {
+	return n.Normalize() == p.Normalize()
+}
+
+func (n RTChannelName) Normalize() RTChannelName {
+	return RTChannelName(strings.ToLower(string(n)))
+}
+
+const RTGeneralChannel = RTChannelName("general")
+
+func (c RTChannelName) DecorateToString() string {
+	if c.IsEmpty() {
+		c = RTGeneralChannel
+	}
+	return "#" + string(c)
+}

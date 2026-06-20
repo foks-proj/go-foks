@@ -71,6 +71,8 @@ struct RTChannelMetadata @0xddf6b26b2ace1535 {
     mtime @9 : lib.Time;
     updatedAt @10 : lib.RTChannelSetVersion;
     klass @11 : lib.RTChannelClass;
+    unreadable @12 : Bool; // caller's role is below the read role: name is shown
+                           // (for collision detection) but desc/lastMsg withheld
 }
 
 struct RTChannelSet {

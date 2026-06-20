@@ -3,6 +3,7 @@ package librt
 import (
 	"errors"
 	"fmt"
+	"math/rand"
 	"slices"
 	"strings"
 	"sync"
@@ -61,7 +62,33 @@ type Minder struct {
 
 	msgIDCache *LRU[proto.RTMsgID, proto.RTMsgSeq]
 
+	// usernameCache memoizes UID -> display-name resolutions (each a full user
+	// chain load), which would otherwise be issued per message-sender on every
+	// thread read. Entries expire after a jittered ~6h TTL; see usernameCacheTTL.
+	usernameMu    sync.Mutex
+	usernameCache map[proto.UID]usernameCacheEntry
+
 	testHooks *MinderTestHooks
+}
+
+type usernameCacheEntry struct {
+	name      proto.NameUtf8
+	expiresAt time.Time
+}
+
+const (
+	// usernameCacheTTLBase is the central lifetime of a cached UID->name entry;
+	// usernameCacheTTLJitter is the random spread added on top so a burst of
+	// entries cached together don't all expire at once and stampede the server.
+	usernameCacheTTLBase   = 6 * time.Hour
+	usernameCacheTTLJitter = 2 * time.Hour
+)
+
+// jitteredUsernameTTL returns a lifetime uniformly in
+// [base - jitter/2, base + jitter/2), centered on base (~6h).
+func jitteredUsernameTTL() time.Duration {
+	return usernameCacheTTLBase - usernameCacheTTLJitter/2 +
+		time.Duration(rand.Int63n(int64(usernameCacheTTLJitter)))
 }
 
 // MinderTestHooks lets tests perturb a Minder. A nil Minder.testHooks, or a nil
@@ -113,8 +140,9 @@ func NewMinder(au *libclient.UserContext) *Minder {
 		panic("nil active user")
 	}
 	ret := &Minder{
-		au:         au,
-		msgIDCache: NewLRU[proto.RTMsgID, proto.RTMsgSeq](10_000),
+		au:            au,
+		msgIDCache:    NewLRU[proto.RTMsgID, proto.RTMsgSeq](10_000),
+		usernameCache: make(map[proto.UID]usernameCacheEntry),
 	}
 	ret.base = libclient.NewBaseMinder(
 		au,
@@ -154,6 +182,9 @@ func (d *Minder) MakeChannelWithTestHooks(
 	*proto.RTChannelID,
 	error,
 ) {
+	if nm.Eq(proto.RTGeneralChannel) {
+		return nil, core.RTGenericError("cannot make channel named #general")
+	}
 	sleepDur := time.Millisecond
 	numTries := 5
 	for i := range numTries {
@@ -208,7 +239,7 @@ func (d *Minder) makeChannelOneAttempt(
 	}
 	chMap := make(map[chKey]struct{})
 	for _, chmd := range chlst.Channels {
-		chMap[chKey{name: chmd.Name, klass: chmd.Klass}] = struct{}{}
+		chMap[chKey{name: chmd.Name.Normalize(), klass: chmd.Klass}] = struct{}{}
 	}
 
 	// A note on roles, which are tricky. If no roles were specified, we use
@@ -247,7 +278,10 @@ func (d *Minder) makeChannelOneAttempt(
 		nameRole = proto.AdminRole
 	}
 
-	if _, found := chMap[chKey{name: nm, klass: newChClass}]; found {
+	if _, found := chMap[chKey{
+		name:  nm.Normalize(),
+		klass: newChClass,
+	}]; found {
 		return nil, core.RTChannelExistsError{}
 	}
 	nameKeySeq, err := rtp.PLCNode().SKM().PrivateKeysForRole(m.Base(), nameRole)
@@ -383,6 +417,14 @@ func (r *RTParty) keysAtRoleGen(
 	if err != nil {
 		return nil, err
 	}
+	// PrivateKeysForRole returns (nil, nil) when we hold no private keys for the
+	// role, i.e. we aren't a member at or above the channel's role. Without those
+	// keys we can decrypt neither the channel name/description nor its messages,
+	// so this is a read-permission failure -- not an internal error or a panic on
+	// the nil sequence below.
+	if seq == nil {
+		return nil, core.PermissionError("no read access to channel at this role")
+	}
 	key := seq.At(rg.Gen)
 	if key == nil {
 		return nil, core.KeyNotFoundError{Which: "SKM at role/gen in chat"}
@@ -490,6 +532,7 @@ func (k *Minder) decryptChannelMetadata(
 	ret.Roles = chmdenc.Roles
 	ret.Klass = chmdenc.Klass
 	ret.UpdatedAt = chmdenc.UpdatedAt
+	ret.Unreadable = chmdenc.Unreadable
 
 	return &ret, nil
 }
@@ -510,6 +553,15 @@ func (k *Minder) ListAllChannelsForTeam(
 	if err != nil {
 		return nil, err
 	}
+	// Drop channels the server flagged as unreadable for us (role below the read
+	// role). They're returned so name-collision detection in MakeChannel can see
+	// them, but they have no decryptable content, so we hide them from the inbox.
+	ret.Channels = slices.DeleteFunc(
+		ret.Channels,
+		func(c lcl.RTChannelMetadataPlaintext) bool {
+			return c.Unreadable
+		},
+	)
 	slices.SortFunc(
 		ret.Channels,
 		func(a lcl.RTChannelMetadataPlaintext, b lcl.RTChannelMetadataPlaintext) int {
@@ -589,8 +641,7 @@ func (d *Minder) resolveChannel(
 	m MetaContext,
 	rtp *RTParty,
 	appID proto.RTAppID,
-	name proto.RTChannelName,
-	klass *proto.RTChannelClass,
+	spc lcl.RTChannelSpecifier,
 ) (
 	*lcl.RTChannelMetadataPlaintext,
 	error,
@@ -599,23 +650,57 @@ func (d *Minder) resolveChannel(
 	if err != nil {
 		return nil, err
 	}
+
+	t, err := spc.GetT()
+	if err != nil {
+		return nil, err
+	}
+
+	var searchID *proto.RTChannelID
+	var searchName proto.RTChannelName
+	var searchClass proto.RTChannelClass
+
+	switch t {
+	case lcl.RTChannelSpecifierType_None:
+		/* noop */
+	case lcl.RTChannelSpecifierType_Name:
+		searchName = spc.Name().Name
+		searchClass = spc.Name().Klass
+	case lcl.RTChannelSpecifierType_ID:
+		tmp := spc.Id()
+		searchID = &tmp
+	default:
+		return nil, core.InternalError("unexpected channel specifier type")
+	}
+
 	var found *lcl.RTChannelMetadataPlaintext
 	for i := range lst.Channels {
 		ch := &lst.Channels[i]
-		if ch.Name != name {
+
+		// If specified by channel, then first match wins
+		if searchID != nil {
+			if searchID.Eq(ch.Id) {
+				return ch, nil
+			}
 			continue
 		}
-		if klass != nil && ch.Klass != *klass {
+
+		if !ch.Name.Eq(searchName) {
+			continue
+		}
+		if searchClass != proto.RTChannelClass_None && ch.Klass != searchClass {
 			continue
 		}
 		if found != nil {
 			// Only reachable when klass==nil; a (name, class) pair is unique.
-			return nil, core.RTAmbiguousChannelError{Name: string(name)}
+			return nil, core.RTAmbiguousChannelError{Name: searchName}
 		}
 		found = ch
 	}
 	if found == nil {
-		return nil, core.RTNotFoundError(fmt.Sprintf("channel '%s'", string(name)))
+		return nil, core.RTNotFoundError(
+			fmt.Sprintf("channel '%s'", spc.String()),
+		)
 	}
 	return found, nil
 }
@@ -676,14 +761,13 @@ func (d *Minder) Send(
 	m MetaContext,
 	team *proto.FQTeamParsed,
 	appID proto.RTAppID,
-	channelName proto.RTChannelName,
-	klass *proto.RTChannelClass,
+	channel lcl.RTChannelSpecifier,
 	body []byte,
 ) (
 	*rem.RTSendRes,
 	error,
 ) {
-	return d.SendWithTestHooks(m, team, appID, channelName, klass, body, nil)
+	return d.SendWithTestHooks(m, team, appID, channel, body, nil)
 }
 
 func (d *Minder) cacheMsgID(
@@ -702,8 +786,7 @@ func (d *Minder) SendWithTestHooks(
 	m MetaContext,
 	team *proto.FQTeamParsed,
 	appID proto.RTAppID,
-	channelName proto.RTChannelName,
-	klass *proto.RTChannelClass,
+	channel lcl.RTChannelSpecifier,
 	body []byte,
 	test *SendTestHooks,
 ) (
@@ -717,7 +800,7 @@ func (d *Minder) SendWithTestHooks(
 	if err != nil {
 		return nil, err
 	}
-	ch, err := d.resolveChannel(m, rtp, appID, channelName, klass)
+	ch, err := d.resolveChannel(m, rtp, appID, channel)
 	if err != nil {
 		return nil, err
 	}
@@ -983,8 +1066,7 @@ func (d *Minder) initReq(
 	m MetaContext,
 	team *proto.FQTeamParsed,
 	appID proto.RTAppID,
-	channelName proto.RTChannelName,
-	klass *proto.RTChannelClass,
+	channel lcl.RTChannelSpecifier,
 ) (
 	*RTParty,
 	*lcl.RTChannelMetadataPlaintext,
@@ -998,7 +1080,7 @@ func (d *Minder) initReq(
 	if err != nil {
 		return nil, nil, nil, err
 	}
-	ch, err := d.resolveChannel(m, rtp, appID, channelName, klass)
+	ch, err := d.resolveChannel(m, rtp, appID, channel)
 	if err != nil {
 		return nil, nil, nil, err
 	}
@@ -1007,6 +1089,109 @@ func (d *Minder) initReq(
 		return nil, nil, nil, err
 	}
 	return rtp, ch, cli, nil
+}
+
+// TeamViewToken returns the team's view bearer token, used for AsLocalTeam user
+// loads. The agent uses it to resolve message-sender UIDs to usernames: in
+// closed viewership mode, co-members can only load each other mediated through
+// the shared team, not directly. Returns nil if the team carries no view token
+// (e.g. it was loaded as self/owner); callers should treat name resolution as
+// best-effort and tolerate a nil token.
+func (d *Minder) TeamViewToken(
+	m MetaContext,
+	team *proto.FQTeamParsed,
+) (
+	*rem.TeamVOBearerToken,
+	error,
+) {
+	if team == nil {
+		return nil, core.InternalError("team is required")
+	}
+	rtp, err := d.base.GetParty(m.Base(), team)
+	if err != nil {
+		return nil, err
+	}
+	return rtp.PLCNode().ViewTok(), nil
+}
+
+// usernameCacheGet returns a cached, unexpired display name for uid, if any.
+func (d *Minder) usernameCacheGet(m MetaContext, uid proto.UID) (proto.NameUtf8, bool) {
+	d.usernameMu.Lock()
+	defer d.usernameMu.Unlock()
+	ent, ok := d.usernameCache[uid]
+	if !ok {
+		return "", false
+	}
+	if !m.G().Now().Before(ent.expiresAt) {
+		delete(d.usernameCache, uid)
+		return "", false
+	}
+	return ent.name, true
+}
+
+// usernameCacheSet records uid -> name with a fresh jittered TTL.
+func (d *Minder) usernameCacheSet(m MetaContext, uid proto.UID, nm proto.NameUtf8) {
+	d.usernameMu.Lock()
+	defer d.usernameMu.Unlock()
+	d.usernameCache[uid] = usernameCacheEntry{
+		name:      nm,
+		expiresAt: m.G().Now().Add(jitteredUsernameTTL()),
+	}
+}
+
+// ResolveSenderNames maps each distinct user-sender UID in msgs to its display
+// name. Resolutions are memoized (see usernameCache) since each cache miss is a
+// full user-chain load; in closed viewership mode the load is mediated through
+// the shared team, so a team view bearer token (tok) is presented. Best-effort:
+// a sender that can't be loaded is omitted from the result rather than failing.
+func (d *Minder) ResolveSenderNames(
+	m MetaContext,
+	tok *rem.TeamVOBearerToken,
+	msgs []ThreadMessage,
+) map[proto.UID]proto.NameUtf8 {
+	ret := make(map[proto.UID]proto.NameUtf8)
+	for i := range msgs {
+		sender := msgs[i].Sender
+		if sender == nil || !sender.IsUser() {
+			continue
+		}
+		uid, err := sender.UID()
+		if err != nil {
+			continue
+		}
+		if _, ok := ret[uid]; ok {
+			continue
+		}
+		if nm, ok := d.resolveSenderName(m, tok, uid); ok {
+			ret[uid] = nm
+		}
+	}
+	return ret
+}
+
+// resolveSenderName returns the display name for a single sender UID -- from the
+// cache if present, otherwise via a (team-mediated) user-chain load whose result
+// is then cached. Returns false if the user can't be loaded.
+func (d *Minder) resolveSenderName(
+	m MetaContext,
+	tok *rem.TeamVOBearerToken,
+	uid proto.UID,
+) (proto.NameUtf8, bool) {
+	if nm, ok := d.usernameCacheGet(m, uid); ok {
+		return nm, true
+	}
+	uw, err := libclient.LoadUser(m.Base(), libclient.LoadUserArg{
+		Uid:               uid,
+		LoadMode:          libclient.LoadModeOthers,
+		TeamVOBearerToken: tok,
+	})
+	if err != nil {
+		m.Warnw("resolveSenderName", "uid", uid, "err", err)
+		return "", false
+	}
+	nm := uw.Name()
+	d.usernameCacheSet(m, uid, nm)
+	return nm, true
 }
 
 // if inc > 1, sort ascending
@@ -1049,8 +1234,7 @@ func (d *Minder) GetThreadBookended(
 	m MetaContext,
 	team *proto.FQTeamParsed,
 	appID proto.RTAppID,
-	channelName proto.RTChannelName,
-	klass *proto.RTChannelClass,
+	channel lcl.RTChannelSpecifier,
 	start proto.RTMsgSeq,
 	end proto.RTMsgSeq,
 ) (
@@ -1061,21 +1245,20 @@ func (d *Minder) GetThreadBookended(
 	if team == nil {
 		return nil, false, core.InternalError("team is required to read in Stage 1a")
 	}
-	if start == end {
-		return nil, false, core.InternalError("no messages in range")
-	}
 
 	sess := newMsgSession()
 
 	// Direction is implied by the ordering of the bookends; the request is
 	// authoritative. Cached rows come back in this same order (DBRange.Get
 	// orders by start vs end), so cached[0] is the `start` side throughout.
+	// Bookends are inclusive, so start==end is a well-defined single-message
+	// request; direction is moot there, and ascending (the default) is fine.
 	inc := 1
 	if end < start {
 		inc = -1
 	}
 
-	rtp, ch, cli, err := d.initReq(m, team, appID, channelName, klass)
+	rtp, ch, cli, err := d.initReq(m, team, appID, channel)
 	if err != nil {
 		return nil, false, err
 	}
@@ -1190,13 +1373,128 @@ func (d *Minder) GetThreadBookended(
 	return ret, isFinal, nil
 }
 
+// GetThreadPage fetches up to num messages, newest-first, ending just before the
+// cursor `before` (exclusive). With before==0 it returns the most recent page
+// (the live head). It also reports atBeginning: true when the page reaches seq 1,
+// i.e. there are no older messages to page back to. To walk backwards through a
+// thread, pass the oldest seq of the previous page as the next `before`.
+func (d *Minder) GetThreadPage(
+	m MetaContext,
+	team *proto.FQTeamParsed,
+	appID proto.RTAppID,
+	channel lcl.RTChannelSpecifier,
+	before proto.RTMsgSeq,
+	num uint,
+) (
+	[]ThreadMessage,
+	bool,
+	error,
+) {
+	if num == 0 {
+		num = 128
+	}
+
+	// before==0: start from the live head.
+	if before == 0 {
+		msgs, err := d.GetThreadRecentMsgs(m, team, appID, channel, num)
+		if err != nil {
+			return nil, false, err
+		}
+		atBeginning := len(msgs) == 0 || core.Last(msgs).Seq <= 1
+		return msgs, atBeginning, nil
+	}
+
+	// Page backwards, newest-first, over the inclusive seq window [lo, hi].
+	// `before` is exclusive, so the window's top is hi = before-1. Bookends are
+	// inclusive, so [lo, hi] holds exactly hi-lo+1 messages; with seqs contiguous
+	// from 1 we size it to `num` (lo = hi-num+1, clamped at 1) and know we're at
+	// the beginning once the window reaches seq 1.
+	hi := int(before) - 1
+	if hi < 1 {
+		return nil, true, nil
+	}
+	lo := hi - int(num) + 1
+	if lo < 1 {
+		lo = 1
+	}
+	atBeginning := lo <= 1
+
+	// Inclusive bookends: start=hi (newest), end=lo (oldest) ⇒ descending page.
+	// hi==lo (a single trailing message) is fine -- bookends are inclusive.
+	msgs, _, err := d.GetThreadBookended(m, team, appID, channel,
+		proto.RTMsgSeq(hi), proto.RTMsgSeq(lo))
+	if err != nil {
+		return nil, false, err
+	}
+	return msgs, atBeginning, nil
+}
+
+// GetThreadView fetches a page (see GetThreadPage) and returns it as a decrypted,
+// app-layer RTThreadView: message bodies plus sender display names resolved from
+// their UIDs. Name resolution is team-mediated (closed viewership only lets
+// co-members load each other through the shared team) and best-effort -- a sender
+// that can't be loaded simply has a nil name rather than failing the read.
+func (d *Minder) GetThreadView(
+	m MetaContext,
+	team *proto.FQTeamParsed,
+	appID proto.RTAppID,
+	channel lcl.RTChannelSpecifier,
+	before proto.RTMsgSeq,
+	num uint,
+) (
+	*lcl.RTThreadView,
+	error,
+) {
+	msgs, atBeginning, err := d.GetThreadPage(m, team, appID, channel, before, num)
+	if err != nil {
+		return nil, err
+	}
+	tok, err := d.TeamViewToken(m, team)
+	if err != nil {
+		return nil, err
+	}
+	names := d.ResolveSenderNames(m, tok, msgs)
+
+	ret := lcl.RTThreadView{AtBeginning: atBeginning}
+	for i := range msgs {
+		ret.Msgs = append(ret.Msgs, threadMessageToView(&msgs[i], names))
+	}
+	return &ret, nil
+}
+
+// threadMessageToView converts a decrypted ThreadMessage to the app-layer
+// RTMsgView, attaching the sender's display name from names if resolved.
+func threadMessageToView(
+	msg *ThreadMessage,
+	names map[proto.UID]proto.NameUtf8,
+) lcl.RTMsgView {
+	ret := lcl.RTMsgView{
+		Seq:        msg.Seq,
+		MsgID:      msg.MsgID,
+		PrevID:     msg.PrevID,
+		PrevSeq:    msg.PrevSeq,
+		Typ:        msg.Typ,
+		Sender:     msg.Sender,
+		SentAtTime: msg.SentAtTime,
+		InsertTime: msg.InsertTime,
+		Body:       msg.Body,
+	}
+	if msg.Sender != nil && msg.Sender.IsUser() {
+		if uid, err := msg.Sender.UID(); err == nil {
+			if nm, ok := names[uid]; ok {
+				ret.SenderName = &nm
+			}
+		}
+	}
+	return ret
+}
+
 // Get the num most recent messages that we don't already have.
 func (d *Minder) GetThreadRecentMsgs(
 	m MetaContext,
 	team *proto.FQTeamParsed,
 	appID proto.RTAppID,
-	channelName proto.RTChannelName,
-	klass *proto.RTChannelClass,
+	channel lcl.RTChannelSpecifier,
 	num uint,
 ) (
 	[]ThreadMessage,
@@ -1206,7 +1504,7 @@ func (d *Minder) GetThreadRecentMsgs(
 		num = 128
 	}
 	inc := -1
-	rtp, ch, cli, err := d.initReq(m, team, appID, channelName, klass)
+	rtp, ch, cli, err := d.initReq(m, team, appID, channel)
 	if err != nil {
 		return nil, err
 	}
@@ -1460,8 +1758,7 @@ func (d *Minder) GetMsgs(
 	m MetaContext,
 	team *proto.FQTeamParsed,
 	appID proto.RTAppID,
-	channelName proto.RTChannelName,
-	klass *proto.RTChannelClass,
+	channel lcl.RTChannelSpecifier,
 	seqs []proto.RTMsgSeq,
 ) (
 	[]ThreadMessage,
@@ -1475,7 +1772,7 @@ func (d *Minder) GetMsgs(
 	if err != nil {
 		return nil, err
 	}
-	ch, err := d.resolveChannel(m, rtp, appID, channelName, klass)
+	ch, err := d.resolveChannel(m, rtp, appID, channel)
 	if err != nil {
 		return nil, err
 	}

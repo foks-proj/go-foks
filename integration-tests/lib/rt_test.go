@@ -7,6 +7,7 @@ import (
 
 	"github.com/foks-proj/go-foks/client/librt"
 	"github.com/foks-proj/go-foks/lib/core"
+	"github.com/foks-proj/go-foks/proto/lcl"
 	proto "github.com/foks-proj/go-foks/proto/lib"
 	"github.com/foks-proj/go-foks/proto/rem"
 	"github.com/stretchr/testify/require"
@@ -169,6 +170,87 @@ func TestRTMinderMakeChannelSimple(t *testing.T) {
 	assertChannel(7, proto.RTChannelClass_Bottom, "zd")
 }
 
+// TestRTMinderGeneralNameReserved checks the minder reserves the "general"
+// name for the default (empty-name) channel: an explicit "general" is rejected
+// case-insensitively, while the empty name (which *is* "#general") still works.
+func TestRTMinderGeneralNameReserved(t *testing.T) {
+	tew := testEnvBeta(t)
+	bluey := tew.NewTestUser(t)
+	tew.DirectDoubleMerklePokeInTest(t)
+	tm := tew.makeTeamForOwner(t, bluey)
+
+	mb := librt.NewMetaContext(tew.NewClientMetaContextWithEracer(t, bluey))
+	minder := librt.NewMinder(mb.G().ActiveUser())
+	fqt := tm.ToFQTeamParsed(t)
+
+	// An explicit "general" is rejected, and the check normalizes case, so
+	// "General"/"GENERAL" are too.
+	reserved := core.RTGenericError("cannot make channel named #general")
+	for _, nm := range []proto.RTChannelName{"general", "General", "GENERAL"} {
+		_, err := minder.MakeChannel(mb, fqt, proto.RTAppID_Chat, nm, "", proto.RolePairOpt{})
+		require.Equal(t, reserved, err, "name %q", nm)
+	}
+
+	// The default channel (empty name) -- the real "#general" -- is still fine.
+	_, err := minder.MakeChannel(mb, fqt, proto.RTAppID_Chat, "", "the real general", proto.RolePairOpt{})
+	require.NoError(t, err)
+
+	// None of the rejected attempts created anything; only the default exists.
+	lst, err := minder.ListAllChannelsForTeam(mb, fqt, proto.RTAppID_Chat)
+	require.NoError(t, err)
+	require.Len(t, lst.Channels, 1)
+	require.Equal(t, proto.RTChannelName(""), lst.Channels[0].Name)
+}
+
+// TestRTMinderChannelNameCaseFoldCollision checks the minder's collision
+// detection normalizes case: "bar" and "Bar" are the same name within the same
+// class, so the second create collides. (Companion to the same-case collisions
+// in TestRTMinderMakeChannelSimple.)
+func TestRTMinderChannelNameCaseFoldCollision(t *testing.T) {
+	tew := testEnvBeta(t)
+	bluey := tew.NewTestUser(t)
+	tew.DirectDoubleMerklePokeInTest(t)
+	tm := tew.makeTeamForOwner(t, bluey)
+
+	mb := librt.NewMetaContext(tew.NewClientMetaContextWithEracer(t, bluey))
+	minder := librt.NewMinder(mb.G().ActiveUser())
+	fqt := tm.ToFQTeamParsed(t)
+
+	_, err := minder.MakeChannel(mb, fqt, proto.RTAppID_Chat, "bar", "the bar channel", proto.RolePairOpt{})
+	require.NoError(t, err)
+
+	// "Bar" normalizes to "bar" -- same name, same (admin) class -> collision.
+	_, err = minder.MakeChannel(mb, fqt, proto.RTAppID_Chat, "Bar", "the BAR channel", proto.RolePairOpt{})
+	require.Equal(t, core.RTChannelExistsError{}, err)
+
+	// Only the first channel exists, stored as it was passed.
+	lst, err := minder.ListAllChannelsForTeam(mb, fqt, proto.RTAppID_Chat)
+	require.NoError(t, err)
+	require.Len(t, lst.Channels, 1)
+	require.Equal(t, proto.RTChannelName("bar"), lst.Channels[0].Name)
+}
+
+func makeChannelSpecifier(nm proto.RTChannelName) lcl.RTChannelSpecifier {
+	return lcl.NewRTChannelSpecifierWithName(
+		lcl.RTChannelNameAndClass{
+			Name: nm,
+		},
+	)
+}
+
+func makeChannelSpecifierWithString(s string) lcl.RTChannelSpecifier {
+	return makeChannelSpecifier(proto.RTChannelName(s))
+}
+
+func makeChannelSpecifierWithClass(s string, kls proto.RTChannelClass) lcl.RTChannelSpecifier {
+	return lcl.NewRTChannelSpecifierWithName(
+		lcl.RTChannelNameAndClass{
+			Name:  proto.RTChannelName(s),
+			Klass: kls,
+		},
+	)
+}
+
 func TestRTMinderSendAndGetThread(t *testing.T) {
 	tew := testEnvBeta(t)
 	bluey := tew.NewTestUser(t)
@@ -186,7 +268,8 @@ func TestRTMinderSendAndGetThread(t *testing.T) {
 	bodies := []string{"hello world", "second message", "a third one"}
 	var lastSeq proto.RTMsgSeq
 	for _, b := range bodies {
-		res, err := minder.Send(mb, fqt, proto.RTAppID_Chat, "foo", nil, []byte(b))
+		res, err := minder.Send(mb, fqt, proto.RTAppID_Chat,
+			makeChannelSpecifierWithString("foo"), []byte(b))
 		require.NoError(t, err)
 		require.NotNil(t, res)
 		require.Equal(t, lastSeq+1, res.Seq)
@@ -195,8 +278,8 @@ func TestRTMinderSendAndGetThread(t *testing.T) {
 
 	// Read them all back; they should decrypt and come in seq order. We reached
 	// the far edge (end == lastSeq) exactly, so this is not a "final" short read.
-	msgs, final, err := minder.GetThreadBookended(mb, fqt, proto.RTAppID_Chat, "foo",
-		nil, 1, lastSeq)
+	msgs, final, err := minder.GetThreadBookended(mb, fqt, proto.RTAppID_Chat,
+		makeChannelSpecifierWithString("foo"), 1, lastSeq)
 	require.NoError(t, err)
 	require.False(t, final)
 	require.Len(t, msgs, len(bodies))
@@ -210,8 +293,9 @@ func TestRTMinderSendAndGetThread(t *testing.T) {
 
 	// Reading a later sub-range should yield only the tail (served from cache,
 	// since the read above populated it).
-	msgs, final, err = minder.GetThreadBookended(mb, fqt, proto.RTAppID_Chat, "foo",
-		nil, 2, lastSeq)
+	msgs, final, err = minder.GetThreadBookended(mb, fqt,
+		proto.RTAppID_Chat,
+		makeChannelSpecifierWithString("foo"), 2, lastSeq)
 	require.NoError(t, err)
 	require.False(t, final)
 	require.Len(t, msgs, 2)
@@ -219,7 +303,9 @@ func TestRTMinderSendAndGetThread(t *testing.T) {
 	require.Equal(t, "second message", string(msgs[0].Body))
 
 	// Sending to a non-existent channel fails.
-	_, err = minder.Send(mb, fqt, proto.RTAppID_Chat, "nosuchchannel", nil, []byte("hi"))
+	_, err = minder.Send(mb, fqt, proto.RTAppID_Chat,
+		makeChannelSpecifierWithString("nosuchchannel"),
+		[]byte("hi"))
 	require.Error(t, err)
 }
 
@@ -242,14 +328,17 @@ func TestRTMinderGetMsgsBySeq(t *testing.T) {
 
 	bodies := []string{"one", "two", "three", "four", "five"}
 	for _, b := range bodies {
-		_, err := minder.Send(mb, fqt, proto.RTAppID_Chat, "foo", nil, []byte(b))
+		_, err := minder.Send(mb, fqt, proto.RTAppID_Chat,
+			makeChannelSpecifierWithString("foo"),
+			[]byte(b))
 		require.NoError(t, err)
 	}
 
 	// Ask for a non-contiguous subset (2 and 4) plus a seq that doesn't exist
 	// (99). We should get exactly seqs 2 and 4 back, each decrypting correctly;
 	// the missing seq is simply absent.
-	msgs, err := minder.GetMsgs(mb, fqt, proto.RTAppID_Chat, "foo", nil,
+	msgs, err := minder.GetMsgs(mb, fqt, proto.RTAppID_Chat,
+		makeChannelSpecifierWithString("foo"),
 		[]proto.RTMsgSeq{2, 4, 99})
 	require.NoError(t, err)
 	require.Len(t, msgs, 2)
@@ -264,12 +353,14 @@ func TestRTMinderGetMsgsBySeq(t *testing.T) {
 	require.Equal(t, "four", bySeq[4])
 
 	// An empty request yields nothing, not an error.
-	msgs, err = minder.GetMsgs(mb, fqt, proto.RTAppID_Chat, "foo", nil, nil)
+	msgs, err = minder.GetMsgs(mb, fqt, proto.RTAppID_Chat,
+		makeChannelSpecifierWithString("foo"), nil)
 	require.NoError(t, err)
 	require.Len(t, msgs, 0)
 
 	// Requesting only missing seqs yields an empty result.
-	msgs, err = minder.GetMsgs(mb, fqt, proto.RTAppID_Chat, "foo", nil,
+	msgs, err = minder.GetMsgs(mb, fqt, proto.RTAppID_Chat,
+		makeChannelSpecifierWithString("foo"),
 		[]proto.RTMsgSeq{100, 101})
 	require.NoError(t, err)
 	require.Len(t, msgs, 0)
@@ -312,11 +403,14 @@ func TestRTMinderGetThreadBookendedHoleFilling(t *testing.T) {
 			proto.RolePairOpt{Read: &proto.DefaultRole, Write: &proto.DefaultRole})
 		require.NoError(t, err)
 		for i := 1; i <= n; i++ {
-			res, err := sender.Send(mb, fqt, proto.RTAppID_Chat, ch, nil, []byte(fmt.Sprintf("msg-%d", i)))
+			res, err := sender.Send(mb, fqt, proto.RTAppID_Chat,
+				makeChannelSpecifier(ch),
+				[]byte(fmt.Sprintf("msg-%d", i)))
 			require.NoError(t, err)
 			require.Equal(t, proto.RTMsgSeq(i), res.Seq)
 		}
-		primed, err := receiver.GetMsgs(mc, fqt, proto.RTAppID_Chat, ch, nil,
+		primed, err := receiver.GetMsgs(mc, fqt, proto.RTAppID_Chat,
+			makeChannelSpecifier(ch),
 			[]proto.RTMsgSeq{3, 5})
 		require.NoError(t, err)
 		require.Len(t, primed, 2)
@@ -335,16 +429,19 @@ func TestRTMinderGetThreadBookendedHoleFilling(t *testing.T) {
 
 		// coco's cache holds {3,5}. The server must supply leading [1,2], trailing
 		// [6,7], and the hole at 4; all of it merges into one ascending run.
-		msgs, final, err := receiver.GetThreadBookended(mc, fqt, proto.RTAppID_Chat, "asc",
-			nil, 1, n)
+		msgs, final, err := receiver.GetThreadBookended(mc, fqt,
+			proto.RTAppID_Chat,
+			makeChannelSpecifierWithString("asc"), 1, n)
 		require.NoError(t, err)
 		require.False(t, final) // reached end (== n) exactly
 		check(t, msgs, 1, 2, 3, 4, 5, 6, 7)
 
 		// The read above cached everything, so the second read is a pure cache
 		// hit (no holes, no bookends).
-		msgs, _, err = receiver.GetThreadBookended(mc, fqt, proto.RTAppID_Chat, "asc",
-			nil, 1, n)
+		msgs, _, err = receiver.GetThreadBookended(mc, fqt,
+			proto.RTAppID_Chat,
+			makeChannelSpecifierWithString("asc"),
+			1, n)
 		require.NoError(t, err)
 		check(t, msgs, 1, 2, 3, 4, 5, 6, 7)
 	})
@@ -354,8 +451,10 @@ func TestRTMinderGetThreadBookendedHoleFilling(t *testing.T) {
 
 		// Same sparse cache {3,5}, but walk 7..1: leading bookend [7,6], trailing
 		// [2,1], hole 4, merged newest-first.
-		msgs, final, err := receiver.GetThreadBookended(mc, fqt, proto.RTAppID_Chat, "desc",
-			nil, n, 1)
+		msgs, final, err := receiver.GetThreadBookended(mc, fqt,
+			proto.RTAppID_Chat,
+			makeChannelSpecifierWithString("desc"),
+			n, 1)
 		require.NoError(t, err)
 		require.False(t, final) // reached end (== 1) exactly
 		check(t, msgs, 7, 6, 5, 4, 3, 2, 1)
@@ -382,14 +481,17 @@ func TestRTMinderSenderReadsAreCacheHits(t *testing.T) {
 
 	const n = 5
 	for i := 1; i <= n; i++ {
-		res, err := minder.Send(mb, fqt, proto.RTAppID_Chat, "foo", nil, []byte(fmt.Sprintf("msg-%d", i)))
+		res, err := minder.Send(mb, fqt, proto.RTAppID_Chat,
+			makeChannelSpecifierWithString("foo"),
+			[]byte(fmt.Sprintf("msg-%d", i)))
 		require.NoError(t, err)
 		require.Equal(t, proto.RTMsgSeq(i), res.Seq)
 	}
 
 	// Reading back the full range it just sent is a pure cache hit.
 	before := minder.Metrics()
-	msgs, final, err := minder.GetThreadBookended(mb, fqt, proto.RTAppID_Chat, "foo", nil, 1, n)
+	msgs, final, err := minder.GetThreadBookended(mb, fqt, proto.RTAppID_Chat,
+		makeChannelSpecifierWithString("foo"), 1, n)
 	require.NoError(t, err)
 	require.False(t, final)
 	require.Len(t, msgs, n)
@@ -403,7 +505,8 @@ func TestRTMinderSenderReadsAreCacheHits(t *testing.T) {
 	// Contrast: asking past the cached range forces a (trailing) server fetch, so
 	// the counter must advance by exactly one -- proving it tracks round-trips.
 	before = minder.Metrics()
-	_, _, err = minder.GetThreadBookended(mb, fqt, proto.RTAppID_Chat, "foo", nil, 1, n+1)
+	_, _, err = minder.GetThreadBookended(mb, fqt, proto.RTAppID_Chat,
+		makeChannelSpecifierWithString("foo"), 1, n+1)
 	require.NoError(t, err)
 	require.Equal(t, before.ServerThreadReads+1, minder.Metrics().ServerThreadReads,
 		"a read past the cached range must issue exactly one server RtGetThread")
@@ -438,7 +541,8 @@ func TestRTMinderPrevPointers(t *testing.T) {
 
 	const n = 4
 	for i := 1; i <= n; i++ {
-		res, err := sender.Send(mb, fqt, proto.RTAppID_Chat, "foo", nil, []byte(fmt.Sprintf("msg-%d", i)))
+		res, err := sender.Send(mb, fqt, proto.RTAppID_Chat,
+			makeChannelSpecifierWithString("foo"), []byte(fmt.Sprintf("msg-%d", i)))
 		require.NoError(t, err)
 		require.Equal(t, proto.RTMsgSeq(i), res.Seq)
 	}
@@ -463,12 +567,14 @@ func TestRTMinderPrevPointers(t *testing.T) {
 
 	// Receiver fetches from the server (cold cache) and must see the chain the
 	// sender stamped on each message.
-	got, _, err := receiver.GetThreadBookended(mc, fqt, proto.RTAppID_Chat, "foo", nil, 1, n)
+	got, _, err := receiver.GetThreadBookended(mc, fqt, proto.RTAppID_Chat,
+		makeChannelSpecifierWithString("foo"), 1, n)
 	require.NoError(t, err)
 	assertChain(t, "receiver", got)
 
 	// The sender's own read (served from its on-send cache) agrees.
-	got, _, err = sender.GetThreadBookended(mb, fqt, proto.RTAppID_Chat, "foo", nil, 1, n)
+	got, _, err = sender.GetThreadBookended(mb, fqt, proto.RTAppID_Chat,
+		makeChannelSpecifierWithString("foo"), 1, n)
 	require.NoError(t, err)
 	assertChain(t, "sender", got)
 }
@@ -503,7 +609,8 @@ func TestRTMinderEvilServerOrdering(t *testing.T) {
 
 	const n = 4
 	for i := 1; i <= n; i++ {
-		_, err := sender.Send(mb, fqt, proto.RTAppID_Chat, "foo", nil, []byte(fmt.Sprintf("msg-%d", i)))
+		_, err := sender.Send(mb, fqt, proto.RTAppID_Chat,
+			makeChannelSpecifierWithString("foo"), []byte(fmt.Sprintf("msg-%d", i)))
 		require.NoError(t, err)
 	}
 	allSeqs := []proto.RTMsgSeq{1, 2, 3, 4}
@@ -513,7 +620,9 @@ func TestRTMinderEvilServerOrdering(t *testing.T) {
 	read := func(mut func(*rem.RTThreadPage)) ([]librt.ThreadMessage, error) {
 		recv := librt.NewMinder(mc.G().ActiveUser())
 		recv.SetTestHooks(&librt.MinderTestHooks{MutateReadRes: mut})
-		return recv.GetMsgs(mc, fqt, proto.RTAppID_Chat, "foo", nil, allSeqs)
+		return recv.GetMsgs(mc, fqt, proto.RTAppID_Chat,
+			makeChannelSpecifierWithString("foo"),
+			allSeqs)
 	}
 	requireOrderErr := func(t *testing.T, err error) {
 		require.Error(t, err)
@@ -600,7 +709,9 @@ func TestRTMinderEvilServerRecentsHoleFill(t *testing.T) {
 			proto.RolePairOpt{Read: &proto.DefaultRole, Write: &proto.DefaultRole})
 		require.NoError(t, err)
 		for i := 1; i <= n; i++ {
-			_, err := sender.Send(mb, fqt, proto.RTAppID_Chat, ch, nil, []byte(fmt.Sprintf("msg-%d", i)))
+			_, err := sender.Send(mb, fqt, proto.RTAppID_Chat,
+				makeChannelSpecifier(ch),
+				[]byte(fmt.Sprintf("msg-%d", i)))
 			require.NoError(t, err)
 		}
 	}
@@ -623,7 +734,8 @@ func TestRTMinderEvilServerRecentsHoleFill(t *testing.T) {
 			},
 			MutateReadRes: fillerMut,
 		})
-		return recv.GetThreadRecentMsgs(mc, fqt, proto.RTAppID_Chat, ch, nil, 0)
+		return recv.GetThreadRecentMsgs(mc, fqt, proto.RTAppID_Chat,
+			makeChannelSpecifier(ch), 0)
 	}
 
 	t.Run("tampered_filler", func(t *testing.T) {
@@ -667,7 +779,8 @@ func TestRTMinderEvilServerRecentsHoleFill(t *testing.T) {
 				}
 			},
 		})
-		_, err := recv.GetThreadRecentMsgs(mc, fqt, proto.RTAppID_Chat, "bar", nil, 0)
+		_, err := recv.GetThreadRecentMsgs(mc, fqt, proto.RTAppID_Chat,
+			makeChannelSpecifier("bar"), 0)
 		requireOrderErr(t, err)
 	})
 }
@@ -718,22 +831,26 @@ func TestRTSendReadPermissions(t *testing.T) {
 	// --- write permission ---
 
 	// coco CAN write to the member-writable channel.
-	_, err = minderCoco.Send(mc, fqt, proto.RTAppID_Chat, "watercooler", nil, []byte("hi all"))
+	_, err = minderCoco.Send(mc, fqt, proto.RTAppID_Chat,
+		makeChannelSpecifierWithString("watercooler"), []byte("hi all"))
 	require.NoError(t, err)
 
 	// coco CANNOT write to the admin-writable channel, even though she can read it.
-	_, err = minderCoco.Send(mc, fqt, proto.RTAppID_Chat, "announce", nil, []byte("not an admin"))
+	_, err = minderCoco.Send(mc, fqt, proto.RTAppID_Chat,
+		makeChannelSpecifierWithString("announce"), []byte("not an admin"))
 	require.Equal(t, core.PermissionError("user role too low to send into channel"), err)
 
 	// the owner CAN write to the admin-writable channel.
-	_, err = minderBluey.Send(mb, fqt, proto.RTAppID_Chat, "announce", nil, []byte("official notice"))
+	_, err = minderBluey.Send(mb, fqt, proto.RTAppID_Chat,
+		makeChannelSpecifierWithString("announce"), []byte("official notice"))
 	require.NoError(t, err)
 
 	// --- read permission ---
 
 	// coco CAN read the admin-writable (but member-readable) channel.
-	msgs, err := minderCoco.GetThreadRecentMsgs(mc, fqt, proto.RTAppID_Chat, "announce",
-		nil, 0)
+	msgs, err := minderCoco.GetThreadRecentMsgs(mc, fqt,
+		proto.RTAppID_Chat,
+		makeChannelSpecifierWithString("announce"), 0)
 	require.NoError(t, err)
 	require.Len(t, msgs, 1)
 	require.Equal(t, "official notice", string(msgs[0].Body))
@@ -746,8 +863,8 @@ func TestRTSendReadPermissions(t *testing.T) {
 	}
 
 	// ...and reading its thread fails: she can't resolve a channel she can't see.
-	_, err = minderCoco.GetThreadRecentMsgs(mc, fqt, proto.RTAppID_Chat, "brass",
-		nil, 0)
+	_, err = minderCoco.GetThreadRecentMsgs(mc, fqt, proto.RTAppID_Chat,
+		makeChannelSpecifierWithString("brass"), 0)
 	require.Equal(t, core.RTNotFoundError("channel 'brass'"), err)
 }
 
@@ -765,24 +882,27 @@ func TestRTSendEncryptionRole(t *testing.T) {
 	fqt := tm.ToFQTeamParsed(t)
 
 	// A bottom channel readable/writable by members.
-	_, err := minder.MakeChannel(mb, fqt, proto.RTAppID_Chat, "general", "all hands",
+	_, err := minder.MakeChannel(mb, fqt, proto.RTAppID_Chat, "", "all hands",
 		proto.RolePairOpt{Read: &proto.DefaultRole, Write: &proto.DefaultRole})
 	require.NoError(t, err)
 
 	// Encrypting at the channel's read role (the default path) works.
-	_, err = minder.Send(mb, fqt, proto.RTAppID_Chat, "general", nil, []byte("hi"))
+	_, err = minder.Send(mb, fqt, proto.RTAppID_Chat,
+		makeChannelSpecifierWithString(""), []byte("hi"))
 	require.NoError(t, err)
 
 	// bluey (owner) holds the owner key, so she *can* encrypt at OwnerRole, but
 	// the channel's read role is member, so the server must reject it.
-	_, err = minder.SendWithTestHooks(mb, fqt, proto.RTAppID_Chat, "general",
-		nil, []byte("wrong role"),
+	_, err = minder.SendWithTestHooks(mb, fqt, proto.RTAppID_Chat,
+		makeChannelSpecifierWithString(""),
+		[]byte("wrong role"),
 		&librt.SendTestHooks{EncryptRoleOverride: &proto.OwnerRole})
 	require.Equal(t, core.BadArgsError("message must be encrypted at the channel's read role"), err)
 
 	// The rejected message was not persisted: only the one good message remains.
-	msgs, err := minder.GetThreadRecentMsgs(mb, fqt, proto.RTAppID_Chat, "general",
-		nil, 0)
+	msgs, err := minder.GetThreadRecentMsgs(mb, fqt, proto.RTAppID_Chat,
+		makeChannelSpecifierWithString(""),
+		0)
 	require.NoError(t, err)
 	require.Len(t, msgs, 1)
 	require.Equal(t, "hi", string(msgs[0].Body))
@@ -802,10 +922,10 @@ func TestRTChannelDisambiguation(t *testing.T) {
 	fqt := tm.ToFQTeamParsed(t)
 
 	// Two channels both named "general": one admin-class, one bottom-class.
-	_, err := minder.MakeChannel(mb, fqt, proto.RTAppID_Chat, "general", "for admins",
+	_, err := minder.MakeChannel(mb, fqt, proto.RTAppID_Chat, "", "for admins",
 		proto.RolePairOpt{Read: &proto.AdminRole})
 	require.NoError(t, err)
-	_, err = minder.MakeChannel(mb, fqt, proto.RTAppID_Chat, "general", "for everyone",
+	_, err = minder.MakeChannel(mb, fqt, proto.RTAppID_Chat, "", "for everyone",
 		proto.RolePairOpt{Read: &proto.DefaultRole})
 	require.NoError(t, err)
 
@@ -813,23 +933,29 @@ func TestRTChannelDisambiguation(t *testing.T) {
 	bottom := proto.RTChannelClass_Bottom
 
 	// Addressing by name alone can't choose between them.
-	_, err = minder.Send(mb, fqt, proto.RTAppID_Chat, "general", nil, []byte("hi"))
-	require.Equal(t, core.RTAmbiguousChannelError{Name: "general"}, err)
-	_, err = minder.GetThreadRecentMsgs(mb, fqt, proto.RTAppID_Chat, "general", nil, 0)
-	require.Equal(t, core.RTAmbiguousChannelError{Name: "general"}, err)
+	_, err = minder.Send(mb, fqt, proto.RTAppID_Chat,
+		makeChannelSpecifierWithString(""), []byte("hi"))
+	require.Equal(t, core.RTAmbiguousChannelError{Name: ""}, err)
+	_, err = minder.GetThreadRecentMsgs(mb, fqt, proto.RTAppID_Chat,
+		makeChannelSpecifierWithString(""), 0)
+	require.Equal(t, core.RTAmbiguousChannelError{Name: ""}, err)
 
 	// A class disambiguates, and each channel keeps its own thread.
-	_, err = minder.Send(mb, fqt, proto.RTAppID_Chat, "general", &admin, []byte("admin msg"))
+	_, err = minder.Send(mb, fqt, proto.RTAppID_Chat,
+		makeChannelSpecifierWithClass("", admin),
+		[]byte("admin msg"))
 	require.NoError(t, err)
-	_, err = minder.Send(mb, fqt, proto.RTAppID_Chat, "general", &bottom, []byte("bottom msg"))
+	_, err = minder.Send(mb, fqt, proto.RTAppID_Chat,
+		makeChannelSpecifierWithClass("", bottom),
+		[]byte("bottom msg"))
 	require.NoError(t, err)
 
-	adminMsgs, err := minder.GetThreadRecentMsgs(mb, fqt, proto.RTAppID_Chat, "general", &admin, 0)
+	adminMsgs, err := minder.GetThreadRecentMsgs(mb, fqt, proto.RTAppID_Chat, makeChannelSpecifierWithClass("", admin), 0)
 	require.NoError(t, err)
 	require.Len(t, adminMsgs, 1)
 	require.Equal(t, "admin msg", string(adminMsgs[0].Body))
 
-	bottomMsgs, err := minder.GetThreadRecentMsgs(mb, fqt, proto.RTAppID_Chat, "general", &bottom, 0)
+	bottomMsgs, err := minder.GetThreadRecentMsgs(mb, fqt, proto.RTAppID_Chat, makeChannelSpecifierWithClass("", bottom), 0)
 	require.NoError(t, err)
 	require.Len(t, bottomMsgs, 1)
 	require.Equal(t, "bottom msg", string(bottomMsgs[0].Body))
