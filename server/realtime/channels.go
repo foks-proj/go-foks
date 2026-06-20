@@ -102,11 +102,11 @@ func readAllChannels(
 	error,
 ) {
 
-	// Every can read channel class "bottom", but only
+	// Every can read channel tier "bottom", but only
 	// admins and above can read "admin" channels.
-	var classes []string = []string{"bottom"}
+	var tiers []string = []string{"bottom"}
 	if role.IsAdminOrAbove() {
-		classes = append(classes, "admin")
+		tiers = append(tiers, "admin")
 	}
 	appDB, err := app.ExportToDB()
 	if err != nil {
@@ -119,18 +119,18 @@ func readAllChannels(
 		        c.write_role_type, c.write_role_viz_level,
 		        c.last_msg_type, c.last_msg_seq, c.last_send_time,
 		        cp.party_id, cp.uid,
-		        c.ctime, c.mtime, c.updated_at_set_vers, c.class
+		        c.ctime, c.mtime, c.updated_at_set_vers, c.tier
 		 FROM channels c
 		 LEFT JOIN channel_parties cp ON
 		     cp.short_host_id = c.short_host_id
 		     AND cp.channel_id = c.channel_id
 		     AND cp.party_no = c.last_sender_no
-		 WHERE c.short_host_id=$1 AND c.parent_team_id=$2 AND c.app_id=$3 AND c.class = ANY($4)
+		 WHERE c.short_host_id=$1 AND c.parent_team_id=$2 AND c.app_id=$3 AND c.tier = ANY($4)
 		 ORDER BY c.channel_id ASC`,
 		m.ShortHostID().ExportToDB(),
 		team.ExportToDB(),
 		appDB,
-		classes,
+		tiers,
 	)
 	if err != nil {
 		return nil, err
@@ -206,7 +206,7 @@ func readAllChannels(
 			lastSendTime                  *time.Time
 			ctime, mtime                  time.Time
 			updatedAtSetVers              int
-			classRaw                      string
+			tierRaw                       string
 		)
 		err := rows.Scan(
 			&idRaw, &seqno, &nameBoxRaw, &descBoxRaw,
@@ -214,7 +214,7 @@ func readAllChannels(
 			&lastMsgType, &lastMsgSeq, &lastSendTime,
 			&partyIDRaw, &uidRaw,
 			&ctime, &mtime, &updatedAtSetVers,
-			&classRaw,
+			&tierRaw,
 		)
 		if err != nil {
 			return nil, err
@@ -267,13 +267,13 @@ func readAllChannels(
 		if lm != nil {
 			md.LastMsg = lm
 		}
-		err = md.Klass.ImportFromDB(classRaw)
+		err = md.Tier.ImportFromDB(tierRaw)
 		if err != nil {
 			return nil, err
 		}
 
-		// The channel name is sealed at the class floor, so its name (and very
-		// existence) is visible to everyone the class gate admits -- this is
+		// The channel name is sealed at the tier floor, so its name (and very
+		// existence) is visible to everyone the tier gate admits -- this is
 		// needed for name-collision detection at create time, since names are
 		// ciphertext the server can't dedupe itself. The description and
 		// last-message preview, however, are sealed at the finer read role: don't
@@ -329,8 +329,8 @@ func (c *channelMaker) checkPerms(m shared.MetaContext) error {
 	if writeRole.LessThan(*readRole) {
 		return core.PermissionError("write role is less than read role")
 	}
-	if c.md.Klass == proto.RTChannelClass_Admin && !c.dstRole.IsAdminOrAbove() {
-		return core.PermissionError("user role too low to make an admin class channel")
+	if c.md.Tier == proto.RTChannelTier_Admin && !c.dstRole.IsAdminOrAbove() {
+		return core.PermissionError("user role too low to make an admin tier channel")
 	}
 	return nil
 }
@@ -434,7 +434,7 @@ func (c *channelMaker) insertChannel(m shared.MetaContext) error {
 		return err
 	}
 
-	class, err := c.md.Klass.ExportToDB()
+	tier, err := c.md.Tier.ExportToDB()
 	if err != nil {
 		return err
 	}
@@ -448,7 +448,7 @@ func (c *channelMaker) insertChannel(m shared.MetaContext) error {
 		m.Ctx(),
 		`INSERT INTO channels
 			(short_host_id, channel_id, parent_team_id, app_id, channel_id_full,
-			 seqno, name_box, name_box_ptk_gen, class, desc_box, desc_box_ptk_gen,
+			 seqno, name_box, name_box_ptk_gen, tier, desc_box, desc_box_ptk_gen,
 			 read_role_type, read_role_viz_level, write_role_type, write_role_viz_level,
 			 ctime, mtime, updated_at_set_vers)
 		VALUES($1, $2, $3, $4, $5,
@@ -463,7 +463,7 @@ func (c *channelMaker) insertChannel(m shared.MetaContext) error {
 		int64(c.md.Seqno),
 		nameBox,
 		int(c.md.NameBox.Rg.Gen),
-		class,
+		tier,
 		descBox,
 		descGen,
 		readType,

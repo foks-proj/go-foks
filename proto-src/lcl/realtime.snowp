@@ -2,9 +2,9 @@
 
 go:import "github.com/foks-proj/go-foks/proto/lib" as lib;
 
-struct RTChannelNameAndClass {
+struct RTChannelNameAndTier {
     name @0 : lib.RTChannelName;
-    klass @1: lib.RTChannelClass;
+    tier @1: lib.RTChannelTier;
 }
 
 enum RTChannelSpecifierType {
@@ -15,7 +15,7 @@ enum RTChannelSpecifierType {
 
 variant RTChannelSpecifier switch (t : RTChannelSpecifierType) {
     case ID @1: lib.RTChannelID;
-    case Name @2: RTChannelNameAndClass;
+    case Name @2: RTChannelNameAndTier;
     default: void;
 }
 
@@ -33,7 +33,7 @@ struct RTChannelMetadataPlaintext {
     name @3 : lib.RTChannelName;
     desc @4 : Option(lib.RTChannelDesc);
     roles @5 : lib.RolePair;
-    klass @6 : lib.RTChannelClass;
+    tier @6 : lib.RTChannelTier;
     updatedAt @7 : lib.RTChannelSetVersion;
     unreadable @8 : Bool; // caller can't read this channel (role below read role);
                           // kept for name-collision detection, hidden from the inbox

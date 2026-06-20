@@ -234,12 +234,12 @@ func (d *Minder) makeChannelOneAttempt(
 	}
 
 	type chKey struct {
-		name  proto.RTChannelName
-		klass proto.RTChannelClass
+		name proto.RTChannelName
+		tier proto.RTChannelTier
 	}
 	chMap := make(map[chKey]struct{})
 	for _, chmd := range chlst.Channels {
-		chMap[chKey{name: chmd.Name.Normalize(), klass: chmd.Klass}] = struct{}{}
+		chMap[chKey{name: chmd.Name.Normalize(), tier: chmd.Tier}] = struct{}{}
 	}
 
 	// A note on roles, which are tricky. If no roles were specified, we use
@@ -254,7 +254,7 @@ func (d *Minder) makeChannelOneAttempt(
 	// 10 different channels named "#general" per team, once for each Member viz level.
 	// We'll have at most 2 channels named "#general", one for the plebs, and one
 	// for the admins (and above).
-	newChClass := proto.RTChannelClass_Bottom
+	newChTier := proto.RTChannelTier_Bottom
 	readRole := roles.Read
 	nameRole := proto.MinRTRole
 
@@ -274,13 +274,13 @@ func (d *Minder) makeChannelOneAttempt(
 		return nil, err
 	}
 	if isAdmin {
-		newChClass = proto.RTChannelClass_Admin
+		newChTier = proto.RTChannelTier_Admin
 		nameRole = proto.AdminRole
 	}
 
 	if _, found := chMap[chKey{
-		name:  nm.Normalize(),
-		klass: newChClass,
+		name: nm.Normalize(),
+		tier: newChTier,
 	}]; found {
 		return nil, core.RTChannelExistsError{}
 	}
@@ -347,7 +347,7 @@ func (d *Minder) makeChannelOneAttempt(
 		Write: *wRole,
 	}
 	update.UpdatedAt = chlst.Vers + 1
-	update.Klass = newChClass
+	update.Tier = newChTier
 
 	arg := rem.RtNewChannelArg{
 		Md:      update,
@@ -530,7 +530,7 @@ func (k *Minder) decryptChannelMetadata(
 	ret.ParentTeam = chmdenc.ParentTeam
 	ret.AppID = chmdenc.AppID
 	ret.Roles = chmdenc.Roles
-	ret.Klass = chmdenc.Klass
+	ret.Tier = chmdenc.Tier
 	ret.UpdatedAt = chmdenc.UpdatedAt
 	ret.Unreadable = chmdenc.Unreadable
 
@@ -565,9 +565,9 @@ func (k *Minder) ListAllChannelsForTeam(
 	slices.SortFunc(
 		ret.Channels,
 		func(a lcl.RTChannelMetadataPlaintext, b lcl.RTChannelMetadataPlaintext) int {
-			if a.Klass != b.Klass {
-				if a.Klass == proto.RTChannelClass_Admin &&
-					b.Klass == proto.RTChannelClass_Bottom {
+			if a.Tier != b.Tier {
+				if a.Tier == proto.RTChannelTier_Admin &&
+					b.Tier == proto.RTChannelTier_Bottom {
 					return -1
 				}
 				return 1
@@ -634,9 +634,9 @@ type ThreadMessage struct {
 }
 
 // resolveChannel finds a channel in `team` by name. A name can exist in more
-// than one class (e.g. an admin and a bottom "#general"); pass a non-nil klass
-// to disambiguate. With klass==nil, an ambiguous name returns
-// RTAmbiguousChannelError so the caller (or a UI) can retry with a class.
+// than one tier (e.g. an admin and a bottom "#general"); pass a non-nil tier
+// to disambiguate. With tier==nil, an ambiguous name returns
+// RTAmbiguousChannelError so the caller (or a UI) can retry with a tier.
 func (d *Minder) resolveChannel(
 	m MetaContext,
 	rtp *RTParty,
@@ -658,14 +658,14 @@ func (d *Minder) resolveChannel(
 
 	var searchID *proto.RTChannelID
 	var searchName proto.RTChannelName
-	var searchClass proto.RTChannelClass
+	var searchTier proto.RTChannelTier
 
 	switch t {
 	case lcl.RTChannelSpecifierType_None:
 		/* noop */
 	case lcl.RTChannelSpecifierType_Name:
 		searchName = spc.Name().Name
-		searchClass = spc.Name().Klass
+		searchTier = spc.Name().Tier
 	case lcl.RTChannelSpecifierType_ID:
 		tmp := spc.Id()
 		searchID = &tmp
@@ -688,11 +688,11 @@ func (d *Minder) resolveChannel(
 		if !ch.Name.Eq(searchName) {
 			continue
 		}
-		if searchClass != proto.RTChannelClass_None && ch.Klass != searchClass {
+		if searchTier != proto.RTChannelTier_None && ch.Tier != searchTier {
 			continue
 		}
 		if found != nil {
-			// Only reachable when klass==nil; a (name, class) pair is unique.
+			// Only reachable when tier==nil; a (name, tier) pair is unique.
 			return nil, core.RTAmbiguousChannelError{Name: searchName}
 		}
 		found = ch
@@ -755,7 +755,7 @@ type SendTestHooks struct {
 }
 
 // Send encrypts and sends a basic message into the named channel of a team.
-// klass disambiguates when a name exists in more than one class; pass nil when
+// tier disambiguates when a name exists in more than one tier; pass nil when
 // the name is unique.
 func (d *Minder) Send(
 	m MetaContext,
@@ -1219,7 +1219,7 @@ func newMsgSession() *msgSession {
 }
 
 // GetThreadBookened fetches and decrypts a page of messages from the named channel.
-// klass disambiguates when a name exists in more than one class; pass nil when
+// tier disambiguates when a name exists in more than one tier; pass nil when
 // the name is unique.
 //
 // The limits are given by inclusive bookends. The direction is infered from the
@@ -1751,8 +1751,8 @@ func (d *Minder) decodeAndCacheServerMsgs(
 // channel by seq. Used to fill holes between locally-cached messages and a
 // paged GetThread fetch. Only messages that exist server-side are returned
 // (each carries its own Seq); requested seqs with no message are omitted, so
-// the result may be shorter than `seqs` and in unspecified order. klass
-// disambiguates when a name exists in more than one class; pass nil when the
+// the result may be shorter than `seqs` and in unspecified order. tier
+// disambiguates when a name exists in more than one tier; pass nil when the
 // name is unique.
 func (d *Minder) GetMsgs(
 	m MetaContext,

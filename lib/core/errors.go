@@ -1361,14 +1361,14 @@ func (r RTRaceError) Error() string {
 }
 
 // RTAmbiguousChannelError is returned when a channel is addressed by name only
-// but more than one channel (of different classes) shares that name. The caller
-// should retry with a channel class to disambiguate. Name is the ambiguous name.
+// but more than one channel (of different tiers) shares that name. The caller
+// should retry with a channel tier to disambiguate. Name is the ambiguous name.
 type RTAmbiguousChannelError struct {
 	Name proto.RTChannelName
 }
 
 func (r RTAmbiguousChannelError) Error() string {
-	return fmt.Sprintf("ambiguous channel name %q; specify a channel class", r.Name.DecorateToString())
+	return fmt.Sprintf("ambiguous channel name %q; specify a channel tier", r.Name.DecorateToString())
 }
 
 type RTNotFoundError string

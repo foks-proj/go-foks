@@ -1335,32 +1335,32 @@ func (r RTChannelSetVersion) Bytes() []byte {
 	return nil
 }
 
-type RTChannelClass int
+type RTChannelTier int
 
 const (
-	RTChannelClass_None   RTChannelClass = 0
-	RTChannelClass_Bottom RTChannelClass = 1
-	RTChannelClass_Admin  RTChannelClass = 2
+	RTChannelTier_None   RTChannelTier = 0
+	RTChannelTier_Bottom RTChannelTier = 1
+	RTChannelTier_Admin  RTChannelTier = 2
 )
 
-var RTChannelClassMap = map[string]RTChannelClass{
+var RTChannelTierMap = map[string]RTChannelTier{
 	"None":   0,
 	"Bottom": 1,
 	"Admin":  2,
 }
-var RTChannelClassRevMap = map[RTChannelClass]string{
+var RTChannelTierRevMap = map[RTChannelTier]string{
 	0: "None",
 	1: "Bottom",
 	2: "Admin",
 }
 
-type RTChannelClassInternal__ RTChannelClass
+type RTChannelTierInternal__ RTChannelTier
 
-func (r RTChannelClassInternal__) Import() RTChannelClass {
-	return RTChannelClass(r)
+func (r RTChannelTierInternal__) Import() RTChannelTier {
+	return RTChannelTier(r)
 }
-func (r RTChannelClass) Export() *RTChannelClassInternal__ {
-	return ((*RTChannelClassInternal__)(&r))
+func (r RTChannelTier) Export() *RTChannelTierInternal__ {
+	return ((*RTChannelTierInternal__)(&r))
 }
 
 type MsgBodyType int

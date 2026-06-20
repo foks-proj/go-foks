@@ -700,17 +700,17 @@ func displayRTChannelName(n proto.RTChannelName) string {
 }
 
 type rtChannelRow struct {
-	name  string
-	klass proto.RTChannelClass
-	desc  string
-	id    string
+	name string
+	tier proto.RTChannelTier
+	desc string
+	id   string
 }
 
-// rtChannelClassGlyph renders a channel class as a single character to keep
+// rtChannelTierGlyph renders a channel tier as a single character to keep
 // the table tight: a star for admin channels, and ⊥ for bottom channels.
-func rtChannelClassGlyph(c proto.RTChannelClass) string {
+func rtChannelTierGlyph(c proto.RTChannelTier) string {
 	switch c {
-	case proto.RTChannelClass_Admin:
+	case proto.RTChannelTier_Admin:
 		return "★"
 	default:
 		return "⊥"
@@ -720,7 +720,7 @@ func rtChannelClassGlyph(c proto.RTChannelClass) string {
 func (r rtChannelRow) toTableRow() table.Row {
 	return table.Row{
 		r.name,
-		rtChannelClassGlyph(r.klass),
+		rtChannelTierGlyph(r.tier),
 		r.desc,
 		r.id,
 	}
@@ -729,7 +729,7 @@ func (r rtChannelRow) toTableRow() table.Row {
 func (r rtChannelRow) headers() table.Row {
 	return table.Row{
 		"Channel",
-		"Class",
+		"Tier",
 		"Description",
 		"Channel ID",
 	}
@@ -737,9 +737,9 @@ func (r rtChannelRow) headers() table.Row {
 
 func (r rtChannelRow) lessThan(other tableRow) bool {
 	or := other.(rtChannelRow)
-	// Sort by channel class first, with admin (the higher class) on top.
-	if r.klass != or.klass {
-		return r.klass > or.klass
+	// Sort by channel tier first, with admin (the higher tier) on top.
+	if r.tier != or.tier {
+		return r.tier > or.tier
 	}
 	// Then sort by channel name.
 	return cicmp(r.name, or.name) < 0
@@ -762,10 +762,10 @@ func outputRTChannelListTable(
 			desc = string(*c.Desc)
 		}
 		ret := rtChannelRow{
-			name:  displayRTChannelName(c.Name),
-			klass: c.Klass,
-			desc:  desc,
-			id:    id,
+			name: displayRTChannelName(c.Name),
+			tier: c.Tier,
+			desc: desc,
+			id:   id,
 		}
 		return ret, nil
 	}

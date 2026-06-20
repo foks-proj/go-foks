@@ -42,14 +42,14 @@ CREATE TABLE channel_sets (
 );
 
 /*
- * At first, there are two classes of channels: bottom and admin. For admin class,
+ * At first, there are two tiers of channels: bottom and admin. For admin tier,
  * only admins and above can see the name of the channel. For bottom, anyone (including lowly bots)
- * can see the channel name. So a class can have two "general" channels, one for *, 
+ * can see the channel name. So a tier can have two "general" channels, one for *,
  * and one for admin+. Note that there can be finer granularity on channel descriptions
  * and channel data. But for channel names, we need to enforce this simplification so
  * that clients won't collide in generating channel names.
  */
-CREATE TYPE channel_class AS ENUM('bottom', 'admin');
+CREATE TYPE channel_tier AS ENUM('bottom', 'admin');
 
 /*
  * channels: every (team, app) pair has 1+ channels. channel_id is unique
@@ -65,7 +65,7 @@ CREATE TABLE channels (
     seqno INTEGER NOT NULL, /* metadata seqno; CAS on update */
     name_box BYTEA NOT NULL, /* PTK-encrypted channel name + structural variant */
     name_box_ptk_gen INTEGER NOT NULL, /* PTK gen used for name_box */
-    class channel_class NOT NULL, /* see desc of channel_class above */
+    tier channel_tier NOT NULL, /* see desc of channel_tier above */
     desc_box BYTEA, /* PTK-encrypted channel descriptio + structural variant */
     desc_box_ptk_gen INTEGER, /* PTK gen used for desc_box */
     read_role_type SMALLINT NOT NULL, /* read role of the data (not channel name) */
