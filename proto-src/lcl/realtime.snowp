@@ -91,3 +91,16 @@ protocol RealTime
     ) -> RTThreadView;
 
 }
+
+struct RTChannelSetHashInput @0xc6985a2917572061 {
+    fqp @0 : lib.FQParty;
+    appID @1 : lib.RTAppID;
+}
+
+// A hash of the above, to identify a channel for 
+typedef RTChannelSetID = lib.StdHash;
+
+struct RTChannelMetadataPlaintextAbbrev {
+    name @0 : lib.RTChannelName;
+    desc @1 : Option(lib.RTChannelDesc);
+}

@@ -6,6 +6,12 @@ package librt
 import (
 	"container/list"
 	"sync"
+
+	"github.com/foks-proj/go-foks/client/libclient"
+	"github.com/foks-proj/go-foks/lib/core"
+	"github.com/foks-proj/go-foks/proto/lcl"
+	proto "github.com/foks-proj/go-foks/proto/lib"
+	"github.com/foks-proj/go-foks/proto/rem"
 )
 
 // LRU is a fixed-capacity, least-recently-used cache. It is safe for concurrent
@@ -111,4 +117,60 @@ func (l *LRU[K, V]) Purge() {
 func (l *LRU[K, V]) removeElement(el *list.Element) {
 	l.ll.Remove(el)
 	delete(l.items, el.Value.(*lruEntry[K, V]).key)
+}
+
+type ChannelSetCache struct {
+	*libclient.Cache[
+		*proto.FQParty,
+		lcl.RTChannelSetID,
+		rem.RTChannelSet,
+		*rem.RTChannelSet,
+		lcl.RTChannelMetadataPlaintextAbbrev,
+	]
+}
+
+func NewChannelSetCache(p proto.FQParty, settings libclient.CacheSettings) *ChannelSetCache {
+	return &ChannelSetCache{
+		Cache: libclient.NewCache[
+			*proto.FQParty,
+			lcl.RTChannelSetID,
+			rem.RTChannelSet,
+			*rem.RTChannelSet,
+			lcl.RTChannelMetadataPlaintextAbbrev,
+		](lcl.DataType_RTChannelSet, &p, settings),
+	}
+}
+
+type caches struct {
+	channelSets *ChannelSetCache
+}
+
+func newCaches(
+	p proto.FQParty,
+	settings libclient.CacheSettings,
+) *caches {
+	return &caches{
+		channelSets: NewChannelSetCache(p, settings),
+	}
+}
+
+func DeriveRTChannelSetID(
+	p proto.FQParty,
+	i proto.RTAppID,
+) (
+	*lcl.RTChannelSetID,
+	error,
+) {
+	var ret lcl.RTChannelSetID
+	err := core.PrefixedHashInto(
+		&lcl.RTChannelSetHashInput{
+			Fqp:   p,
+			AppID: i,
+		},
+		ret[:],
+	)
+	if err != nil {
+		return nil, err
+	}
+	return &ret, nil
 }

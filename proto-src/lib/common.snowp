@@ -573,3 +573,4 @@ struct Date {
 }
 
 typedef DbKey = Blob;
+typedef Version = Uint;

@@ -4,9 +4,7 @@
 package libkv
 
 import (
-	"errors"
 	"fmt"
-	"sync"
 
 	"github.com/foks-proj/go-foks/client/libclient"
 	"github.com/foks-proj/go-foks/lib/core"
@@ -16,184 +14,15 @@ import (
 	"github.com/foks-proj/go-foks/proto/rem"
 )
 
-type Versioner interface {
-	GetVersion() proto.KVVersion
-}
-
-type memNode[V any, M any] struct {
-	v *V
-	m *M
-}
-
-type CacheSettings struct {
-	UseMem  bool
-	UseDisk bool
-}
-
-type Cache[
-	S libclient.Scoper, // Scoper for DB cache, usually an FQParty
-	K comparable, // The DB Key, like a DirID, etc
-	V Versioner, // The value to store
-	VP interface { // Pointer to the value to store, must implement core.Codecable
-		*V
-		core.Codecable
-	},
-	MV any, // A MemVal, something that we only store in memory (like decrypted data)
-] struct {
-	sync.RWMutex
-	typ      lcl.DataType
-	s        S
-	m        map[K]*memNode[V, MV]
-	dbt      libclient.DbType
-	settings CacheSettings
-}
-
-func NewCache[
-	S libclient.Scoper,
-	K comparable,
-	V Versioner,
-	VP interface {
-		*V
-		core.Codecable
-	},
-	MV any,
-](typ lcl.DataType, s S, settings CacheSettings) *Cache[S, K, V, VP, MV] {
-	return &Cache[S, K, V, VP, MV]{
-		typ:      typ,
-		s:        s,
-		dbt:      libclient.DbTypeSoft,
-		settings: settings,
-	}
-}
-
-func (c *Cache[S, K, V, VP, MV]) putMem(k K, v V, mv *MV) {
-	c.Lock()
-	defer c.Unlock()
-	if !c.settings.UseMem {
-		return
-	}
-	if c.m == nil {
-		c.m = make(map[K]*memNode[V, MV])
-	}
-	c.m[k] = &memNode[V, MV]{v: &v, m: mv}
-}
-
-func (c *Cache[S, K, V, VP, MV]) clearMem(k K) {
-	c.Lock()
-	defer c.Unlock()
-	if c.m == nil {
-		return
-	}
-	delete(c.m, k)
-}
-
-func (c *Cache[S, K, V, VP, MV]) putDb(m MetaContext, k K, v V) error {
-	if !c.settings.UseDisk {
-		return nil
-	}
-	return m.DbPut(
-		c.dbt,
-		libclient.PutArg{
-			Scope: c.s,
-			Typ:   c.typ,
-			Key:   k,
-			Val:   (VP)(&v),
-		},
-	)
-}
-
-func (c *Cache[S, K, V, VP, MV]) Put(m MetaContext, k K, v V, memVal *MV) error {
-	err := c.putDb(m, k, v)
-	if err != nil {
-		return err
-	}
-	c.putMem(k, v, memVal)
-	return nil
-}
-
-func (c *Cache[S, K, V, VP, MV]) getMem(k K) (*V, *MV) {
-	c.RLock()
-	defer c.RUnlock()
-	if c.m == nil {
-		return nil, nil
-	}
-	v := c.m[k]
-	if v == nil {
-		return nil, nil
-	}
-	return v.v, v.m
-}
-
-func (c *Cache[S, K, V, VP, MV]) getDb(m MetaContext, k K) (*V, error) {
-	if !c.settings.UseDisk {
-		return nil, nil
-	}
-	var ret V
-	getSlot := (VP)(&ret)
-	_, err := m.DbGet(getSlot, c.dbt, c.s, c.typ, k)
-	if err != nil && errors.Is(err, core.RowNotFoundError{}) {
-		return nil, nil
-	}
-	if err != nil {
-		return nil, err
-	}
-	return &ret, nil
-}
-
-func (c *Cache[S, K, V, VP, MV]) Get(m MetaContext, k K) (*V, *MV, error) {
-	v, memVal := c.getMem(k)
-	if v != nil {
-		return v, memVal, nil
-	}
-	ret, err := c.getDb(m, k)
-	if err != nil {
-		return nil, nil, err
-	}
-	if ret == nil {
-		return nil, nil, nil
-	}
-	c.putMem(k, *ret, nil)
-
-	return ret, nil, nil
-}
-
-func (c *Cache[S, K, V, VP, MV]) ClearBefore(m MetaContext, k K, vers proto.KVVersion) error {
-	if vers == 0 {
-		return nil
-	}
-	v, _ := c.getMem(k)
-	if v != nil {
-		cacheVers := (*v).GetVersion()
-		if cacheVers == 0 || cacheVers == vers {
-			return nil
-		}
-		if cacheVers != 0 && cacheVers != vers {
-			c.clearMem(k)
-		}
-	}
-	v, err := c.getDb(m, k)
-	if err != nil {
-		return err
-	}
-	if v == nil {
-		return nil
-	}
-	err = m.DbDelete(c.dbt, c.s, c.typ, k)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
 type RootCache struct {
-	*Cache[*proto.FQParty, core.EmptyKey, proto.KVRoot, *proto.KVRoot, struct{}]
+	*libclient.Cache[*proto.FQParty, core.EmptyKey, proto.KVRoot, *proto.KVRoot, struct{}]
 }
 
 func (r *RootCache) ClearBefore(m MetaContext, vers proto.KVVersion) error {
-	if !r.settings.UseDisk {
+	if !r.Settings.UseDisk {
 		return nil
 	}
-	return r.Cache.ClearBefore(m, core.EmptyKey{}, vers)
+	return r.Cache.ClearBefore(m.Base(), core.EmptyKey{}, vers)
 }
 
 type DirSeedPair struct {
@@ -202,25 +31,25 @@ type DirSeedPair struct {
 }
 
 type DirCache struct {
-	*Cache[*proto.FQParty, proto.DirID, proto.KVDirPair, *proto.KVDirPair, DirSeedPair]
+	*libclient.Cache[*proto.FQParty, proto.DirID, proto.KVDirPair, *proto.KVDirPair, DirSeedPair]
 }
 
-func NewRootCache(p proto.FQParty, settings CacheSettings) *RootCache {
-	return &RootCache{NewCache[*proto.FQParty, core.EmptyKey, proto.KVRoot, *proto.KVRoot, struct{}](lcl.DataType_KVNSRoot, &p, settings)}
+func NewRootCache(p proto.FQParty, settings libclient.CacheSettings) *RootCache {
+	return &RootCache{libclient.NewCache[*proto.FQParty, core.EmptyKey, proto.KVRoot, *proto.KVRoot, struct{}](lcl.DataType_KVNSRoot, &p, settings)}
 }
 
 func (r *RootCache) Get(m MetaContext) (*proto.KVRoot, error) {
-	v, _, err := r.Cache.Get(m, core.EmptyKey{})
+	v, _, err := r.Cache.Get(m.Base(), core.EmptyKey{})
 	return v, err
 }
 
 func (r *RootCache) Put(m MetaContext, v proto.KVRoot) error {
-	return r.Cache.Put(m, core.EmptyKey{}, v, nil)
+	return r.Cache.Put(m.Base(), core.EmptyKey{}, v, nil)
 }
 
-func NewDirCache(p proto.FQParty, settings CacheSettings) *DirCache {
+func NewDirCache(p proto.FQParty, settings libclient.CacheSettings) *DirCache {
 	return &DirCache{
-		Cache: NewCache[
+		Cache: libclient.NewCache[
 			*proto.FQParty,
 			proto.DirID,
 			proto.KVDirPair,
@@ -299,7 +128,7 @@ func NewDirPair(o proto.FQParty, d proto.KVDirPair, s *DirSeedPair) *DirPair {
 }
 
 func (d *DirCache) Get(m MetaContext, k proto.DirID) (*DirPair, error) {
-	v, memVal, err := d.Cache.Get(m, k)
+	v, memVal, err := d.Cache.Get(m.Base(), k)
 	if err != nil {
 		return nil, err
 	}
@@ -307,17 +136,17 @@ func (d *DirCache) Get(m MetaContext, k proto.DirID) (*DirPair, error) {
 	if v == nil {
 		return nil, nil
 	}
-	return NewDirPair(*d.s, *v, memVal), nil
+	return NewDirPair(*d.Scope, *v, memVal), nil
 }
 
 func (d *DirCache) Put(m MetaContext, v *DirPair) error {
 	dp, seed := v.Split()
-	return d.Cache.Put(m, v.Id(), *dp, seed)
+	return d.Cache.Put(m.Base(), v.Id(), *dp, seed)
 }
 
 func (d *DirCache) PutMem(v *DirPair) {
 	dp, seed := v.Split()
-	d.Cache.putMem(v.Id(), *dp, seed)
+	d.Cache.PutMem(v.Id(), *dp, seed)
 }
 
 type Dirent struct {
@@ -326,12 +155,12 @@ type Dirent struct {
 }
 
 type DirentCache struct {
-	*Cache[*proto.FQParty, proto.HMAC, proto.KVDirent, *proto.KVDirent, proto.KVPathComponent]
+	*libclient.Cache[*proto.FQParty, proto.HMAC, proto.KVDirent, *proto.KVDirent, proto.KVPathComponent]
 }
 
-func NewDirentCache(p proto.FQParty, settings CacheSettings) *DirentCache {
+func NewDirentCache(p proto.FQParty, settings libclient.CacheSettings) *DirentCache {
 	return &DirentCache{
-		Cache: NewCache[
+		Cache: libclient.NewCache[
 			*proto.FQParty,
 			proto.HMAC,
 			proto.KVDirent,
@@ -342,7 +171,7 @@ func NewDirentCache(p proto.FQParty, settings CacheSettings) *DirentCache {
 }
 
 func (d *DirentCache) Get(m MetaContext, k proto.HMAC) (*Dirent, error) {
-	v, memVal, err := d.Cache.Get(m, k)
+	v, memVal, err := d.Cache.Get(m.Base(), k)
 	if err != nil {
 		return nil, err
 	}
@@ -357,11 +186,11 @@ func (d *DirentCache) Get(m MetaContext, k proto.HMAC) (*Dirent, error) {
 }
 
 func (d *DirentCache) Put(m MetaContext, v *Dirent) error {
-	return d.Cache.Put(m, v.NameMac, v.KVDirent, v.Nm)
+	return d.Cache.Put(m.Base(), v.NameMac, v.KVDirent, v.Nm)
 }
 
 func (d *DirentCache) PutMem(v *Dirent) {
-	d.Cache.putMem(v.NameMac, v.KVDirent, v.Nm)
+	d.Cache.PutMem(v.NameMac, v.KVDirent, v.Nm)
 }
 
 func (d *DirPair) WriteTo() *DirWithSeed {
@@ -377,12 +206,12 @@ type Symlink struct {
 }
 
 type SymlinkCache struct {
-	*Cache[*proto.FQParty, proto.SymlinkID, proto.SmallFileBox, *proto.SmallFileBox, Symlink]
+	*libclient.Cache[*proto.FQParty, proto.SymlinkID, proto.SmallFileBox, *proto.SmallFileBox, Symlink]
 }
 
-func NewSymlinkCache(p proto.FQParty, settings CacheSettings) *SymlinkCache {
+func NewSymlinkCache(p proto.FQParty, settings libclient.CacheSettings) *SymlinkCache {
 	return &SymlinkCache{
-		Cache: NewCache[
+		Cache: libclient.NewCache[
 			*proto.FQParty,
 			proto.SymlinkID,
 			proto.SmallFileBox,
@@ -393,16 +222,16 @@ func NewSymlinkCache(p proto.FQParty, settings CacheSettings) *SymlinkCache {
 }
 
 func (s *SymlinkCache) PutMem(i proto.SymlinkID, b *proto.SmallFileBox, v *Symlink) {
-	s.Cache.putMem(i, *b, v)
+	s.Cache.PutMem(i, *b, v)
 }
 
 type SmallFileCache struct {
-	*Cache[*proto.FQParty, proto.SmallFileID, proto.SmallFileBox, *proto.SmallFileBox, lcl.SmallFileData]
+	*libclient.Cache[*proto.FQParty, proto.SmallFileID, proto.SmallFileBox, *proto.SmallFileBox, lcl.SmallFileData]
 }
 
-func NewSmallFileCache(p proto.FQParty, settings CacheSettings) *SmallFileCache {
+func NewSmallFileCache(p proto.FQParty, settings libclient.CacheSettings) *SmallFileCache {
 	return &SmallFileCache{
-		Cache: NewCache[
+		Cache: libclient.NewCache[
 			*proto.FQParty,
 			proto.SmallFileID,
 			proto.SmallFileBox,
@@ -413,16 +242,16 @@ func NewSmallFileCache(p proto.FQParty, settings CacheSettings) *SmallFileCache 
 }
 
 func (s *SmallFileCache) PutMem(i proto.SmallFileID, b *proto.SmallFileBox, v *lcl.SmallFileData) {
-	s.Cache.putMem(i, *b, v)
+	s.Cache.PutMem(i, *b, v)
 }
 
 type LargeFileMetadataCache struct {
-	*Cache[*proto.FQParty, proto.FileID, proto.LargeFileMetadata, *proto.LargeFileMetadata, proto.FileKeySeed]
+	*libclient.Cache[*proto.FQParty, proto.FileID, proto.LargeFileMetadata, *proto.LargeFileMetadata, proto.FileKeySeed]
 }
 
-func NewLargeFileMetadataCache(p proto.FQParty, settings CacheSettings) *LargeFileMetadataCache {
+func NewLargeFileMetadataCache(p proto.FQParty, settings libclient.CacheSettings) *LargeFileMetadataCache {
 	return &LargeFileMetadataCache{
-		Cache: NewCache[
+		Cache: libclient.NewCache[
 			*proto.FQParty,
 			proto.FileID,
 			proto.LargeFileMetadata,
@@ -447,13 +276,13 @@ func (c ChunkIndex) DbKey() (proto.DbKey, error) {
 }
 
 type LargeFileChunkCache struct {
-	*Cache[*proto.FQParty, ChunkIndex, rem.GetEncryptedChunkRes, *rem.GetEncryptedChunkRes, struct{}]
+	*libclient.Cache[*proto.FQParty, ChunkIndex, rem.GetEncryptedChunkRes, *rem.GetEncryptedChunkRes, struct{}]
 }
 
-func NewLargeFileChunkCache(p proto.FQParty, settings CacheSettings) *LargeFileChunkCache {
+func NewLargeFileChunkCache(p proto.FQParty, settings libclient.CacheSettings) *LargeFileChunkCache {
 	settings.UseMem = false
 	return &LargeFileChunkCache{
-		Cache: NewCache[
+		Cache: libclient.NewCache[
 			*proto.FQParty,
 			ChunkIndex,
 			rem.GetEncryptedChunkRes,
@@ -464,12 +293,12 @@ func NewLargeFileChunkCache(p proto.FQParty, settings CacheSettings) *LargeFileC
 }
 
 type GitRefSetCache struct {
-	*Cache[*proto.FQParty, proto.DirID, proto.GitRefBoxedSet, *proto.GitRefBoxedSet, gitRefSet]
+	*libclient.Cache[*proto.FQParty, proto.DirID, proto.GitRefBoxedSet, *proto.GitRefBoxedSet, gitRefSet]
 }
 
-func NewGitRefSetCache(p proto.FQParty, settings CacheSettings) *GitRefSetCache {
+func NewGitRefSetCache(p proto.FQParty, settings libclient.CacheSettings) *GitRefSetCache {
 	return &GitRefSetCache{
-		Cache: NewCache[
+		Cache: libclient.NewCache[
 			*proto.FQParty,
 			proto.DirID,
 			proto.GitRefBoxedSet,
@@ -565,7 +394,7 @@ func (c *CacheAccess) VisitDir(d proto.DirID, p *proto.KVDirPair) {
 	if p == nil {
 		return
 	}
-	v := p.GetVersion()
+	v := proto.KVVersion(p.GetVersion())
 	if c.Dir == nil {
 		c.Dir = make(map[proto.DirID]DirCacheAccess)
 	}

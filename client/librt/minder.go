@@ -21,7 +21,9 @@ import (
 
 type RTParty struct {
 	sync.RWMutex
-	plcn *libclient.PLCNode
+	plcn   *libclient.PLCNode
+	caches *caches
+	cs     libclient.CacheSettings
 }
 
 func (k *RTParty) TeamID() (*proto.TeamID, error) {
@@ -136,6 +138,14 @@ func (d *Minder) Metrics() MinderMetrics {
 }
 
 func NewMinder(au *libclient.UserContext) *Minder {
+	cs := libclient.CacheSettings{UseMem: true, UseDisk: true}
+	return NewMinderWithCacheSettings(au, cs)
+}
+
+func NewMinderWithCacheSettings(
+	au *libclient.UserContext,
+	cs libclient.CacheSettings,
+) *Minder {
 	if au == nil {
 		panic("nil active user")
 	}
@@ -146,7 +156,10 @@ func NewMinder(au *libclient.UserContext) *Minder {
 	}
 	ret.base = libclient.NewBaseMinder(
 		au,
-		func(n *RTParty) {},
+		func(n *RTParty) {
+			n.caches = newCaches(au.FQParty(), cs)
+			n.cs = cs
+		},
 	)
 	return ret
 }
@@ -586,6 +599,25 @@ func (k *Minder) listAllChannelsForTeam(
 	*lcl.RTChannelSetForTeam,
 	error,
 ) {
+
+	chsid, err := DeriveRTChannelSetID(rtp.plcn.FQParty(), appID)
+	if err != nil {
+		return nil, err
+	}
+
+	var lastKnownVersion proto.RTChannelSetVersion
+	cached, _, err := rtp.caches.channelSets.Get(m.Base(), *chsid)
+	if err != nil {
+		return nil, err
+	}
+	d := make(map[proto.RTChannelID]rem.RTChannelMetadata)
+	if cached != nil {
+		lastKnownVersion = cached.Vers
+		for _, chdenc := range cached.Lst {
+			d[chdenc.Id] = chdenc
+		}
+	}
+
 	_, cli, err := k.clientLocal(m.Base(), k.au)
 	if err != nil {
 		return nil, err
@@ -598,14 +630,28 @@ func (k *Minder) listAllChannelsForTeam(
 		rem.RtListAllChannelsForTeamArg{
 			Team:  fqt.Team,
 			AppID: appID,
+			Last:  lastKnownVersion,
 		},
 	)
 	if err != nil {
 		return nil, err
 	}
 
-	var out lcl.RTChannelSetForTeam
+	// Stomp the cached version with the new versions, in case
+	// we changed metadata.
 	for _, chmdenc := range encList.Lst {
+		d[chmdenc.Id] = chmdenc
+	}
+
+	mdlist := make([]rem.RTChannelMetadata, len(d))
+	i := 0
+	for _, v := range d {
+		mdlist[i] = v
+		i++
+	}
+
+	var out lcl.RTChannelSetForTeam
+	for _, chmdenc := range mdlist {
 		chmdpt, err := k.decryptChannelMetadata(m, rtp, chmdenc)
 		if err != nil {
 			return nil, err
@@ -615,6 +661,13 @@ func (k *Minder) listAllChannelsForTeam(
 	out.Vers = encList.Vers
 	out.Team = fqt.Team
 	out.AppID = appID
+
+	encList.Lst = mdlist
+
+	err = rtp.caches.channelSets.Put(m.Base(), *chsid, encList, nil)
+	if err != nil {
+		return nil, err
+	}
 
 	return &out, nil
 }

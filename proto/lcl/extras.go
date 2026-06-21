@@ -222,3 +222,7 @@ func (r RTChannelSpecifier) String() string {
 	}
 	return s
 }
+
+func (r RTChannelSetForTeam) GetVersion() lib.Version {
+	return r.Vers.GetVersion()
+}

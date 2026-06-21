@@ -16,6 +16,7 @@ func ListAllChannels(
 	m shared.MetaContext,
 	team proto.TeamID,
 	app proto.RTAppID,
+	last proto.RTChannelSetVersion,
 ) (
 	*rem.RTChannelSet,
 	error,
@@ -39,13 +40,20 @@ func ListAllChannels(
 	vers, mtime, err := readChannelSet(m, rtdb, team, app)
 	if err != nil {
 		return nil, err
-
 	}
 	var ret rem.RTChannelSet
 	ret.Mtime = mtime
 	ret.Vers = vers
 
-	lst, err := readAllChannels(m, rtdb, team, app, *role)
+	// User already has a fresh version, so there's no need to send the channel
+	// list back. Still return the current version (and an empty list) so the
+	// caller can confirm its cache is current rather than collapsing to v0.
+	if vers == last {
+		ret.Lst = []rem.RTChannelMetadata{}
+		return &ret, nil
+	}
+
+	lst, err := readAllChannels(m, rtdb, team, app, *role, last)
 	if err != nil {
 		return nil, err
 	}
@@ -97,6 +105,7 @@ func readAllChannels(
 	team proto.TeamID,
 	app proto.RTAppID,
 	role core.RoleKey,
+	last proto.RTChannelSetVersion,
 ) (
 	[]rem.RTChannelMetadata,
 	error,
@@ -125,12 +134,17 @@ func readAllChannels(
 		     cp.short_host_id = c.short_host_id
 		     AND cp.channel_id = c.channel_id
 		     AND cp.party_no = c.last_sender_no
-		 WHERE c.short_host_id=$1 AND c.parent_team_id=$2 AND c.app_id=$3 AND c.tier = ANY($4)
+		 WHERE c.short_host_id=$1 
+		 AND c.parent_team_id=$2 
+		 AND c.app_id=$3 
+		 AND c.tier = ANY($4)
+		 AND c.updated_at_set_vers > $5
 		 ORDER BY c.channel_id ASC`,
 		m.ShortHostID().ExportToDB(),
 		team.ExportToDB(),
 		appDB,
 		tiers,
+		last.Int(),
 	)
 	if err != nil {
 		return nil, err
@@ -336,7 +350,7 @@ func (c *channelMaker) checkPerms(m shared.MetaContext) error {
 }
 
 func (c *channelMaker) checkArgs(m shared.MetaContext) error {
-	if c.vers < 1 {
+	if !c.vers.IsValid() {
 		return core.BadArgsError("c.vers must be 1 or greater")
 	}
 	if c.vers != c.md.UpdatedAt {
@@ -346,11 +360,14 @@ func (c *channelMaker) checkArgs(m shared.MetaContext) error {
 }
 
 func (c *channelMaker) commit(m shared.MetaContext) error {
-
-	if c.vers == 1 {
+	switch {
+	case !c.vers.IsValid():
+		return core.BadArgsError("bad channel version (must be > 0)")
+	case c.vers.IsFirst():
 		return c.insertNewChannelSetRow(m)
+	default:
+		return c.updateChannelSet(m)
 	}
-	return c.updateChannelSet(m)
 }
 
 func (c *channelMaker) insertNewChannelSetRow(m shared.MetaContext) error {

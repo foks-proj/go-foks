@@ -6,6 +6,7 @@ package lib
 import (
 	"testing"
 
+	"github.com/foks-proj/go-foks/client/libclient"
 	"github.com/foks-proj/go-foks/client/libkv"
 	"github.com/foks-proj/go-foks/proto/lcl"
 	proto "github.com/foks-proj/go-foks/proto/lib"
@@ -13,7 +14,7 @@ import (
 )
 
 func TestGitRefs(t *testing.T) {
-	mdt := setupMultiDeviceTest(t, 3, libkv.CacheSettings{UseMem: true, UseDisk: true})
+	mdt := setupMultiDeviceTest(t, 3, libclient.CacheSettings{UseMem: true, UseDisk: true})
 	x, y, z := mdt.dev[0], mdt.dev[1], mdt.dev[2]
 	parent := "/app/git/redbulls/"
 	heads := parent + "refs/heads"
@@ -83,7 +84,7 @@ func TestGitRefs(t *testing.T) {
 }
 
 func TestGitRefsHEAD(t *testing.T) {
-	mdt := setupMultiDeviceTest(t, 1, libkv.CacheSettings{UseMem: true, UseDisk: true})
+	mdt := setupMultiDeviceTest(t, 1, libclient.CacheSettings{UseMem: true, UseDisk: true})
 	x := mdt.dev[0]
 	parent := "/app/git/nycfc/"
 	x.mkdir(t, parent)

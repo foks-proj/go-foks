@@ -178,7 +178,7 @@ func TestNewVanityDomain(t *testing.T) {
 	kvmc := libkv.NewMetaContext(mu)
 	kvm := libkv.NewMinderWithCacheSettings(
 		mu.G().ActiveUser(),
-		libkv.CacheSettings{UseMem: true, UseDisk: true},
+		libclient.CacheSettings{UseMem: true, UseDisk: true},
 	)
 
 	writeRandomFile(t, kvm, kvmc, "/smol1.txt", 1024*5)

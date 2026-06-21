@@ -67,7 +67,7 @@ func (c *ClientConn) RtListAllChannelsForTeam(
 ) {
 	var ret rem.RTChannelSet
 	m := shared.NewMetaContextConn(ctx, c)
-	p, err := ListAllChannels(m, arg.Team, arg.AppID)
+	p, err := ListAllChannels(m, arg.Team, arg.AppID, arg.Last)
 	if err != nil {
 		return ret, err
 	}

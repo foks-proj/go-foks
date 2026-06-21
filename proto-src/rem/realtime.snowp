@@ -160,9 +160,12 @@ protocol RealTime
     // caller to have at least one user_channels row in this team. Stage 1a
     // does no pagination; channel counts are expected to be small. Note, we 
     // are focusing on a particular team, not all channels available to the user.
+    // Include a `last` so that only new changes to the channel set are included,
+    // allowing fresh caches to power the flow rather than needing new server data.
     rtListAllChannelsForTeam @2 (
         team @0 : lib.TeamID,
-        appID @1 : lib.RTAppID
+        appID @1 : lib.RTAppID,
+        last @2 : lib.RTChannelSetVersion
     ) -> RTChannelSet;
 
     // Send a message. Team auth at write role of the channel.

@@ -202,6 +202,45 @@ func TestRTMinderGeneralNameReserved(t *testing.T) {
 	require.Equal(t, proto.RTChannelName(""), lst.Channels[0].Name)
 }
 
+// TestRTMinderMakeChannelWarmCacheNoRace guards against a regression in the
+// channel-set caching path. When the client's cached version already matches
+// the server's, the server returns an empty delta; if it (or the client) lets
+// the set version collapse to 0, the next MakeChannel computes a stale
+// SetVers and spuriously loses the optimistic-concurrency check, forcing a
+// retry. With no contention there should be exactly zero races.
+func TestRTMinderMakeChannelWarmCacheNoRace(t *testing.T) {
+	tew := testEnvBeta(t)
+	bluey := tew.NewTestUser(t)
+	tew.DirectDoubleMerklePokeInTest(t)
+	tm := tew.makeTeamForOwner(t, bluey)
+
+	mb := librt.NewMetaContext(tew.NewClientMetaContextWithEracer(t, bluey))
+	minder := librt.NewMinder(mb.G().ActiveUser())
+	fqt := tm.ToFQTeamParsed(t)
+
+	// Create one channel, then list -- this warms the cache to the current
+	// server version, so the next list will take the "already fresh" path.
+	_, err := minder.MakeChannel(mb, fqt, proto.RTAppID_Chat, "first", "first channel", proto.RolePairOpt{})
+	require.NoError(t, err)
+	_, err = minder.ListAllChannelsForTeam(mb, fqt, proto.RTAppID_Chat)
+	require.NoError(t, err)
+
+	// A second create with a warm, current cache must succeed without ever
+	// hitting the race-retry path. HitRaceHook fires once per retry; with the
+	// version bug it fired (i == 0) before succeeding on the retry.
+	raced := false
+	hooks := librt.MakeChannelTestHooks{
+		HitRaceHook: func(i int) { raced = true },
+	}
+	_, err = minder.MakeChannelWithTestHooks(mb, fqt, proto.RTAppID_Chat, "second", "second channel", proto.RolePairOpt{}, &hooks)
+	require.NoError(t, err)
+	require.False(t, raced, "warm-cache create should not hit the race-retry path")
+
+	lst, err := minder.ListAllChannelsForTeam(mb, fqt, proto.RTAppID_Chat)
+	require.NoError(t, err)
+	require.Len(t, lst.Channels, 2)
+}
+
 // TestRTMinderChannelNameCaseFoldCollision checks the minder's collision
 // detection normalizes case: "bar" and "Bar" are the same name within the same
 // tier, so the second create collides. (Companion to the same-case collisions

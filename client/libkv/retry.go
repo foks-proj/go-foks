@@ -28,7 +28,7 @@ func (m MetaContext) clearCaches(
 		return err
 	}
 	for _, dir := range vv.Path {
-		err = kvp.caches.dir.ClearBefore(m, dir.Id, dir.Vers)
+		err = kvp.caches.dir.ClearBefore(m.Base(), dir.Id, dir.Vers)
 		if err != nil {
 			return err
 		}
@@ -43,7 +43,7 @@ func (m MetaContext) clearCaches(
 				continue
 			}
 
-			err = kvp.caches.dirent.ClearBefore(m, cde.Hmac, de.Vers)
+			err = kvp.caches.dirent.ClearBefore(m.Base(), cde.Hmac, de.Vers)
 			if err != nil {
 				return err
 			}

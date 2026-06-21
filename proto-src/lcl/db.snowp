@@ -36,6 +36,7 @@ enum DataType {
 
     RTThreadMsgData @97;
     RTOutboxMsg @98;
+    RTChannelSet @99;
 }
 
 typedef ScopeLabel = Blob;

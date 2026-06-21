@@ -65,6 +65,9 @@ var serverConfigPatch3 string
 //go:embed patches/foks_realtime/p1.sql
 var realtimePatch1 string
 
+//go:embed patches/foks_realtime/p2.sql
+var realtimePatch2 string
+
 var Patches = map[string]map[int]string{
 	"foks_users": {
 		1: usersPatch1,
@@ -80,5 +83,6 @@ var Patches = map[string]map[int]string{
 	},
 	"foks_realtime": {
 		1: realtimePatch1,
+		2: realtimePatch2,
 	},
 }

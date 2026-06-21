@@ -75,6 +75,7 @@ const (
 	DataType_KVGitRefSet          DataType = 73
 	DataType_RTThreadMsgData      DataType = 97
 	DataType_RTOutboxMsg          DataType = 98
+	DataType_RTChannelSet         DataType = 99
 )
 
 var DataTypeMap = map[string]DataType{
@@ -104,6 +105,7 @@ var DataTypeMap = map[string]DataType{
 	"KVGitRefSet":          73,
 	"RTThreadMsgData":      97,
 	"RTOutboxMsg":          98,
+	"RTChannelSet":         99,
 }
 var DataTypeRevMap = map[DataType]string{
 	0:  "None",
@@ -132,6 +134,7 @@ var DataTypeRevMap = map[DataType]string{
 	73: "KVGitRefSet",
 	97: "RTThreadMsgData",
 	98: "RTOutboxMsg",
+	99: "RTChannelSet",
 }
 
 type DataTypeInternal__ DataType

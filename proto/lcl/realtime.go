@@ -1173,6 +1173,154 @@ func RealTimeProtocol(i RealTimeInterface) rpc.ProtocolV2 {
 	}
 }
 
+type RTChannelSetHashInput struct {
+	Fqp   lib.FQParty
+	AppID lib.RTAppID
+}
+type RTChannelSetHashInputInternal__ struct {
+	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
+	Fqp     *lib.FQPartyInternal__
+	AppID   *lib.RTAppIDInternal__
+}
+
+func (r RTChannelSetHashInputInternal__) Import() RTChannelSetHashInput {
+	return RTChannelSetHashInput{
+		Fqp: (func(x *lib.FQPartyInternal__) (ret lib.FQParty) {
+			if x == nil {
+				return ret
+			}
+			return x.Import()
+		})(r.Fqp),
+		AppID: (func(x *lib.RTAppIDInternal__) (ret lib.RTAppID) {
+			if x == nil {
+				return ret
+			}
+			return x.Import()
+		})(r.AppID),
+	}
+}
+func (r RTChannelSetHashInput) Export() *RTChannelSetHashInputInternal__ {
+	return &RTChannelSetHashInputInternal__{
+		Fqp:   r.Fqp.Export(),
+		AppID: r.AppID.Export(),
+	}
+}
+func (r *RTChannelSetHashInput) Encode(enc rpc.Encoder) error {
+	return enc.Encode(r.Export())
+}
+
+func (r *RTChannelSetHashInput) Decode(dec rpc.Decoder) error {
+	var tmp RTChannelSetHashInputInternal__
+	err := dec.Decode(&tmp)
+	if err != nil {
+		return err
+	}
+	*r = tmp.Import()
+	return nil
+}
+
+var RTChannelSetHashInputTypeUniqueID = rpc.TypeUniqueID(0xc6985a2917572061)
+
+func (r *RTChannelSetHashInput) GetTypeUniqueID() rpc.TypeUniqueID {
+	return RTChannelSetHashInputTypeUniqueID
+}
+func (r *RTChannelSetHashInput) Bytes() []byte { return nil }
+
+type RTChannelSetID lib.StdHash
+type RTChannelSetIDInternal__ lib.StdHashInternal__
+
+func (r RTChannelSetID) Export() *RTChannelSetIDInternal__ {
+	tmp := ((lib.StdHash)(r))
+	return ((*RTChannelSetIDInternal__)(tmp.Export()))
+}
+func (r RTChannelSetIDInternal__) Import() RTChannelSetID {
+	tmp := (lib.StdHashInternal__)(r)
+	return RTChannelSetID((func(x *lib.StdHashInternal__) (ret lib.StdHash) {
+		if x == nil {
+			return ret
+		}
+		return x.Import()
+	})(&tmp))
+}
+
+func (r *RTChannelSetID) Encode(enc rpc.Encoder) error {
+	return enc.Encode(r.Export())
+}
+
+func (r *RTChannelSetID) Decode(dec rpc.Decoder) error {
+	var tmp RTChannelSetIDInternal__
+	err := dec.Decode(&tmp)
+	if err != nil {
+		return err
+	}
+	*r = tmp.Import()
+	return nil
+}
+
+func (r RTChannelSetID) Bytes() []byte {
+	return ((lib.StdHash)(r)).Bytes()
+}
+
+type RTChannelMetadataPlaintextAbbrev struct {
+	Name lib.RTChannelName
+	Desc *lib.RTChannelDesc
+}
+type RTChannelMetadataPlaintextAbbrevInternal__ struct {
+	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
+	Name    *lib.RTChannelNameInternal__
+	Desc    *lib.RTChannelDescInternal__
+}
+
+func (r RTChannelMetadataPlaintextAbbrevInternal__) Import() RTChannelMetadataPlaintextAbbrev {
+	return RTChannelMetadataPlaintextAbbrev{
+		Name: (func(x *lib.RTChannelNameInternal__) (ret lib.RTChannelName) {
+			if x == nil {
+				return ret
+			}
+			return x.Import()
+		})(r.Name),
+		Desc: (func(x *lib.RTChannelDescInternal__) *lib.RTChannelDesc {
+			if x == nil {
+				return nil
+			}
+			tmp := (func(x *lib.RTChannelDescInternal__) (ret lib.RTChannelDesc) {
+				if x == nil {
+					return ret
+				}
+				return x.Import()
+			})(x)
+			return &tmp
+		})(r.Desc),
+	}
+}
+func (r RTChannelMetadataPlaintextAbbrev) Export() *RTChannelMetadataPlaintextAbbrevInternal__ {
+	return &RTChannelMetadataPlaintextAbbrevInternal__{
+		Name: r.Name.Export(),
+		Desc: (func(x *lib.RTChannelDesc) *lib.RTChannelDescInternal__ {
+			if x == nil {
+				return nil
+			}
+			return (*x).Export()
+		})(r.Desc),
+	}
+}
+func (r *RTChannelMetadataPlaintextAbbrev) Encode(enc rpc.Encoder) error {
+	return enc.Encode(r.Export())
+}
+
+func (r *RTChannelMetadataPlaintextAbbrev) Decode(dec rpc.Decoder) error {
+	var tmp RTChannelMetadataPlaintextAbbrevInternal__
+	err := dec.Decode(&tmp)
+	if err != nil {
+		return err
+	}
+	*r = tmp.Import()
+	return nil
+}
+
+func (r *RTChannelMetadataPlaintextAbbrev) Bytes() []byte { return nil }
+
 func init() {
 	rpc.AddUnique(RealTimeProtocolID)
+	rpc.AddUnique(RTChannelSetHashInputTypeUniqueID)
 }

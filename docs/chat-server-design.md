@@ -753,11 +753,14 @@ CLI-only in the core FOKS repository.
 - Simple CLI-based interface
 
 ### Stage 1b
+- Caching: channel / channel sets
+
+### Stage 1c
 
 - build ad-hoc team machinery into core FOKS
 - Complementary client features
 
-### Stage 1c
+### Stage 1d
 
 - potentially build signatures for KV-store, and messages
     - ward off misattribution attacks
