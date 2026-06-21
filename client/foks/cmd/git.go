@@ -103,10 +103,7 @@ func gitDelete(m libclient.MetaContext, top *cobra.Command) {
 		"delete reponame", []string{"rm", "remove"},
 		"Delete a git repository",
 		"Delete a git repository",
-		quickKVOpts{
-			SupportReadRole:  true,
-			SupportWriteRole: true,
-		},
+		quickKVOpts{},
 		nil,
 		func(arg []string, cfg lcl.KVConfig, cli lcl.GitClient) error {
 			if len(arg) != 1 {
