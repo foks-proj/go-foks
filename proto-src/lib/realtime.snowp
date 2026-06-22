@@ -85,9 +85,9 @@ struct RTMsgMetadata {
 // send args or via joins. But they all go into the nonce.
 struct RTMsgNoncer @0xd45941000217cf8a {
     md @0 : RTMsgMetadata;
-    sender @1 : PartyID;
+    sender @1 : Option(FQParty); // if system message, no sender
     appID @2 : RTAppID;
-    team @3 : PartyID;
+    team @3 : FQParty;
     chid @4 : RTChannelID;
 }
 

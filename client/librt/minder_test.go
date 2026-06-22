@@ -4,6 +4,7 @@
 package librt
 
 import (
+	"bytes"
 	"testing"
 
 	proto "github.com/foks-proj/go-foks/proto/lib"
@@ -138,3 +139,60 @@ func TestMergeCopiesPayload(t *testing.T) {
 	want := []ThreadMessage{mk(1, "one"), mk(2, "two"), mk(3, "three"), mk(4, "four")}
 	require.Equal(t, want, merge(left, right, 1))
 }
+
+// fqParty builds an FQParty whose Party and Host bytes are each a single
+// repeated value, so callers can cheaply vary one axis at a time.
+func fqParty(party byte, host byte) proto.FQParty {
+	var h proto.HostID
+	for i := range h {
+		h[i] = host
+	}
+	return proto.FQParty{
+		Party: proto.PartyID(bytes.Repeat([]byte{party}, 16)),
+		Host:  h,
+	}
+}
+
+// TestCookNonceBindsHost guards against a regression where the message nonce was
+// derived only from PartyIDs and omitted the HostID. Without the host in the
+// nonce, two virtual hosts that happened to share a team/sender PartyID would
+// cook identical nonces, so a chat sealed on one host could be opened (mixed
+// in) on another. The fix folds the full FQParty (party + host) into the
+// noncer; this test asserts that flipping only the host changes the cooked
+// nonce, which is what makes a cross-host open fail the box's MAC check.
+func TestCookNonceBindsHost(t *testing.T) {
+	base := func() proto.RTMsgNoncer {
+		sndr := fqParty(0x11, 0xaa)
+		return proto.RTMsgNoncer{
+			Md:     proto.RTMsgMetadata{Typ: proto.RTMsgType_Basic},
+			Sender: &sndr,
+			AppID:  proto.RTAppID_Chat,
+			Team:   fqParty(0x22, 0xaa),
+			Chid:   proto.RTChannelID{0x33},
+		}
+	}
+
+	// Control: identical noncers cook identical nonces.
+	a, err := cookNonce(ptr(base()))
+	require.NoError(t, err)
+	b, err := cookNonce(ptr(base()))
+	require.NoError(t, err)
+	require.Equal(t, *a, *b)
+
+	// Changing only the team's host must change the nonce.
+	teamHost := base()
+	teamHost.Team = fqParty(0x22, 0xbb)
+	c, err := cookNonce(&teamHost)
+	require.NoError(t, err)
+	require.NotEqual(t, *a, *c)
+
+	// Changing only the sender's host must change the nonce.
+	sndrHost := base()
+	s := fqParty(0x11, 0xbb)
+	sndrHost.Sender = &s
+	d, err := cookNonce(&sndrHost)
+	require.NoError(t, err)
+	require.NotEqual(t, *a, *d)
+}
+
+func ptr[T any](v T) *T { return &v }
