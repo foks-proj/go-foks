@@ -339,6 +339,27 @@ func (c *Config) TestSetHomeCLIFlag(h string) {
 	c.fl.home = h
 }
 
+// SetStandalone toggles standalone mode programmatically — equivalent
+// to passing --standalone on the CLI. Useful for long-running Go
+// processes that want to embed the FOKS agent in-process rather than
+// connect to an external foks-agent daemon.
+func (c *Config) SetStandalone(b bool) {
+	c.Lock()
+	defer c.Unlock()
+	c.fl.standalone = b
+}
+
+// SetLocalKeyDefaultEncryptionMode is equivalent to passing
+// --local-keyring-default-encryption-mode <mode> on the CLI. Empty
+// string = use the platform default. Valid modes are the same as
+// ParseSecretKeyStorageType accepts ("noise", "macos", "keychain",
+// "plaintext", "passphrase").
+func (c *Config) SetLocalKeyDefaultEncryptionMode(mode string) {
+	c.Lock()
+	defer c.Unlock()
+	c.fl.localKeyring.defaultEncryptionMode = mode
+}
+
 func (c *Config) TestSetHostsBeacon(b string) {
 	c.Lock()
 	defer c.Unlock()
