@@ -658,17 +658,17 @@ func (r *RTMsgMetadata) Bytes() []byte { return nil }
 
 type RTMsgNoncer struct {
 	Md     RTMsgMetadata
-	Sender PartyID
+	Sender *FQParty
 	AppID  RTAppID
-	Team   PartyID
+	Team   FQParty
 	Chid   RTChannelID
 }
 type RTMsgNoncerInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Md      *RTMsgMetadataInternal__
-	Sender  *PartyIDInternal__
+	Sender  *FQPartyInternal__
 	AppID   *RTAppIDInternal__
-	Team    *PartyIDInternal__
+	Team    *FQPartyInternal__
 	Chid    *RTChannelIDInternal__
 }
 
@@ -680,11 +680,17 @@ func (r RTMsgNoncerInternal__) Import() RTMsgNoncer {
 			}
 			return x.Import()
 		})(r.Md),
-		Sender: (func(x *PartyIDInternal__) (ret PartyID) {
+		Sender: (func(x *FQPartyInternal__) *FQParty {
 			if x == nil {
-				return ret
+				return nil
 			}
-			return x.Import()
+			tmp := (func(x *FQPartyInternal__) (ret FQParty) {
+				if x == nil {
+					return ret
+				}
+				return x.Import()
+			})(x)
+			return &tmp
 		})(r.Sender),
 		AppID: (func(x *RTAppIDInternal__) (ret RTAppID) {
 			if x == nil {
@@ -692,7 +698,7 @@ func (r RTMsgNoncerInternal__) Import() RTMsgNoncer {
 			}
 			return x.Import()
 		})(r.AppID),
-		Team: (func(x *PartyIDInternal__) (ret PartyID) {
+		Team: (func(x *FQPartyInternal__) (ret FQParty) {
 			if x == nil {
 				return ret
 			}
@@ -708,11 +714,16 @@ func (r RTMsgNoncerInternal__) Import() RTMsgNoncer {
 }
 func (r RTMsgNoncer) Export() *RTMsgNoncerInternal__ {
 	return &RTMsgNoncerInternal__{
-		Md:     r.Md.Export(),
-		Sender: r.Sender.Export(),
-		AppID:  r.AppID.Export(),
-		Team:   r.Team.Export(),
-		Chid:   r.Chid.Export(),
+		Md: r.Md.Export(),
+		Sender: (func(x *FQParty) *FQPartyInternal__ {
+			if x == nil {
+				return nil
+			}
+			return (*x).Export()
+		})(r.Sender),
+		AppID: r.AppID.Export(),
+		Team:  r.Team.Export(),
+		Chid:  r.Chid.Export(),
 	}
 }
 func (r *RTMsgNoncer) Encode(enc rpc.Encoder) error {

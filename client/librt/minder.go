@@ -706,6 +706,12 @@ func (d *Minder) resolveChannel(
 }
 
 func cookNonce(noncer *proto.RTMsgNoncer) (*proto.DomainSeparatedNaclNonce, error) {
+	if noncer.Team.Host.IsZero() {
+		return nil, core.InternalError("non-zero team host is required to cook nonce")
+	}
+	if noncer.Sender != nil && noncer.Sender.Host.IsZero() {
+		return nil, core.InternalError("non-zero sender host is required to cook nonce")
+	}
 	nonce, err := core.PrefixedHash(noncer)
 	if err != nil {
 		return nil, err
@@ -834,9 +840,9 @@ func (d *Minder) SendWithTestHooks(
 
 	noncer := proto.RTMsgNoncer{
 		Md:     md,
-		Sender: d.au.UID().ToPartyID(),
+		Sender: core.Ptr(d.au.FQParty()),
 		AppID:  appID,
-		Team:   rtp.PLCNode().FQParty().Party,
+		Team:   rtp.PLCNode().FQParty(),
 		Chid:   ch.Id,
 	}
 
@@ -898,19 +904,33 @@ func (d *Minder) SendWithTestHooks(
 	return &res, nil
 }
 
+func fillFQParty(hostId lib.HostID, p *proto.PartyID) *proto.FQParty {
+	if p == nil {
+		return nil
+	}
+	return &proto.FQParty{
+		Party: *p,
+		Host:  hostId,
+	}
+}
+
 func (d *Minder) openMessageWithRTMsg(
 	m MetaContext,
-	rtp *RTParty,
-	appID proto.RTAppID,
+	irr *initReqResult,
 	msg rem.RTMsg,
-	ch proto.RTChannelID,
 ) (
 	[]byte,
 	*proto.RTMsgCached,
 	error,
 ) {
-	return d.openMessage(m, rtp, appID,
-		msg.Md, msg.Mw, msg.Sender, msg.InsertTime, ch,
+	return d.openMessage(m,
+		irr.rtp,
+		irr.appID,
+		msg.Md,
+		msg.Mw,
+		fillFQParty(irr.hostId, msg.Sender),
+		msg.InsertTime,
+		irr.ch.Id,
 	)
 }
 
@@ -922,7 +942,7 @@ func (d *Minder) openMessage(
 	appID proto.RTAppID,
 	md proto.RTMsgMetadata,
 	mw proto.RTMsgWrapper,
-	sender *proto.PartyID,
+	sender *proto.FQParty,
 	serverInsertTime proto.Time,
 	ch proto.RTChannelID,
 ) (
@@ -930,16 +950,16 @@ func (d *Minder) openMessage(
 	*proto.RTMsgCached,
 	error,
 ) {
-	team := rtp.PLCNode().FQParty().Party
+	if sender != nil && !sender.Host.Eq(d.au.HostID()) {
+		return nil, nil, core.HostMismatchError{}
+	}
 	noncer := proto.RTMsgNoncer{
 		Md:    md,
 		AppID: appID,
-		Team:  team,
+		Team:  rtp.PLCNode().FQParty(),
 		Chid:  ch,
 	}
-	if sender != nil {
-		noncer.Sender = *sender
-	}
+	noncer.Sender = sender
 	nn, err := cookNonce(&noncer)
 	if err != nil {
 		return nil, nil, err
@@ -1062,33 +1082,46 @@ func findHoles(
 	return ret, nil
 }
 
+type initReqResult struct {
+	hostId lib.HostID
+	rtp    *RTParty
+	ch     *lcl.RTChannelMetadataPlaintext
+	cli    *rem.RealTimeClient
+	appID  proto.RTAppID
+}
+
 func (d *Minder) initReq(
 	m MetaContext,
 	team *proto.FQTeamParsed,
 	appID proto.RTAppID,
 	channel lcl.RTChannelSpecifier,
 ) (
-	*RTParty,
-	*lcl.RTChannelMetadataPlaintext,
-	*rem.RealTimeClient,
+	*initReqResult,
 	error,
 ) {
 	if team == nil {
-		return nil, nil, nil, core.InternalError("team is required to read in Stage 1a")
+		return nil, core.InternalError("team is required to read in Stage 1a")
 	}
 	rtp, err := d.base.GetParty(m.Base(), team)
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, err
 	}
 	ch, err := d.resolveChannel(m, rtp, appID, channel)
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, err
 	}
-	_, cli, err := d.clientLocal(m.Base(), d.au)
+	pr, cli, err := d.clientLocal(m.Base(), d.au)
+	hostId := pr.Chain().HostID()
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, err
 	}
-	return rtp, ch, cli, nil
+	return &initReqResult{
+		hostId: hostId,
+		rtp:    rtp,
+		ch:     ch,
+		cli:    cli,
+		appID:  appID,
+	}, nil
 }
 
 // TeamViewToken returns the team's view bearer token, used for AsLocalTeam user
@@ -1258,14 +1291,14 @@ func (d *Minder) GetThreadBookended(
 		inc = -1
 	}
 
-	rtp, ch, cli, err := d.initReq(m, team, appID, channel)
+	irr, err := d.initReq(m, team, appID, channel)
 	if err != nil {
 		return nil, false, err
 	}
 
 	cachedMsgsEnc, err := dbGetMsgs(
 		m, d.au,
-		ch.Id,
+		irr.ch.Id,
 		start,
 		end,
 	)
@@ -1275,9 +1308,9 @@ func (d *Minder) GetThreadBookended(
 
 	cached, err := d.decodeMsgs(
 		m,
-		rtp,
+		irr.rtp,
 		appID,
-		ch.Id,
+		irr.ch.Id,
 		cachedMsgsEnc,
 	)
 	if err != nil {
@@ -1322,8 +1355,8 @@ func (d *Minder) GetThreadBookended(
 	}
 
 	d.serverThreadReads.Add(1)
-	page, err := cli.RtGetThread(m.Ctx(), rem.RTThreadQuery{
-		ChannelID: ch.Id,
+	page, err := irr.cli.RtGetThread(m.Ctx(), rem.RTThreadQuery{
+		ChannelID: irr.ch.Id,
 		Bookends:  bookends,
 		Seqs:      holes,
 	})
@@ -1339,14 +1372,14 @@ func (d *Minder) GetThreadBookended(
 
 	ret := cached
 	for _, r := range page.RangeMsgs {
-		tmp, err := d.decodeAndCacheServerMsgs(m, sess, rtp, appID, ch.Id, r.Lst)
+		tmp, err := d.decodeAndCacheServerMsgs(m, sess, irr, r.Lst)
 		if err != nil {
 			return nil, false, err
 		}
 		ret = merge(ret, tmp, inc)
 	}
 
-	tmp, err := d.decodeAndCacheServerMsgs(m, sess, rtp, appID, ch.Id, page.SeqMsgs)
+	tmp, err := d.decodeAndCacheServerMsgs(m, sess, irr, page.SeqMsgs)
 	if err != nil {
 		return nil, false, err
 	}
@@ -1504,7 +1537,7 @@ func (d *Minder) GetThreadRecentMsgs(
 		num = 128
 	}
 	inc := -1
-	rtp, ch, cli, err := d.initReq(m, team, appID, channel)
+	irr, err := d.initReq(m, team, appID, channel)
 	if err != nil {
 		return nil, err
 	}
@@ -1514,7 +1547,7 @@ func (d *Minder) GetThreadRecentMsgs(
 	cachedMsgsEnc, err := dbGetRecentMsgs(
 		m,
 		d.au,
-		ch.Id,
+		irr.ch.Id,
 		num,
 	)
 	if err != nil {
@@ -1522,9 +1555,9 @@ func (d *Minder) GetThreadRecentMsgs(
 	}
 	cached, err := d.decodeMsgs(
 		m,
-		rtp,
+		irr.rtp,
 		appID,
-		ch.Id,
+		irr.ch.Id,
 		cachedMsgsEnc,
 	)
 	if err != nil {
@@ -1535,10 +1568,10 @@ func (d *Minder) GetThreadRecentMsgs(
 		stopAt = cached[0].Seq
 	}
 	d.serverRecentReads.Add(1)
-	fresh, err := cli.RtGetThreadRecents(
+	fresh, err := irr.cli.RtGetThreadRecents(
 		m.Ctx(),
 		rem.RtGetThreadRecentsArg{
-			Ch:     ch.Id,
+			Ch:     irr.ch.Id,
 			StopAt: stopAt,
 			Lim:    uint64(num),
 		},
@@ -1551,7 +1584,11 @@ func (d *Minder) GetThreadRecentMsgs(
 	if err != nil {
 		return nil, err
 	}
-	freshPlain, err := d.decodeAndCacheServerMsgs(m, sess, rtp, appID, ch.Id, fresh.Lst)
+	freshPlain, err := d.decodeAndCacheServerMsgs(
+		m,
+		sess,
+		irr,
+		fresh.Lst)
 	if err != nil {
 		return nil, err
 	}
@@ -1573,10 +1610,10 @@ func (d *Minder) GetThreadRecentMsgs(
 	}
 
 	d.serverThreadReads.Add(1)
-	fillers, err := cli.RtGetThread(
+	fillers, err := irr.cli.RtGetThread(
 		m.Ctx(),
 		rem.RTThreadQuery{
-			ChannelID: ch.Id,
+			ChannelID: irr.ch.Id,
 			Seqs:      holes,
 		},
 	)
@@ -1593,7 +1630,7 @@ func (d *Minder) GetThreadRecentMsgs(
 		return nil, err
 	}
 
-	fillerPlain, err := d.decodeAndCacheServerMsgs(m, sess, rtp, appID, ch.Id, fillers.SeqMsgs)
+	fillerPlain, err := d.decodeAndCacheServerMsgs(m, sess, irr, fillers.SeqMsgs)
 	if err != nil {
 		return nil, err
 	}
@@ -1622,9 +1659,13 @@ func (d *Minder) decodeMsgs(
 	out := make([]ThreadMessage, 0, len(msgs))
 	for _, msg := range msgs {
 		body, cm, err := d.openMessage(m, rtp, appID,
-			msg.Cm.Md.Md, msg.Cm.Mw, &msg.Cm.Md.Sender, msg.Cm.Sit, chid)
+			msg.Cm.Md.Md, msg.Cm.Mw, msg.Cm.Md.Sender, msg.Cm.Sit, chid)
 		if err != nil {
 			return nil, err
+		}
+		var snd *proto.PartyID
+		if cm.Md.Sender != nil {
+			snd = &cm.Md.Sender.Party
 		}
 		out = append(out, ThreadMessage{
 			Seq:                      msg.Seq,
@@ -1632,7 +1673,7 @@ func (d *Minder) decodeMsgs(
 			PrevID:                   cm.Md.Md.PrevID,
 			PrevSeq:                  cm.Md.Md.PrevSeq,
 			Typ:                      cm.Md.Md.Typ,
-			Sender:                   &cm.Md.Sender,
+			Sender:                   snd,
 			SenderFurtherAttribution: cm.Md.Md.FurtherUserAttribution,
 			SentAtTime:               cm.Md.Md.SendTime,
 			InsertTime:               cm.Sit,
@@ -1681,20 +1722,18 @@ func (d *Minder) validateMetadata(
 func (d *Minder) decodeAndVerifyMsg(
 	m MetaContext,
 	sess *msgSession,
-	rtp *RTParty,
-	appID proto.RTAppID,
-	chid proto.RTChannelID,
+	irr *initReqResult,
 	msg rem.RTMsg,
 ) (
 	*ThreadMessage,
 	*proto.RTMsgCached,
 	error,
 ) {
-	body, cm, err := d.openMessageWithRTMsg(m, rtp, appID, msg, chid)
+	body, cm, err := d.openMessageWithRTMsg(m, irr, msg)
 	if err != nil {
 		return nil, nil, err
 	}
-	err = d.validateMetadata(m, sess, chid, msg.Seq, msg.Md.PrevSeq, msg.Md.PrevID)
+	err = d.validateMetadata(m, sess, irr.ch.Id, msg.Seq, msg.Md.PrevSeq, msg.Md.PrevID)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -1715,13 +1754,13 @@ func (d *Minder) decodeAndVerifyMsg(
 
 // decodeAndCacheServerMsgs decrypts each server message into a ThreadMessage for the
 // caller and writes the decrypted bodies into the local cache. Shared by
-// GetThread (paged range) and GetMsgs (arbitrary set of seqs).
+// GetThread (paged range) and GetMsgs (arbitrary set of seqs). hostId
+// is the host ID of the server that sent the messages, plumbed through
+// from the client host chain.
 func (d *Minder) decodeAndCacheServerMsgs(
 	m MetaContext,
 	sess *msgSession,
-	rtp *RTParty,
-	appID proto.RTAppID,
-	chid proto.RTChannelID,
+	irr *initReqResult,
 	msgs []rem.RTMsg,
 ) (
 	[]ThreadMessage,
@@ -1730,7 +1769,7 @@ func (d *Minder) decodeAndCacheServerMsgs(
 	out := make([]ThreadMessage, 0, len(msgs))
 	cachePuts := make([]proto.RTMsgCachedWithSeq, 0, len(msgs))
 	for _, msg := range msgs {
-		tm, cm, err := d.decodeAndVerifyMsg(m, sess, rtp, appID, chid, msg)
+		tm, cm, err := d.decodeAndVerifyMsg(m, sess, irr, msg)
 		if err != nil {
 			return nil, err
 		}
@@ -1767,22 +1806,13 @@ func (d *Minder) GetMsgs(
 	if team == nil {
 		return nil, core.InternalError("team is required to read in Stage 1a")
 	}
+	irr, err := d.initReq(m, team, appID, channel)
+	if err != nil {
+		return nil, err
+	}
 	sess := newMsgSession()
-	rtp, err := d.base.GetParty(m.Base(), team)
-	if err != nil {
-		return nil, err
-	}
-	ch, err := d.resolveChannel(m, rtp, appID, channel)
-	if err != nil {
-		return nil, err
-	}
-	_, cli, err := d.clientLocal(m.Base(), d.au)
-	if err != nil {
-		return nil, err
-	}
-	d.serverThreadReads.Add(1)
-	page, err := cli.RtGetThread(m.Ctx(), rem.RTThreadQuery{
-		ChannelID: ch.Id,
+	page, err := irr.cli.RtGetThread(m.Ctx(), rem.RTThreadQuery{
+		ChannelID: irr.ch.Id,
 		Seqs:      seqs,
 	})
 	if err != nil {
@@ -1793,7 +1823,7 @@ func (d *Minder) GetMsgs(
 	if err != nil {
 		return nil, err
 	}
-	return d.decodeAndCacheServerMsgs(m, sess, rtp, appID, ch.Id, page.SeqMsgs)
+	return d.decodeAndCacheServerMsgs(m, sess, irr, page.SeqMsgs)
 }
 
 func (d *Minder) dbPutMsgs(
