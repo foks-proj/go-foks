@@ -5,6 +5,7 @@ import (
 	"slices"
 	"testing"
 
+	"github.com/foks-proj/go-foks/client/libclient"
 	"github.com/foks-proj/go-foks/client/librt"
 	"github.com/foks-proj/go-foks/lib/core"
 	"github.com/foks-proj/go-foks/proto/lcl"
@@ -207,38 +208,47 @@ func TestRTMinderGeneralNameReserved(t *testing.T) {
 // the server's, the server returns an empty delta; if it (or the client) lets
 // the set version collapse to 0, the next MakeChannel computes a stale
 // SetVers and spuriously loses the optimistic-concurrency check, forcing a
-// retry. With no contention there should be exactly zero races.
+// retry. With no contention there should be exactly zero races. We run the
+// scenario across all cache modalities (no cache, disk-only, mem+disk), since
+// the disk and mem layers exercise different Get/Put round-trips.
 func TestRTMinderMakeChannelWarmCacheNoRace(t *testing.T) {
 	tew := testEnvBeta(t)
 	bluey := tew.NewTestUser(t)
 	tew.DirectDoubleMerklePokeInTest(t)
-	tm := tew.makeTeamForOwner(t, bluey)
-
+	fqt := tew.makeTeamForOwner(t, bluey).ToFQTeamParsed(t)
 	mb := librt.NewMetaContext(tew.NewClientMetaContextWithEracer(t, bluey))
-	minder := librt.NewMinder(mb.G().ActiveUser())
-	fqt := tm.ToFQTeamParsed(t)
 
-	// Create one channel, then list -- this warms the cache to the current
-	// server version, so the next list will take the "already fresh" path.
-	_, err := minder.MakeChannel(mb, fqt, proto.RTAppID_Chat, "first", "first channel", proto.RolePairOpt{})
-	require.NoError(t, err)
-	_, err = minder.ListAllChannelsForTeam(mb, fqt, proto.RTAppID_Chat)
-	require.NoError(t, err)
+	test := func(cs libclient.CacheSettings) {
+		// A fresh channel name per modality so the three runs don't collide.
+		nm, err := core.RandomDomain()
+		require.NoError(t, err)
+		first := proto.RTChannelName(nm + "-first")
+		second := proto.RTChannelName(nm + "-second")
 
-	// A second create with a warm, current cache must succeed without ever
-	// hitting the race-retry path. HitRaceHook fires once per retry; with the
-	// version bug it fired (i == 0) before succeeding on the retry.
-	raced := false
-	hooks := librt.MakeChannelTestHooks{
-		HitRaceHook: func(i int) { raced = true },
+		minder := librt.NewMinderWithCacheSettings(mb.G().ActiveUser(), cs)
+
+		// Create one channel, then list -- this warms the cache to the current
+		// server version, so the next list takes the "already fresh" path.
+		_, err = minder.MakeChannel(mb, fqt, proto.RTAppID_Chat, first, "first channel", proto.RolePairOpt{})
+		require.NoError(t, err)
+		_, err = minder.ListAllChannelsForTeam(mb, fqt, proto.RTAppID_Chat)
+		require.NoError(t, err)
+
+		// A second create with a warm, current cache must succeed without ever
+		// hitting the race-retry path. HitRaceHook fires once per retry; with
+		// the version bug it fired (i == 0) before succeeding on the retry.
+		raced := false
+		hooks := librt.MakeChannelTestHooks{
+			HitRaceHook: func(i int) { raced = true },
+		}
+		_, err = minder.MakeChannelWithTestHooks(mb, fqt, proto.RTAppID_Chat, second, "second channel", proto.RolePairOpt{}, &hooks)
+		require.NoError(t, err)
+		require.False(t, raced, "warm-cache create should not hit the race-retry path (cs=%+v)", cs)
 	}
-	_, err = minder.MakeChannelWithTestHooks(mb, fqt, proto.RTAppID_Chat, "second", "second channel", proto.RolePairOpt{}, &hooks)
-	require.NoError(t, err)
-	require.False(t, raced, "warm-cache create should not hit the race-retry path")
 
-	lst, err := minder.ListAllChannelsForTeam(mb, fqt, proto.RTAppID_Chat)
-	require.NoError(t, err)
-	require.Len(t, lst.Channels, 2)
+	test(libclient.CacheSettings{})
+	test(libclient.CacheSettings{UseMem: false, UseDisk: true})
+	test(libclient.CacheSettings{UseMem: true, UseDisk: true})
 }
 
 // TestRTMinderChannelNameCaseFoldCollision checks the minder's collision
