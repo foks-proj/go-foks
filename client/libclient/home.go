@@ -259,6 +259,10 @@ func (d Darwin) sharedHome() (string, error) {
 	}
 
 	// check if we have a shared container path, and if so, that is where the shared home is.
+	// PATCHED: nil guard for getMobileSharedHome — Config.HomeFinder() passes nil on iOS
+	if d.getMobileSharedHome == nil {
+		return homeDir, nil
+	}
 	sharedHome := d.getMobileSharedHome()
 	if sharedHome != "" {
 		return sharedHome, nil
