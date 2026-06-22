@@ -1309,11 +1309,13 @@ func (r *RtGetChannelArg) Bytes() []byte { return nil }
 type RtListAllChannelsForTeamArg struct {
 	Team  lib.TeamID
 	AppID lib.RTAppID
+	Last  lib.RTChannelSetVersion
 }
 type RtListAllChannelsForTeamArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Team    *lib.TeamIDInternal__
 	AppID   *lib.RTAppIDInternal__
+	Last    *lib.RTChannelSetVersionInternal__
 }
 
 func (r RtListAllChannelsForTeamArgInternal__) Import() RtListAllChannelsForTeamArg {
@@ -1330,12 +1332,19 @@ func (r RtListAllChannelsForTeamArgInternal__) Import() RtListAllChannelsForTeam
 			}
 			return x.Import()
 		})(r.AppID),
+		Last: (func(x *lib.RTChannelSetVersionInternal__) (ret lib.RTChannelSetVersion) {
+			if x == nil {
+				return ret
+			}
+			return x.Import()
+		})(r.Last),
 	}
 }
 func (r RtListAllChannelsForTeamArg) Export() *RtListAllChannelsForTeamArgInternal__ {
 	return &RtListAllChannelsForTeamArgInternal__{
 		Team:  r.Team.Export(),
 		AppID: r.AppID.Export(),
+		Last:  r.Last.Export(),
 	}
 }
 func (r *RtListAllChannelsForTeamArg) Encode(enc rpc.Encoder) error {

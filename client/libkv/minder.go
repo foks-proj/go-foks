@@ -20,7 +20,7 @@ type KVParty struct {
 	sync.RWMutex
 	caches *caches
 	root   *proto.KVRoot
-	cs     CacheSettings
+	cs     libclient.CacheSettings
 	plcn   *libclient.PLCNode
 }
 
@@ -78,7 +78,7 @@ type caches struct {
 	upload    map[proto.FileID]*fileUploadState
 }
 
-func newCaches(p proto.FQParty, settings CacheSettings) *caches {
+func newCaches(p proto.FQParty, settings libclient.CacheSettings) *caches {
 	return &caches{
 		root:      NewRootCache(p, settings),
 		dirent:    NewDirentCache(p, settings),
@@ -98,18 +98,18 @@ type Minder struct {
 	base          *libclient.BaseMinder[KVParty, *KVParty]
 	au            *libclient.UserContext
 	probes        libclient.ProbeCollection
-	cacheSettings CacheSettings
+	cacheSettings libclient.CacheSettings
 
 	localCliMu sync.Mutex
 	localCli   *rem.KVStoreClient
 }
 
 func NewMinder(au *libclient.UserContext) *Minder {
-	cs := CacheSettings{UseMem: true, UseDisk: true}
+	cs := libclient.CacheSettings{UseMem: true, UseDisk: true}
 	return NewMinderWithCacheSettings(au, cs)
 }
 
-func NewMinderWithCacheSettings(au *libclient.UserContext, cs CacheSettings) *Minder {
+func NewMinderWithCacheSettings(au *libclient.UserContext, cs libclient.CacheSettings) *Minder {
 	ret := &Minder{cacheSettings: cs, au: au}
 	ret.base = libclient.NewBaseMinder(
 		au,
@@ -465,7 +465,7 @@ func (kvp *KVParty) getSymlink(
 	*symlinkPackage,
 	error,
 ) {
-	enc, plain, err := kvp.caches.symlink.Get(m, id)
+	enc, plain, err := kvp.caches.symlink.Get(m.Base(), id)
 	if err != nil {
 		return nil, err
 	}
@@ -1014,7 +1014,7 @@ func (k *Minder) lookupDirent(
 		if err != nil {
 			return nil, err
 		}
-		err = kvp.caches.symlink.Put(m, *slid, res.Data.Symlink(), nil)
+		err = kvp.caches.symlink.Put(m.Base(), *slid, res.Data.Symlink(), nil)
 		if err != nil {
 			return nil, err
 		}
@@ -1023,7 +1023,7 @@ func (k *Minder) lookupDirent(
 		if err != nil {
 			return nil, err
 		}
-		err = kvp.caches.smallFile.Put(m, *sfid, res.Data.Smallfile(), nil)
+		err = kvp.caches.smallFile.Put(m.Base(), *sfid, res.Data.Smallfile(), nil)
 		if err != nil {
 			return nil, err
 		}
@@ -1032,7 +1032,7 @@ func (k *Minder) lookupDirent(
 		if err != nil {
 			return nil, err
 		}
-		err = kvp.caches.lfmd.Put(m, *fid, res.Data.File(), nil)
+		err = kvp.caches.lfmd.Put(m.Base(), *fid, res.Data.File(), nil)
 		if err != nil {
 			return nil, err
 		}
@@ -1238,7 +1238,7 @@ func (k *Minder) loadSymlink(
 	if err != nil {
 		return nil, err
 	}
-	err = kvp.caches.symlink.Put(m, *slid, sfb, ret)
+	err = kvp.caches.symlink.Put(m.Base(), *slid, sfb, ret)
 	if err != nil {
 		return nil, err
 	}
@@ -1811,7 +1811,7 @@ func (k *Minder) listWithDirID(
 		if err != nil {
 			return nil, err
 		}
-		err = kvp.caches.smallFile.Put(m, *sfid, ext.Sfb, nil)
+		err = kvp.caches.smallFile.Put(m.Base(), *sfid, ext.Sfb, nil)
 		if err != nil {
 			return nil, err
 		}

@@ -93,8 +93,8 @@ func (r TeamRawInboxRowVar) Token() (lib.TeamRSVP, error) {
 	return zed, lib.DataError("bad team join req type")
 }
 
-func (r GetEncryptedChunkRes) GetVersion() lib.KVVersion {
-	return 0
+func (r GetEncryptedChunkRes) GetVersion() lib.Version {
+	return lib.Version(0)
 }
 
 func (i LockID) ExportToDB() []byte {
@@ -150,4 +150,8 @@ func (a MultiUseInviteCode) Cmp(b MultiUseInviteCode) int {
 	x1 := strings.ToLower(a.String())
 	x2 := strings.ToLower(b.String())
 	return strings.Compare(x1, x2)
+}
+
+func (r RTChannelSet) GetVersion() lib.Version {
+	return lib.Version(r.Vers)
 }

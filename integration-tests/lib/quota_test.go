@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/foks-proj/go-foks/client/libkv"
+	"github.com/foks-proj/go-foks/client/libclient"
 	"github.com/foks-proj/go-foks/integration-tests/common"
 	"github.com/foks-proj/go-foks/lib/core"
 	"github.com/foks-proj/go-foks/proto/infra"
@@ -19,7 +19,7 @@ import (
 )
 
 func TestLargeFileUsage(t *testing.T) {
-	mdt := setupMultiDeviceTest(t, 1, libkv.CacheSettings{UseMem: true, UseDisk: true})
+	mdt := setupMultiDeviceTest(t, 1, libclient.CacheSettings{UseMem: true, UseDisk: true})
 	dev := mdt.dev[0]
 	file := dev.pathify("big.txt")
 	sz := 1024 * 1024
@@ -39,7 +39,7 @@ func randomPlanName(t *testing.T) string {
 }
 
 func TestWritesOverQuotaFail(t *testing.T) {
-	mdt := setupMultiDeviceTest(t, 1, libkv.CacheSettings{UseMem: true, UseDisk: true})
+	mdt := setupMultiDeviceTest(t, 1, libclient.CacheSettings{UseMem: true, UseDisk: true})
 	m := mdt.tew.MetaContext()
 	ctx := m.Ctx()
 	cli, fn := common.TestQuotaSrvCli(t, m)
@@ -147,7 +147,7 @@ func TestWritesOverQuotaFail(t *testing.T) {
 }
 
 func TestQuotaAndTeams(t *testing.T) {
-	mdt := setupMultiDeviceTest(t, 1, libkv.CacheSettings{UseMem: true, UseDisk: true})
+	mdt := setupMultiDeviceTest(t, 1, libclient.CacheSettings{UseMem: true, UseDisk: true})
 	m := mdt.tew.MetaContext()
 	ctx := m.Ctx()
 	cli, fn := common.TestQuotaSrvCli(t, m)

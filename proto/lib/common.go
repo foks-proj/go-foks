@@ -7467,6 +7467,41 @@ func (d DbKey) Bytes() []byte {
 	return (d)[:]
 }
 
+type Version uint64
+type VersionInternal__ uint64
+
+func (v Version) Export() *VersionInternal__ {
+	tmp := ((uint64)(v))
+	return ((*VersionInternal__)(&tmp))
+}
+func (v VersionInternal__) Import() Version {
+	tmp := (uint64)(v)
+	return Version((func(x *uint64) (ret uint64) {
+		if x == nil {
+			return ret
+		}
+		return *x
+	})(&tmp))
+}
+
+func (v *Version) Encode(enc rpc.Encoder) error {
+	return enc.Encode(v.Export())
+}
+
+func (v *Version) Decode(dec rpc.Decoder) error {
+	var tmp VersionInternal__
+	err := dec.Decode(&tmp)
+	if err != nil {
+		return err
+	}
+	*v = tmp.Import()
+	return nil
+}
+
+func (v Version) Bytes() []byte {
+	return nil
+}
+
 func init() {
 	rpc.AddUnique(HostIDTypeUniqueID)
 	rpc.AddUnique(FQUserTypeUniqueID)

@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/foks-proj/go-foks/client/libclient"
 	"github.com/foks-proj/go-foks/client/libkv"
 	"github.com/foks-proj/go-foks/lib/core"
 	"github.com/foks-proj/go-foks/proto/lcl"
@@ -165,7 +166,7 @@ func TestKVStoreUserSimpleOps(t *testing.T) {
 	tew.DirectMerklePokeInTest(t)
 	mc := libkv.NewMetaContext(tew.NewClientMetaContext(t, bluey))
 
-	test := func(cs libkv.CacheSettings) {
+	test := func(cs libclient.CacheSettings) {
 		nm, err := core.RandomDomain()
 		require.NoError(t, err)
 		kvm := libkv.NewMinderWithCacheSettings(mc.G().ActiveUser(), cs)
@@ -194,9 +195,9 @@ func TestKVStoreUserSimpleOps(t *testing.T) {
 		readFile(t, kvm, mc, proto.KVPath(f2), buf)
 	}
 
-	test(libkv.CacheSettings{})
-	test(libkv.CacheSettings{UseMem: false, UseDisk: true})
-	test(libkv.CacheSettings{UseMem: true, UseDisk: true})
+	test(libclient.CacheSettings{})
+	test(libclient.CacheSettings{UseMem: false, UseDisk: true})
+	test(libclient.CacheSettings{UseMem: true, UseDisk: true})
 
 }
 
@@ -242,20 +243,20 @@ func TestKVStoreTeamSimple(t *testing.T) {
 		return p1, buf
 	}
 
-	test := func(cs libkv.CacheSettings) (proto.KVPath, []byte) {
+	test := func(cs libclient.CacheSettings) (proto.KVPath, []byte) {
 		kvm := libkv.NewMinderWithCacheSettings(mc.G().ActiveUser(), cs)
 		return testFn(t, mc, kvm)
 	}
 
-	test(libkv.CacheSettings{})
-	test(libkv.CacheSettings{UseMem: false, UseDisk: true})
-	pLast, bLast := test(libkv.CacheSettings{UseMem: true, UseDisk: true})
+	test(libclient.CacheSettings{})
+	test(libclient.CacheSettings{UseMem: false, UseDisk: true})
+	pLast, bLast := test(libclient.CacheSettings{UseMem: true, UseDisk: true})
 
-	kvmBingo := libkv.NewMinderWithCacheSettings(mBingo.G().ActiveUser(), libkv.CacheSettings{})
+	kvmBingo := libkv.NewMinderWithCacheSettings(mBingo.G().ActiveUser(), libclient.CacheSettings{})
 	readFileWithConfig(t, kvmBingo, mBingo, pLast, bLast, cfg, 0)
 
 	mCoco := libkv.NewMetaContext(tew.NewClientMetaContextWithEracer(t, coco))
-	kvmCoco := libkv.NewMinderWithCacheSettings(mCoco.G().ActiveUser(), libkv.CacheSettings{})
+	kvmCoco := libkv.NewMinderWithCacheSettings(mCoco.G().ActiveUser(), libclient.CacheSettings{})
 	_, err := kvmCoco.GetFile(mCoco, cfg, pLast)
 
 	// simple permission denied test -- should fail on the FS root, since we made it with
@@ -270,14 +271,14 @@ func kvTestAllCacheOptions(t *testing.T, testFn func(*testing.T, libkv.MetaConte
 	tew.DirectMerklePokeInTest(t)
 	mc := libkv.NewMetaContext(tew.NewClientMetaContext(t, bluey))
 
-	test := func(cs libkv.CacheSettings) {
+	test := func(cs libclient.CacheSettings) {
 		kvm := libkv.NewMinderWithCacheSettings(mc.G().ActiveUser(), cs)
 		testFn(t, mc, kvm)
 	}
 
-	test(libkv.CacheSettings{})
-	test(libkv.CacheSettings{UseMem: false, UseDisk: true})
-	test(libkv.CacheSettings{UseMem: true, UseDisk: true})
+	test(libclient.CacheSettings{})
+	test(libclient.CacheSettings{UseMem: false, UseDisk: true})
+	test(libclient.CacheSettings{UseMem: true, UseDisk: true})
 }
 
 func makeSmallFile(t *testing.T, mc libkv.MetaContext, kvm *libkv.Minder, path proto.KVPath, data string) *libkv.PutFileRes {
@@ -588,7 +589,7 @@ func TestSimpleOverwrite(t *testing.T) {
 	bluey := tew.NewTestUser(t)
 	tew.DirectMerklePokeInTest(t)
 	mc := libkv.NewMetaContext(tew.NewClientMetaContext(t, bluey))
-	kvm := libkv.NewMinderWithCacheSettings(mc.G().ActiveUser(), libkv.CacheSettings{UseDisk: true})
+	kvm := libkv.NewMinderWithCacheSettings(mc.G().ActiveUser(), libclient.CacheSettings{UseDisk: true})
 	nm, err := core.RandomDomain()
 	require.NoError(t, err)
 	f1 := proto.KVPath("/" + nm + "/foo.txt")
@@ -666,7 +667,7 @@ func (r *multiDeviceTest) reset(t *testing.T) {
 	r.prfx = prfx
 }
 
-func setupMultiDeviceTest(t *testing.T, n int, cs libkv.CacheSettings) *multiDeviceTest {
+func setupMultiDeviceTest(t *testing.T, n int, cs libclient.CacheSettings) *multiDeviceTest {
 	tew := testEnvBeta(t)
 	user := tew.NewTestUser(t)
 	d0 := user.eldest
@@ -695,7 +696,7 @@ func setupMultiDeviceTest(t *testing.T, n int, cs libkv.CacheSettings) *multiDev
 }
 
 func TestCacheInvalidations(t *testing.T) {
-	mdt := setupMultiDeviceTest(t, 2, libkv.CacheSettings{UseMem: true, UseDisk: true})
+	mdt := setupMultiDeviceTest(t, 2, libclient.CacheSettings{UseMem: true, UseDisk: true})
 	x, y := mdt.dev[0], mdt.dev[1]
 	x.mkdir(t, "/a/b")
 	path := "/a/b/c.txt"
@@ -728,7 +729,7 @@ func TestCacheInvalidations(t *testing.T) {
 }
 
 func TestSymlinkLoop(t *testing.T) {
-	mdt := setupMultiDeviceTest(t, 2, libkv.CacheSettings{UseMem: true, UseDisk: true})
+	mdt := setupMultiDeviceTest(t, 2, libclient.CacheSettings{UseMem: true, UseDisk: true})
 	x, y := mdt.dev[0], mdt.dev[1]
 	x.mkdir(t, "/a")
 	x.ln(t, "/a/b", "/a/c")
@@ -745,7 +746,7 @@ func TestSymlinkLoop(t *testing.T) {
 }
 
 func TestList(t *testing.T) {
-	mdt := setupMultiDeviceTest(t, 1, libkv.CacheSettings{UseMem: true, UseDisk: true})
+	mdt := setupMultiDeviceTest(t, 1, libclient.CacheSettings{UseMem: true, UseDisk: true})
 	dev := mdt.dev[0]
 	mc := dev.mc
 	dev.mkdir(t, "/a")
@@ -789,7 +790,7 @@ func TestList(t *testing.T) {
 }
 
 func TestLocks(t *testing.T) {
-	mdt := setupMultiDeviceTest(t, 2, libkv.CacheSettings{UseMem: true, UseDisk: true})
+	mdt := setupMultiDeviceTest(t, 2, libclient.CacheSettings{UseMem: true, UseDisk: true})
 	x, y := mdt.dev[0], mdt.dev[1]
 
 	x.mkdir(t, "/a")
@@ -836,7 +837,7 @@ func TestSmallFileRightAtSmallFileBoundary(t *testing.T) {
 	bluey := tew.NewTestUser(t)
 	tew.DirectMerklePokeInTest(t)
 	mc := libkv.NewMetaContext(tew.NewClientMetaContext(t, bluey))
-	kvm := libkv.NewMinderWithCacheSettings(mc.G().ActiveUser(), libkv.CacheSettings{})
+	kvm := libkv.NewMinderWithCacheSettings(mc.G().ActiveUser(), libclient.CacheSettings{})
 
 	_, err := kvm.Mkdir(mc, lcl.KVConfig{MkdirP: true}, proto.KVPath("/a"))
 	require.NoError(t, err)
@@ -856,7 +857,7 @@ func TestSmallFileRightAtSmallFileBoundary(t *testing.T) {
 }
 
 func TestListByMtime(t *testing.T) {
-	mdt := setupMultiDeviceTest(t, 1, libkv.CacheSettings{UseMem: true, UseDisk: true})
+	mdt := setupMultiDeviceTest(t, 1, libclient.CacheSettings{UseMem: true, UseDisk: true})
 	dev := mdt.dev[0]
 	mc := dev.mc
 	dev.mkdir(t, "/a")
@@ -889,7 +890,7 @@ func TestListByMtime(t *testing.T) {
 }
 
 func TestListCache(t *testing.T) {
-	mdt := setupMultiDeviceTest(t, 1, libkv.CacheSettings{UseMem: true, UseDisk: true})
+	mdt := setupMultiDeviceTest(t, 1, libclient.CacheSettings{UseMem: true, UseDisk: true})
 	dev := mdt.dev[0]
 	dev.mkdir(t, "/a")
 	dev.mkdir(t, "/b")
@@ -907,7 +908,7 @@ func TestListCache(t *testing.T) {
 }
 
 func TestUnlink(t *testing.T) {
-	mdt := setupMultiDeviceTest(t, 1, libkv.CacheSettings{UseMem: true, UseDisk: true})
+	mdt := setupMultiDeviceTest(t, 1, libclient.CacheSettings{UseMem: true, UseDisk: true})
 	dev := mdt.dev[0]
 	dev.mkdir(t, "/a")
 	dev.echo(t, "aa", "/a/b")
@@ -925,7 +926,7 @@ func TestUnlink(t *testing.T) {
 }
 
 func TestChangeChunkSize(t *testing.T) {
-	mdt := setupMultiDeviceTest(t, 1, libkv.CacheSettings{UseMem: true, UseDisk: true})
+	mdt := setupMultiDeviceTest(t, 1, libclient.CacheSettings{UseMem: true, UseDisk: true})
 	dev := mdt.dev[0]
 	file := dev.pathify("r.txt")
 	dat := writeRandomFileWithConfig(t, dev.kvm, dev.mc, file, 10777, lcl.KVConfig{}, 4096)

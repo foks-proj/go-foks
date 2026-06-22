@@ -86,6 +86,12 @@ CREATE TABLE channels (
 CREATE INDEX channels_team_app_idx ON channels(short_host_id, parent_team_id, app_id);
 
 /*
+ * Allows clients to ask for all channels updated since a particular set version,
+ * so it can get only the updates since last sync.
+ */
+CREATE INDEX channel_set_updates_idx ON channels(short_host_id, parent_team_id, updated_at_set_vers);
+
+/*
  * channel_parties: per-channel dictionary that interns message senders into a
  * small ordinal, so the unbounded messages tables carry a 4-byte sender_no
  * instead of two wide EntityID columns. Mirrors the short_host_id pattern.

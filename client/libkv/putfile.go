@@ -65,7 +65,7 @@ func (k *Minder) prepSmallFile(
 		return nil, nil, err
 	}
 	cachePut := func(m MetaContext) error {
-		return kvp.caches.smallFile.Put(m, *sfid, sfb, &data)
+		return kvp.caches.smallFile.Put(m.Base(), *sfid, sfb, &data)
 	}
 
 	return nid, cachePut, err
@@ -128,7 +128,7 @@ func (k *Minder) prepSymlink(
 		Raw:  path,
 	}
 	cachePut := func(m MetaContext) error {
-		return kvp.caches.symlink.Put(m, *sid, sfb, &cacheVal)
+		return kvp.caches.symlink.Put(m.Base(), *sid, sfb, &cacheVal)
 	}
 
 	return nid, cachePut, err
@@ -391,7 +391,7 @@ func (k *Minder) PutFileFirst(
 
 		// Cache the result in case we decide to fetch it again soon.
 		cacheFn := func(m MetaContext) error {
-			err = kvp.caches.lfmd.Put(m, *fid, md, &fks)
+			err = kvp.caches.lfmd.Put(m.Base(), *fid, md, &fks)
 			if err != nil {
 				return err
 			}
@@ -475,7 +475,7 @@ func (k *Minder) PutFileChunk(
 		Final:  final,
 	}
 
-	err = kvp.caches.lfch.Put(m, ChunkIndex{FileID: id, Offset: offset}, cacheEntry, nil)
+	err = kvp.caches.lfch.Put(m.Base(), ChunkIndex{FileID: id, Offset: offset}, cacheEntry, nil)
 	if err != nil {
 		return err
 	}

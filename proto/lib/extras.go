@@ -3483,31 +3483,29 @@ func (k KVNodeID) IsTombstone() bool {
 	return len(k) < 1 || k[0] == byte(KVNodeType_None)
 }
 
-func (k KVRoot) GetVersion() KVVersion {
-	return k.Vers
-}
+func (k KVRoot) GetVersion() Version { return Version(k.Vers) }
 
-func (k KVDirPair) GetVersion() KVVersion {
+func (k KVDirPair) GetVersion() Version {
 	if k.Encrypting != nil {
-		return k.Encrypting.Version
+		return Version(k.Encrypting.Version)
 	}
-	return k.Active.Version
+	return Version(k.Active.Version)
 }
 
-func (k KVDirent) GetVersion() KVVersion {
-	return k.Version
+func (k KVDirent) GetVersion() Version {
+	return Version(k.Version)
 }
 
-func (s SmallFileBox) GetVersion() KVVersion {
-	return 0
+func (s SmallFileBox) GetVersion() Version {
+	return Version(0)
 }
 
-func (m LargeFileMetadata) GetVersion() KVVersion {
-	return m.Vers
+func (m LargeFileMetadata) GetVersion() Version {
+	return Version(m.Vers)
 }
 
-func (r GitRefBoxedSet) GetVersion() KVVersion {
-	return 0
+func (r GitRefBoxedSet) GetVersion() Version {
+	return Version(0)
 }
 
 func (t EntityType) IsECDSA() bool {
@@ -5317,4 +5315,25 @@ func (c RTChannelName) DecorateToString() string {
 		c = RTGeneralChannel
 	}
 	return "#" + string(c)
+}
+
+func (v RTChannelSetVersion) IsFirst() bool {
+	return v == RTChannelSetVersion(1)
+}
+
+func (v RTChannelSetVersion) IsValid() bool {
+	return v > RTChannelSetVersion(0)
+}
+
+func (v RTChannelSetVersion) Int() int {
+	return int(v)
+}
+func (v Version) GetVersion() Version {
+	return v
+}
+func (v KVVersion) GetVersion() Version {
+	return Version(v)
+}
+func (v RTChannelSetVersion) GetVersion() Version {
+	return Version(v)
 }

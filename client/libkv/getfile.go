@@ -76,7 +76,7 @@ func (kvp *KVParty) getSmallFile(
 	*smallFilePackage,
 	error,
 ) {
-	enc, plain, err := kvp.caches.smallFile.Get(m, id)
+	enc, plain, err := kvp.caches.smallFile.Get(m.Base(), id)
 	if err != nil {
 		return nil, err
 	}
@@ -183,7 +183,7 @@ func (k *Minder) getSmallFile(
 	if err != nil {
 		return nil, err
 	}
-	err = kvp.caches.smallFile.Put(m, sfid, sfb, &dat)
+	err = kvp.caches.smallFile.Put(m.Base(), sfid, sfb, &dat)
 	if err != nil {
 		return nil, err
 	}
@@ -198,7 +198,7 @@ func (kvp *KVParty) getLargeFileMetadata(
 	*proto.FileKeySeed,
 	error,
 ) {
-	lfmd, seed, err := kvp.caches.lfmd.Get(m, fid)
+	lfmd, seed, err := kvp.caches.lfmd.Get(m.Base(), fid)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -212,7 +212,7 @@ func (kvp *KVParty) getLargeFileMetadata(
 	if err != nil {
 		return nil, nil, err
 	}
-	kvp.caches.lfmd.putMem(fid, *lfmd, seed)
+	kvp.caches.lfmd.PutMem(fid, *lfmd, seed)
 	return lfmd, seed, nil
 }
 
@@ -256,7 +256,7 @@ func (k *Minder) getFileMetadata(
 	if err != nil {
 		return nil, nil, err
 	}
-	err = kvp.caches.lfmd.Put(m, fid, lfmd, seed)
+	err = kvp.caches.lfmd.Put(m.Base(), fid, lfmd, seed)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -272,7 +272,7 @@ func (k *Minder) getLargeFileEncryptedChunk(
 	*rem.GetEncryptedChunkRes,
 	error,
 ) {
-	chnk, _, err := kvp.caches.lfch.Get(m, ChunkIndex{FileID: fid, Offset: offset})
+	chnk, _, err := kvp.caches.lfch.Get(m.Base(), ChunkIndex{FileID: fid, Offset: offset})
 	if err != nil {
 		return nil, err
 	}
@@ -294,7 +294,7 @@ func (k *Minder) getLargeFileEncryptedChunk(
 	}
 	chnk = &res
 	offset = res.Offset
-	err = kvp.caches.lfch.Put(m, ChunkIndex{FileID: fid, Offset: offset}, res, nil)
+	err = kvp.caches.lfch.Put(m.Base(), ChunkIndex{FileID: fid, Offset: offset}, res, nil)
 	if err != nil {
 		return nil, err
 	}

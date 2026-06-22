@@ -115,7 +115,7 @@ func (g *gitRefDirExplorer) client(m MetaContext) (*rem.KVAuth, *rem.KVStoreClie
 }
 
 func (g *gitRefDirExplorer) loadCache(m MetaContext) error {
-	disk, mem, err := g.kvp.caches.gitRefSet.Get(m, *g.did)
+	disk, mem, err := g.kvp.caches.gitRefSet.Get(m.Base(), *g.did)
 	if err != nil {
 		return err
 	}
@@ -311,7 +311,7 @@ func (g *gitRefDirExplorer) writeBack(m MetaContext) error {
 		DirVersion: g.dir.GetVersion(),
 		Refs:       g.resBoxed,
 	}
-	return g.kvp.caches.gitRefSet.Put(m, *g.did, out, g.mem)
+	return g.kvp.caches.gitRefSet.Put(m.Base(), *g.did, out, g.mem)
 }
 
 func (g *gitRefDirExplorer) init(m MetaContext) error {
