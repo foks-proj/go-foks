@@ -1256,3 +1256,113 @@ func (t *TeamMinder) TeamAdmit(
 
 	return editor.Run(m)
 }
+
+// TeamCancelRequest posts a Removed-state TML link for the given team invite,
+// resetting the caller's "Requested" membership state. Accepts the raw FOKS
+// invite code (not the SECO_INVITE:: wrapped form) so we can resolve the
+// actual TeamID via the cert — ResolveAndReindex only indexes Approved teams
+// and would fail for Requested-state entries.
+func (t *TeamMinder) TeamCancelRequest(m MetaContext, inviteCode string) error {
+	invite, err := team.ImportTeamInvite(inviteCode)
+	if err != nil {
+		return err
+	}
+
+	i1, err := openInvite(*invite)
+	if err != nil {
+		return err
+	}
+
+	cli, closer, _, err := t.remoteGuestCli(m, i1.Host)
+	if err != nil {
+		return err
+	}
+	defer closer()
+
+	cert, err := t.lookupAndOpenCert(m, cli, *invite)
+	if err != nil {
+		return err
+	}
+
+	fqt := cert.cert.Team
+	glp := proto.NewGenericLinkPayloadWithTeammembership(
+		proto.TeamMembershipLink{
+			Team:    fqt,
+			SrcRole: team.UserSrcRole,
+			State:   proto.NewTeamMembershipDetailsDefault(proto.TeamMembershipLinkState_Removed),
+		},
+	)
+	arg, err := t.makeMembershipChainLink(m, nil, glp, nil)
+	if err != nil {
+		return err
+	}
+	ucli, err := t.au.UserClient(m)
+	if err != nil {
+		return err
+	}
+	return ucli.PostGenericLink(m.Ctx(), *arg)
+}
+
+// TeamLeaveSelf posts a Removed-state TML link for an active (Approved)
+// team membership, recording on the caller's own membership chain that
+// they have left the team. This is the same primitive as
+// TeamCancelRequest but for an active membership rather than a pending
+// one — and unlike Cancel, the team IS in the local exploration index
+// (Approved teams always are), so we can resolve the FQTeam directly via
+// ResolveAndReindex without the cert-lookup detour.
+//
+// Important: this is a self-attestation only. It does NOT update the
+// server-side `team_members` row or rotate the team's PTKs — those
+// require an admin (typically the owner) to call EditTeam with role
+// NONE for this user. The complete leave story therefore involves both
+// halves: the leaver posts this link AND signals the owner (e.g. via a
+// system message) so the owner's client can run EditTeam.
+func (t *TeamMinder) TeamLeaveSelf(m MetaContext, fqtp proto.FQTeamParsed) error {
+	fqt, err := t.ResolveAndReindex(m, fqtp, nil)
+	if err != nil {
+		return err
+	}
+	if fqt == nil {
+		return core.TeamNotFoundError{}
+	}
+
+	glp := proto.NewGenericLinkPayloadWithTeammembership(
+		proto.TeamMembershipLink{
+			Team:    *fqt,
+			SrcRole: team.UserSrcRole,
+			State:   proto.NewTeamMembershipDetailsDefault(proto.TeamMembershipLinkState_Removed),
+		},
+	)
+	arg, err := t.makeMembershipChainLink(m, nil, glp, nil)
+	if err != nil {
+		return err
+	}
+	ucli, err := t.au.UserClient(m)
+	if err != nil {
+		return err
+	}
+	return ucli.PostGenericLink(m.Ctx(), *arg)
+}
+
+// TeamReject removes a single pending join request by sending a server-side
+// RejectJoinReq RPC. The inbox entry is deleted on the server so it won't
+// reappear on subsequent TeamInbox / TeamListPending calls.
+// fqtp is the parsed team name (from core.ParseFQTeam); tok is the
+// proto.TeamRSVP returned from the inbox row.
+func (t *TeamMinder) TeamReject(m MetaContext, fqtp proto.FQTeamParsed, tok proto.TeamRSVP) error {
+	fqt, err := t.ResolveAndReindex(m, fqtp, nil)
+	if err != nil {
+		return err
+	}
+	if fqt == nil {
+		return core.TeamNotFoundError{}
+	}
+	adminTok, cli, _, err := t.adminTokenAndClient(m, *fqt, LoadTeamOpts{})
+	if err != nil {
+		return err
+	}
+	return cli.RejectJoinReq(m.Ctx(), rem.RejectJoinReqArg{
+		Tok: *adminTok,
+		Req: tok,
+	})
+}
