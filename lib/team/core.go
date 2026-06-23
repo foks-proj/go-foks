@@ -495,7 +495,7 @@ func (d ChangeSet) Gameplan(
 
 	var create bool
 	if (rPre == nil) != (keysPre == nil) {
-		return nil, nil, nil, core.TeamRosterError("must supply both roster and keys, or both nil for create ")
+		return nil, nil, nil, core.TeamRosterError("must supply both roster and keys, or both nil for create")
 	}
 
 	var forcedNewKeyGens []core.RoleKey

@@ -30,6 +30,19 @@ func (c *AgentConn) TeamCreate(ctx context.Context, nm proto.NameUtf8) (lcl.Team
 	return lcl.TeamCreateRes{Id: *ret}, nil
 }
 
+func (c *AgentConn) TeamCreateAdHoc(ctx context.Context, members []lcl.FQPartyParsedAndRole) (lcl.TeamCreateRes, error) {
+	var zed lcl.TeamCreateRes
+	m, tm, err := c.teamInit(ctx)
+	if err != nil {
+		return zed, err
+	}
+	ret, err := tm.CreateAdHoc(m, members)
+	if err != nil {
+		return zed, err
+	}
+	return lcl.TeamCreateRes{Id: *ret}, nil
+}
+
 func (c *AgentConn) TeamList(ctx context.Context, fqtp proto.FQTeamParsed) (lcl.TeamRoster, error) {
 	var zed lcl.TeamRoster
 	m, tm, err := c.teamInit(ctx)

@@ -156,6 +156,7 @@ func (t *teamAdder) post(m MetaContext) error {
 	ed.changes = t.mrs
 	ed.hepks = t.hepks
 	ed.cfg = cfg
+	ed.testOpts = t.tm.teamEditorTestOpts()
 
 	for _, mr := range t.mrs {
 		pid, err := mr.Member.Id.Entity.ToPartyID()

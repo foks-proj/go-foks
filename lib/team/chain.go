@@ -4,6 +4,8 @@
 package team
 
 import (
+	"fmt"
+
 	"github.com/foks-proj/go-foks/lib/core"
 	proto "github.com/foks-proj/go-foks/proto/lib"
 	"github.com/foks-proj/go-foks/proto/rem"
@@ -84,51 +86,67 @@ func OpenEldestLinkWithOTLR(
 		OpenTeamLinkRes: *otlr,
 	}
 
-	if len(otlr.Gc.Metadata) < 3 {
+	nNeededMetadata := 2
+	isNamed := otlr.Gc.Entity.Entity.Type().IsNamedTeam()
+	if isNamed {
+		nNeededMetadata++
+	}
+
+	if len(otlr.Gc.Metadata) < nNeededMetadata {
 		return nil, core.LinkError("eldest link must have at least three metadata entries")
 	}
 
-	typ, err := otlr.Gc.Metadata[0].GetT()
-	if err != nil {
-		return nil, err
+	i := 0
+	if isNamed {
+		typ, err := otlr.Gc.Metadata[0].GetT()
+		if err != nil {
+			return nil, err
+		}
+		if typ != proto.ChangeType_Teamname {
+			return nil, core.LinkError("first metadata entry must be a teamname commitment")
+		}
+		if otlr.Tnc == nil {
+			return nil, core.LinkError("eldest link must have a teamname commitment")
+		}
+		i++
 	}
-	if typ != proto.ChangeType_Teamname {
-		return nil, core.LinkError("first metadata entry must be a teamname commitment")
-	}
-	if otlr.Tnc == nil {
-		return nil, core.LinkError("eldest link must have a teamname commitment")
-	}
-	typ, err = otlr.Gc.Metadata[1].GetT()
+
+	typ, err := otlr.Gc.Metadata[i].GetT()
 	if err != nil {
 		return nil, err
 	}
 	if typ != proto.ChangeType_Eldest {
 		return nil, core.LinkError("second metadata entry must be an eldest metadata")
 	}
-	ret.Stltc = otlr.Gc.Metadata[1].Eldest().SubchainTreeLocationSeedCommitment
+	ret.Stltc = otlr.Gc.Metadata[i].Eldest().SubchainTreeLocationSeedCommitment
 
-	typ, err = otlr.Gc.Metadata[2].GetT()
+	i++
+
+	typ, err = otlr.Gc.Metadata[i].GetT()
 	if err != nil {
 		return nil, err
 	}
 	if typ != proto.ChangeType_TeamIndexRange {
 		return nil, core.LinkError("third metadata entry must be a team index range")
 	}
-	tmp := core.NewRationalRange(otlr.Gc.Metadata[2].Teamindexrange())
+	tmp := core.NewRationalRange(otlr.Gc.Metadata[i].Teamindexrange())
 	ret.Range = &tmp
+	i++
 
 	// Prior to v0.0.20, there were only 3 metadata entries for teams.
 	// At v0.0.20 and above, the fourth metadata entry is the member load floor.
-	if len(otlr.Gc.Metadata) > 3 {
-		md3 := otlr.Gc.Metadata[3]
-		typ, err = md3.GetT()
+	// Note that for adhoc teams, the whole shebang is shifted
+	// left by one, since there is no teamname commitment.
+	if i < len(otlr.Gc.Metadata) {
+		md := otlr.Gc.Metadata[i]
+		typ, err = md.GetT()
 		if err != nil {
 			return nil, err
 		}
 		if typ != proto.ChangeType_MemberLoadFloor {
 			return nil, core.LinkError("fourth metadata entry must be a member load floor")
 		}
-		tmp := md3.Memberloadfloor()
+		tmp := md.Memberloadfloor()
 		ret.MemberLoadFloor = &tmp
 	}
 
@@ -198,7 +216,7 @@ func OpenTeamLink(
 	if err != nil {
 		return nil, err
 	}
-	if gc.Entity.Entity.Type() != proto.EntityType_Team {
+	if !gc.Entity.Entity.Type().IsTeam() {
 		return nil, core.LinkError("expected a link for a Team entity")
 	}
 	if !hostID.Eq(gc.Entity.Host) {
@@ -297,10 +315,10 @@ func exportToMemberRole(
 	host proto.HostID,
 	fqe proto.FQEntity,
 	sk proto.SharedKey,
-	removalKeyCommitment proto.KeyCommitment,
+	removalKeyCommitment *proto.KeyCommitment,
 ) proto.MemberRole {
 	tmk := sk.ToTeamMemberKeys(nil)
-	tmk.Trkc = &removalKeyCommitment
+	tmk.Trkc = removalKeyCommitment
 	return proto.MemberRole{
 		DstRole: role,
 		Member: proto.Member{
@@ -320,20 +338,70 @@ func EldestRoles() []proto.Role {
 	}
 }
 
+// otherFoundingMembers will be non-empty in the case of adhoc teams,
+// and maybe, in the future, for standard teams too.
+func melCheckArgs(
+	name *rem.NameCommitment,
+	otherFoundingMembers []proto.MemberRole,
+	host proto.HostID,
+	owner proto.KeyOwner,
+	removalKeyCommitment *proto.KeyCommitment,
+) error {
+
+	switch {
+	case name == nil:
+		if removalKeyCommitment != nil {
+			return core.LinkError("removal key commitment is not allowed for adhoc teams")
+		}
+	default:
+		if len(otherFoundingMembers) > 0 {
+			return core.LinkError("other founding members are not allowed for named teams")
+		}
+		if removalKeyCommitment == nil {
+			return core.LinkError("removal key commitment is required for named teams")
+		}
+	}
+
+	for _, mr := range otherFoundingMembers {
+		isNone, err := mr.DstRole.IsNone()
+		if err != nil {
+			return err
+		}
+		if isNone {
+			return core.LinkError("cannot have a NONE role as a founding member")
+		}
+		if mr.Member.Id.WithHost(host).Eq(owner.Party.EntityID().ScopeToHost(host)) {
+			return core.LinkError("owner must not be a founding member")
+		}
+	}
+	return nil
+}
+
 func MakeEldestLink(
 	host proto.HostID,
-	name rem.NameCommitment,
+	name *rem.NameCommitment,
 	owner proto.KeyOwner, // can be either a team or a user
 	uotKey core.SharedPrivateSuiter, // for users, the current PUK; for teams, the current PTK (uot = user or team)
 	teamKeys []core.SharedPrivateSuiter,
 	root proto.TreeRoot,
-	removalKeyCommitment proto.KeyCommitment,
+	removalKeyCommitment *proto.KeyCommitment, // not used for adhoc teams
+	otherFoundingMembers []proto.MemberRole,
 ) (*MakeLinkRes, error) {
 
-	teamRck, teamCom, err := core.Commit(&name)
+	err := melCheckArgs(name, otherFoundingMembers, host, owner, removalKeyCommitment)
 	if err != nil {
 		return nil, err
 	}
+
+	var teamRck *proto.RandomCommitmentKey
+	var teamCom *proto.Commitment
+	if name != nil {
+		teamRck, teamCom, err = core.Commit(name)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	signerID, err := uotKey.EntityID()
 	if err != nil {
 		return nil, err
@@ -356,12 +424,16 @@ func MakeEldestLink(
 		}
 	}
 	if len(teamKeys) != len(EldestRoles()) {
-		return nil, core.LinkError("need 3 PTKs for a new team")
+		return nil, core.LinkError(
+			fmt.Sprintf("need %d PTKs for a new team", len(EldestRoles())),
+		)
 	}
 	if adminTke == nil {
 		return nil, core.LinkError("need an ADMIN PTK for a new team")
 	}
-	team, err := adminTke.VerifyKey.Persistent()
+
+	pt := core.Sel(name != nil, proto.PartyType_NamedTeam, proto.PartyType_AdHocTeam)
+	team, err := adminTke.VerifyKey.Persistent(pt)
 	if err != nil {
 		return nil, err
 	}
@@ -389,6 +461,30 @@ func MakeEldestLink(
 		removalKeyCommitment,
 	)
 
+	// Always include the owner as a founding member.
+	changes := []proto.MemberRole{ownerChange}
+	if len(otherFoundingMembers) > 0 {
+		changes = append(changes, otherFoundingMembers...)
+	}
+
+	var md []proto.ChangeMetadata
+	if teamCom != nil {
+		md = append(md, proto.NewChangeMetadataWithTeamname(*teamCom))
+	}
+	md = append(md, []proto.ChangeMetadata{
+		proto.NewChangeMetadataWithEldest(
+			proto.EldestMetadata{
+				SubchainTreeLocationSeedCommitment: *sctlc,
+			},
+		),
+		proto.NewChangeMetadataWithTeamindexrange(
+			core.NewDefaultRange().RationalRange,
+		),
+		proto.NewChangeMetadataWithMemberloadfloor(
+			proto.DefaultMemberLoadFloor,
+		),
+	}...)
+
 	gc := proto.GroupChange{
 		Chainer: proto.HidingChainer{
 			Base: proto.BaseChainer{
@@ -406,22 +502,9 @@ func MakeEldestLink(
 			Key:      signerID,
 			KeyOwner: &owner,
 		},
-		Changes:    []proto.MemberRole{ownerChange},
+		Changes:    changes,
 		SharedKeys: tkes,
-		Metadata: []proto.ChangeMetadata{
-			proto.NewChangeMetadataWithTeamname(*teamCom),
-			proto.NewChangeMetadataWithEldest(
-				proto.EldestMetadata{
-					SubchainTreeLocationSeedCommitment: *sctlc,
-				},
-			),
-			proto.NewChangeMetadataWithTeamindexrange(
-				core.NewDefaultRange().RationalRange,
-			),
-			proto.NewChangeMetadataWithMemberloadfloor(
-				proto.DefaultMemberLoadFloor,
-			),
-		},
+		Metadata:   md,
 	}
 
 	li := proto.NewLinkInnerWithGroupChange(gc)

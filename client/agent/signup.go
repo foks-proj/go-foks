@@ -451,7 +451,7 @@ func (s *SignupSession) primeKey(m libclient.MetaContext) error {
 	if err != nil {
 		return err
 	}
-	uidEntity, err := pukEntity.Persistent()
+	uidEntity, err := pukEntity.Persistent(proto.PartyType_User)
 	if err != nil {
 		return err
 	}

@@ -5,6 +5,7 @@ package shared
 
 import (
 	"errors"
+	"sync"
 
 	"github.com/foks-proj/go-foks/lib/core"
 	"github.com/foks-proj/go-foks/lib/team"
@@ -573,7 +574,7 @@ func CheckLocalMembers(
 ) error {
 
 	checkTeamIndexRange := func(chng proto.MemberRole, keys proto.TeamMemberKeys) error {
-		if chng.Member.Id.Entity.Type() != proto.EntityType_Team {
+		if !chng.Member.Id.Entity.Type().IsTeam() {
 			return nil
 		}
 		tid, err := chng.Member.Id.Entity.ToTeamID()
@@ -1226,6 +1227,12 @@ func CheckAndInsertRemovalKeys(
 	rks []rem.TeamRemovalBoxData,
 	changes []proto.MemberRole,
 ) error {
+	if teamID.IsAdHocTeam() {
+		if len(rks) > 0 {
+			return core.TeamError("removal keys are not allowed for adhoc teams")
+		}
+		return nil
+	}
 
 	if len(rks) != len(sched.Additions) {
 		return core.TeamError("wrong number of removal keys; should equal number of new members")
@@ -1896,7 +1903,7 @@ func CheckMemberIndexRangesAgainstTeam(
 	}
 
 	return forAllTeamChanges(changes, func(chng proto.MemberRole, tmk proto.TeamMemberKeys) error {
-		if chng.Member.Id.Entity.Type() != proto.EntityType_Team {
+		if !chng.Member.Id.Entity.Type().IsTeam() {
 			return nil
 		}
 		if tmk.Tir == nil {
@@ -2148,4 +2155,40 @@ func LoadMemberLoadFloor(
 		return nil, err
 	}
 	return proto.ImportRoleFromDB(rk, vl)
+}
+
+type AdHocTeamNamesManager struct {
+	sync.Mutex
+	inserted map[core.ShortHostID]bool
+}
+
+func NewAdHocTeamNamesManager() *AdHocTeamNamesManager {
+	return &AdHocTeamNamesManager{
+		inserted: make(map[core.ShortHostID]bool),
+	}
+}
+
+func (a *AdHocTeamNamesManager) InsertPlaceholderTeamName(
+	m MetaContext, tx pgx.Tx,
+) error {
+	hostID := m.ShortHostID()
+
+	a.Lock()
+	defer a.Unlock()
+	ins := a.inserted[hostID]
+	if ins {
+		return nil
+	}
+	err := InsertNameInner(m, tx, m.HostID(),
+		team.AdHocTeamName,
+		proto.NameUtf8(team.AdHocTeamName),
+		rem.NameType_Team,
+		proto.FirstNameSeqno,
+		true,
+	)
+	if err != nil {
+		return err
+	}
+	a.inserted[hostID] = true
+	return nil
 }

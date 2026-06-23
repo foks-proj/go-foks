@@ -27,7 +27,7 @@ typedef EntityID33 = Blob(33);
 typedef EntityID34 = Blob(34);
 
 typedef UID = EntityID33;                // Leading byte 0x1 -- 33 bytes (EdDSA)
-typedef TeamID = EntityID33;             // Leading byte 0x3 -- 33 Bytes (EdDSA)
+typedef NamedTeamID = EntityID33;        // Leading byte 0x3 -- 33 Bytes (EdDSA)
 typedef DeviceID = EntityID;             // Leading byte 0x4 -- 33 bytes (EdDSA)
 typedef X509CertID = EntityID;           // Leading byte 0x5 -- 33 bytes (EdDSA) -- for X509 certs (not CAs)
 typedef LocationVRFID = EntityID;        // Leading byte 0x6 -- 33 bytes (EdDSA)
@@ -44,6 +44,9 @@ typedef BackupKeyID = EntityID;          // Leading byte 0x10 -- 33 Bytes (EdDSA
 typedef PassphraseKeyID = EntityID;      // Leading byte 0x11 -- 33 Bytes (EdDSA, derived from passphrase)
 typedef PKIXCertID = EntityID;           // Leading byte 0x12 -- 33 Bytes (ECDSA or RSA) - Unspecified PKIX key from crypto.Public
 typedef BotTokenKeyID = EntityID;        // Leading byte 0x13 -- 33 Bytes (EdDSA) -- for bot tokens
+typedef AdHocTeamID = EntityID33;        // Leading byte 0x14 -- 33 Bytes (EdDSA) -- for adhoc teams
+
+typedef TeamID = EntityID33;             // can be a NamedTeamID or an AdHocTeamID
 
 // HostID has a type ID since sometimes we store it directly as a value
 // in local client DBs. (See Probe::checkPin).
@@ -58,7 +61,7 @@ typedef EntityIDString = Text;
 enum EntityType {
     User @1;
     Host @2;
-    Team @3;
+    NamedTeam @3; // Specifically a NamedTeam
     Device @4;
     X509Cert @5;
     LocationVRF @6;
@@ -75,6 +78,7 @@ enum EntityType {
     PassphraseKey @17;
     PKIXCert @18;
     BotTokenKey @19;
+    AdHocTeam @20; // Specifically an AdHocTeam; note there is no Team type, since it can be either a NamedTeam or an AdHocTeam
 }
 
 enum DHType {
@@ -348,7 +352,9 @@ struct PartyName {
 
 enum PartyType {
     User @0;
-    Team @1;
+    Team @1; // can be a NamedTeam or an AdHocTeam
+    NamedTeam @2; // Specifically a NamedTeam
+    AdHocTeam @3; // Specifically an AdHocTeam
 }
 
 variant ParsedParty switch (s : bool) {

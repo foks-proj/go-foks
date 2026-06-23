@@ -18,6 +18,7 @@ import (
 	"github.com/foks-proj/go-foks/proto/lcl"
 	proto "github.com/foks-proj/go-foks/proto/lib"
 	"github.com/foks-proj/go-foks/proto/rem"
+	"github.com/foks-proj/go-foks/server/shared"
 	"github.com/stretchr/testify/require"
 )
 
@@ -147,6 +148,17 @@ func testEnvBeta(t *testing.T) *TestEnvWrapper {
 	ret.DirectMerklePokeInTest(t)
 	ret.BeaconRegister(t)
 	return ret
+}
+
+func (w *TestEnvWrapper) openVHost(t *testing.T) *core.HostIDAndName {
+	// by convention, we use vhost 4 for open viewership
+	vHostID := w.VHostMakeI(t, 4)
+	require.NotNil(t, vHostID)
+	m := w.MetaContext()
+	m = m.WithHostID(&vHostID.HostID)
+	err := shared.VHostSetUserViewership(m, proto.ViewershipMode_Open)
+	require.NoError(t, err)
+	return vHostID
 }
 
 func TestSimpleUserLoads(t *testing.T) {

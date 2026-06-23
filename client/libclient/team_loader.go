@@ -835,7 +835,10 @@ func (l *TeamLoader) loadTeamFromServer(m MetaContext) error {
 		Start: proto.ChainEldestSeqno,
 	}
 
-	if l.Arg.Keys != nil && (l.existing == nil || l.existing.RemovalKey == nil) {
+	// Ad-hoc teams have fixed membership and no removal keys, so don't ask the
+	// server for one (it would error with "removal key not found").
+	if l.Arg.Keys != nil && (l.existing == nil || l.existing.RemovalKey == nil) &&
+		!l.TeamID().Type().IsAdHocTeam() {
 		arg.LoadRemovalKey = true
 	}
 
@@ -966,7 +969,26 @@ func (l *TeamLoader) addIndexRangeEldest(rng *core.RationalRange) error {
 	return nil
 }
 
+// rejectAdHocMembershipChange enforces, during chain replay, that an ad-hoc
+// team's membership is fixed at creation: any non-eldest link that carries
+// roster changes is rejected. This is the team player's defense-in-depth behind
+// the client and server edit guards -- even a malicious server cannot smuggle a
+// membership change into an ad-hoc team's chain past the player.
+func rejectAdHocMembershipChange(teamID proto.TeamID, seqno proto.Seqno, nChanges int) error {
+	if !teamID.Type().IsAdHocTeam() || seqno.IsEldest() || nChanges == 0 {
+		return nil
+	}
+	return core.ChainLoaderError{Err: core.TeamError(team.AdHocTeamImmutableMsg)}
+}
+
 func (l *TeamLoader) playLink(m MetaContext, link *proto.LinkOuter, otlr team.OpenTeamLinkRes) error {
+
+	err := rejectAdHocMembershipChange(
+		l.TeamID(), otlr.Gc.Chainer.Base.Seqno, len(otlr.Gc.Changes),
+	)
+	if err != nil {
+		return err
+	}
 
 	// Hold onto all team names
 	if otlr.Tnc != nil {
@@ -1006,7 +1028,7 @@ func (l *TeamLoader) playLink(m MetaContext, link *proto.LinkOuter, otlr team.Op
 			return err
 		}
 	}
-	err := l.addIndexRange(otlr.Range, otlr.Gc.Chainer.Base.Seqno)
+	err = l.addIndexRange(otlr.Range, otlr.Gc.Chainer.Base.Seqno)
 	if err != nil {
 		return err
 	}
@@ -1701,9 +1723,15 @@ func (l *TeamLoader) saveState(m MetaContext) error {
 		return core.InternalError("no links in team sigchain")
 	}
 
-	unb, err := core.NewNameBundle(l.raw.TeamnameUtf8)
-	if err != nil {
-		return err
+	// Ad-hoc teams are nameless; the server sends a "-" placeholder that isn't a
+	// normalizable name, so use an empty bundle rather than trying to normalize.
+	var unb proto.NameBundle
+	var err error
+	if !l.TeamID().Type().IsAdHocTeam() {
+		unb, err = core.NewNameBundle(l.raw.TeamnameUtf8)
+		if err != nil {
+			return err
+		}
 	}
 
 	if n == 0 && len(l.raw.RemoteViewTokens) == 0 {
@@ -1856,6 +1884,12 @@ func (l *TeamLoader) unboxRemovalKey(m MetaContext) error {
 	if l.Arg.Keys == nil {
 		return nil
 	}
+	// Ad-hoc teams have fixed membership and therefore no removal keys, so
+	// there's nothing to unbox (mirrors TeamCreator.makeRemovalKey skipping
+	// them on creation).
+	if l.TeamID().Type().IsAdHocTeam() {
+		return nil
+	}
 	rkb := l.RemovalKeyBox()
 	if rkb == nil {
 		return core.ChainLoaderError{
@@ -1902,6 +1936,12 @@ func (l *TeamLoader) runUnbox(m MetaContext) error {
 }
 
 func (l *TeamLoader) checkTeamname(m MetaContext) error {
+	// Ad-hoc teams have no real teamname -- the eldest link carries no teamname
+	// commitment, and the server's "-" placeholder is host-wide bookkeeping, not
+	// a per-team merkle leaf. So there's nothing to verify here.
+	if l.TeamID().Type().IsAdHocTeam() {
+		return nil
+	}
 	var existingName *proto.NameAndSeqnoBundle
 	if l.existing != nil {
 		existingName = &l.existing.Name
