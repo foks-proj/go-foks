@@ -33,9 +33,10 @@ func (d *DbType) Type() string {
 
 type PatchDB struct {
 	CLIAppBase
-	db     DbType
-	eng    *shared.PatchDBEng
-	shards []int
+	db        DbType
+	eng       *shared.PatchDBEng
+	shards    []int
+	assumeYes bool
 }
 
 func (p *PatchDB) CobraConfig() *cobra.Command {
@@ -45,6 +46,7 @@ func (p *PatchDB) CobraConfig() *cobra.Command {
 	}
 	ret.Flags().Var(&p.db, "db", "database to patch")
 	ret.Flags().IntSliceVar(&p.shards, "shard", nil, "shard(s) to patch")
+	ret.Flags().BoolVarP(&p.assumeYes, "yes", "y", false, "skip confirmation prompt (for unattended deploys)")
 	return ret
 }
 
@@ -58,10 +60,20 @@ func (p *PatchDB) CheckArgs(args []string) error {
 	if len(p.shards) > 0 && p.db.DbType != shared.DbTypeKVStore {
 		return core.BadArgsError("shards can only be specified for KV shards")
 	}
+	confirm := p.Confirm
+	if p.assumeYes {
+		confirm = func(m shared.MetaContext, ps *shared.PatchSummary) error {
+			fmt.Printf("Applying patches (--yes):\n")
+			for _, patch := range ps.Desc() {
+				fmt.Printf(" - %s\n", patch)
+			}
+			return nil
+		}
+	}
 	p.eng = &shared.PatchDBEng{
 		Which:       p.db.DbType,
 		Shards:      p.shards,
-		ConfirmHook: p.Confirm,
+		ConfirmHook: confirm,
 	}
 	return nil
 }
