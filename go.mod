@@ -21,7 +21,7 @@ require (
 	github.com/docker/go-connections v0.6.0
 	github.com/fatih/color v1.18.0
 	github.com/foks-proj/go-ctxlog v0.0.0-20250303173751-8f2c09f6847f
-	github.com/foks-proj/go-git-remhelp v0.0.4
+	github.com/foks-proj/go-git-remhelp v0.0.5
 	github.com/foks-proj/go-snowpack-rpc v0.0.2
 	github.com/go-chi/chi/v5 v5.2.2
 	github.com/go-git/go-git/v5 v5.14.0
@@ -49,11 +49,11 @@ require (
 	github.com/zalando/go-keyring v0.2.6
 	gitlab.com/c0b/go-ordered-json v0.0.0-20201030195603-febf46534d5a
 	go.uber.org/zap v1.27.0
-	golang.org/x/crypto v0.47.0
-	golang.org/x/exp v0.0.0-20240909161429-701f63a606c0
-	golang.org/x/sys v0.40.0
-	golang.org/x/term v0.39.0
-	golang.org/x/text v0.33.0
+	golang.org/x/crypto v0.50.0
+	golang.org/x/exp v0.0.0-20260410095643-746e56fc9e2f
+	golang.org/x/sys v0.43.0
+	golang.org/x/term v0.42.0
+	golang.org/x/text v0.36.0
 	gopkg.in/yaml.v3 v3.0.1
 )
 
@@ -129,7 +129,7 @@ require (
 	github.com/cpuguy83/dockercfg v0.3.2 // indirect
 	github.com/creack/pty v1.1.23 // indirect
 	github.com/curioswitch/go-reassign v0.3.0 // indirect
-	github.com/cyphar/filepath-securejoin v0.4.1 // indirect
+	github.com/cyphar/filepath-securejoin v0.6.1 // indirect
 	github.com/daixiang0/gci v0.13.5 // indirect
 	github.com/danieljoos/wincred v1.2.2 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
@@ -149,7 +149,7 @@ require (
 	github.com/ghostiam/protogetter v0.3.9 // indirect
 	github.com/go-critic/go-critic v0.12.0 // indirect
 	github.com/go-git/gcfg v1.5.1-0.20230307220236-3a3c6141e376 // indirect
-	github.com/go-git/go-billy/v5 v5.6.2 // indirect
+	github.com/go-git/go-billy/v5 v5.9.0 // indirect
 	github.com/go-logr/logr v1.4.2 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-ole/go-ole v1.2.6 // indirect
@@ -331,13 +331,11 @@ require (
 	go.uber.org/automaxprocs v1.6.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/exp/typeparams v0.0.0-20250210185358-939b2ce775ac // indirect
-	golang.org/x/mod v0.32.0 // indirect
-	golang.org/x/net v0.49.0 // indirect
+	golang.org/x/mod v0.35.0 // indirect
+	golang.org/x/net v0.53.0 // indirect
 	golang.org/x/oauth2 v0.34.0 // indirect
-	golang.org/x/sync v0.19.0 // indirect
-	golang.org/x/tools v0.41.0 // indirect
-	golang.org/x/tools/go/expect v0.1.1-deprecated // indirect
-	golang.org/x/tools/go/packages/packagestest v0.1.1-deprecated // indirect
+	golang.org/x/sync v0.20.0 // indirect
+	golang.org/x/tools v0.44.0 // indirect
 	google.golang.org/protobuf v1.36.5 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
