@@ -272,6 +272,18 @@ func (e EntityID) ToTeamID() (TeamID, error) {
 	return ret, nil
 }
 
+func (e EntityID) ToAdHocTeamMashedID() (AdHocTeamMashedID, error) {
+	var ret AdHocTeamMashedID
+	if len(e) != len(ret) {
+		return ret, EntityError("wrong length for adhoc team mashed ID")
+	}
+	if e.Type() != EntityType_AdHocTeamMashed {
+		return ret, EntityError("wrong leading byte for adhoc team mashed ID")
+	}
+	copy(ret[:], e)
+	return ret, nil
+}
+
 func (e EntityID) ToHostID() (HostID, error) {
 	var ret HostID
 	if len(e) != len(ret) {
