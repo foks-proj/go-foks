@@ -1,6 +1,7 @@
 package libclient
 
 import (
+	"errors"
 	"slices"
 
 	"github.com/foks-proj/go-foks/lib/core"
@@ -56,6 +57,23 @@ type TeamCreator struct {
 
 func (t *TeamCreator) TeamID() *proto.TeamID {
 	return &t.tid
+}
+
+// requireOpenViewership ensures the current host allows open viewership, which is
+// a prerequisite for ad-hoc teams (their founding membership is visible in the clear).
+func (t *TeamCreator) requireOpenViewership(m MetaContext) error {
+	ucli, err := t.au.UserClient(m)
+	if err != nil {
+		return err
+	}
+	cfg, err := ucli.GetHostConfig(m.Ctx())
+	if err != nil {
+		return err
+	}
+	if cfg.Viewership.User != proto.ViewershipMode_Open {
+		return core.TeamAdhocOpenViewershipError{}
+	}
+	return nil
 }
 
 func (t *TeamCreator) setup(m MetaContext) error {
@@ -311,21 +329,26 @@ func (t *TeamCreator) makeRemovalKeyBox(m MetaContext) error {
 }
 
 func (t *TeamCreator) makeTeamMembershipLink(m MetaContext) error {
-	tad := proto.TeamMembershipApprovedDetails{
-		Dst: proto.RoleAndSeqno{
-			Seqno: t.seqno,
-			Role:  t.dstRole,
-		},
+	dst := proto.RoleAndSeqno{
+		Seqno: t.seqno,
+		Role:  t.dstRole,
 	}
-	if t.trkbp != nil {
-		tad.KeyComm = t.trkbp.Comm
+	var state proto.TeamMembershipDetails
+	if t.nm.IsZero() {
+		// Ad-hoc team: no removal key/commitment, membership fixed at founding.
+		// Emit ApprovedAdHoc so the creator's chain matches added members' chains.
+		state = proto.NewTeamMembershipDetailsWithApprovedadhoc(dst)
+	} else {
+		tad := proto.TeamMembershipApprovedDetails{Dst: dst}
+		if t.trkbp != nil {
+			tad.KeyComm = t.trkbp.Comm
+		}
+		state = proto.NewTeamMembershipDetailsWithApproved(tad)
 	}
 	tml := proto.TeamMembershipLink{
 		Team:    t.fqt,
 		SrcRole: t.srcRole,
-		State: proto.NewTeamMembershipDetailsWithApproved(
-			tad,
-		),
+		State:   state,
 	}
 	glp := proto.NewGenericLinkPayloadWithTeammembership(
 		tml,
@@ -444,6 +467,10 @@ func (t *TeamCreator) adHocLoadOthers(
 	for _, party := range t.membs {
 		err := t.adHocLoadOther(m, party)
 		if err != nil {
+			// this error is ok, just ignore the owner and keep going
+			if errors.Is(err, core.TeamAdhocCreatorIncludedError{}) {
+				continue
+			}
 			return err
 		}
 	}
@@ -502,7 +529,7 @@ func (t *TeamCreator) adHocLoadOther(
 	fqe := mr.Member.Id.WithHost(t.hostid)
 	creator := t.au.FQU().ToFQEntity()
 	if fqe.Eq(creator) {
-		return core.BadArgsError("cannot include the owner in the list of other founding members")
+		return core.TeamAdhocCreatorIncludedError{}
 	}
 
 	ps, err := core.ImportSPSBoxer(
@@ -549,6 +576,12 @@ func (t *TeamCreator) Run(m MetaContext) error {
 	if err != nil {
 		return err
 	}
+	if t.nm.IsZero() {
+		err = t.requireOpenViewership(m)
+		if err != nil {
+			return err
+		}
+	}
 	err = t.reserveTeamname(m)
 	if err != nil {
 		return err
@@ -560,6 +593,11 @@ func (t *TeamCreator) Run(m MetaContext) error {
 	err = t.adHocPrepareOtherMembers(m)
 	if err != nil {
 		return err
+	}
+	// Test-only: let a test corrupt the founding membership (e.g. make a member
+	// remote) before the eldest link is signed, to exercise server-side rejection.
+	if h := t.tm.TestHooks; h != nil && h.AdHocMutateFoundingMembers != nil {
+		h.AdHocMutateFoundingMembers(t.otherMrs)
 	}
 	err = t.makeBoxes(m)
 	if err != nil {

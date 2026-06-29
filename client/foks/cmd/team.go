@@ -19,6 +19,18 @@ var teamOpts = agent.StartupOpts{
 	NeedUnlockedUser: true,
 }
 
+func handleCreateRes(m libclient.MetaContext, res lcl.TeamCreateRes) error {
+	if m.G().Cfg().JSONOutput() {
+		return JSONOutput(m, res)
+	}
+	s, err := res.Id.StringErr()
+	if err != nil {
+		return err
+	}
+	m.G().UIs().Terminal.Printf("TeamID: %s\n", s)
+	return PartingConsoleMessage(m)
+}
+
 func teamCreate(m libclient.MetaContext, top *cobra.Command) {
 	quickCmd(m, top,
 		"create <team-name>", []string{"mk"},
@@ -33,15 +45,7 @@ func teamCreate(m libclient.MetaContext, top *cobra.Command) {
 				if err != nil {
 					return err
 				}
-				if m.G().Cfg().JSONOutput() {
-					return JSONOutput(m, res)
-				}
-				s, err := res.Id.StringErr()
-				if err != nil {
-					return err
-				}
-				m.G().UIs().Terminal.Printf("TeamID: %s\n", s)
-				return PartingConsoleMessage(m)
+				return handleCreateRes(m, res)
 			})
 		},
 	)

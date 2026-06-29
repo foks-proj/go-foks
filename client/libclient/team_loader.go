@@ -205,6 +205,91 @@ func (t *TeamWrapper) IndexRange() core.RationalRange {
 	return core.NewRationalRange(t.prot.Tir)
 }
 
+func (t *TeamWrapper) IsAdHocTeam() bool {
+	return t.prot.Fqt.Team.IsAdHocTeam()
+}
+
+// returns {names X UIDs x ID x MashedIDs   } @ { name X ID }
+func (t *TeamWrapper) AllFQAdHocTeamStrings() ([]proto.FQAdHocTeamString, error) {
+
+	if !t.IsAdHocTeam() {
+		return nil, nil
+	}
+
+	var uids []proto.UID
+	var names []proto.NameUtf8
+	host := t.prot.Fqt.Host
+
+	for m := range t.memberMap {
+		if !m.Fqe.Host.Eq(host) {
+			continue
+		}
+		eid := m.Fqe.Entity.Unfix()
+		if !eid.Type().IsUser() {
+			continue
+		}
+		uid, err := eid.ToUID()
+		if err != nil {
+			return nil, err
+		}
+		uids = append(uids, uid)
+		rp := t.rosterDetails[m.Fqe]
+		if len(rp) > 0 {
+			lst := core.Last(rp)
+			uw := lst.uw
+			if uw != nil {
+				nm := uw.prot.Username.B.NameUtf8
+				names = append(names, nm)
+			}
+		}
+	}
+	uidsJoined, err := team.UIDsToAdhHocCanonicalString(uids, proto.UID{})
+	if err != nil {
+		return nil, err
+	}
+	namesJoined, err := team.NamesToAdhHocCanonicalString(names, "")
+	if err != nil {
+		return nil, err
+	}
+	mashed, err := team.MashUIDsIntoAdHocTeamID(uids, host)
+	if err != nil {
+		return nil, err
+	}
+	mashedStr, err := mashed.EntityID().StringErr()
+	if err != nil {
+		return nil, err
+	}
+	tid, err := t.prot.Fqt.Team.StringErr()
+	if err != nil {
+		return nil, err
+	}
+	p0s := []proto.AdHocTeamString{
+		uidsJoined,
+		namesJoined,
+		proto.AdHocTeamString(mashedStr),
+		proto.AdHocTeamString(tid),
+	}
+	hosts := []string{
+		string(t.hostname.Normalize()),
+	}
+	hostString, err := t.prot.Fqt.Host.StringErr()
+	if err != nil {
+		return nil, err
+	}
+	hosts = append(hosts, hostString)
+	var ret []proto.FQAdHocTeamString
+	for _, p0 := range p0s {
+		for _, host := range hosts {
+			ret = append(ret,
+				proto.FQAdHocTeamString(
+					string(p0)+"@"+host,
+				),
+			)
+		}
+	}
+	return ret, nil
+}
+
 // returns {name X ID } @ { name X ID }
 func (t *TeamWrapper) AllFQStrings() ([]proto.FQTeamString, error) {
 	var ret []proto.FQTeamString
@@ -581,7 +666,7 @@ func (l *TeamLoader) makeViewToken(m MetaContext) error {
 	idOrName := core.Sel(
 		!l.ntn.IsZero(),
 		proto.NewTeamIDOrNameWithFalse(l.ntn),
-		proto.NewTeamIDOrNameWithTrue(l.Arg.Team.Team),
+		proto.NewTeamIDOrNameWithTrue(l.Arg.LoadEntityID()),
 	)
 
 	req := rem.TeamVOBearerTokenReq{
@@ -1318,20 +1403,29 @@ func (p *rosterPackage) load(m MetaContext, l *TeamLoader) error {
 	}
 	switch {
 	case uid != nil:
-		mode := core.Sel(l.openView, LoadModeOpenOthers, LoadModeOthers)
 
+		mode := core.Sel(
+			l.openView,
+			LoadModeOpenOthers,
+			LoadModeOthers,
+		)
 		arg := LoadUserArg{Uid: *uid, LoadMode: mode}
-		if p.isRemote {
+
+		switch {
+		case l.Arg.Team.Team.IsAdHocTeam():
+			arg.LoadMode = LoadModeForAdHoc
+		case p.isRemote:
 			arg.Host = &LoadUserHost{
 				HostID: p.fqp.Host,
 				Tok:    *p.remote.tok,
 			}
-		} else {
+		default:
 			if tok == nil {
 				return core.PermissionError("need VO bearer token to load local user")
 			}
 			arg.TeamVOBearerToken = tok
 		}
+
 		uw, err := LoadUser(m, arg)
 		if err != nil {
 			return err
@@ -1690,6 +1784,9 @@ func (l *TeamLoader) VerifyRemoval(
 	if err != nil {
 		return err
 	}
+	if l.Arg.Team.Team.IsAdHocTeam() {
+		return core.TeamAdhocInvalidTeamChangeError{Which: "attempted member removal (of us)"}
+	}
 	err = l.connectHost(m)
 	if err != nil {
 		return err
@@ -1992,8 +2089,12 @@ func (l *TeamLoader) Existing() *lcl.TeamChainState {
 }
 
 type LoadTeamArg struct {
-	Team               proto.FQTeam
-	Name               proto.NameUtf8 // Either this is nonzero, or Team.Team
+
+	// Must specity exactly one of Name, Team, or AdHocMashedName:
+	Team            proto.FQTeam
+	Name            proto.NameUtf8
+	AdHocMashedName proto.AdHocTeamMashedID
+
 	As                 proto.FQParty
 	SrcRole            proto.Role
 	Keys               SharedKeySequence
@@ -2009,9 +2110,22 @@ type LoadTeamArg struct {
 	KeyRefresher func(MetaContext) (SharedKeySequence, error)
 }
 
+func (i LoadTeamArg) LoadEntityID() proto.EntityID {
+	if !i.AdHocMashedName.IsZero() {
+		return i.AdHocMashedName.EntityID()
+	}
+	if !i.Team.Team.IsZero() {
+		return i.Team.Team.EntityID()
+	}
+	return nil
+}
+
 func (l LoadTeamArg) Check() error {
+
 	n := !l.Name.IsZero()
 	i := !l.Team.Team.IsZero()
+	m := !l.AdHocMashedName.IsZero()
+
 	k := l.Keys != nil
 	t := l.Tok != nil
 	ptt := l.LocalParentTeamTok != nil
@@ -2021,11 +2135,22 @@ func (l LoadTeamArg) Check() error {
 		return nil
 	}
 
-	if !n && !i {
-		return core.InternalError("must specify either name or team")
+	var nLoadArgs int
+	if n {
+		nLoadArgs++
 	}
-	if n && i {
-		return core.InternalError("must specify either name or team, not both")
+	if i {
+		nLoadArgs++
+	}
+	if m {
+		nLoadArgs++
+	}
+
+	if nLoadArgs == 0 {
+		return core.InternalError("must specify either name or team or ad-hoc mashed name")
+	}
+	if nLoadArgs != 1 {
+		return core.InternalError("must specify either name or team or ad-hoc mashed name, not more than one")
 	}
 	if ptt && t {
 		return core.InternalError("must specify either local parent team token or permission token, not both")

@@ -12,6 +12,7 @@ import (
 
 	"github.com/foks-proj/go-foks/client/libclient"
 	"github.com/foks-proj/go-foks/lib/core"
+	"github.com/foks-proj/go-foks/lib/team"
 	"github.com/foks-proj/go-foks/proto/lcl"
 	proto "github.com/foks-proj/go-foks/proto/lib"
 	"github.com/foks-proj/go-foks/proto/rem"
@@ -396,7 +397,7 @@ func (m *MinderRESTWrapper) Put(
 	cfg := lcl.KVConfig{
 		MkdirP:      true,
 		OverwriteOk: true,
-		ActingAs:    args.ActingAs,
+		ActingAs:    team.WrapNamedPtr(args.ActingAs),
 		Roles:       args.Roles,
 	}
 	minder, err := m.app.Minder(kvmc, args.ActingAs)
@@ -511,7 +512,7 @@ func (m *MinderRESTWrapper) list(
 ) error {
 	kvmc := NewMetaContext(mc).SetActiveUser(mc.G().ActiveUser())
 	cfg := lcl.KVConfig{
-		ActingAs: args.ActingAs,
+		ActingAs: team.WrapNamedPtr(args.ActingAs),
 		Roles:    args.Roles,
 	}
 	minder, err := m.app.Minder(kvmc, args.ActingAs)
@@ -555,7 +556,7 @@ func (m *MinderRESTWrapper) Get(
 
 	kvmc := NewMetaContext(mc).SetActiveUser(m.au)
 	cfg := lcl.KVConfig{
-		ActingAs: args.ActingAs,
+		ActingAs: team.WrapNamedPtr(args.ActingAs),
 	}
 	minder, err := m.app.Minder(kvmc, args.ActingAs)
 	if err != nil {
@@ -588,7 +589,7 @@ func (m *MinderRESTWrapper) Delete(
 ) error {
 	kvmc := NewMetaContext(mc).SetActiveUser(m.au)
 	cfg := lcl.KVConfig{
-		ActingAs: args.ActingAs,
+		ActingAs: team.WrapNamedPtr(args.ActingAs),
 		Roles:    args.Roles,
 	}
 	minder, err := m.app.Minder(kvmc, args.ActingAs)

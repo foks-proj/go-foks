@@ -25,7 +25,7 @@ struct FileKeyBoxPayload @0x9211ae1e17213884 {
 }
 
 struct KVConfig {
-    actingAs @0 : Option(lib.FQTeamParsed);
+    // slot #0 is retired; used to be "actingAs" optional team; see @10 for replacement
     roles @1 : lib.RolePairOpt;
     mkdirP @2 : Bool;
     overwriteOk @3 : Bool;
@@ -35,6 +35,7 @@ struct KVConfig {
     skipCacheCheck @7 : Bool;
     mtimeLower @8 : Option(lib.TimeMicro);
     recursive @9 : Bool;
+    actingAs @10 : ConfigTeam;
 }
 
 struct GetFileChunkRes {

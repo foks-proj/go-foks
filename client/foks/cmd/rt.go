@@ -11,7 +11,7 @@ import (
 type quickRTOpts struct {
 	SupportReadRole  bool
 	SupportWriteRole bool
-	NoSupportTeam    bool
+	NoSupportTeam    bool // for stage 1c, if team is supported, then team is required
 	SupportChannel   bool
 }
 
@@ -101,14 +101,25 @@ func quickRTCmd(
 	if long == "" {
 		long = short
 	}
-	var teamStr string
+	var teamStr, adHocTeamStr string
 	var rrs, wrs, chs, chTier string
 	var rr, wr *proto.Role
 	run := func(cmd *cobra.Command, arg []string) error {
 		var fqt *proto.FQTeamParsed
+		var fqaht *proto.FQAdHocTeamParsed
+		if teamStr != "" && adHocTeamStr != "" {
+			return ArgsError("cannot specify both --team and --adhoc")
+		}
 		if teamStr != "" {
 			var err error
 			fqt, err = core.ParseFQTeam(proto.FQTeamString(teamStr))
+			if err != nil {
+				return err
+			}
+		}
+		if adHocTeamStr != "" {
+			var err error
+			fqaht, err = core.ParseFQAdHocTeam(proto.FQAdHocTeamString(adHocTeamStr))
 			if err != nil {
 				return err
 			}
@@ -136,8 +147,23 @@ func quickRTCmd(
 		if err != nil {
 			return err
 		}
+
+		var team lcl.ConfigTeam
+		switch {
+		case fqt != nil && fqaht != nil:
+			return ArgsError("cannot specify both --team and --adhoc")
+		case fqt != nil:
+			team = lcl.NewConfigTeamWithNamed(*fqt)
+		case fqaht != nil:
+			team = lcl.NewConfigTeamWithAdhoc(*fqaht)
+		default:
+			if !opts.NoSupportTeam {
+				return ArgsError("must provide a --team or --adhoc in stage 1c")
+			}
+		}
+
 		cfg := lcl.RTConfig{
-			Team:    fqt,
+			Team:    team,
 			Roles:   proto.RolePairOpt{Read: rr, Write: wr},
 			AppID:   proto.RTAppID_Chat,
 			Channel: *chsp,
@@ -160,7 +186,7 @@ func quickRTCmd(
 		RunE:         run,
 	}
 	if !opts.NoSupportTeam {
-		actAsTeamOpt(cmd, &teamStr)
+		actAsTeamOpt(cmd, &teamStr, &adHocTeamStr)
 	}
 	if opts.SupportReadRole {
 		cmd.Flags().StringVarP(&rrs, "read-role", "r", "", "read role to create as (default depends on subcommand)")
@@ -193,9 +219,6 @@ func rtNewChannel(m libclient.MetaContext, top *cobra.Command) {
 		func(args []string, cfg lcl.RTConfig, cli lcl.RealTimeClient) error {
 			if len(args) != 0 {
 				return ArgsError("no args; specify channel name with --name")
-			}
-			if cfg.Team == nil {
-				return ArgsError("must provide a --team for chat stage 1a")
 			}
 			// '#' is a display convention, not part of the name; let users
 			// pass "#bar" and parse the rest as the channel name.
@@ -251,9 +274,6 @@ func rtListChannels(m libclient.MetaContext, top *cobra.Command) {
 		quickRTOpts{},
 		nil,
 		func(args []string, cfg lcl.RTConfig, cli lcl.RealTimeClient) error {
-			if cfg.Team == nil {
-				return ArgsError("must provide a --team")
-			}
 			ret, err := cli.ClientRTListChannelsForTeam(m.Ctx(), cfg)
 			if err != nil {
 				return err
@@ -277,9 +297,6 @@ func rtSend(m libclient.MetaContext, top *cobra.Command) {
 		},
 		nil,
 		func(args []string, cfg lcl.RTConfig, cli lcl.RealTimeClient) error {
-			if cfg.Team == nil {
-				return ArgsError("must provide a --team for chat stage 1a")
-			}
 			if len(args) != 1 {
 				return ArgsError("must provide exactly one message argument (quote it)")
 			}
@@ -319,9 +336,6 @@ func rtRead(m libclient.MetaContext, top *cobra.Command) {
 			cmd.Flags().Uint64Var(&before, "before", 0, "page messages older than this seq # (0 = most recent)")
 		},
 		func(args []string, cfg lcl.RTConfig, cli lcl.RealTimeClient) error {
-			if cfg.Team == nil {
-				return ArgsError("must provide a --team")
-			}
 			thread, err := cli.ClientRTGetThread(m.Ctx(),
 				lcl.ClientRTGetThreadArg{
 					Cfg:    cfg,

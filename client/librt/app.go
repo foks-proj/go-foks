@@ -5,6 +5,7 @@ import (
 
 	"github.com/foks-proj/go-foks/client/libclient"
 	"github.com/foks-proj/go-foks/lib/core"
+	"github.com/foks-proj/go-foks/proto/lcl"
 	proto "github.com/foks-proj/go-foks/proto/lib"
 )
 
@@ -33,11 +34,15 @@ func GetApp(u *libclient.UserContext) (*App, error) {
 	return ret, nil
 }
 
-func (a *App) Minder(m MetaContext, actingAs *proto.FQTeamParsed) (*Minder, error) {
-	if actingAs == nil {
-		return nil, core.InternalError("nil actingAs in librt.App.Minder")
+func (a *App) Minder(m MetaContext, actingAs lcl.ConfigTeam) (*Minder, error) {
+	typ, err := actingAs.GetT()
+	if err != nil {
+		return nil, err
 	}
-	fqp, err := a.parent.TeamMinder().ResolveAndReindex(m.MetaContext, *actingAs, nil)
+	if typ == lcl.ConfigTeamType_None {
+		return nil, core.InternalError("no actingAs team in librt.App.Minder")
+	}
+	fqp, err := a.parent.TeamMinder().ResolveAndReindex(m.MetaContext, actingAs, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -68,7 +73,7 @@ func appFromMeta(m MetaContext) (*App, error) {
 
 func InitReq(
 	m MetaContext,
-	tm *proto.FQTeamParsed,
+	tm lcl.ConfigTeam,
 ) (
 	*Minder,
 	error,

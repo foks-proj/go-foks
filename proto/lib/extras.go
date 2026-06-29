@@ -272,6 +272,18 @@ func (e EntityID) ToTeamID() (TeamID, error) {
 	return ret, nil
 }
 
+func (e EntityID) ToAdHocTeamMashedID() (AdHocTeamMashedID, error) {
+	var ret AdHocTeamMashedID
+	if len(e) != len(ret) {
+		return ret, EntityError("wrong length for adhoc team mashed ID")
+	}
+	if e.Type() != EntityType_AdHocTeamMashed {
+		return ret, EntityError("wrong leading byte for adhoc team mashed ID")
+	}
+	copy(ret[:], e)
+	return ret, nil
+}
+
 func (e EntityID) ToHostID() (HostID, error) {
 	var ret HostID
 	if len(e) != len(ret) {
@@ -2101,6 +2113,121 @@ func (s FQTeamString) Parse(f NameNormFn) (*FQTeamParsed, error) {
 	return &ret, nil
 }
 
+func (s AdHocTeamString) Parse() (*AdHocTeamParsed, error) {
+	tmp := strings.TrimSpace(string(s))
+	if len(tmp) == 0 {
+		return nil, DataError("empty AdHocTeam string can't be parsed")
+	}
+	parts := strings.Split(tmp, ",")
+	var ret AdHocTeamParsed
+
+	type component struct {
+		// only one of these will be set
+		eid EntityID
+		uid *UID
+		un  NameUtf8
+	}
+
+	parseOne := func(s string) (*component, error) {
+		if s[0] == '.' {
+			eid, err := ImportEntityIDFromString(s)
+			if err != nil {
+				return nil, err
+			}
+			switch eid.Type() {
+			case EntityType_AdHocTeam, EntityType_AdHocTeamMashed:
+				return &component{eid: eid}, nil
+			case EntityType_User:
+				uid, err := eid.ToUID()
+				if err != nil {
+					return nil, err
+				}
+				return &component{uid: &uid}, nil
+			default:
+				return nil, DataError("invalid AdHocTeam ID")
+			}
+		} else {
+			un := NameUtf8(s)
+			if len(un) == 0 {
+				return nil, DataError("empty AdHocTeam string can't be parsed")
+			}
+			return &component{un: un}, nil
+		}
+	}
+
+	if len(parts) == 1 {
+		c, err := parseOne(parts[0])
+		if err != nil {
+			return nil, err
+		}
+		switch {
+		case c.eid != nil:
+			ret = NewAdHocTeamParsedWithId(c.eid)
+		case c.uid != nil:
+			ret = NewAdHocTeamParsedWithIds([]UID{*c.uid})
+		case !c.un.IsZero():
+			ret = NewAdHocTeamParsedWithNames([]NameUtf8{c.un})
+		default:
+			return nil, DataError("invalid AdHocTeam string")
+		}
+	} else {
+		var ids []UID
+		var unames []NameUtf8
+		for _, part := range parts {
+			c, err := parseOne(part)
+			if err != nil {
+				return nil, err
+			}
+			switch {
+			case c.eid != nil:
+				return nil, DataError("invalid AdHocTeam string")
+			case c.uid != nil:
+				ids = append(ids, *c.uid)
+			case !c.un.IsZero():
+				unames = append(unames, c.un)
+			default:
+				return nil, DataError("invalid AdHocTeam string")
+			}
+		}
+		switch {
+		case len(ids) > 0 && len(unames) > 0:
+			return nil, DataError("cannot mix IDs and names in AdHocTeam string")
+		case len(ids) > 0:
+			ret = NewAdHocTeamParsedWithIds(ids)
+		case len(unames) > 0:
+			ret = NewAdHocTeamParsedWithNames(unames)
+		default:
+			return nil, DataError("invalid AdHocTeam string")
+		}
+	}
+	return &ret, nil
+}
+
+func (s FQAdHocTeamString) Parse(f NameNormFn) (*FQAdHocTeamParsed, error) {
+	tmp := strings.TrimSpace(string(s))
+	if len(tmp) == 0 {
+		return nil, DataError("empty FQAdHocTeam string can't be parsed")
+	}
+	parts := strings.Split(tmp, "@")
+	if len(parts) > 2 {
+		return nil, DataError("can have at most one @ in a FQAdHocTeam string")
+	}
+	var ret FQAdHocTeamParsed
+	if len(parts) == 2 {
+		h, err := HostString(parts[1]).Parse()
+		if err != nil {
+			return nil, err
+		}
+		ret.Host = h
+	}
+	t, err := AdHocTeamString(parts[0]).Parse()
+	if err != nil {
+		return nil, err
+	}
+	ret.Team = *t
+	return &ret, nil
+}
+
 func (s FQPartyString) Parse(f NameNormFn) (*FQPartyParsed, error) {
 	tmp := strings.TrimSpace(string(s))
 	if len(tmp) == 0 {
@@ -2494,6 +2621,13 @@ func (k TeamMemberKeys) ToSharedKey(r Role) SharedKey {
 func (e FQEntityFixed) Eq(e2 FQEntityFixed) bool {
 	return hmac.Equal(e.Entity[:], e2.Entity[:]) && e.Host.Eq(e2.Host)
 }
+func (e FQParty) Cmp(g FQParty) int {
+	x := bytes.Compare(e.Host[:], g.Host[:])
+	if x != 0 {
+		return x
+	}
+	return bytes.Compare(e.Party[:], g.Party[:])
+}
 
 func (e FQEntityFixed) Cmp(g FQEntityFixed) int {
 	x := bytes.Compare(e.Host[:], g.Host[:])
@@ -2656,13 +2790,18 @@ func (p PartyID) Check() error {
 func (t EntityType) IsTeam() bool {
 	return t == EntityType_NamedTeam || t == EntityType_AdHocTeam
 }
-
+func (t EntityType) IsUser() bool {
+	return t == EntityType_User
+}
 func (t EntityType) IsNamedTeam() bool {
 	return t == EntityType_NamedTeam
 }
 
 func (t EntityType) IsAdHocTeam() bool {
 	return t == EntityType_AdHocTeam
+}
+func (t EntityType) IsAdHocTeamMashed() bool {
+	return t == EntityType_AdHocTeamMashed
 }
 
 func (p PartyID) IsUser() bool { return len(p) > 2 && p.EntityID().Type() == EntityType_User }
@@ -2901,7 +3040,7 @@ func (e FQEntity) FQParty() (*FQParty, error) {
 func (t FQTeam) ToFQTeamIDOrName() FQTeamIDOrName {
 	return FQTeamIDOrName{
 		Host:     t.Host,
-		IdOrName: NewTeamIDOrNameWithTrue(t.Team),
+		IdOrName: NewTeamIDOrNameWithTrue(t.Team.EntityID()),
 	}
 }
 
@@ -5382,3 +5521,31 @@ func (t TeamID) Select() (*NamedTeamID, *AdHocTeamID, error) {
 
 func (t TeamID) IsNamedTeam() bool { return t.Type() == EntityType_NamedTeam }
 func (t TeamID) IsAdHocTeam() bool { return t.Type() == EntityType_AdHocTeam }
+
+func (m AdHocTeamMashedID) ExportToDB() []byte {
+	return m[:]
+}
+
+func (m AdHocTeamMashedID) IsZero() bool {
+	return IsZero(m[:])
+}
+
+func (m AdHocTeamMashedID) EntityID() EntityID {
+	return EntityID(m[:])
+}
+
+func (h ParsedHostname) SimpleIsID() bool {
+	return !h.S
+}
+
+func (a Name) Cmp(b Name) int {
+	return strings.Compare(string(a), string(b))
+}
+
+func (a AdHocTeamString) String() string {
+	return string(a)
+}
+
+func (a FQAdHocTeamString) String() string {
+	return string(a)
+}

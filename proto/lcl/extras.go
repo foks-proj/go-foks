@@ -226,3 +226,7 @@ func (r RTChannelSpecifier) String() string {
 func (r RTChannelSetForTeam) GetVersion() lib.Version {
 	return r.Vers.GetVersion()
 }
+
+func (l ConfigTeam) SimpleIsTeam() bool {
+	return l.T != ConfigTeamType_None
+}

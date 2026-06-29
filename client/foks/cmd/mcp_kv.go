@@ -14,6 +14,7 @@ import (
 	"github.com/foks-proj/go-foks/client/libclient"
 	"github.com/foks-proj/go-foks/client/libkv"
 	"github.com/foks-proj/go-foks/lib/core"
+	"github.com/foks-proj/go-foks/lib/team"
 	"github.com/foks-proj/go-foks/proto/lcl"
 	proto "github.com/foks-proj/go-foks/proto/lib"
 	"github.com/foks-proj/go-snowpack-rpc/rpc"
@@ -26,17 +27,17 @@ type mcpKV struct {
 	cli lcl.KVClient
 }
 
-func mcpKVMakeConfig(team string, mkdirP bool, overwrite bool, recursive bool) (lcl.KVConfig, error) {
+func mcpKVMakeConfig(teamStr string, mkdirP bool, overwrite bool, recursive bool) (lcl.KVConfig, error) {
 	var fqt *proto.FQTeamParsed
-	if team != "" {
+	if teamStr != "" {
 		var err error
-		fqt, err = core.ParseFQTeam(proto.FQTeamString(team))
+		fqt, err = core.ParseFQTeam(proto.FQTeamString(teamStr))
 		if err != nil {
 			return lcl.KVConfig{}, err
 		}
 	}
 	return lcl.KVConfig{
-		ActingAs:    fqt,
+		ActingAs:    team.WrapNamedPtr(fqt),
 		MkdirP:      mkdirP,
 		OverwriteOk: overwrite,
 		Recursive:   recursive,

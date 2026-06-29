@@ -248,6 +248,22 @@ func (u *UserLoader) checkPerms(m MetaContext) error {
 		return err
 	}
 
+	checkOpenVHost := func() error {
+		if u.loggedInUID == nil {
+			return core.PermissionError("no logged in UID available for open vhost")
+		}
+		cfg, err := m.G().HostIDMap().Config(m, m.ShortHostID())
+		if err != nil {
+			return err
+		}
+		switch cfg.Viewership.User {
+		case proto.ViewershipMode_Open:
+			return nil
+		default:
+			return core.PermissionError("no open viewership mode")
+		}
+	}
+
 	switch atyp {
 	case rem.LoadUserChainAuthType_Token:
 		tok := u.Arg.Auth.Token()
@@ -303,7 +319,15 @@ func (u *UserLoader) checkPerms(m MetaContext) error {
 			u.Arg.Uid.ExportToDB(),
 			rk, lev,
 		}
-	case rem.LoadUserChainAuthType_AsLocalUser:
+	case rem.LoadUserChainAuthType_AsLocalUser,
+		rem.LoadUserChainAuthType_OpenVHostOrAsLocalUser:
+
+		if atyp == rem.LoadUserChainAuthType_OpenVHostOrAsLocalUser {
+			if err := checkOpenVHost(); err == nil {
+				return nil
+			}
+		}
+
 		if u.loggedInUID != nil && u.loggedInRole != nil {
 			rk, lev, err := u.loggedInRole.ExportToDB()
 			if err != nil {
@@ -326,19 +350,7 @@ func (u *UserLoader) checkPerms(m MetaContext) error {
 			return core.PermissionError("no logged in UID (or role) available")
 		}
 	case rem.LoadUserChainAuthType_OpenVHost:
-		if u.loggedInUID == nil {
-			return core.PermissionError("no logged in UID available for open vhost")
-		}
-		cfg, err := m.G().HostIDMap().Config(m, m.ShortHostID())
-		if err != nil {
-			return err
-		}
-		switch cfg.Viewership.User {
-		case proto.ViewershipMode_Open:
-			return nil
-		default:
-			return core.PermissionError("no open viewership mode")
-		}
+		return checkOpenVHost()
 	default:
 		return core.PermissionError("no token or logged in UID available")
 	}

@@ -68,8 +68,13 @@ func gitCreate(m libclient.MetaContext, top *cobra.Command) {
 			}
 			m.G().UIs().Terminal.Printf("Created: %s\n", urlStr)
 
+			typ, err := cfg.ActingAs.GetT()
+			if err != nil {
+				return err
+			}
+
 			// See Issue 253.
-			if cfg.ActingAs != nil {
+			if typ != lcl.ConfigTeamType_None {
 				es := m.G().UIs().Terminal.ErrorStream()
 				msg := libterm.MustRewrapSense(
 					fmt.Sprintf("%s: %s\n",

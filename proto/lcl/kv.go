@@ -306,7 +306,6 @@ func (f *FileKeyBoxPayload) GetTypeUniqueID() rpc.TypeUniqueID {
 func (f *FileKeyBoxPayload) Bytes() []byte { return nil }
 
 type KVConfig struct {
-	ActingAs       *lib.FQTeamParsed
 	Roles          lib.RolePairOpt
 	MkdirP         bool
 	OverwriteOk    bool
@@ -316,10 +315,11 @@ type KVConfig struct {
 	SkipCacheCheck bool
 	MtimeLower     *lib.TimeMicro
 	Recursive      bool
+	ActingAs       ConfigTeam
 }
 type KVConfigInternal__ struct {
 	_struct        struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
-	ActingAs       *lib.FQTeamParsedInternal__
+	Deprecated0    *struct{}
 	Roles          *lib.RolePairOptInternal__
 	MkdirP         *bool
 	OverwriteOk    *bool
@@ -329,22 +329,11 @@ type KVConfigInternal__ struct {
 	SkipCacheCheck *bool
 	MtimeLower     *lib.TimeMicroInternal__
 	Recursive      *bool
+	ActingAs       *ConfigTeamInternal__
 }
 
 func (k KVConfigInternal__) Import() KVConfig {
 	return KVConfig{
-		ActingAs: (func(x *lib.FQTeamParsedInternal__) *lib.FQTeamParsed {
-			if x == nil {
-				return nil
-			}
-			tmp := (func(x *lib.FQTeamParsedInternal__) (ret lib.FQTeamParsed) {
-				if x == nil {
-					return ret
-				}
-				return x.Import()
-			})(x)
-			return &tmp
-		})(k.ActingAs),
 		Roles: (func(x *lib.RolePairOptInternal__) (ret lib.RolePairOpt) {
 			if x == nil {
 				return ret
@@ -411,16 +400,16 @@ func (k KVConfigInternal__) Import() KVConfig {
 			}
 			return *x
 		})(k.Recursive),
+		ActingAs: (func(x *ConfigTeamInternal__) (ret ConfigTeam) {
+			if x == nil {
+				return ret
+			}
+			return x.Import()
+		})(k.ActingAs),
 	}
 }
 func (k KVConfig) Export() *KVConfigInternal__ {
 	return &KVConfigInternal__{
-		ActingAs: (func(x *lib.FQTeamParsed) *lib.FQTeamParsedInternal__ {
-			if x == nil {
-				return nil
-			}
-			return (*x).Export()
-		})(k.ActingAs),
 		Roles:       k.Roles.Export(),
 		MkdirP:      &k.MkdirP,
 		OverwriteOk: &k.OverwriteOk,
@@ -440,6 +429,7 @@ func (k KVConfig) Export() *KVConfigInternal__ {
 			return (*x).Export()
 		})(k.MtimeLower),
 		Recursive: &k.Recursive,
+		ActingAs:  k.ActingAs.Export(),
 	}
 }
 func (k *KVConfig) Encode(enc rpc.Encoder) error {

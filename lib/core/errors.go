@@ -839,6 +839,32 @@ func (t TeamIndexRangeError) Error() string {
 	return "team index error: " + string(t)
 }
 
+type TeamAdhocCreatorIncludedError struct{}
+
+func (t TeamAdhocCreatorIncludedError) Error() string {
+	return "team adhoc creator included in initialization list"
+}
+
+type TeamAdhocOpenViewershipError struct{}
+
+func (t TeamAdhocOpenViewershipError) Error() string {
+	return "ad-hoc teams require an open-viewership host"
+}
+
+type TeamAdhocInvalidTeamChangeError struct {
+	Which string
+}
+
+func (t TeamAdhocInvalidTeamChangeError) Error() string {
+	return "invalid team change for ad-hoc team: " + t.Which
+}
+
+type TeamAdhocDuplicateError struct{}
+
+func (t TeamAdhocDuplicateError) Error() string {
+	return "an ad-hoc team with this exact membership already exists"
+}
+
 type PTKNotFound struct {
 	Gen  proto.Generation
 	Role proto.Role
@@ -1627,6 +1653,14 @@ func ErrorToStatus(e error) proto.Status {
 		return proto.NewStatusWithTeamCycleError(te.TeamCycleError)
 	case TeamIndexRangeError:
 		return proto.NewStatusWithTeamIndexRangeError(string(te))
+	case TeamAdhocCreatorIncludedError:
+		return proto.NewStatusWithTeamAdhocCreatorIncludedError()
+	case TeamAdhocOpenViewershipError:
+		return proto.NewStatusWithTeamAdhocOpenViewershipError()
+	case TeamAdhocInvalidTeamChangeError:
+		return proto.NewStatusWithTeamAdhocInvalidTeamChangeError(string(te.Which))
+	case TeamAdhocDuplicateError:
+		return proto.NewStatusWithTeamAdhocDuplicateError()
 	case NeedLoginError:
 		return proto.NewStatusWithNeedLoginError()
 	case HostIDNotFoundError:
@@ -1946,6 +1980,14 @@ func StatusToError(s proto.Status) error {
 		return TeamCycleError{TeamCycleError: s.TeamCycleError()}
 	case proto.StatusCode_TEAM_INDEX_RANGE_ERROR:
 		return TeamIndexRangeError(s.TeamIndexRangeError())
+	case proto.StatusCode_TEAM_ADHOC_CREATOR_INCLUDED_ERROR:
+		return TeamAdhocCreatorIncludedError{}
+	case proto.StatusCode_TEAM_ADHOC_OPEN_VIEWERSHIP_ERROR:
+		return TeamAdhocOpenViewershipError{}
+	case proto.StatusCode_TEAM_ADHOC_INVALID_TEAM_CHANGE_ERROR:
+		return TeamAdhocInvalidTeamChangeError{Which: string(s.TeamAdhocInvalidTeamChangeError())}
+	case proto.StatusCode_TEAM_ADHOC_DUPLICATE_ERROR:
+		return TeamAdhocDuplicateError{}
 	case proto.StatusCode_NEED_LOGIN_ERROR:
 		return NeedLoginError{}
 	case proto.StatusCode_HOSTID_NOT_FOUND_ERROR:

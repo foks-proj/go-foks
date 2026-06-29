@@ -8,6 +8,7 @@ enum TeamMembershipLinkState {
     Requested @1;
     Approved @2;
     Removed @3;
+    ApprovedAdHoc @4;
 }
 
 typedef KeyCommitment = StdHash;
@@ -24,6 +25,10 @@ struct TeamMembershipApprovedDetails {
 
 variant TeamMembershipDetails switch (t : TeamMembershipLinkState) {
     case Approved @1 : TeamMembershipApprovedDetails;
+    // Ad-hoc teams have fixed, founder-only membership: no removal key exists, so
+    // there's no key commitment to bind. We record just the destination role
+    // (=Owner today) and seqno.
+    case ApprovedAdHoc @2 : RoleAndSeqno;
     default: void;
 }
 
@@ -79,7 +84,7 @@ variant TeamInvite switch (v : TeamInviteVersion) {
 
 variant TeamIDOrName switch (id: Bool) {
     case false @0 : Name;
-    case true @1 : TeamID;
+    case true @1 : EntityID; // Can be a TeamID or a MashedTeamID (for adhoc teams)
 }
 
 struct FQTeamIDOrName {
@@ -91,3 +96,15 @@ struct SenderPair {
     verifyKey @0 : EntityID;
     hepkFp @1 : HEPKFingerprint;
 }
+
+enum AdHocTeamMashLayout {
+    UserOwnersOnly @1;
+}
+
+variant AdHocTeamMashInputs switch (layout : AdHocTeamMashLayout) @0xd0d412a4ac530382 {
+    case UserOwnersOnly @0 : List(FQUser);
+}
+
+// alice,bob,max form
+typedef AdHocTeamString = Text;
+typedef FQAdHocTeamString = Text;

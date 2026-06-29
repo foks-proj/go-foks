@@ -171,7 +171,7 @@ type MakeChannelTestHooks struct {
 
 func (d *Minder) MakeChannel(
 	m MetaContext,
-	team *proto.FQTeamParsed,
+	team lcl.ConfigTeam,
 	appId proto.RTAppID,
 	nm proto.RTChannelName,
 	desc proto.RTChannelDesc,
@@ -185,7 +185,7 @@ func (d *Minder) MakeChannel(
 
 func (d *Minder) MakeChannelWithTestHooks(
 	m MetaContext,
-	team *proto.FQTeamParsed,
+	team lcl.ConfigTeam,
 	appId proto.RTAppID,
 	nm proto.RTChannelName,
 	desc proto.RTChannelDesc,
@@ -222,9 +222,20 @@ func (d *Minder) MakeChannelWithTestHooks(
 	return nil, core.RTRaceError{Which: "channels"}
 }
 
+func assertTeam(team lcl.ConfigTeam) error {
+	typ, err := team.GetT()
+	if err != nil {
+		return err
+	}
+	if typ == lcl.ConfigTeamType_None {
+		return core.InternalError("team is required to make channel in Stage 1a")
+	}
+	return nil
+}
+
 func (d *Minder) makeChannelOneAttempt(
 	m MetaContext,
-	team *proto.FQTeamParsed,
+	team lcl.ConfigTeam,
 	appId proto.RTAppID,
 	nm proto.RTChannelName,
 	desc proto.RTChannelDesc,
@@ -234,8 +245,9 @@ func (d *Minder) makeChannelOneAttempt(
 	*proto.RTChannelID,
 	error,
 ) {
-	if team == nil {
-		return nil, core.InternalError("team is required to make channel in Stage 1a")
+	err := assertTeam(team)
+	if err != nil {
+		return nil, err
 	}
 	rtp, err := d.base.GetParty(m.Base(), team)
 	if err != nil {
@@ -552,7 +564,7 @@ func (k *Minder) decryptChannelMetadata(
 
 func (k *Minder) ListAllChannelsForTeam(
 	m MetaContext,
-	tm *proto.FQTeamParsed,
+	tm lcl.ConfigTeam,
 	appID proto.RTAppID,
 ) (
 	*lcl.RTChannelSetForTeam,
@@ -818,7 +830,7 @@ type SendTestHooks struct {
 // the name is unique.
 func (d *Minder) Send(
 	m MetaContext,
-	team *proto.FQTeamParsed,
+	team lcl.ConfigTeam,
 	appID proto.RTAppID,
 	channel lcl.RTChannelSpecifier,
 	body []byte,
@@ -843,7 +855,7 @@ func (d *Minder) cacheMsgID(
 // SendWithTestHooks is Send with optional test perturbations.
 func (d *Minder) SendWithTestHooks(
 	m MetaContext,
-	team *proto.FQTeamParsed,
+	team lcl.ConfigTeam,
 	appID proto.RTAppID,
 	channel lcl.RTChannelSpecifier,
 	body []byte,
@@ -852,8 +864,9 @@ func (d *Minder) SendWithTestHooks(
 	*rem.RTSendRes,
 	error,
 ) {
-	if team == nil {
-		return nil, core.InternalError("team is required to send in Stage 1a")
+	err := assertTeam(team)
+	if err != nil {
+		return nil, err
 	}
 	rtp, err := d.base.GetParty(m.Base(), team)
 	if err != nil {
@@ -1145,15 +1158,16 @@ type initReqResult struct {
 
 func (d *Minder) initReq(
 	m MetaContext,
-	team *proto.FQTeamParsed,
+	team lcl.ConfigTeam,
 	appID proto.RTAppID,
 	channel lcl.RTChannelSpecifier,
 ) (
 	*initReqResult,
 	error,
 ) {
-	if team == nil {
-		return nil, core.InternalError("team is required to read in Stage 1a")
+	err := assertTeam(team)
+	if err != nil {
+		return nil, err
 	}
 	rtp, err := d.base.GetParty(m.Base(), team)
 	if err != nil {
@@ -1185,13 +1199,14 @@ func (d *Minder) initReq(
 // best-effort and tolerate a nil token.
 func (d *Minder) TeamViewToken(
 	m MetaContext,
-	team *proto.FQTeamParsed,
+	team lcl.ConfigTeam,
 ) (
 	*rem.TeamVOBearerToken,
 	error,
 ) {
-	if team == nil {
-		return nil, core.InternalError("team is required")
+	err := assertTeam(team)
+	if err != nil {
+		return nil, err
 	}
 	rtp, err := d.base.GetParty(m.Base(), team)
 	if err != nil {
@@ -1232,6 +1247,7 @@ func (d *Minder) usernameCacheSet(m MetaContext, uid proto.UID, nm proto.NameUtf
 // a sender that can't be loaded is omitted from the result rather than failing.
 func (d *Minder) ResolveSenderNames(
 	m MetaContext,
+	team lcl.ConfigTeam,
 	tok *rem.TeamVOBearerToken,
 	msgs []ThreadMessage,
 ) map[proto.UID]proto.NameUtf8 {
@@ -1248,7 +1264,7 @@ func (d *Minder) ResolveSenderNames(
 		if _, ok := ret[uid]; ok {
 			continue
 		}
-		if nm, ok := d.resolveSenderName(m, tok, uid); ok {
+		if nm, ok := d.resolveSenderName(m, team, tok, uid); ok {
 			ret[uid] = nm
 		}
 	}
@@ -1256,19 +1272,27 @@ func (d *Minder) ResolveSenderNames(
 }
 
 // resolveSenderName returns the display name for a single sender UID -- from the
-// cache if present, otherwise via a (team-mediated) user-chain load whose result
-// is then cached. Returns false if the user can't be loaded.
+// cache if present, otherwise via a user-chain load whose result is then cached.
+// Returns false if the user can't be loaded. Ad-hoc teams live on open-viewership
+// hosts and are loaded via LoadModeForAdHoc (open-vhost-or-as-local-user), which
+// resolves symmetrically for any co-member; named teams use the team-mediated
+// (AsLocalTeam) load via the VO bearer token.
 func (d *Minder) resolveSenderName(
 	m MetaContext,
+	team lcl.ConfigTeam,
 	tok *rem.TeamVOBearerToken,
 	uid proto.UID,
 ) (proto.NameUtf8, bool) {
 	if nm, ok := d.usernameCacheGet(m, uid); ok {
 		return nm, true
 	}
+	loadMode := libclient.LoadModeOthers
+	if typ, err := team.GetT(); err == nil && typ == lcl.ConfigTeamType_AdHoc {
+		loadMode = libclient.LoadModeForAdHoc
+	}
 	uw, err := libclient.LoadUser(m.Base(), libclient.LoadUserArg{
 		Uid:               uid,
-		LoadMode:          libclient.LoadModeOthers,
+		LoadMode:          loadMode,
 		TeamVOBearerToken: tok,
 	})
 	if err != nil {
@@ -1318,7 +1342,7 @@ func newMsgSession() *msgSession {
 //   - cache any newly downloaded messages
 func (d *Minder) GetThreadBookended(
 	m MetaContext,
-	team *proto.FQTeamParsed,
+	team lcl.ConfigTeam,
 	appID proto.RTAppID,
 	channel lcl.RTChannelSpecifier,
 	start proto.RTMsgSeq,
@@ -1328,8 +1352,9 @@ func (d *Minder) GetThreadBookended(
 	bool,
 	error,
 ) {
-	if team == nil {
-		return nil, false, core.InternalError("team is required to read in Stage 1a")
+	err := assertTeam(team)
+	if err != nil {
+		return nil, false, err
 	}
 
 	sess := newMsgSession()
@@ -1466,7 +1491,7 @@ func (d *Minder) GetThreadBookended(
 // thread, pass the oldest seq of the previous page as the next `before`.
 func (d *Minder) GetThreadPage(
 	m MetaContext,
-	team *proto.FQTeamParsed,
+	team lcl.ConfigTeam,
 	appID proto.RTAppID,
 	channel lcl.RTChannelSpecifier,
 	before proto.RTMsgSeq,
@@ -1476,6 +1501,10 @@ func (d *Minder) GetThreadPage(
 	bool,
 	error,
 ) {
+	err := assertTeam(team)
+	if err != nil {
+		return nil, false, err
+	}
 	if num == 0 {
 		num = 128
 	}
@@ -1522,7 +1551,7 @@ func (d *Minder) GetThreadPage(
 // that can't be loaded simply has a nil name rather than failing the read.
 func (d *Minder) GetThreadView(
 	m MetaContext,
-	team *proto.FQTeamParsed,
+	team lcl.ConfigTeam,
 	appID proto.RTAppID,
 	channel lcl.RTChannelSpecifier,
 	before proto.RTMsgSeq,
@@ -1531,6 +1560,10 @@ func (d *Minder) GetThreadView(
 	*lcl.RTThreadView,
 	error,
 ) {
+	err := assertTeam(team)
+	if err != nil {
+		return nil, err
+	}
 	msgs, atBeginning, err := d.GetThreadPage(m, team, appID, channel, before, num)
 	if err != nil {
 		return nil, err
@@ -1539,7 +1572,7 @@ func (d *Minder) GetThreadView(
 	if err != nil {
 		return nil, err
 	}
-	names := d.ResolveSenderNames(m, tok, msgs)
+	names := d.ResolveSenderNames(m, team, tok, msgs)
 
 	ret := lcl.RTThreadView{AtBeginning: atBeginning}
 	for i := range msgs {
@@ -1578,7 +1611,7 @@ func threadMessageToView(
 // Get the num most recent messages that we don't already have.
 func (d *Minder) GetThreadRecentMsgs(
 	m MetaContext,
-	team *proto.FQTeamParsed,
+	team lcl.ConfigTeam,
 	appID proto.RTAppID,
 	channel lcl.RTChannelSpecifier,
 	num uint,
@@ -1586,6 +1619,10 @@ func (d *Minder) GetThreadRecentMsgs(
 	[]ThreadMessage,
 	error,
 ) {
+	err := assertTeam(team)
+	if err != nil {
+		return nil, err
+	}
 	if num == 0 {
 		num = 128
 	}
@@ -1848,7 +1885,7 @@ func (d *Minder) decodeAndCacheServerMsgs(
 // name is unique.
 func (d *Minder) GetMsgs(
 	m MetaContext,
-	team *proto.FQTeamParsed,
+	team lcl.ConfigTeam,
 	appID proto.RTAppID,
 	channel lcl.RTChannelSpecifier,
 	seqs []proto.RTMsgSeq,
@@ -1856,8 +1893,9 @@ func (d *Minder) GetMsgs(
 	[]ThreadMessage,
 	error,
 ) {
-	if team == nil {
-		return nil, core.InternalError("team is required to read in Stage 1a")
+	err := assertTeam(team)
+	if err != nil {
+		return nil, err
 	}
 	irr, err := d.initReq(m, team, appID, channel)
 	if err != nil {

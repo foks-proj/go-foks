@@ -779,6 +779,41 @@ func (a AdHocTeamID) Bytes() []byte {
 	return ((EntityID33)(a)).Bytes()
 }
 
+type AdHocTeamMashedID EntityID33
+type AdHocTeamMashedIDInternal__ EntityID33Internal__
+
+func (a AdHocTeamMashedID) Export() *AdHocTeamMashedIDInternal__ {
+	tmp := ((EntityID33)(a))
+	return ((*AdHocTeamMashedIDInternal__)(tmp.Export()))
+}
+func (a AdHocTeamMashedIDInternal__) Import() AdHocTeamMashedID {
+	tmp := (EntityID33Internal__)(a)
+	return AdHocTeamMashedID((func(x *EntityID33Internal__) (ret EntityID33) {
+		if x == nil {
+			return ret
+		}
+		return x.Import()
+	})(&tmp))
+}
+
+func (a *AdHocTeamMashedID) Encode(enc rpc.Encoder) error {
+	return enc.Encode(a.Export())
+}
+
+func (a *AdHocTeamMashedID) Decode(dec rpc.Decoder) error {
+	var tmp AdHocTeamMashedIDInternal__
+	err := dec.Decode(&tmp)
+	if err != nil {
+		return err
+	}
+	*a = tmp.Import()
+	return nil
+}
+
+func (a AdHocTeamMashedID) Bytes() []byte {
+	return ((EntityID33)(a)).Bytes()
+}
+
 type TeamID EntityID33
 type TeamIDInternal__ EntityID33Internal__
 
@@ -1017,6 +1052,7 @@ const (
 	EntityType_PKIXCert           EntityType = 18
 	EntityType_BotTokenKey        EntityType = 19
 	EntityType_AdHocTeam          EntityType = 20
+	EntityType_AdHocTeamMashed    EntityType = 21
 )
 
 var EntityTypeMap = map[string]EntityType{
@@ -1040,6 +1076,7 @@ var EntityTypeMap = map[string]EntityType{
 	"PKIXCert":           18,
 	"BotTokenKey":        19,
 	"AdHocTeam":          20,
+	"AdHocTeamMashed":    21,
 }
 var EntityTypeRevMap = map[EntityType]string{
 	1:  "User",
@@ -1062,6 +1099,7 @@ var EntityTypeRevMap = map[EntityType]string{
 	18: "PKIXCert",
 	19: "BotTokenKey",
 	20: "AdHocTeam",
+	21: "AdHocTeamMashed",
 }
 
 type EntityTypeInternal__ EntityType
@@ -5553,6 +5591,297 @@ func (f *FQTeamParsed) GetTypeUniqueID() rpc.TypeUniqueID {
 	return FQTeamParsedTypeUniqueID
 }
 func (f *FQTeamParsed) Bytes() []byte { return nil }
+
+type AdHocParseType int
+
+const (
+	AdHocParseType_Id    AdHocParseType = 0
+	AdHocParseType_Ids   AdHocParseType = 1
+	AdHocParseType_Names AdHocParseType = 2
+)
+
+var AdHocParseTypeMap = map[string]AdHocParseType{
+	"Id":    0,
+	"Ids":   1,
+	"Names": 2,
+}
+var AdHocParseTypeRevMap = map[AdHocParseType]string{
+	0: "Id",
+	1: "Ids",
+	2: "Names",
+}
+
+type AdHocParseTypeInternal__ AdHocParseType
+
+func (a AdHocParseTypeInternal__) Import() AdHocParseType {
+	return AdHocParseType(a)
+}
+func (a AdHocParseType) Export() *AdHocParseTypeInternal__ {
+	return ((*AdHocParseTypeInternal__)(&a))
+}
+
+type AdHocTeamParsed struct {
+	T     AdHocParseType
+	F_0__ *EntityID   `json:"f0,omitempty"`
+	F_1__ *[]UID      `json:"f1,omitempty"`
+	F_2__ *[]NameUtf8 `json:"f2,omitempty"`
+}
+type AdHocTeamParsedInternal__ struct {
+	_struct  struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
+	T        AdHocParseType
+	Switch__ AdHocTeamParsedInternalSwitch__
+}
+type AdHocTeamParsedInternalSwitch__ struct {
+	_struct struct{}                 `codec:",omitempty"` //lint:ignore U1000 msgpack internal field
+	F_0__   *EntityIDInternal__      `codec:"0"`
+	F_1__   *[](*UIDInternal__)      `codec:"1"`
+	F_2__   *[](*NameUtf8Internal__) `codec:"2"`
+}
+
+func (a AdHocTeamParsed) GetT() (ret AdHocParseType, err error) {
+	switch a.T {
+	case AdHocParseType_Id:
+		if a.F_0__ == nil {
+			return ret, errors.New("unexpected nil case for F_0__")
+		}
+	case AdHocParseType_Ids:
+		if a.F_1__ == nil {
+			return ret, errors.New("unexpected nil case for F_1__")
+		}
+	case AdHocParseType_Names:
+		if a.F_2__ == nil {
+			return ret, errors.New("unexpected nil case for F_2__")
+		}
+	}
+	return a.T, nil
+}
+func (a AdHocTeamParsed) Id() EntityID {
+	if a.F_0__ == nil {
+		panic("unexpected nil case; should have been checked")
+	}
+	if a.T != AdHocParseType_Id {
+		panic(fmt.Sprintf("unexpected switch value (%v) when Id is called", a.T))
+	}
+	return *a.F_0__
+}
+func (a AdHocTeamParsed) Ids() []UID {
+	if a.F_1__ == nil {
+		panic("unexpected nil case; should have been checked")
+	}
+	if a.T != AdHocParseType_Ids {
+		panic(fmt.Sprintf("unexpected switch value (%v) when Ids is called", a.T))
+	}
+	return *a.F_1__
+}
+func (a AdHocTeamParsed) Names() []NameUtf8 {
+	if a.F_2__ == nil {
+		panic("unexpected nil case; should have been checked")
+	}
+	if a.T != AdHocParseType_Names {
+		panic(fmt.Sprintf("unexpected switch value (%v) when Names is called", a.T))
+	}
+	return *a.F_2__
+}
+func NewAdHocTeamParsedWithId(v EntityID) AdHocTeamParsed {
+	return AdHocTeamParsed{
+		T:     AdHocParseType_Id,
+		F_0__: &v,
+	}
+}
+func NewAdHocTeamParsedWithIds(v []UID) AdHocTeamParsed {
+	return AdHocTeamParsed{
+		T:     AdHocParseType_Ids,
+		F_1__: &v,
+	}
+}
+func NewAdHocTeamParsedWithNames(v []NameUtf8) AdHocTeamParsed {
+	return AdHocTeamParsed{
+		T:     AdHocParseType_Names,
+		F_2__: &v,
+	}
+}
+func (a AdHocTeamParsedInternal__) Import() AdHocTeamParsed {
+	return AdHocTeamParsed{
+		T: a.T,
+		F_0__: (func(x *EntityIDInternal__) *EntityID {
+			if x == nil {
+				return nil
+			}
+			tmp := (func(x *EntityIDInternal__) (ret EntityID) {
+				if x == nil {
+					return ret
+				}
+				return x.Import()
+			})(x)
+			return &tmp
+		})(a.Switch__.F_0__),
+		F_1__: (func(x *[](*UIDInternal__)) *[]UID {
+			if x == nil {
+				return nil
+			}
+			tmp := (func(x *[](*UIDInternal__)) (ret []UID) {
+				if x == nil || len(*x) == 0 {
+					return nil
+				}
+				ret = make([]UID, len(*x))
+				for k, v := range *x {
+					if v == nil {
+						continue
+					}
+					ret[k] = (func(x *UIDInternal__) (ret UID) {
+						if x == nil {
+							return ret
+						}
+						return x.Import()
+					})(v)
+				}
+				return ret
+			})(x)
+			return &tmp
+		})(a.Switch__.F_1__),
+		F_2__: (func(x *[](*NameUtf8Internal__)) *[]NameUtf8 {
+			if x == nil {
+				return nil
+			}
+			tmp := (func(x *[](*NameUtf8Internal__)) (ret []NameUtf8) {
+				if x == nil || len(*x) == 0 {
+					return nil
+				}
+				ret = make([]NameUtf8, len(*x))
+				for k, v := range *x {
+					if v == nil {
+						continue
+					}
+					ret[k] = (func(x *NameUtf8Internal__) (ret NameUtf8) {
+						if x == nil {
+							return ret
+						}
+						return x.Import()
+					})(v)
+				}
+				return ret
+			})(x)
+			return &tmp
+		})(a.Switch__.F_2__),
+	}
+}
+func (a AdHocTeamParsed) Export() *AdHocTeamParsedInternal__ {
+	return &AdHocTeamParsedInternal__{
+		T: a.T,
+		Switch__: AdHocTeamParsedInternalSwitch__{
+			F_0__: (func(x *EntityID) *EntityIDInternal__ {
+				if x == nil {
+					return nil
+				}
+				return (*x).Export()
+			})(a.F_0__),
+			F_1__: (func(x *[]UID) *[](*UIDInternal__) {
+				if x == nil {
+					return nil
+				}
+				return (func(x []UID) *[](*UIDInternal__) {
+					if len(x) == 0 {
+						return nil
+					}
+					ret := make([](*UIDInternal__), len(x))
+					for k, v := range x {
+						ret[k] = v.Export()
+					}
+					return &ret
+				})((*x))
+			})(a.F_1__),
+			F_2__: (func(x *[]NameUtf8) *[](*NameUtf8Internal__) {
+				if x == nil {
+					return nil
+				}
+				return (func(x []NameUtf8) *[](*NameUtf8Internal__) {
+					if len(x) == 0 {
+						return nil
+					}
+					ret := make([](*NameUtf8Internal__), len(x))
+					for k, v := range x {
+						ret[k] = v.Export()
+					}
+					return &ret
+				})((*x))
+			})(a.F_2__),
+		},
+	}
+}
+func (a *AdHocTeamParsed) Encode(enc rpc.Encoder) error {
+	return enc.Encode(a.Export())
+}
+
+func (a *AdHocTeamParsed) Decode(dec rpc.Decoder) error {
+	var tmp AdHocTeamParsedInternal__
+	err := dec.Decode(&tmp)
+	if err != nil {
+		return err
+	}
+	*a = tmp.Import()
+	return nil
+}
+
+func (a *AdHocTeamParsed) Bytes() []byte { return nil }
+
+type FQAdHocTeamParsed struct {
+	Team AdHocTeamParsed
+	Host *ParsedHostname
+}
+type FQAdHocTeamParsedInternal__ struct {
+	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
+	Team    *AdHocTeamParsedInternal__
+	Host    *ParsedHostnameInternal__
+}
+
+func (f FQAdHocTeamParsedInternal__) Import() FQAdHocTeamParsed {
+	return FQAdHocTeamParsed{
+		Team: (func(x *AdHocTeamParsedInternal__) (ret AdHocTeamParsed) {
+			if x == nil {
+				return ret
+			}
+			return x.Import()
+		})(f.Team),
+		Host: (func(x *ParsedHostnameInternal__) *ParsedHostname {
+			if x == nil {
+				return nil
+			}
+			tmp := (func(x *ParsedHostnameInternal__) (ret ParsedHostname) {
+				if x == nil {
+					return ret
+				}
+				return x.Import()
+			})(x)
+			return &tmp
+		})(f.Host),
+	}
+}
+func (f FQAdHocTeamParsed) Export() *FQAdHocTeamParsedInternal__ {
+	return &FQAdHocTeamParsedInternal__{
+		Team: f.Team.Export(),
+		Host: (func(x *ParsedHostname) *ParsedHostnameInternal__ {
+			if x == nil {
+				return nil
+			}
+			return (*x).Export()
+		})(f.Host),
+	}
+}
+func (f *FQAdHocTeamParsed) Encode(enc rpc.Encoder) error {
+	return enc.Encode(f.Export())
+}
+
+func (f *FQAdHocTeamParsed) Decode(dec rpc.Decoder) error {
+	var tmp FQAdHocTeamParsedInternal__
+	err := dec.Decode(&tmp)
+	if err != nil {
+		return err
+	}
+	*f = tmp.Import()
+	return nil
+}
+
+func (f *FQAdHocTeamParsed) Bytes() []byte { return nil }
 
 type FQPartyParsed struct {
 	Party ParsedParty

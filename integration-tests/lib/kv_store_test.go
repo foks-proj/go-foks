@@ -13,6 +13,7 @@ import (
 	"github.com/foks-proj/go-foks/client/libclient"
 	"github.com/foks-proj/go-foks/client/libkv"
 	"github.com/foks-proj/go-foks/lib/core"
+	"github.com/foks-proj/go-foks/lib/team"
 	"github.com/foks-proj/go-foks/proto/lcl"
 	proto "github.com/foks-proj/go-foks/proto/lib"
 	"github.com/foks-proj/go-foks/proto/rem"
@@ -222,9 +223,9 @@ func TestKVStoreTeamSimple(t *testing.T) {
 	mBingo := libkv.NewMetaContext(tew.NewClientMetaContextWithEracer(t, bingo))
 
 	cfg := lcl.KVConfig{
-		ActingAs: &proto.FQTeamParsed{
+		ActingAs: team.WrapNamed(proto.FQTeamParsed{
 			Team: proto.NewParsedTeamWithFalse(tm.FQTeam(t).Team),
-		},
+		}),
 		Roles: proto.RolePairOpt{
 			Read:  &proto.AdminRole,
 			Write: &proto.AdminRole,

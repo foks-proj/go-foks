@@ -19,6 +19,7 @@ enum LoadUserChainAuthType {
     SelfToken @2;
     AsLocalTeam @3; 
     OpenVHost @4;
+    OpenVHostOrAsLocalUser @5;
 }
 
 variant LoadUserChainAuth switch (t : LoadUserChainAuthType) {
@@ -27,6 +28,7 @@ variant LoadUserChainAuth switch (t : LoadUserChainAuthType) {
     case SelfToken @2 : lib.PermissionToken;
     case AsLocalTeam @3 : TeamVOBearerToken;
     case OpenVHost : void;
+    case OpenVHostOrAsLocalUser : void;
 }
 
 struct LoadUserChainArg {

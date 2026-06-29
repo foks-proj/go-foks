@@ -134,19 +134,21 @@ func (d *DeviceLabelNameAndCommitmentKey) Bytes() []byte { return nil }
 type LoadUserChainAuthType int
 
 const (
-	LoadUserChainAuthType_AsLocalUser LoadUserChainAuthType = 0
-	LoadUserChainAuthType_Token       LoadUserChainAuthType = 1
-	LoadUserChainAuthType_SelfToken   LoadUserChainAuthType = 2
-	LoadUserChainAuthType_AsLocalTeam LoadUserChainAuthType = 3
-	LoadUserChainAuthType_OpenVHost   LoadUserChainAuthType = 4
+	LoadUserChainAuthType_AsLocalUser            LoadUserChainAuthType = 0
+	LoadUserChainAuthType_Token                  LoadUserChainAuthType = 1
+	LoadUserChainAuthType_SelfToken              LoadUserChainAuthType = 2
+	LoadUserChainAuthType_AsLocalTeam            LoadUserChainAuthType = 3
+	LoadUserChainAuthType_OpenVHost              LoadUserChainAuthType = 4
+	LoadUserChainAuthType_OpenVHostOrAsLocalUser LoadUserChainAuthType = 5
 )
 
 var LoadUserChainAuthTypeMap = map[string]LoadUserChainAuthType{
-	"AsLocalUser": 0,
-	"Token":       1,
-	"SelfToken":   2,
-	"AsLocalTeam": 3,
-	"OpenVHost":   4,
+	"AsLocalUser":            0,
+	"Token":                  1,
+	"SelfToken":              2,
+	"AsLocalTeam":            3,
+	"OpenVHost":              4,
+	"OpenVHostOrAsLocalUser": 5,
 }
 var LoadUserChainAuthTypeRevMap = map[LoadUserChainAuthType]string{
 	0: "AsLocalUser",
@@ -154,6 +156,7 @@ var LoadUserChainAuthTypeRevMap = map[LoadUserChainAuthType]string{
 	2: "SelfToken",
 	3: "AsLocalTeam",
 	4: "OpenVHost",
+	5: "OpenVHostOrAsLocalUser",
 }
 
 type LoadUserChainAuthTypeInternal__ LoadUserChainAuthType
@@ -200,6 +203,8 @@ func (l LoadUserChainAuth) GetT() (ret LoadUserChainAuthType, err error) {
 			return ret, errors.New("unexpected nil case for F_3__")
 		}
 	case LoadUserChainAuthType_OpenVHost:
+		break
+	case LoadUserChainAuthType_OpenVHostOrAsLocalUser:
 		break
 	}
 	return l.T, nil
@@ -257,6 +262,11 @@ func NewLoadUserChainAuthWithAslocalteam(v TeamVOBearerToken) LoadUserChainAuth 
 func NewLoadUserChainAuthWithOpenvhost() LoadUserChainAuth {
 	return LoadUserChainAuth{
 		T: LoadUserChainAuthType_OpenVHost,
+	}
+}
+func NewLoadUserChainAuthWithOpenvhostoraslocaluser() LoadUserChainAuth {
+	return LoadUserChainAuth{
+		T: LoadUserChainAuthType_OpenVHostOrAsLocalUser,
 	}
 }
 func (l LoadUserChainAuthInternal__) Import() LoadUserChainAuth {
