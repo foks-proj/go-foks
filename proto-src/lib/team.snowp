@@ -94,6 +94,10 @@ struct SenderPair {
 
 typedef AdHocTeamMashedID = StdHash;
 
-struct AdHocTeamNameInputs @0xd0d412a4ac530382 {
-    parties @0 : List(FQParty);
+enum AdHocTeamMashLayout {
+    UserOwnersOnly @1;
+}
+
+variant AdHocTeamMashInputs switch (layout : AdHocTeamMashLayout) @0xd0d412a4ac530382 {
+    case UserOwnersOnly @0 : List(FQUser);
 }

@@ -50,8 +50,8 @@ type teamCreatorNameArg struct {
 type teamCreator struct {
 	*teamEditor
 	openEldestRes *team.OpenEldestRes
-	nameArg       *teamCreatorNameArg
 	commonArg     rem.CreateTeamCommonArg
+	nameArg       *teamCreatorNameArg
 }
 
 type teamEditInterface interface {
@@ -219,8 +219,9 @@ func (c *teamCreator) insertCreateTeam(
 	// Ad-hoc teams don't have a name, so we don't need to insert a name.
 	// We use the default name "-" for all ad-hoc teams, which should already
 	// be in the database.
+	var err error
 	if c.nameArg != nil {
-		err := shared.InsertName(
+		err = shared.InsertName(
 			m,
 			c.tx,
 			c.teamID.EntityID(),
@@ -233,11 +234,13 @@ func (c *teamCreator) insertCreateTeam(
 			c.nameArg.Rnr.Seq,
 			rem.NameType_Team,
 		)
-		if err != nil {
-			return err
-		}
+	} else {
+		err = shared.InsertAdHocTeam(m, c.tx, c.teamID, c.openEldestRes.Gc.Changes)
 	}
-	err := c.insertIntoTeams(m)
+	if err != nil {
+		return err
+	}
+	err = c.insertIntoTeams(m)
 	if err != nil {
 		return err
 	}

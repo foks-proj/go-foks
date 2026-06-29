@@ -13,7 +13,7 @@ import (
 
 // mkTestFQParty builds an FQParty whose Party and Host bytes are each a single
 // repeated value, so tests can cheaply make distinct, ordered parties.
-func mkTestFQParty(party byte, host byte) proto.FQParty {
+func mkTestFQUser(party byte, host byte) proto.FQUser {
 	var h proto.HostID
 	for i := range h {
 		h[i] = host
@@ -22,63 +22,60 @@ func mkTestFQParty(party byte, host byte) proto.FQParty {
 	for i := range p {
 		p[i] = party
 	}
-	return proto.FQParty{
-		Party: proto.PartyID(p),
-		Host:  h,
+	return proto.FQUser{
+		Uid:    proto.UID(p),
+		HostID: h,
 	}
 }
 
 func TestMashAdHocTeamID(t *testing.T) {
-	a := mkTestFQParty(0x01, 0xaa)
-	b := mkTestFQParty(0x02, 0xaa)
-	c := mkTestFQParty(0x03, 0xbb)
+	a := mkTestFQUser(0x01, 0xaa)
+	b := mkTestFQUser(0x02, 0xaa)
+	c := mkTestFQUser(0x03, 0xbb)
+	d := mkTestFQUser(0x04, 0xbb)
+
+	// mash derefs to a value so the comparisons below are value-based.
+	mash := func(users ...proto.FQUser) proto.AdHocTeamMashedID {
+		h, err := MashFQUsersIntoAdHocTeamID(users, proto.HostID{0xaa})
+		require.NoError(t, err)
+		require.NotNil(t, h)
+		return *h
+	}
 
 	// Deterministic: same set, same order -> same ID.
-	h1, err := MashAdHocTeamID([]proto.FQParty{a, b, c})
-	require.NoError(t, err)
-	h2, err := MashAdHocTeamID([]proto.FQParty{a, b, c})
-	require.NoError(t, err)
-	require.Equal(t, h1, h2)
+	h1 := mash(a, b, c)
+	require.Equal(t, h1, mash(a, b, c))
 
 	// Something was actually written.
 	require.NotEqual(t, proto.AdHocTeamMashedID{}, h1)
 
 	// Order-independent: a different input ordering of the same set mashes to
 	// the same ID, because the function canonicalizes by sorting the parties.
-	h3, err := MashAdHocTeamID([]proto.FQParty{c, a, b})
-	require.NoError(t, err)
-	require.Equal(t, h1, h3)
+	require.Equal(t, h1, mash(c, a, b))
 
 	// Sensitive to membership: dropping a party changes the ID...
-	h4, err := MashAdHocTeamID([]proto.FQParty{a, b})
-	require.NoError(t, err)
-	require.NotEqual(t, h1, h4)
+	require.NotEqual(t, h1, mash(a, b))
 
 	// ...and swapping one party for a different one changes the ID.
-	d := mkTestFQParty(0x04, 0xbb)
-	h5, err := MashAdHocTeamID([]proto.FQParty{a, b, d})
-	require.NoError(t, err)
-	require.NotEqual(t, h1, h5)
+	require.NotEqual(t, h1, mash(a, b, d))
 
 	// A single-party team is fine and distinct from the multi-party ones.
-	h6, err := MashAdHocTeamID([]proto.FQParty{a})
-	require.NoError(t, err)
-	require.NotEqual(t, h1, h6)
+	require.NotEqual(t, h1, mash(a))
 }
 
 // TestMashAdHocTeamIDSortsInputInPlace documents that the function sorts its
 // input slice in place as a side effect of canonicalizing before hashing.
 func TestMashAdHocTeamIDSortsInputInPlace(t *testing.T) {
-	a := mkTestFQParty(0x01, 0xaa)
-	b := mkTestFQParty(0x02, 0xaa)
-	c := mkTestFQParty(0x03, 0xbb)
+	a := mkTestFQUser(0x01, 0xaa)
+	b := mkTestFQUser(0x02, 0xaa)
+	c := mkTestFQUser(0x03, 0xbb)
 
 	// Deliberately unsorted (Host 0xbb sorts after 0xaa).
-	parties := []proto.FQParty{c, b, a}
-	_, err := MashAdHocTeamID(parties)
+	parties := []proto.FQUser{c, b, a}
+	_, err := MashFQUsersIntoAdHocTeamID(parties, proto.HostID{0xaa})
 	require.NoError(t, err)
 
-	require.True(t, slices.IsSortedFunc(parties, func(x, y proto.FQParty) int {
-		return x.Cmp(y)
+	require.True(t, slices.IsSortedFunc(parties, func(x, y proto.FQUser) int {
+		return x.ToFQParty().Cmp(y.ToFQParty())
 	}))
 }

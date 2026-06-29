@@ -1000,56 +1000,123 @@ func (a AdHocTeamMashedID) Bytes() []byte {
 	return ((StdHash)(a)).Bytes()
 }
 
-type AdHocTeamNameInputs struct {
-	Parties []FQParty
+type AdHocTeamMashLayout int
+
+const (
+	AdHocTeamMashLayout_UserOwnersOnly AdHocTeamMashLayout = 1
+)
+
+var AdHocTeamMashLayoutMap = map[string]AdHocTeamMashLayout{
+	"UserOwnersOnly": 1,
 }
-type AdHocTeamNameInputsInternal__ struct {
-	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
-	Parties *[](*FQPartyInternal__)
+var AdHocTeamMashLayoutRevMap = map[AdHocTeamMashLayout]string{
+	1: "UserOwnersOnly",
 }
 
-func (a AdHocTeamNameInputsInternal__) Import() AdHocTeamNameInputs {
-	return AdHocTeamNameInputs{
-		Parties: (func(x *[](*FQPartyInternal__)) (ret []FQParty) {
-			if x == nil || len(*x) == 0 {
+type AdHocTeamMashLayoutInternal__ AdHocTeamMashLayout
+
+func (a AdHocTeamMashLayoutInternal__) Import() AdHocTeamMashLayout {
+	return AdHocTeamMashLayout(a)
+}
+func (a AdHocTeamMashLayout) Export() *AdHocTeamMashLayoutInternal__ {
+	return ((*AdHocTeamMashLayoutInternal__)(&a))
+}
+
+type AdHocTeamMashInputs struct {
+	Layout AdHocTeamMashLayout
+	F_0__  *[]FQUser `json:"f0,omitempty"`
+}
+type AdHocTeamMashInputsInternal__ struct {
+	_struct  struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
+	Layout   AdHocTeamMashLayout
+	Switch__ AdHocTeamMashInputsInternalSwitch__
+}
+type AdHocTeamMashInputsInternalSwitch__ struct {
+	_struct struct{}               `codec:",omitempty"` //lint:ignore U1000 msgpack internal field
+	F_0__   *[](*FQUserInternal__) `codec:"0"`
+}
+
+func (a AdHocTeamMashInputs) GetLayout() (ret AdHocTeamMashLayout, err error) {
+	switch a.Layout {
+	case AdHocTeamMashLayout_UserOwnersOnly:
+		if a.F_0__ == nil {
+			return ret, errors.New("unexpected nil case for F_0__")
+		}
+	}
+	return a.Layout, nil
+}
+func (a AdHocTeamMashInputs) Userownersonly() []FQUser {
+	if a.F_0__ == nil {
+		panic("unexpected nil case; should have been checked")
+	}
+	if a.Layout != AdHocTeamMashLayout_UserOwnersOnly {
+		panic(fmt.Sprintf("unexpected switch value (%v) when Userownersonly is called", a.Layout))
+	}
+	return *a.F_0__
+}
+func NewAdHocTeamMashInputsWithUserownersonly(v []FQUser) AdHocTeamMashInputs {
+	return AdHocTeamMashInputs{
+		Layout: AdHocTeamMashLayout_UserOwnersOnly,
+		F_0__:  &v,
+	}
+}
+func (a AdHocTeamMashInputsInternal__) Import() AdHocTeamMashInputs {
+	return AdHocTeamMashInputs{
+		Layout: a.Layout,
+		F_0__: (func(x *[](*FQUserInternal__)) *[]FQUser {
+			if x == nil {
 				return nil
 			}
-			ret = make([]FQParty, len(*x))
-			for k, v := range *x {
-				if v == nil {
-					continue
+			tmp := (func(x *[](*FQUserInternal__)) (ret []FQUser) {
+				if x == nil || len(*x) == 0 {
+					return nil
 				}
-				ret[k] = (func(x *FQPartyInternal__) (ret FQParty) {
-					if x == nil {
-						return ret
+				ret = make([]FQUser, len(*x))
+				for k, v := range *x {
+					if v == nil {
+						continue
 					}
-					return x.Import()
-				})(v)
-			}
-			return ret
-		})(a.Parties),
+					ret[k] = (func(x *FQUserInternal__) (ret FQUser) {
+						if x == nil {
+							return ret
+						}
+						return x.Import()
+					})(v)
+				}
+				return ret
+			})(x)
+			return &tmp
+		})(a.Switch__.F_0__),
 	}
 }
-func (a AdHocTeamNameInputs) Export() *AdHocTeamNameInputsInternal__ {
-	return &AdHocTeamNameInputsInternal__{
-		Parties: (func(x []FQParty) *[](*FQPartyInternal__) {
-			if len(x) == 0 {
-				return nil
-			}
-			ret := make([](*FQPartyInternal__), len(x))
-			for k, v := range x {
-				ret[k] = v.Export()
-			}
-			return &ret
-		})(a.Parties),
+func (a AdHocTeamMashInputs) Export() *AdHocTeamMashInputsInternal__ {
+	return &AdHocTeamMashInputsInternal__{
+		Layout: a.Layout,
+		Switch__: AdHocTeamMashInputsInternalSwitch__{
+			F_0__: (func(x *[]FQUser) *[](*FQUserInternal__) {
+				if x == nil {
+					return nil
+				}
+				return (func(x []FQUser) *[](*FQUserInternal__) {
+					if len(x) == 0 {
+						return nil
+					}
+					ret := make([](*FQUserInternal__), len(x))
+					for k, v := range x {
+						ret[k] = v.Export()
+					}
+					return &ret
+				})((*x))
+			})(a.F_0__),
+		},
 	}
 }
-func (a *AdHocTeamNameInputs) Encode(enc rpc.Encoder) error {
+func (a *AdHocTeamMashInputs) Encode(enc rpc.Encoder) error {
 	return enc.Encode(a.Export())
 }
 
-func (a *AdHocTeamNameInputs) Decode(dec rpc.Decoder) error {
-	var tmp AdHocTeamNameInputsInternal__
+func (a *AdHocTeamMashInputs) Decode(dec rpc.Decoder) error {
+	var tmp AdHocTeamMashInputsInternal__
 	err := dec.Decode(&tmp)
 	if err != nil {
 		return err
@@ -1058,15 +1125,15 @@ func (a *AdHocTeamNameInputs) Decode(dec rpc.Decoder) error {
 	return nil
 }
 
-var AdHocTeamNameInputsTypeUniqueID = rpc.TypeUniqueID(0xd0d412a4ac530382)
+var AdHocTeamMashInputsTypeUniqueID = rpc.TypeUniqueID(0xd0d412a4ac530382)
 
-func (a *AdHocTeamNameInputs) GetTypeUniqueID() rpc.TypeUniqueID {
-	return AdHocTeamNameInputsTypeUniqueID
+func (a *AdHocTeamMashInputs) GetTypeUniqueID() rpc.TypeUniqueID {
+	return AdHocTeamMashInputsTypeUniqueID
 }
-func (a *AdHocTeamNameInputs) Bytes() []byte { return nil }
+func (a *AdHocTeamMashInputs) Bytes() []byte { return nil }
 
 func init() {
 	rpc.AddUnique(TeamRemoteMemberViewTokenBoxPayloadTypeUniqueID)
 	rpc.AddUnique(TeamInviteV1TypeUniqueID)
-	rpc.AddUnique(AdHocTeamNameInputsTypeUniqueID)
+	rpc.AddUnique(AdHocTeamMashInputsTypeUniqueID)
 }

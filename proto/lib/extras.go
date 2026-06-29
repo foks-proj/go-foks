@@ -5389,3 +5389,7 @@ func (t TeamID) Select() (*NamedTeamID, *AdHocTeamID, error) {
 
 func (t TeamID) IsNamedTeam() bool { return t.Type() == EntityType_NamedTeam }
 func (t TeamID) IsAdHocTeam() bool { return t.Type() == EntityType_AdHocTeam }
+
+func (m AdHocTeamMashedID) ExportToDB() []byte {
+	return m[:]
+}
