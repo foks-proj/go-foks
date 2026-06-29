@@ -149,16 +149,16 @@ func (u UID) Bytes() []byte {
 	return ((EntityID33)(u)).Bytes()
 }
 
-type TeamID EntityID33
-type TeamIDInternal__ EntityID33Internal__
+type NamedTeamID EntityID33
+type NamedTeamIDInternal__ EntityID33Internal__
 
-func (t TeamID) Export() *TeamIDInternal__ {
-	tmp := ((EntityID33)(t))
-	return ((*TeamIDInternal__)(tmp.Export()))
+func (n NamedTeamID) Export() *NamedTeamIDInternal__ {
+	tmp := ((EntityID33)(n))
+	return ((*NamedTeamIDInternal__)(tmp.Export()))
 }
-func (t TeamIDInternal__) Import() TeamID {
-	tmp := (EntityID33Internal__)(t)
-	return TeamID((func(x *EntityID33Internal__) (ret EntityID33) {
+func (n NamedTeamIDInternal__) Import() NamedTeamID {
+	tmp := (EntityID33Internal__)(n)
+	return NamedTeamID((func(x *EntityID33Internal__) (ret EntityID33) {
 		if x == nil {
 			return ret
 		}
@@ -166,22 +166,22 @@ func (t TeamIDInternal__) Import() TeamID {
 	})(&tmp))
 }
 
-func (t *TeamID) Encode(enc rpc.Encoder) error {
-	return enc.Encode(t.Export())
+func (n *NamedTeamID) Encode(enc rpc.Encoder) error {
+	return enc.Encode(n.Export())
 }
 
-func (t *TeamID) Decode(dec rpc.Decoder) error {
-	var tmp TeamIDInternal__
+func (n *NamedTeamID) Decode(dec rpc.Decoder) error {
+	var tmp NamedTeamIDInternal__
 	err := dec.Decode(&tmp)
 	if err != nil {
 		return err
 	}
-	*t = tmp.Import()
+	*n = tmp.Import()
 	return nil
 }
 
-func (t TeamID) Bytes() []byte {
-	return ((EntityID33)(t)).Bytes()
+func (n NamedTeamID) Bytes() []byte {
+	return ((EntityID33)(n)).Bytes()
 }
 
 type DeviceID EntityID
@@ -744,6 +744,76 @@ func (b BotTokenKeyID) Bytes() []byte {
 	return ((EntityID)(b)).Bytes()
 }
 
+type AdHocTeamID EntityID33
+type AdHocTeamIDInternal__ EntityID33Internal__
+
+func (a AdHocTeamID) Export() *AdHocTeamIDInternal__ {
+	tmp := ((EntityID33)(a))
+	return ((*AdHocTeamIDInternal__)(tmp.Export()))
+}
+func (a AdHocTeamIDInternal__) Import() AdHocTeamID {
+	tmp := (EntityID33Internal__)(a)
+	return AdHocTeamID((func(x *EntityID33Internal__) (ret EntityID33) {
+		if x == nil {
+			return ret
+		}
+		return x.Import()
+	})(&tmp))
+}
+
+func (a *AdHocTeamID) Encode(enc rpc.Encoder) error {
+	return enc.Encode(a.Export())
+}
+
+func (a *AdHocTeamID) Decode(dec rpc.Decoder) error {
+	var tmp AdHocTeamIDInternal__
+	err := dec.Decode(&tmp)
+	if err != nil {
+		return err
+	}
+	*a = tmp.Import()
+	return nil
+}
+
+func (a AdHocTeamID) Bytes() []byte {
+	return ((EntityID33)(a)).Bytes()
+}
+
+type TeamID EntityID33
+type TeamIDInternal__ EntityID33Internal__
+
+func (t TeamID) Export() *TeamIDInternal__ {
+	tmp := ((EntityID33)(t))
+	return ((*TeamIDInternal__)(tmp.Export()))
+}
+func (t TeamIDInternal__) Import() TeamID {
+	tmp := (EntityID33Internal__)(t)
+	return TeamID((func(x *EntityID33Internal__) (ret EntityID33) {
+		if x == nil {
+			return ret
+		}
+		return x.Import()
+	})(&tmp))
+}
+
+func (t *TeamID) Encode(enc rpc.Encoder) error {
+	return enc.Encode(t.Export())
+}
+
+func (t *TeamID) Decode(dec rpc.Decoder) error {
+	var tmp TeamIDInternal__
+	err := dec.Decode(&tmp)
+	if err != nil {
+		return err
+	}
+	*t = tmp.Import()
+	return nil
+}
+
+func (t TeamID) Bytes() []byte {
+	return ((EntityID33)(t)).Bytes()
+}
+
 type HostID EntityID33
 type HostIDInternal__ EntityID33Internal__
 
@@ -929,7 +999,7 @@ type EntityType int
 const (
 	EntityType_User               EntityType = 1
 	EntityType_Host               EntityType = 2
-	EntityType_Team               EntityType = 3
+	EntityType_NamedTeam          EntityType = 3
 	EntityType_Device             EntityType = 4
 	EntityType_X509Cert           EntityType = 5
 	EntityType_LocationVRF        EntityType = 6
@@ -946,12 +1016,13 @@ const (
 	EntityType_PassphraseKey      EntityType = 17
 	EntityType_PKIXCert           EntityType = 18
 	EntityType_BotTokenKey        EntityType = 19
+	EntityType_AdHocTeam          EntityType = 20
 )
 
 var EntityTypeMap = map[string]EntityType{
 	"User":               1,
 	"Host":               2,
-	"Team":               3,
+	"NamedTeam":          3,
 	"Device":             4,
 	"X509Cert":           5,
 	"LocationVRF":        6,
@@ -968,11 +1039,12 @@ var EntityTypeMap = map[string]EntityType{
 	"PassphraseKey":      17,
 	"PKIXCert":           18,
 	"BotTokenKey":        19,
+	"AdHocTeam":          20,
 }
 var EntityTypeRevMap = map[EntityType]string{
 	1:  "User",
 	2:  "Host",
-	3:  "Team",
+	3:  "NamedTeam",
 	4:  "Device",
 	5:  "X509Cert",
 	6:  "LocationVRF",
@@ -989,6 +1061,7 @@ var EntityTypeRevMap = map[EntityType]string{
 	17: "PassphraseKey",
 	18: "PKIXCert",
 	19: "BotTokenKey",
+	20: "AdHocTeam",
 }
 
 type EntityTypeInternal__ EntityType
@@ -4961,17 +5034,23 @@ func (p *PartyName) Bytes() []byte { return nil }
 type PartyType int
 
 const (
-	PartyType_User PartyType = 0
-	PartyType_Team PartyType = 1
+	PartyType_User      PartyType = 0
+	PartyType_Team      PartyType = 1
+	PartyType_NamedTeam PartyType = 2
+	PartyType_AdHocTeam PartyType = 3
 )
 
 var PartyTypeMap = map[string]PartyType{
-	"User": 0,
-	"Team": 1,
+	"User":      0,
+	"Team":      1,
+	"NamedTeam": 2,
+	"AdHocTeam": 3,
 }
 var PartyTypeRevMap = map[PartyType]string{
 	0: "User",
 	1: "Team",
+	2: "NamedTeam",
+	3: "AdHocTeam",
 }
 
 type PartyTypeInternal__ PartyType

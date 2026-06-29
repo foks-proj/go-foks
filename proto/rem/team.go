@@ -4040,6 +4040,63 @@ func (t *TeamConfig) Decode(dec rpc.Decoder) error {
 
 func (t *TeamConfig) Bytes() []byte { return nil }
 
+type CreateTeamCommonArg struct {
+	SubchainTreeLocationSeed lib.TreeLocation
+	Eta                      EditTeamArg
+	TeamMembershipLink       PostGenericLinkArg
+}
+type CreateTeamCommonArgInternal__ struct {
+	_struct                  struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
+	SubchainTreeLocationSeed *lib.TreeLocationInternal__
+	Eta                      *EditTeamArgInternal__
+	TeamMembershipLink       *PostGenericLinkArgInternal__
+}
+
+func (c CreateTeamCommonArgInternal__) Import() CreateTeamCommonArg {
+	return CreateTeamCommonArg{
+		SubchainTreeLocationSeed: (func(x *lib.TreeLocationInternal__) (ret lib.TreeLocation) {
+			if x == nil {
+				return ret
+			}
+			return x.Import()
+		})(c.SubchainTreeLocationSeed),
+		Eta: (func(x *EditTeamArgInternal__) (ret EditTeamArg) {
+			if x == nil {
+				return ret
+			}
+			return x.Import()
+		})(c.Eta),
+		TeamMembershipLink: (func(x *PostGenericLinkArgInternal__) (ret PostGenericLinkArg) {
+			if x == nil {
+				return ret
+			}
+			return x.Import()
+		})(c.TeamMembershipLink),
+	}
+}
+func (c CreateTeamCommonArg) Export() *CreateTeamCommonArgInternal__ {
+	return &CreateTeamCommonArgInternal__{
+		SubchainTreeLocationSeed: c.SubchainTreeLocationSeed.Export(),
+		Eta:                      c.Eta.Export(),
+		TeamMembershipLink:       c.TeamMembershipLink.Export(),
+	}
+}
+func (c *CreateTeamCommonArg) Encode(enc rpc.Encoder) error {
+	return enc.Encode(c.Export())
+}
+
+func (c *CreateTeamCommonArg) Decode(dec rpc.Decoder) error {
+	var tmp CreateTeamCommonArgInternal__
+	err := dec.Decode(&tmp)
+	if err != nil {
+		return err
+	}
+	*c = tmp.Import()
+	return nil
+}
+
+func (c *CreateTeamCommonArg) Bytes() []byte { return nil }
+
 var TeamAdminProtocolID rpc.ProtocolUniqueID = rpc.ProtocolUniqueID(0xdbe1ddbe)
 
 type ReserveTeamnameArg struct {
@@ -4839,6 +4896,45 @@ func (g *GetTeamConfigArg) Decode(dec rpc.Decoder) error {
 
 func (g *GetTeamConfigArg) Bytes() []byte { return nil }
 
+type CreateTeamAdHocArg struct {
+	Carg CreateTeamCommonArg
+}
+type CreateTeamAdHocArgInternal__ struct {
+	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
+	Carg    *CreateTeamCommonArgInternal__
+}
+
+func (c CreateTeamAdHocArgInternal__) Import() CreateTeamAdHocArg {
+	return CreateTeamAdHocArg{
+		Carg: (func(x *CreateTeamCommonArgInternal__) (ret CreateTeamCommonArg) {
+			if x == nil {
+				return ret
+			}
+			return x.Import()
+		})(c.Carg),
+	}
+}
+func (c CreateTeamAdHocArg) Export() *CreateTeamAdHocArgInternal__ {
+	return &CreateTeamAdHocArgInternal__{
+		Carg: c.Carg.Export(),
+	}
+}
+func (c *CreateTeamAdHocArg) Encode(enc rpc.Encoder) error {
+	return enc.Encode(c.Export())
+}
+
+func (c *CreateTeamAdHocArg) Decode(dec rpc.Decoder) error {
+	var tmp CreateTeamAdHocArgInternal__
+	err := dec.Decode(&tmp)
+	if err != nil {
+		return err
+	}
+	*c = tmp.Import()
+	return nil
+}
+
+func (c *CreateTeamAdHocArg) Bytes() []byte { return nil }
+
 type TeamAdminInterface interface {
 	ReserveTeamname(context.Context, lib.Name) (ReserveNameRes, error)
 	CreateTeam(context.Context, CreateTeamArg) error
@@ -4855,6 +4951,7 @@ type TeamAdminInterface interface {
 	LoadTeamRawInbox(context.Context, LoadTeamRawInboxArg) (TeamRawInbox, error)
 	RejectJoinReq(context.Context, RejectJoinReqArg) error
 	GetTeamConfig(context.Context) (TeamConfig, error)
+	CreateTeamAdHoc(context.Context, CreateTeamCommonArg) error
 	ErrorWrapper() func(error) lib.Status
 }
 
@@ -5059,6 +5156,17 @@ func (c TeamAdminClient) GetTeamConfig(ctx context.Context) (res TeamConfig, err
 		return
 	}
 	res = tmp.Import()
+	return
+}
+func (c TeamAdminClient) CreateTeamAdHoc(ctx context.Context, carg CreateTeamCommonArg) (err error) {
+	arg := CreateTeamAdHocArg{
+		Carg: carg,
+	}
+	warg := arg.Export()
+	err = c.Cli.Call2(ctx, rpc.NewMethodV2(TeamAdminProtocolID, 15, "TeamAdmin.createTeamAdHoc"), warg, nil, 0*time.Millisecond, teamAdminErrorUnwrapperAdapter{h: c.ErrorUnwrapper})
+	if err != nil {
+		return
+	}
 	return
 }
 func TeamAdminProtocol(i TeamAdminInterface) rpc.ProtocolV2 {
@@ -5390,6 +5498,27 @@ func TeamAdminProtocol(i TeamAdminInterface) rpc.ProtocolV2 {
 					},
 				},
 				Name: "getTeamConfig",
+			},
+			15: {
+				ServeHandlerDescription: rpc.ServeHandlerDescription{
+					MakeArg: func() interface{} {
+						var ret CreateTeamAdHocArgInternal__
+						return &ret
+					},
+					Handler: func(ctx context.Context, args interface{}) (interface{}, error) {
+						typedArg, ok := args.(*CreateTeamAdHocArgInternal__)
+						if !ok {
+							err := rpc.NewTypeError((*CreateTeamAdHocArgInternal__)(nil), args)
+							return nil, err
+						}
+						err := i.CreateTeamAdHoc(ctx, (typedArg.Import()).Carg)
+						if err != nil {
+							return nil, err
+						}
+						return nil, nil
+					},
+				},
+				Name: "createTeamAdHoc",
 			},
 		},
 		WrapError: TeamAdminMakeGenericErrorWrapper(i.ErrorWrapper()),

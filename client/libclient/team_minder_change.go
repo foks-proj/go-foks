@@ -110,15 +110,16 @@ func (t *TeamMinder) TeamChangeRoles(
 			defer tr.Unlock()
 
 			editor := TeamEditor{
-				tl:      tr.ldr,
-				tw:      tr.tw,
-				id:      tr.ldr.TeamID(),
-				tok:     tok,
-				pre:     tr.ldr.rosterPost,
-				cp:      tr.member,
-				hepks:   hepks,
-				changes: rows,
-				cfg:     cfg,
+				tl:       tr.ldr,
+				tw:       tr.tw,
+				id:       tr.ldr.TeamID(),
+				tok:      tok,
+				pre:      tr.ldr.rosterPost,
+				cp:       tr.member,
+				hepks:    hepks,
+				changes:  rows,
+				cfg:      cfg,
+				testOpts: t.teamEditorTestOpts(),
 			}
 
 			return editor.Run(m)

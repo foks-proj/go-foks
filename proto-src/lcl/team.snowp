@@ -200,4 +200,11 @@ protocol Team
     // used largely in testing and in debugging
     teamDumpMembershipChain @15 (
     ) -> TeamMembershipChainList;
+
+    // Create a team with no name; can include other founding members,
+    // even at different roles (but should like all be owners, too).
+    teamCreateAdHoc @16 (
+        members @0 : List(FQPartyParsedAndRole)
+    ) -> TeamCreateRes;
+
 }

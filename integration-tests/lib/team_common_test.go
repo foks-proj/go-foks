@@ -276,7 +276,7 @@ func (te *TestEnvWrapper) makeTeamForOwnerEvil(t *testing.T, u *TestUser, opts m
 	for _, role := range roles {
 		ss := core.RandomSecretSeed32()
 		ptk, err := core.NewSharedPrivateSuite25519(
-			proto.EntityType_Team,
+			proto.EntityType_NamedTeam,
 			role,
 			ss,
 			proto.FirstGeneration,
@@ -326,12 +326,13 @@ func (te *TestEnvWrapper) makeTeamForOwnerEvil(t *testing.T, u *TestUser, opts m
 
 	mlr, err := team.MakeEldestLink(
 		u.host,
-		nc,
+		&nc,
 		ko,
 		puk,
 		ptks,
 		tr,
-		*comm,
+		comm,
+		nil,
 	)
 	if err != nil {
 		return nil, err
@@ -529,12 +530,13 @@ func (te *TestEnvWrapper) makeTeamForOwner(t *testing.T, u *TestUser) *teamObj {
 
 	mlr, err := team.MakeEldestLink(
 		u.host,
-		nc,
+		&nc,
 		ko,
 		&puk,
 		ptks,
 		tr,
-		*comm,
+		comm,
+		nil,
 	)
 	require.NoError(t, err)
 

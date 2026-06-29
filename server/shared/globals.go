@@ -69,6 +69,10 @@ type GlobalContext struct {
 	// On prod, might be Amazon SQS, etc. In test, it's the queue service.
 	qs QueueServer
 
+	// Only need to insert an ad-hoc team name placeholder once per
+	// each host ID. We keep track of this here.
+	ahtMgr *AdHocTeamNamesManager
+
 	// A lot of services might need to poll the Merkle Query service. Available here
 	merkleGCli *BackendClient
 
@@ -147,6 +151,7 @@ func NewGlobalContext(opts *GlobalContextOpts) *GlobalContext {
 		kvShardMgr:      NewKVShardMgr(),
 		testing:         testing,
 		oauth2ConfigSet: sso.NewOAuth2ConfigSet(),
+		ahtMgr:          NewAdHocTeamNamesManager(),
 	}
 }
 
@@ -169,6 +174,12 @@ func (g *GlobalContext) SetClock(c clockwork.Clock) {
 		c = clockwork.NewRealClock()
 	}
 	g.clock = c
+}
+
+func (g *GlobalContext) AdHocTeamNamesManager() *AdHocTeamNamesManager {
+	g.RLock()
+	defer g.RUnlock()
+	return g.ahtMgr
 }
 
 func (g *GlobalContext) SetVanityHelper(v VanityHelper) {

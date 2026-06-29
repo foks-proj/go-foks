@@ -327,6 +327,14 @@ struct TeamConfig {
     maxRoles @0 : Uint; // max number of roles a team can have
 }
 
+// Used for creation of adhoc and real teams; no
+// naming fields used or needed.
+struct CreateTeamCommonArg {
+    subchainTreeLocationSeed @0 : lib.TreeLocation;
+    eta @1 : EditTeamArg;
+    teamMembershipLink @2 : PostGenericLinkArg;
+}
+
 // TeamAdmin protocol happens on the same machine that a user is logged into.
 // So we use the same auth mechanism as we do for the User protocol.
 protocol TeamAdmin errors lib.Status @0xdbe1ddbe {
@@ -422,6 +430,12 @@ protocol TeamAdmin errors lib.Status @0xdbe1ddbe {
     // TeamConfig applies to all teams on this server/vhost
     getTeamConfig @14 (
     ) -> TeamConfig;
+
+    // create an adhoc team; a lot like createTeam, but no name is needed;
+    // and we have a different teamID.
+    createTeamAdHoc @15 (
+        carg @0 : CreateTeamCommonArg
+    );
 }
 
 protocol TeamGuest errors lib.Status @0xf6d7585c {

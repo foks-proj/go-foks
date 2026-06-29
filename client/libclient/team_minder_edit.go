@@ -56,6 +56,9 @@ type TeamEditor struct {
 	rtps    []RemoteTokenPackage
 	cmd     []proto.ChangeMetadata
 
+	// testOpts bundles test-only overrides; production code leaves it nil.
+	testOpts *teamEditorTestOpts
+
 	// state updated along the way
 	signPriv       core.SharedPrivateSuiter // the private key of the actor
 	encryptPriv    core.SharedPrivateSuiter // the private key of the actor for sending DH encryptions
@@ -547,7 +550,7 @@ func (t *TeamEditor) makeTeamID(m MetaContext) error {
 	if err != nil {
 		return err
 	}
-	peid, err := eid.Persistent()
+	peid, err := eid.Persistent(proto.PartyType_NamedTeam)
 	if err != nil {
 		return err
 	}
@@ -742,7 +745,11 @@ func (t *TeamEditor) post(m MetaContext) error {
 }
 
 func (t *TeamEditor) RunMetadataOnly(m MetaContext) error {
-	err := t.checkArgs(m, true)
+	err := t.checkAdHocImmutable(m)
+	if err != nil {
+		return err
+	}
+	err = t.checkArgs(m, true)
 	if err != nil {
 		return err
 	}
@@ -772,12 +779,38 @@ func (t *TeamEditor) checkKeyLimits(m MetaContext) error {
 	return nil
 }
 
+// teamEditorTestOpts bundles test-only overrides for a TeamEditor. Production
+// code never constructs this; tests inject it via TeamMinderTestHooks.
+type teamEditorTestOpts struct {
+	// allowAdHocEdit disables the client-side guard that forbids editing ad-hoc
+	// teams, so tests can confirm the server independently rejects such edits.
+	allowAdHocEdit bool
+}
+
+// checkAdHocImmutable rejects edits to ad-hoc teams, which have a fixed
+// membership set at creation. Tests can disable it via testOpts.allowAdHocEdit
+// to confirm the server independently enforces the same rule.
+func (t *TeamEditor) checkAdHocImmutable(m MetaContext) error {
+	if t.testOpts != nil && t.testOpts.allowAdHocEdit {
+		return nil
+	}
+	if t.id.Type().IsAdHocTeam() {
+		return core.TeamError(team.AdHocTeamImmutableMsg)
+	}
+	return nil
+}
+
 func (t *TeamEditor) Run(m MetaContext) error {
 
 	m = m.WithLogTag("team-edit")
 	m.Infow("team-edit", "team", t.fqTeam(), "changes", t.changes)
 
-	err := t.checkArgs(m, false)
+	err := t.checkAdHocImmutable(m)
+	if err != nil {
+		return err
+	}
+
+	err = t.checkArgs(m, false)
 	if err != nil {
 		return err
 	}
@@ -840,4 +873,8 @@ func (t *TeamEditor) Run(m MetaContext) error {
 	}
 
 	return nil
+}
+
+func (t *TeamEditor) RunInTeamCreate(m MetaContext) error {
+	return core.NotImplementedError{}
 }

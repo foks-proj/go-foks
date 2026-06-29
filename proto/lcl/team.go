@@ -2012,6 +2012,66 @@ func (t *TeamDumpMembershipChainArg) Decode(dec rpc.Decoder) error {
 
 func (t *TeamDumpMembershipChainArg) Bytes() []byte { return nil }
 
+type TeamCreateAdHocArg struct {
+	Members []FQPartyParsedAndRole
+}
+type TeamCreateAdHocArgInternal__ struct {
+	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
+	Members *[](*FQPartyParsedAndRoleInternal__)
+}
+
+func (t TeamCreateAdHocArgInternal__) Import() TeamCreateAdHocArg {
+	return TeamCreateAdHocArg{
+		Members: (func(x *[](*FQPartyParsedAndRoleInternal__)) (ret []FQPartyParsedAndRole) {
+			if x == nil || len(*x) == 0 {
+				return nil
+			}
+			ret = make([]FQPartyParsedAndRole, len(*x))
+			for k, v := range *x {
+				if v == nil {
+					continue
+				}
+				ret[k] = (func(x *FQPartyParsedAndRoleInternal__) (ret FQPartyParsedAndRole) {
+					if x == nil {
+						return ret
+					}
+					return x.Import()
+				})(v)
+			}
+			return ret
+		})(t.Members),
+	}
+}
+func (t TeamCreateAdHocArg) Export() *TeamCreateAdHocArgInternal__ {
+	return &TeamCreateAdHocArgInternal__{
+		Members: (func(x []FQPartyParsedAndRole) *[](*FQPartyParsedAndRoleInternal__) {
+			if len(x) == 0 {
+				return nil
+			}
+			ret := make([](*FQPartyParsedAndRoleInternal__), len(x))
+			for k, v := range x {
+				ret[k] = v.Export()
+			}
+			return &ret
+		})(t.Members),
+	}
+}
+func (t *TeamCreateAdHocArg) Encode(enc rpc.Encoder) error {
+	return enc.Encode(t.Export())
+}
+
+func (t *TeamCreateAdHocArg) Decode(dec rpc.Decoder) error {
+	var tmp TeamCreateAdHocArgInternal__
+	err := dec.Decode(&tmp)
+	if err != nil {
+		return err
+	}
+	*t = tmp.Import()
+	return nil
+}
+
+func (t *TeamCreateAdHocArg) Bytes() []byte { return nil }
+
 type TeamInterface interface {
 	TeamCreate(context.Context, lib.NameUtf8) (TeamCreateRes, error)
 	TeamList(context.Context, lib.FQTeamParsed) (TeamRoster, error)
@@ -2029,6 +2089,7 @@ type TeamInterface interface {
 	TeamAdd(context.Context, TeamAddArg) error
 	TeamChangeRoles(context.Context, TeamChangeRolesArg) error
 	TeamDumpMembershipChain(context.Context) (TeamMembershipChainList, error)
+	TeamCreateAdHoc(context.Context, []FQPartyParsedAndRole) (TeamCreateRes, error)
 	ErrorWrapper() func(error) lib.Status
 	CheckArgHeader(ctx context.Context, h Header) error
 	MakeResHeader() Header
@@ -2418,6 +2479,30 @@ func (c TeamClient) TeamDumpMembershipChain(ctx context.Context) (res TeamMember
 	}
 	var tmp rpc.DataWrap[Header, TeamMembershipChainListInternal__]
 	err = c.Cli.Call2(ctx, rpc.NewMethodV2(TeamProtocolID, 15, "Team.teamDumpMembershipChain"), warg, &tmp, 0*time.Millisecond, teamErrorUnwrapperAdapter{h: c.ErrorUnwrapper})
+	if err != nil {
+		return
+	}
+	if c.CheckResHeader != nil {
+		err = c.CheckResHeader(ctx, tmp.Header)
+		if err != nil {
+			return
+		}
+	}
+	res = tmp.Data.Import()
+	return
+}
+func (c TeamClient) TeamCreateAdHoc(ctx context.Context, members []FQPartyParsedAndRole) (res TeamCreateRes, err error) {
+	arg := TeamCreateAdHocArg{
+		Members: members,
+	}
+	warg := &rpc.DataWrap[Header, *TeamCreateAdHocArgInternal__]{
+		Data: arg.Export(),
+	}
+	if c.MakeArgHeader != nil {
+		warg.Header = c.MakeArgHeader()
+	}
+	var tmp rpc.DataWrap[Header, TeamCreateResInternal__]
+	err = c.Cli.Call2(ctx, rpc.NewMethodV2(TeamProtocolID, 16, "Team.teamCreateAdHoc"), warg, &tmp, 0*time.Millisecond, teamErrorUnwrapperAdapter{h: c.ErrorUnwrapper})
 	if err != nil {
 		return
 	}
@@ -2893,6 +2978,35 @@ func TeamProtocol(i TeamInterface) rpc.ProtocolV2 {
 					},
 				},
 				Name: "teamDumpMembershipChain",
+			},
+			16: {
+				ServeHandlerDescription: rpc.ServeHandlerDescription{
+					MakeArg: func() interface{} {
+						var ret rpc.DataWrap[Header, *TeamCreateAdHocArgInternal__]
+						return &ret
+					},
+					Handler: func(ctx context.Context, args interface{}) (interface{}, error) {
+						typedWrappedArg, ok := args.(*rpc.DataWrap[Header, *TeamCreateAdHocArgInternal__])
+						if !ok {
+							err := rpc.NewTypeError((*rpc.DataWrap[Header, *TeamCreateAdHocArgInternal__])(nil), args)
+							return nil, err
+						}
+						if err := i.CheckArgHeader(ctx, typedWrappedArg.Header); err != nil {
+							return nil, err
+						}
+						typedArg := typedWrappedArg.Data
+						tmp, err := i.TeamCreateAdHoc(ctx, (typedArg.Import()).Members)
+						if err != nil {
+							return nil, err
+						}
+						ret := rpc.DataWrap[Header, *TeamCreateResInternal__]{
+							Data:   tmp.Export(),
+							Header: i.MakeResHeader(),
+						}
+						return &ret, nil
+					},
+				},
+				Name: "teamCreateAdHoc",
 			},
 		},
 		WrapError: TeamMakeGenericErrorWrapper(i.ErrorWrapper()),

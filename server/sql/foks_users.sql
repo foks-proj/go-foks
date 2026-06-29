@@ -16,7 +16,7 @@ CREATE TABLE name_reservations (
 
 CREATE TABLE names (
     short_host_id SMALLINT NOT NULL,
-    name_ascii VARCHAR(255),
+    name_ascii VARCHAR(255), /* is unique per short_host_id via the primary key */
     reuse_id INT NOT NULL,
     name_utf8 VARCHAR(255),
     state name_state NOT NULL,

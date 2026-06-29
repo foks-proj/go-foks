@@ -258,14 +258,14 @@ func (e EntityID) ToUID() (UID, error) {
 	return ret, nil
 }
 
-func (t TeamID) Type() EntityType { return EntityType_Team }
+func (t AdHocTeamID) Type() EntityType { return EntityType_AdHocTeam }
 
 func (e EntityID) ToTeamID() (TeamID, error) {
 	var ret TeamID
 	if len(e) != len(ret) {
 		return ret, EntityError("wrong length for team ID")
 	}
-	if e.Type() != ret.Type() {
+	if e.Type() != EntityType_NamedTeam && e.Type() != EntityType_AdHocTeam {
 		return ret, EntityError("wrong leading byte for team ID")
 	}
 	copy(ret[:], e)
@@ -574,8 +574,8 @@ func (t EntityType) IsEd25519() bool {
 	case EntityType_User, EntityType_Host, EntityType_Device,
 		EntityType_X509Cert, EntityType_LocationVRF, EntityType_Service,
 		EntityType_HostMerkleSigner, EntityType_HostMetadataSigner, EntityType_HostTLSCA,
-		EntityType_Subkey, EntityType_Team, EntityType_PTKVerify, EntityType_PUKVerify,
-		EntityType_BackupKey, EntityType_PassphraseKey, EntityType_BotTokenKey:
+		EntityType_Subkey, EntityType_NamedTeam, EntityType_PTKVerify, EntityType_PUKVerify,
+		EntityType_BackupKey, EntityType_PassphraseKey, EntityType_BotTokenKey, EntityType_AdHocTeam:
 		return true
 	default:
 		return false
@@ -2507,7 +2507,7 @@ func (t EntityType) RollingType() EntityType {
 	switch t {
 	case EntityType_User:
 		return EntityType_PUKVerify
-	case EntityType_Team:
+	case EntityType_NamedTeam, EntityType_AdHocTeam:
 		return EntityType_PTKVerify
 	default:
 		return t
@@ -2532,22 +2532,27 @@ func (e EntityID) ToRollingEntityID() (EntityID, error) {
 	return e.Type().RollingType().MakeEntityID(e.Data())
 }
 
-func (t EntityType) PersistentType() EntityType {
+func (t EntityType) PersistentType(p PartyType) EntityType {
 	switch t {
 	case EntityType_PUKVerify:
 		return EntityType_User
 	case EntityType_PTKVerify:
-		return EntityType_Team
+		switch p {
+		case PartyType_AdHocTeam:
+			return EntityType_AdHocTeam
+		default:
+			return EntityType_NamedTeam
+		}
 	default:
 		return t
 	}
 }
 
-func (e EntityID) Persistent() (EntityID, error) {
+func (e EntityID) Persistent(p PartyType) (EntityID, error) {
 	if len(e) < 2 {
 		return nil, DataError("entity ID too short")
 	}
-	return e.Type().PersistentType().MakeEntityID(e.Data())
+	return e.Type().PersistentType(p).MakeEntityID(e.Data())
 }
 
 func (f FQEntityFixed) Unfix() FQEntity {
@@ -2641,15 +2646,27 @@ func (p PartyID) Check() error {
 	switch p.EntityID().Type() {
 	case EntityType_User:
 		return nil
-	case EntityType_Team:
+	case EntityType_NamedTeam, EntityType_AdHocTeam:
 		return nil
 	default:
 		return DataError("bad principal id")
 	}
 }
 
+func (t EntityType) IsTeam() bool {
+	return t == EntityType_NamedTeam || t == EntityType_AdHocTeam
+}
+
+func (t EntityType) IsNamedTeam() bool {
+	return t == EntityType_NamedTeam
+}
+
+func (t EntityType) IsAdHocTeam() bool {
+	return t == EntityType_AdHocTeam
+}
+
 func (p PartyID) IsUser() bool { return len(p) > 2 && p.EntityID().Type() == EntityType_User }
-func (p PartyID) IsTeam() bool { return len(p) > 2 && p.EntityID().Type() == EntityType_Team }
+func (p PartyID) IsTeam() bool { return len(p) > 2 && p.EntityID().Type().IsTeam() }
 
 func (p PartyID) Select() (*UID, *TeamID, error) {
 	if len(p) != 33 {
@@ -2662,7 +2679,7 @@ func (p PartyID) Select() (*UID, *TeamID, error) {
 			return nil, nil, err
 		}
 		return &uid, nil, nil
-	case EntityType_Team:
+	case EntityType_NamedTeam, EntityType_AdHocTeam:
 		tid, err := p.TeamID()
 		if err != nil {
 			return nil, nil, err
@@ -2763,7 +2780,7 @@ func (e EntityID) ToPartyID() (PartyID, error) {
 		return nil, DataError("zero party")
 	}
 	switch e.Type() {
-	case EntityType_User, EntityType_Team:
+	case EntityType_User, EntityType_NamedTeam, EntityType_AdHocTeam:
 		return PartyID(e), nil
 	default:
 		return nil, DataError("bad party")
@@ -5337,3 +5354,31 @@ func (v KVVersion) GetVersion() Version {
 func (v RTChannelSetVersion) GetVersion() Version {
 	return Version(v)
 }
+
+func (t TeamID) Type() EntityType {
+	return t.EntityID().Type()
+}
+
+func (t TeamID) NamedTeamID() *NamedTeamID {
+	if t.Type() != EntityType_NamedTeam {
+		return nil
+	}
+	return (*NamedTeamID)(&t)
+}
+
+func (t TeamID) AdHocTeamID() *AdHocTeamID {
+	if t.Type() != EntityType_AdHocTeam {
+		return nil
+	}
+	return (*AdHocTeamID)(&t)
+}
+
+func (t TeamID) Select() (*NamedTeamID, *AdHocTeamID, error) {
+	if t.Type() != EntityType_NamedTeam && t.Type() != EntityType_AdHocTeam {
+		return nil, nil, DataError("bad team ID")
+	}
+	return t.NamedTeamID(), t.AdHocTeamID(), nil
+}
+
+func (t TeamID) IsNamedTeam() bool { return t.Type() == EntityType_NamedTeam }
+func (t TeamID) IsAdHocTeam() bool { return t.Type() == EntityType_AdHocTeam }

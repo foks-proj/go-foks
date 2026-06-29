@@ -182,6 +182,16 @@ func (h *HEPKSet) Merge(o *HEPKSet) *HEPKSet {
 	return h
 }
 
+func (h *HEPKSet) MergeInto(o *HEPKSet) {
+	if o == nil {
+		return
+	}
+	for k, v := range h.m {
+		v := v
+		o.m[k] = v
+	}
+}
+
 func (h *HEPKSet) Export() proto.HEPKSet {
 	ret := proto.HEPKSet{
 		V: make([]proto.HEPK, 0, len(h.m)),

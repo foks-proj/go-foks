@@ -949,7 +949,7 @@ func MakeEldestLink(
 	if err != nil {
 		return nil, err
 	}
-	user, err := ske.VerifyKey.Persistent()
+	user, err := ske.VerifyKey.Persistent(proto.PartyType_User)
 	if err != nil {
 		return nil, err
 	}

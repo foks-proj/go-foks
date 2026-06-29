@@ -18,6 +18,20 @@ import (
 
 type TeamMinderTestHooks struct {
 	PostChainHook func() error
+
+	// AllowAdHocTeamEdits disables the client-side guard that forbids editing
+	// ad-hoc teams, so tests can confirm the server rejects such edits on its
+	// own. Production code never sets this.
+	AllowAdHocTeamEdits bool
+}
+
+// teamEditorTestOpts returns the test-only overrides to apply to TeamEditors
+// constructed by this minder, or nil in production (the common case).
+func (t *TeamMinder) teamEditorTestOpts() *teamEditorTestOpts {
+	if t.TestHooks == nil || !t.TestHooks.AllowAdHocTeamEdits {
+		return nil
+	}
+	return &teamEditorTestOpts{allowAdHocEdit: t.TestHooks.AllowAdHocTeamEdits}
 }
 
 type teamCert struct {
@@ -1208,219 +1222,33 @@ func (t *TeamMinder) Create(
 	*proto.TeamID,
 	error,
 ) {
-	var hepks core.HEPKSet
-	au, err := t.activeUser(m)
+	creator := TeamCreator{
+		tm: t,
+		nm: nm,
+	}
+	err := creator.Run(m)
 	if err != nil {
 		return nil, err
 	}
-	cli, err := au.TeamAdminClient(m)
+	return creator.TeamID(), nil
+}
+
+func (t *TeamMinder) CreateAdHoc(
+	m MetaContext,
+	otherFoundingMembers []lcl.FQPartyParsedAndRole,
+) (
+	*proto.TeamID,
+	error,
+) {
+	creator := TeamCreator{
+		tm:    t,
+		membs: otherFoundingMembers,
+	}
+	err := creator.Run(m)
 	if err != nil {
 		return nil, err
 	}
-
-	nmn, err := core.NormalizeName(nm)
-	if err != nil {
-		return nil, err
-	}
-
-	rtr, err := cli.ReserveTeamname(m.Ctx(), nmn)
-	if err != nil {
-		return nil, err
-	}
-
-	// For now, only possible to have the user's owner PUK as the time creator, but
-	// thhat is an artificial limitation, can potentially relax it.
-	srcRole := team.UserSrcRole
-	puk := au.PrivKeys.LatestPuk()
-	if puk == nil {
-		return nil, core.KeyNotFoundError{Which: "puk"}
-	}
-	dstRole := proto.OwnerRole
-
-	hostid := au.HostID()
-
-	skb, err := core.NewSharedKeyBoxer(hostid, puk)
-	if err != nil {
-		return nil, err
-	}
-	mePub, err := core.PublicizeToSPSBoxer(puk, au.FQU().FQParty())
-	if err != nil {
-		return nil, err
-	}
-
-	var ptks []core.SharedPrivateSuiter
-	ptkMap := make(map[core.RoleKey]core.SharedPrivateSuiter)
-
-	roles := team.EldestRoles()
-
-	for _, role := range roles {
-		ss := core.RandomSecretSeed32()
-		ptk, err := core.NewSharedPrivateSuite25519(
-			proto.EntityType_Team,
-			role,
-			ss,
-			proto.FirstGeneration, // == 1, not 0.
-			hostid,
-		)
-		if err != nil {
-			return nil, err
-		}
-		err = hepks.AddHEPKExporter(ptk)
-		if err != nil {
-			return nil, err
-		}
-
-		ptks = append(ptks, ptk)
-		err = skb.Box(ptk, mePub)
-		if err != nil {
-			return nil, err
-		}
-		rk, err := core.ImportRole(role)
-		if err != nil {
-			return nil, err
-		}
-		ptkMap[*rk] = ptk
-	}
-
-	boxes, err := skb.Finish()
-	if err != nil {
-		return nil, err
-	}
-
-	ma, err := au.MerkleAgent(m)
-	if err != nil {
-		return nil, err
-	}
-
-	tr, err := ma.GetLatestTreeRootFromServer(m.Ctx())
-	if err != nil {
-		return nil, err
-	}
-
-	nc := rem.NameCommitment{
-		Name: nmn,
-		Seq:  rtr.Seq,
-	}
-
-	rmkey, err := team.NewTeamRemovalKey()
-	if err != nil {
-		return nil, err
-	}
-	comm, err := core.ComputeKeyCommitment(rmkey)
-	if err != nil {
-		return nil, err
-	}
-
-	mlr, err := team.MakeEldestLink(
-		hostid,
-		nc,
-		proto.KeyOwner{
-			Party:   au.UID().ToPartyID(),
-			SrcRole: srcRole,
-		},
-		puk,
-		ptks,
-		tr,
-		*comm,
-	)
-	seqno := mlr.Seqno
-	if err != nil {
-		return nil, err
-	}
-
-	tid, err := mlr.TeamID.ToTeamID()
-	if err != nil {
-		return nil, err
-	}
-
-	fqt := proto.FQTeam{
-		Team: tid,
-		Host: hostid,
-	}
-
-	adminPtk, found := ptkMap[core.AdminRole]
-	if !found {
-		return nil, core.KeyNotFoundError{Which: "admin PTK"}
-	}
-
-	adminPtkPub, err := core.PublicizeToSPSBoxer(adminPtk, fqt.FQParty())
-	if err != nil {
-		return nil, err
-	}
-
-	trkbp, err := team.BoxTeamRemovalKey(
-		puk,
-		adminPtkPub,
-		mePub,
-		rem.TeamRemovalKeyMetadata{
-			Tm:     fqt,
-			Member: au.FQU().FQParty(),
-			Dst: proto.RoleAndSeqno{
-				Seqno: seqno,
-				Role:  dstRole,
-			},
-			SrcRole: srcRole,
-		},
-		rmkey,
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	glp := proto.NewGenericLinkPayloadWithTeammembership(
-		proto.TeamMembershipLink{
-			Team:    fqt,
-			SrcRole: srcRole,
-			State: proto.NewTeamMembershipDetailsWithApproved(
-				proto.TeamMembershipApprovedDetails{
-					Dst: proto.RoleAndSeqno{
-						Seqno: seqno,
-						Role:  dstRole,
-					},
-					KeyComm: trkbp.Comm,
-				},
-			),
-		},
-	)
-
-	glink, err := t.makeMembershipChainLink(
-		m, nil, glp, &tr,
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	arg := rem.CreateTeamArg{
-		NameUtf8:                 nm,
-		TeamnameCommitmentKey:    *mlr.TeamnameCommitmentKey,
-		SubchainTreeLocationSeed: *mlr.SubchainTreeLocationSeed,
-		Rnr:                      rtr,
-		Eta: rem.EditTeamArg{
-			Link:             *mlr.Link,
-			NextTreeLocation: *mlr.NextTreeLocation,
-			Obd: rem.OffchainBoxData{
-				PtkBoxes:    *boxes,
-				RemovalKeys: []rem.TeamRemovalBoxData{*trkbp},
-				Hepks:       hepks.Export(),
-			},
-		},
-		TeamMembershipLink: rem.PostGenericLinkArg{
-			Link:             glink.Link,
-			NextTreeLocation: glink.NextTreeLocation,
-		},
-	}
-
-	err = cli.CreateTeam(m.Ctx(), arg)
-	if err != nil {
-		return nil, err
-	}
-
-	teamID, err := mlr.TeamID.ToTeamID()
-	if err != nil {
-		return nil, err
-	}
-
-	return &teamID, nil
+	return creator.TeamID(), nil
 }
 
 // makeKeyRingRefesher returns a function that is used to reload the team with the same args,

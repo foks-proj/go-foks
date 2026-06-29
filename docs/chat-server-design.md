@@ -761,6 +761,10 @@ CLI-only in the core FOKS repository.
 - Complementary client features
 
 ### Stage 1d
+- build inbox fan-out machinery
+- `rt inbox` command to query inbox state
+
+### Stage 1e
 
 - potentially build signatures for KV-store, and messages
     - ward off misattribution attacks

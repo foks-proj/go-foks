@@ -667,7 +667,7 @@ func (u *TestUser) SignupWithOptsAndError(
 
 	pukid, err := puk.EntityID()
 	require.NoError(t, err)
-	uid, err := pukid.Persistent()
+	uid, err := pukid.Persistent(proto.PartyType_User)
 	require.NoError(t, err)
 
 	devicePub, err := device.Publicize(&hostID)
@@ -757,6 +757,19 @@ func (u *TestUser) GetCertWithErr(ctx context.Context, cli *rem.RegClient) error
 func (u *TestUser) GetCert(ctx context.Context, t *testing.T, cli *rem.RegClient) {
 	err := u.GetCertWithErr(ctx, cli)
 	require.NoError(t, err)
+}
+
+func (u *TestUser) addPUKsToMetaContext(
+	t *testing.T,
+	m libclient.MetaContext,
+) {
+	puks := u.puks
+	puksList := make([]core.SharedPrivateSuiter, 0, len(puks))
+	for _, puk := range puks {
+		puksList = append(puksList, &puk)
+	}
+	pukSet := libclient.NewPUKSet(puksList, u.host)
+	m.G().ActiveUser().PrivKeys.SetPUKs(pukSet)
 }
 
 func GenerateNewTestUser(t *testing.T) *TestUser {

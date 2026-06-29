@@ -446,7 +446,7 @@ func importPublicSuiteHelper(
 		return nil, HostMismatchError{}
 	}
 	switch eid.Type() {
-	case proto.EntityType_Device, proto.EntityType_User, proto.EntityType_Team,
+	case proto.EntityType_Device, proto.EntityType_User, proto.EntityType_NamedTeam,
 		proto.EntityType_BackupKey, proto.EntityType_PassphraseKey,
 		proto.EntityType_BotTokenKey:
 		if dhtyp != proto.DHType_Curve25519 {

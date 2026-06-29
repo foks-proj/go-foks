@@ -13,6 +13,32 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 )
 
+func InsertNameInner(
+	m MetaContext,
+	tx pgx.Tx,
+	hostID core.HostID,
+	name proto.Name,
+	nameUtf8 proto.NameUtf8,
+	typ rem.NameType,
+	reuseId proto.NameSeqno,
+	maybeRepeat bool,
+) error {
+	tag, err := tx.Exec(m.Ctx(),
+		`INSERT INTO names(short_host_id,name_ascii,name_utf8,reuse_id,state,typ,ctime)
+		VALUES($1,$2,$3,$4,$5,$6,NOW())`+
+			core.Sel(maybeRepeat, " ON CONFLICT DO NOTHING", ""),
+		hostID.Short.ExportToDB(),
+		name, nameUtf8, reuseId, "in_use", typ.ExportToDB(),
+	)
+	if err != nil {
+		return err
+	}
+	if !maybeRepeat && tag.RowsAffected() != 1 {
+		return core.InsertError("names")
+	}
+	return nil
+}
+
 func InsertName(
 	m MetaContext,
 	tx pgx.Tx,
@@ -52,19 +78,9 @@ func InsertName(
 		return core.ReservationError("invalid name reuse_id")
 	}
 
-	tag, err := tx.Exec(m.Ctx(),
-		`INSERT INTO names(short_host_id,name_ascii,name_utf8,reuse_id,ctime,mtime,state,typ)
-	     VALUES($1,$2,$3,$4,NOW(),NOW(),'in_use',$5)`,
-		int(hostID.Short),
-		name, nameUtf8, reuseId,
-		typ.ExportToDB(),
-	)
+	err = InsertNameInner(m, tx, hostID, name, nameUtf8, typ, reuseId, false)
 	if err != nil {
-		m.Errorw("signup", "stage", "insert usernames", "err", err)
 		return err
-	}
-	if tag.RowsAffected() != 1 {
-		return core.InsertError("usernames")
 	}
 
 	pun := proto.Name(name).Normalize()
