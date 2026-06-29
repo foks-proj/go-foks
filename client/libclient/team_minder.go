@@ -23,6 +23,13 @@ type TeamMinderTestHooks struct {
 	// ad-hoc teams, so tests can confirm the server rejects such edits on its
 	// own. Production code never sets this.
 	AllowAdHocTeamEdits bool
+
+	// AdHocMutateFoundingMembers, if set, rewrites the ad-hoc founding member
+	// roles in place just before the eldest link is built and signed. It lets a
+	// test submit a membership the client would otherwise refuse (e.g. a remote
+	// user or a team) so it can confirm the server's team player rejects it.
+	// Production code never sets this.
+	AdHocMutateFoundingMembers func([]proto.MemberRole)
 }
 
 // teamEditorTestOpts returns the test-only overrides to apply to TeamEditors

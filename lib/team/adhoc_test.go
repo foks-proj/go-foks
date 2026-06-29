@@ -7,6 +7,7 @@ import (
 	"slices"
 	"testing"
 
+	"github.com/foks-proj/go-foks/lib/core"
 	proto "github.com/foks-proj/go-foks/proto/lib"
 	"github.com/stretchr/testify/require"
 )
@@ -78,4 +79,44 @@ func TestMashAdHocTeamIDSortsInputInPlace(t *testing.T) {
 	require.True(t, slices.IsSortedFunc(parties, func(x, y proto.FQUser) int {
 		return x.ToFQParty().Cmp(y.ToFQParty())
 	}))
+}
+
+// mkTestMember builds a MemberRole of the given entity type and host scope. A
+// nil host means a local member; a non-nil host means a remote one.
+func mkTestMember(t *testing.T, et proto.EntityType, host *proto.HostID) proto.MemberRole {
+	eid, err := et.MakeEntityID(make([]byte, et.Len()-1))
+	require.NoError(t, err)
+	return proto.MemberRole{
+		DstRole: proto.OwnerRole,
+		Member: proto.Member{
+			Id:      proto.FQEntityInHostScope{Entity: eid, Host: host},
+			SrcRole: proto.OwnerRole,
+		},
+	}
+}
+
+func TestCheckAdHocMembersAreLocalUsers(t *testing.T) {
+	remoteHost := proto.HostID{0xbb}
+
+	localUser := mkTestMember(t, proto.EntityType_User, nil)
+	remoteUser := mkTestMember(t, proto.EntityType_User, &remoteHost)
+	namedTeam := mkTestMember(t, proto.EntityType_NamedTeam, nil)
+	adHocTeam := mkTestMember(t, proto.EntityType_AdHocTeam, nil)
+
+	// All local users (including the empty set) are accepted.
+	require.NoError(t, checkAdHocMembersAreLocalUsers(nil))
+	require.NoError(t, checkAdHocMembersAreLocalUsers(
+		[]proto.MemberRole{localUser, localUser}))
+
+	// A team member -- named or ad-hoc -- is rejected as "not a user".
+	notAUser := core.LinkError("ad-hoc team members must be users, not teams")
+	require.Equal(t, notAUser, checkAdHocMembersAreLocalUsers(
+		[]proto.MemberRole{localUser, namedTeam}))
+	require.Equal(t, notAUser, checkAdHocMembersAreLocalUsers(
+		[]proto.MemberRole{adHocTeam}))
+
+	// A remote (cross-host) user is rejected as "not local".
+	notLocal := core.LinkError("ad-hoc team members must be local (same-host) users")
+	require.Equal(t, notLocal, checkAdHocMembersAreLocalUsers(
+		[]proto.MemberRole{localUser, remoteUser}))
 }

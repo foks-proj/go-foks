@@ -561,6 +561,11 @@ func (t *TeamCreator) Run(m MetaContext) error {
 	if err != nil {
 		return err
 	}
+	// Test-only: let a test corrupt the founding membership (e.g. make a member
+	// remote) before the eldest link is signed, to exercise server-side rejection.
+	if h := t.tm.TestHooks; h != nil && h.AdHocMutateFoundingMembers != nil {
+		h.AdHocMutateFoundingMembers(t.otherMrs)
+	}
 	err = t.makeBoxes(m)
 	if err != nil {
 		return err

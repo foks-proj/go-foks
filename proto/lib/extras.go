@@ -2663,6 +2663,9 @@ func (p PartyID) Check() error {
 func (t EntityType) IsTeam() bool {
 	return t == EntityType_NamedTeam || t == EntityType_AdHocTeam
 }
+func (t EntityType) IsUser() bool {
+	return t == EntityType_User
+}
 
 func (t EntityType) IsNamedTeam() bool {
 	return t == EntityType_NamedTeam
