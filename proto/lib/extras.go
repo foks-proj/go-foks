@@ -2666,13 +2666,15 @@ func (t EntityType) IsTeam() bool {
 func (t EntityType) IsUser() bool {
 	return t == EntityType_User
 }
-
 func (t EntityType) IsNamedTeam() bool {
 	return t == EntityType_NamedTeam
 }
 
 func (t EntityType) IsAdHocTeam() bool {
 	return t == EntityType_AdHocTeam
+}
+func (t EntityType) IsAdHocTeamMashed() bool {
+	return t == EntityType_AdHocTeamMashed
 }
 
 func (p PartyID) IsUser() bool { return len(p) > 2 && p.EntityID().Type() == EntityType_User }
@@ -2911,7 +2913,7 @@ func (e FQEntity) FQParty() (*FQParty, error) {
 func (t FQTeam) ToFQTeamIDOrName() FQTeamIDOrName {
 	return FQTeamIDOrName{
 		Host:     t.Host,
-		IdOrName: NewTeamIDOrNameWithTrue(t.Team),
+		IdOrName: NewTeamIDOrNameWithTrue(t.Team.EntityID()),
 	}
 }
 

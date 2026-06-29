@@ -32,10 +32,11 @@ func doMash(inputs proto.AdHocTeamMashInputs) (
 	error,
 ) {
 	var output proto.AdHocTeamMashedID
-	err := core.PrefixedHashInto(&inputs, output[:])
+	err := core.PrefixedHashInto(&inputs, output[1:])
 	if err != nil {
 		return nil, err
 	}
+	output[0] = byte(proto.EntityType_AdHocTeamMashed)
 	return &output, nil
 }
 

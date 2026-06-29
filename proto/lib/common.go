@@ -779,6 +779,41 @@ func (a AdHocTeamID) Bytes() []byte {
 	return ((EntityID33)(a)).Bytes()
 }
 
+type AdHocTeamMashedID EntityID33
+type AdHocTeamMashedIDInternal__ EntityID33Internal__
+
+func (a AdHocTeamMashedID) Export() *AdHocTeamMashedIDInternal__ {
+	tmp := ((EntityID33)(a))
+	return ((*AdHocTeamMashedIDInternal__)(tmp.Export()))
+}
+func (a AdHocTeamMashedIDInternal__) Import() AdHocTeamMashedID {
+	tmp := (EntityID33Internal__)(a)
+	return AdHocTeamMashedID((func(x *EntityID33Internal__) (ret EntityID33) {
+		if x == nil {
+			return ret
+		}
+		return x.Import()
+	})(&tmp))
+}
+
+func (a *AdHocTeamMashedID) Encode(enc rpc.Encoder) error {
+	return enc.Encode(a.Export())
+}
+
+func (a *AdHocTeamMashedID) Decode(dec rpc.Decoder) error {
+	var tmp AdHocTeamMashedIDInternal__
+	err := dec.Decode(&tmp)
+	if err != nil {
+		return err
+	}
+	*a = tmp.Import()
+	return nil
+}
+
+func (a AdHocTeamMashedID) Bytes() []byte {
+	return ((EntityID33)(a)).Bytes()
+}
+
 type TeamID EntityID33
 type TeamIDInternal__ EntityID33Internal__
 
@@ -1017,6 +1052,7 @@ const (
 	EntityType_PKIXCert           EntityType = 18
 	EntityType_BotTokenKey        EntityType = 19
 	EntityType_AdHocTeam          EntityType = 20
+	EntityType_AdHocTeamMashed    EntityType = 21
 )
 
 var EntityTypeMap = map[string]EntityType{
@@ -1040,6 +1076,7 @@ var EntityTypeMap = map[string]EntityType{
 	"PKIXCert":           18,
 	"BotTokenKey":        19,
 	"AdHocTeam":          20,
+	"AdHocTeamMashed":    21,
 }
 var EntityTypeRevMap = map[EntityType]string{
 	1:  "User",
@@ -1062,6 +1099,7 @@ var EntityTypeRevMap = map[EntityType]string{
 	18: "PKIXCert",
 	19: "BotTokenKey",
 	20: "AdHocTeam",
+	21: "AdHocTeamMashed",
 }
 
 type EntityTypeInternal__ EntityType

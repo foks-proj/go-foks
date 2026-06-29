@@ -52,7 +52,15 @@ func lookupTeamMemberVerifyKey(
 	}
 	var teamID proto.TeamID
 	if isId {
-		teamID = req.Team.IdOrName.True()
+		eid := req.Team.IdOrName.True()
+		if eid.Type().IsTeam() {
+			teamID, err = eid.ToTeamID()
+			if err != nil {
+				return nil, nil, &maskableError{err: err, mask: false}
+			}
+		} else {
+			return nil, nil, &maskableError{err: core.InternalError("expected a teamID or a mashed teamID"), mask: false}
+		}
 	} else {
 		name := req.Team.IdOrName.False()
 		err := name.AssertNormalized()
@@ -379,7 +387,7 @@ func CheckTeamVOBearerToken(
 		Req: rem.TeamVOBearerTokenReq{
 			Team: proto.FQTeamIDOrName{
 				Host:     m.HostID().Id,
-				IdOrName: proto.NewTeamIDOrNameWithTrue(teamID),
+				IdOrName: proto.NewTeamIDOrNameWithTrue(teamID.EntityID()),
 			},
 			Gen: proto.Generation(g),
 			Member: proto.FQParty{

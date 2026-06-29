@@ -581,7 +581,7 @@ func (l *TeamLoader) makeViewToken(m MetaContext) error {
 	idOrName := core.Sel(
 		!l.ntn.IsZero(),
 		proto.NewTeamIDOrNameWithFalse(l.ntn),
-		proto.NewTeamIDOrNameWithTrue(l.Arg.Team.Team),
+		proto.NewTeamIDOrNameWithTrue(l.Arg.Team.Team.EntityID()),
 	)
 
 	req := rem.TeamVOBearerTokenReq{

@@ -195,8 +195,12 @@ func checkTeamVOBearerTokenForLocalParentTeam(
 		return nil, nil, core.HostMismatchError{}
 	}
 	id := creds.Req.Team.IdOrName.True()
+	teamID, err := id.ToTeamID()
+	if err != nil {
+		return nil, nil, err
+	}
 	role := creds.Role
-	return &id, &role, nil
+	return &teamID, &role, nil
 }
 
 func checkTeamVOBearerTokenForTeam(
@@ -220,7 +224,7 @@ func checkTeamVOBearerTokenForTeam(
 		return nil, core.InternalError("expected a teamID from CheckTeamVOBearerToken")
 	}
 	teamID := creds.Req.Team.IdOrName.True()
-	if !teamID.Eq(team.Team) || !creds.Req.Team.Host.Eq(m.HostID().Id) {
+	if !teamID.Eq(team.Team.EntityID()) || !creds.Req.Team.Host.Eq(m.HostID().Id) {
 		return nil, core.PermissionError("wrong token for team load")
 	}
 	if creds.Req.Member.Host.Eq(m.HostID().Id) && m.UID().IsZero() {

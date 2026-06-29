@@ -45,6 +45,7 @@ typedef PassphraseKeyID = EntityID;      // Leading byte 0x11 -- 33 Bytes (EdDSA
 typedef PKIXCertID = EntityID;           // Leading byte 0x12 -- 33 Bytes (ECDSA or RSA) - Unspecified PKIX key from crypto.Public
 typedef BotTokenKeyID = EntityID;        // Leading byte 0x13 -- 33 Bytes (EdDSA) -- for bot tokens
 typedef AdHocTeamID = EntityID33;        // Leading byte 0x14 -- 33 Bytes (EdDSA) -- for adhoc teams
+typedef AdHocTeamMashedID = EntityID33;  // Leading byte 0x15 -- 33 Bytes (Hash of sorted party IDs) -- for adhoc teams
 
 typedef TeamID = EntityID33;             // can be a NamedTeamID or an AdHocTeamID
 
@@ -79,6 +80,7 @@ enum EntityType {
     PKIXCert @18;
     BotTokenKey @19;
     AdHocTeam @20; // Specifically an AdHocTeam; note there is no Team type, since it can be either a NamedTeam or an AdHocTeam
+    AdHocTeamMashed @21; // Hash of sorted party IDs for adhoc teams
 }
 
 enum DHType {

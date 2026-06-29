@@ -79,7 +79,7 @@ variant TeamInvite switch (v : TeamInviteVersion) {
 
 variant TeamIDOrName switch (id: Bool) {
     case false @0 : Name;
-    case true @1 : TeamID;
+    case true @1 : EntityID; // Can be a TeamID or a MashedTeamID (for adhoc teams)
 }
 
 struct FQTeamIDOrName {
@@ -91,8 +91,6 @@ struct SenderPair {
     verifyKey @0 : EntityID;
     hepkFp @1 : HEPKFingerprint;
 }
-
-typedef AdHocTeamMashedID = StdHash;
 
 enum AdHocTeamMashLayout {
     UserOwnersOnly @1;

@@ -748,8 +748,8 @@ func (t *TeamInvite) Bytes() []byte { return nil }
 
 type TeamIDOrName struct {
 	Id    bool
-	F_0__ *Name   `json:"f0,omitempty"`
-	F_1__ *TeamID `json:"f1,omitempty"`
+	F_0__ *Name     `json:"f0,omitempty"`
+	F_1__ *EntityID `json:"f1,omitempty"`
 }
 type TeamIDOrNameInternal__ struct {
 	_struct  struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
@@ -757,9 +757,9 @@ type TeamIDOrNameInternal__ struct {
 	Switch__ TeamIDOrNameInternalSwitch__
 }
 type TeamIDOrNameInternalSwitch__ struct {
-	_struct struct{}          `codec:",omitempty"` //lint:ignore U1000 msgpack internal field
-	F_0__   *NameInternal__   `codec:"0"`
-	F_1__   *TeamIDInternal__ `codec:"1"`
+	_struct struct{}            `codec:",omitempty"` //lint:ignore U1000 msgpack internal field
+	F_0__   *NameInternal__     `codec:"0"`
+	F_1__   *EntityIDInternal__ `codec:"1"`
 }
 
 func (t TeamIDOrName) GetId() (ret bool, err error) {
@@ -784,7 +784,7 @@ func (t TeamIDOrName) False() Name {
 	}
 	return *t.F_0__
 }
-func (t TeamIDOrName) True() TeamID {
+func (t TeamIDOrName) True() EntityID {
 	if t.F_1__ == nil {
 		panic("unexpected nil case; should have been checked")
 	}
@@ -799,7 +799,7 @@ func NewTeamIDOrNameWithFalse(v Name) TeamIDOrName {
 		F_0__: &v,
 	}
 }
-func NewTeamIDOrNameWithTrue(v TeamID) TeamIDOrName {
+func NewTeamIDOrNameWithTrue(v EntityID) TeamIDOrName {
 	return TeamIDOrName{
 		Id:    true,
 		F_1__: &v,
@@ -820,11 +820,11 @@ func (t TeamIDOrNameInternal__) Import() TeamIDOrName {
 			})(x)
 			return &tmp
 		})(t.Switch__.F_0__),
-		F_1__: (func(x *TeamIDInternal__) *TeamID {
+		F_1__: (func(x *EntityIDInternal__) *EntityID {
 			if x == nil {
 				return nil
 			}
-			tmp := (func(x *TeamIDInternal__) (ret TeamID) {
+			tmp := (func(x *EntityIDInternal__) (ret EntityID) {
 				if x == nil {
 					return ret
 				}
@@ -844,7 +844,7 @@ func (t TeamIDOrName) Export() *TeamIDOrNameInternal__ {
 				}
 				return (*x).Export()
 			})(t.F_0__),
-			F_1__: (func(x *TeamID) *TeamIDInternal__ {
+			F_1__: (func(x *EntityID) *EntityIDInternal__ {
 				if x == nil {
 					return nil
 				}
@@ -964,41 +964,6 @@ func (s *SenderPair) Decode(dec rpc.Decoder) error {
 }
 
 func (s *SenderPair) Bytes() []byte { return nil }
-
-type AdHocTeamMashedID StdHash
-type AdHocTeamMashedIDInternal__ StdHashInternal__
-
-func (a AdHocTeamMashedID) Export() *AdHocTeamMashedIDInternal__ {
-	tmp := ((StdHash)(a))
-	return ((*AdHocTeamMashedIDInternal__)(tmp.Export()))
-}
-func (a AdHocTeamMashedIDInternal__) Import() AdHocTeamMashedID {
-	tmp := (StdHashInternal__)(a)
-	return AdHocTeamMashedID((func(x *StdHashInternal__) (ret StdHash) {
-		if x == nil {
-			return ret
-		}
-		return x.Import()
-	})(&tmp))
-}
-
-func (a *AdHocTeamMashedID) Encode(enc rpc.Encoder) error {
-	return enc.Encode(a.Export())
-}
-
-func (a *AdHocTeamMashedID) Decode(dec rpc.Decoder) error {
-	var tmp AdHocTeamMashedIDInternal__
-	err := dec.Decode(&tmp)
-	if err != nil {
-		return err
-	}
-	*a = tmp.Import()
-	return nil
-}
-
-func (a AdHocTeamMashedID) Bytes() []byte {
-	return ((StdHash)(a)).Bytes()
-}
 
 type AdHocTeamMashLayout int
 
