@@ -2494,6 +2494,13 @@ func (k TeamMemberKeys) ToSharedKey(r Role) SharedKey {
 func (e FQEntityFixed) Eq(e2 FQEntityFixed) bool {
 	return hmac.Equal(e.Entity[:], e2.Entity[:]) && e.Host.Eq(e2.Host)
 }
+func (e FQParty) Cmp(g FQParty) int {
+	x := bytes.Compare(e.Host[:], g.Host[:])
+	if x != 0 {
+		return x
+	}
+	return bytes.Compare(e.Party[:], g.Party[:])
+}
 
 func (e FQEntityFixed) Cmp(g FQEntityFixed) int {
 	x := bytes.Compare(e.Host[:], g.Host[:])

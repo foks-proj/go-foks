@@ -91,3 +91,9 @@ struct SenderPair {
     verifyKey @0 : EntityID;
     hepkFp @1 : HEPKFingerprint;
 }
+
+typedef AdHocTeamMashedID = StdHash;
+
+struct AdHocTeamNameInputs @0xd0d412a4ac530382 {
+    parties @0 : List(FQParty);
+}

@@ -965,7 +965,108 @@ func (s *SenderPair) Decode(dec rpc.Decoder) error {
 
 func (s *SenderPair) Bytes() []byte { return nil }
 
+type AdHocTeamMashedID StdHash
+type AdHocTeamMashedIDInternal__ StdHashInternal__
+
+func (a AdHocTeamMashedID) Export() *AdHocTeamMashedIDInternal__ {
+	tmp := ((StdHash)(a))
+	return ((*AdHocTeamMashedIDInternal__)(tmp.Export()))
+}
+func (a AdHocTeamMashedIDInternal__) Import() AdHocTeamMashedID {
+	tmp := (StdHashInternal__)(a)
+	return AdHocTeamMashedID((func(x *StdHashInternal__) (ret StdHash) {
+		if x == nil {
+			return ret
+		}
+		return x.Import()
+	})(&tmp))
+}
+
+func (a *AdHocTeamMashedID) Encode(enc rpc.Encoder) error {
+	return enc.Encode(a.Export())
+}
+
+func (a *AdHocTeamMashedID) Decode(dec rpc.Decoder) error {
+	var tmp AdHocTeamMashedIDInternal__
+	err := dec.Decode(&tmp)
+	if err != nil {
+		return err
+	}
+	*a = tmp.Import()
+	return nil
+}
+
+func (a AdHocTeamMashedID) Bytes() []byte {
+	return ((StdHash)(a)).Bytes()
+}
+
+type AdHocTeamNameInputs struct {
+	Parties []FQParty
+}
+type AdHocTeamNameInputsInternal__ struct {
+	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
+	Parties *[](*FQPartyInternal__)
+}
+
+func (a AdHocTeamNameInputsInternal__) Import() AdHocTeamNameInputs {
+	return AdHocTeamNameInputs{
+		Parties: (func(x *[](*FQPartyInternal__)) (ret []FQParty) {
+			if x == nil || len(*x) == 0 {
+				return nil
+			}
+			ret = make([]FQParty, len(*x))
+			for k, v := range *x {
+				if v == nil {
+					continue
+				}
+				ret[k] = (func(x *FQPartyInternal__) (ret FQParty) {
+					if x == nil {
+						return ret
+					}
+					return x.Import()
+				})(v)
+			}
+			return ret
+		})(a.Parties),
+	}
+}
+func (a AdHocTeamNameInputs) Export() *AdHocTeamNameInputsInternal__ {
+	return &AdHocTeamNameInputsInternal__{
+		Parties: (func(x []FQParty) *[](*FQPartyInternal__) {
+			if len(x) == 0 {
+				return nil
+			}
+			ret := make([](*FQPartyInternal__), len(x))
+			for k, v := range x {
+				ret[k] = v.Export()
+			}
+			return &ret
+		})(a.Parties),
+	}
+}
+func (a *AdHocTeamNameInputs) Encode(enc rpc.Encoder) error {
+	return enc.Encode(a.Export())
+}
+
+func (a *AdHocTeamNameInputs) Decode(dec rpc.Decoder) error {
+	var tmp AdHocTeamNameInputsInternal__
+	err := dec.Decode(&tmp)
+	if err != nil {
+		return err
+	}
+	*a = tmp.Import()
+	return nil
+}
+
+var AdHocTeamNameInputsTypeUniqueID = rpc.TypeUniqueID(0xd0d412a4ac530382)
+
+func (a *AdHocTeamNameInputs) GetTypeUniqueID() rpc.TypeUniqueID {
+	return AdHocTeamNameInputsTypeUniqueID
+}
+func (a *AdHocTeamNameInputs) Bytes() []byte { return nil }
+
 func init() {
 	rpc.AddUnique(TeamRemoteMemberViewTokenBoxPayloadTypeUniqueID)
 	rpc.AddUnique(TeamInviteV1TypeUniqueID)
+	rpc.AddUnique(AdHocTeamNameInputsTypeUniqueID)
 }
