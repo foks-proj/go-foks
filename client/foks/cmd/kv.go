@@ -18,6 +18,7 @@ import (
 	"github.com/foks-proj/go-foks/client/libkv"
 	"github.com/foks-proj/go-foks/lib/core"
 	"github.com/foks-proj/go-foks/lib/libterm"
+	"github.com/foks-proj/go-foks/lib/team"
 	"github.com/foks-proj/go-foks/proto/lcl"
 	proto "github.com/foks-proj/go-foks/proto/lib"
 	"github.com/spf13/cobra"
@@ -116,7 +117,7 @@ func quickKVCmd(
 			mtime = &tmp
 		}
 		cfg := lcl.KVConfig{
-			ActingAs:    fqt,
+			ActingAs:    team.WrapNamedPtr(fqt),
 			Roles:       proto.RolePairOpt{Read: rr, Write: wr},
 			MkdirP:      mkdirP,
 			OverwriteOk: force,

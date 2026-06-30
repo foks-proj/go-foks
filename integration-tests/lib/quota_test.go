@@ -183,7 +183,7 @@ func TestQuotaAndTeams(t *testing.T) {
 	sz := 1024 * 30
 	chnk := 4096
 	doublePoke(t, m)
-	tmCfg := lcl.KVConfig{ActingAs: team.WrapNamed(fqt)}
+	tmCfg := lcl.KVConfig{ActingAs: team.WrapNamedPtr(fqt)}
 
 	writeRandomFileWithConfig(t, dev.kvm, dev.mc, file, sz, tmCfg, chnk)
 	err = cli.Poke(ctx)
