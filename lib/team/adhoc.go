@@ -4,6 +4,7 @@ import (
 	"slices"
 
 	"github.com/foks-proj/go-foks/lib/core"
+	"github.com/foks-proj/go-foks/proto/lcl"
 	proto "github.com/foks-proj/go-foks/proto/lib"
 )
 
@@ -52,4 +53,31 @@ func MashFQUsersIntoAdHocTeamID(
 	})
 	inputs := proto.NewAdHocTeamMashInputsWithUserownersonly(users)
 	return doMash(inputs)
+}
+
+func WrapNamed(team proto.FQTeamParsed) lcl.ConfigTeam {
+	return lcl.NewConfigTeamWithNamed(team)
+}
+
+func WrapNamedPtr(team *proto.FQTeamParsed) lcl.ConfigTeam {
+	if team == nil {
+		return lcl.NewConfigTeamWithNone()
+	}
+	return WrapNamed(*team)
+}
+
+func UnwrapNamed(team lcl.ConfigTeam) (*proto.FQTeamParsed, error) {
+	typ, err := team.GetT()
+	if err != nil {
+		return nil, err
+	}
+	switch typ {
+	case lcl.ConfigTeamType_Named:
+		tmp := team.Named()
+		return &tmp, nil
+	case lcl.ConfigTeamType_None:
+		return nil, nil
+	default:
+		return nil, core.InternalError("unexpected team type in UnwrapNamed")
+	}
 }

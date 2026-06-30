@@ -1033,7 +1033,33 @@ func (t *TeamMinder) PopulateTeamName(p *lcl.NamedFQParty) error {
 	return nil
 }
 
-func (t *TeamMinder) resolveTeam(arg proto.FQTeamParsed) (*proto.FQTeam, error) {
+func (t *TeamMinder) resolveTeam2(arg lcl.ConfigTeam) (*proto.FQTeam, error) {
+	return nil, core.NotImplementedError{}
+}
+
+func (t *TeamMinder) resolveTeam(arg lcl.ConfigTeam) (*proto.FQTeam, error) {
+
+	typ, err := arg.GetT()
+	if err != nil {
+		return nil, err
+	}
+	switch typ {
+	case lcl.ConfigTeamType_None:
+		return nil, core.InternalError("no team to resolve by in TeamMinder.resolveTeam")
+	case lcl.ConfigTeamType_Named:
+		return t.resolveTeamNamed(arg.Named())
+	case lcl.ConfigTeamType_AdHoc:
+		return t.resolveTeamAdHoc(arg.Adhoc())
+	default:
+		return nil, core.InternalError("unexpected team type in TeamMinder.resolveTeam")
+	}
+}
+
+func (t *TeamMinder) resolveTeamAdHoc(arg proto.FQAdHocTeamParsed) (*proto.FQTeam, error) {
+	return nil, core.NotImplementedError{}
+}
+
+func (t *TeamMinder) resolveTeamNamed(arg proto.FQTeamParsed) (*proto.FQTeam, error) {
 
 	var hostID *proto.HostID
 
@@ -1104,12 +1130,12 @@ func (t *TeamMinder) resolveTeam(arg proto.FQTeamParsed) (*proto.FQTeam, error) 
 }
 
 func (t *TeamMinder) Resolve(m MetaContext, arg proto.FQTeamParsed) (*proto.FQTeam, error) {
-	return t.resolveTeam(arg)
+	return t.resolveTeam(team.WrapNamed(arg))
 }
 
 func (t *TeamMinder) ResolveAndReindex(
 	m MetaContext,
-	arg proto.FQTeamParsed,
+	arg lcl.ConfigTeam,
 	opts *LoadTeamOpts,
 ) (
 	*proto.FQTeam,
@@ -1138,7 +1164,7 @@ func (t *TeamMinder) ResolveAndReindex(
 
 func (t *TeamMinder) LoadTeam(
 	m MetaContext,
-	arg proto.FQTeamParsed,
+	arg lcl.ConfigTeam,
 	opts LoadTeamOpts,
 ) (
 	*TeamWrapper,
@@ -1164,7 +1190,7 @@ func (t *TeamMinder) withLoadedTeam(
 	opts LoadTeamOpts,
 	f func(m MetaContext, tm *TeamRecord) error,
 ) error {
-	fqt, err := t.ResolveAndReindex(m, arg, &opts)
+	fqt, err := t.ResolveAndReindex(m, team.WrapNamed(arg), &opts)
 	if err != nil {
 		return err
 	}
@@ -1184,7 +1210,7 @@ func (t *TeamMinder) withLoadedTeamAndAdminToken(
 	opts LoadTeamOpts,
 	f func(m MetaContext, tr *TeamRecord, token *rem.TeamBearerToken) error,
 ) error {
-	fqt, err := t.ResolveAndReindex(m, arg, &opts)
+	fqt, err := t.ResolveAndReindex(m, team.WrapNamed(arg), &opts)
 	if err != nil {
 		return err
 	}

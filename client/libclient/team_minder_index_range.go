@@ -5,6 +5,7 @@ package libclient
 
 import (
 	"github.com/foks-proj/go-foks/lib/core"
+	"github.com/foks-proj/go-foks/lib/team"
 	"github.com/foks-proj/go-foks/proto/lcl"
 	proto "github.com/foks-proj/go-foks/proto/lib"
 )
@@ -105,7 +106,7 @@ func (t *TeamMinder) setIndexRangeCommon(
 	error,
 ) {
 
-	fqt, err := t.ResolveAndReindex(m, arg, nil)
+	fqt, err := t.ResolveAndReindex(m, team.WrapNamed(arg), nil)
 	if err != nil {
 		return nil, err
 	}

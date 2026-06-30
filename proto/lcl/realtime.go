@@ -219,25 +219,104 @@ func (r *RTChannelSpecifier) Decode(dec rpc.Decoder) error {
 
 func (r *RTChannelSpecifier) Bytes() []byte { return nil }
 
-type RTConfig struct {
-	Team      *lib.FQTeamParsed
-	AppID     lib.RTAppID
-	Roles     lib.RolePairOpt
-	Channel   RTChannelSpecifier
-	AdhocTeam *lib.FQAdHocTeamParsed
+type ConfigTeamType int
+
+const (
+	ConfigTeamType_None  ConfigTeamType = 0
+	ConfigTeamType_Named ConfigTeamType = 1
+	ConfigTeamType_AdHoc ConfigTeamType = 2
+)
+
+var ConfigTeamTypeMap = map[string]ConfigTeamType{
+	"None":  0,
+	"Named": 1,
+	"AdHoc": 2,
 }
-type RTConfigInternal__ struct {
-	_struct   struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
-	Team      *lib.FQTeamParsedInternal__
-	AppID     *lib.RTAppIDInternal__
-	Roles     *lib.RolePairOptInternal__
-	Channel   *RTChannelSpecifierInternal__
-	AdhocTeam *lib.FQAdHocTeamParsedInternal__
+var ConfigTeamTypeRevMap = map[ConfigTeamType]string{
+	0: "None",
+	1: "Named",
+	2: "AdHoc",
 }
 
-func (r RTConfigInternal__) Import() RTConfig {
-	return RTConfig{
-		Team: (func(x *lib.FQTeamParsedInternal__) *lib.FQTeamParsed {
+type ConfigTeamTypeInternal__ ConfigTeamType
+
+func (c ConfigTeamTypeInternal__) Import() ConfigTeamType {
+	return ConfigTeamType(c)
+}
+func (c ConfigTeamType) Export() *ConfigTeamTypeInternal__ {
+	return ((*ConfigTeamTypeInternal__)(&c))
+}
+
+type ConfigTeam struct {
+	T     ConfigTeamType
+	F_1__ *lib.FQTeamParsed      `json:"f1,omitempty"`
+	F_2__ *lib.FQAdHocTeamParsed `json:"f2,omitempty"`
+}
+type ConfigTeamInternal__ struct {
+	_struct  struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
+	T        ConfigTeamType
+	Switch__ ConfigTeamInternalSwitch__
+}
+type ConfigTeamInternalSwitch__ struct {
+	_struct struct{}                         `codec:",omitempty"` //lint:ignore U1000 msgpack internal field
+	F_1__   *lib.FQTeamParsedInternal__      `codec:"1"`
+	F_2__   *lib.FQAdHocTeamParsedInternal__ `codec:"2"`
+}
+
+func (c ConfigTeam) GetT() (ret ConfigTeamType, err error) {
+	switch c.T {
+	case ConfigTeamType_None:
+		break
+	case ConfigTeamType_Named:
+		if c.F_1__ == nil {
+			return ret, errors.New("unexpected nil case for F_1__")
+		}
+	case ConfigTeamType_AdHoc:
+		if c.F_2__ == nil {
+			return ret, errors.New("unexpected nil case for F_2__")
+		}
+	}
+	return c.T, nil
+}
+func (c ConfigTeam) Named() lib.FQTeamParsed {
+	if c.F_1__ == nil {
+		panic("unexpected nil case; should have been checked")
+	}
+	if c.T != ConfigTeamType_Named {
+		panic(fmt.Sprintf("unexpected switch value (%v) when Named is called", c.T))
+	}
+	return *c.F_1__
+}
+func (c ConfigTeam) Adhoc() lib.FQAdHocTeamParsed {
+	if c.F_2__ == nil {
+		panic("unexpected nil case; should have been checked")
+	}
+	if c.T != ConfigTeamType_AdHoc {
+		panic(fmt.Sprintf("unexpected switch value (%v) when Adhoc is called", c.T))
+	}
+	return *c.F_2__
+}
+func NewConfigTeamWithNone() ConfigTeam {
+	return ConfigTeam{
+		T: ConfigTeamType_None,
+	}
+}
+func NewConfigTeamWithNamed(v lib.FQTeamParsed) ConfigTeam {
+	return ConfigTeam{
+		T:     ConfigTeamType_Named,
+		F_1__: &v,
+	}
+}
+func NewConfigTeamWithAdhoc(v lib.FQAdHocTeamParsed) ConfigTeam {
+	return ConfigTeam{
+		T:     ConfigTeamType_AdHoc,
+		F_2__: &v,
+	}
+}
+func (c ConfigTeamInternal__) Import() ConfigTeam {
+	return ConfigTeam{
+		T: c.T,
+		F_1__: (func(x *lib.FQTeamParsedInternal__) *lib.FQTeamParsed {
 			if x == nil {
 				return nil
 			}
@@ -248,6 +327,82 @@ func (r RTConfigInternal__) Import() RTConfig {
 				return x.Import()
 			})(x)
 			return &tmp
+		})(c.Switch__.F_1__),
+		F_2__: (func(x *lib.FQAdHocTeamParsedInternal__) *lib.FQAdHocTeamParsed {
+			if x == nil {
+				return nil
+			}
+			tmp := (func(x *lib.FQAdHocTeamParsedInternal__) (ret lib.FQAdHocTeamParsed) {
+				if x == nil {
+					return ret
+				}
+				return x.Import()
+			})(x)
+			return &tmp
+		})(c.Switch__.F_2__),
+	}
+}
+func (c ConfigTeam) Export() *ConfigTeamInternal__ {
+	return &ConfigTeamInternal__{
+		T: c.T,
+		Switch__: ConfigTeamInternalSwitch__{
+			F_1__: (func(x *lib.FQTeamParsed) *lib.FQTeamParsedInternal__ {
+				if x == nil {
+					return nil
+				}
+				return (*x).Export()
+			})(c.F_1__),
+			F_2__: (func(x *lib.FQAdHocTeamParsed) *lib.FQAdHocTeamParsedInternal__ {
+				if x == nil {
+					return nil
+				}
+				return (*x).Export()
+			})(c.F_2__),
+		},
+	}
+}
+func (c *ConfigTeam) Encode(enc rpc.Encoder) error {
+	return enc.Encode(c.Export())
+}
+
+func (c *ConfigTeam) Decode(dec rpc.Decoder) error {
+	var tmp ConfigTeamInternal__
+	err := dec.Decode(&tmp)
+	if err != nil {
+		return err
+	}
+	*c = tmp.Import()
+	return nil
+}
+
+var ConfigTeamTypeUniqueID = rpc.TypeUniqueID(0xd087b3b8ff4bc3ea)
+
+func (c *ConfigTeam) GetTypeUniqueID() rpc.TypeUniqueID {
+	return ConfigTeamTypeUniqueID
+}
+func (c *ConfigTeam) Bytes() []byte { return nil }
+
+type RTConfig struct {
+	Team    ConfigTeam
+	AppID   lib.RTAppID
+	Roles   lib.RolePairOpt
+	Channel RTChannelSpecifier
+}
+type RTConfigInternal__ struct {
+	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
+	Team    *ConfigTeamInternal__
+	AppID   *lib.RTAppIDInternal__
+	Roles   *lib.RolePairOptInternal__
+	Channel *RTChannelSpecifierInternal__
+}
+
+func (r RTConfigInternal__) Import() RTConfig {
+	return RTConfig{
+		Team: (func(x *ConfigTeamInternal__) (ret ConfigTeam) {
+			if x == nil {
+				return ret
+			}
+			return x.Import()
 		})(r.Team),
 		AppID: (func(x *lib.RTAppIDInternal__) (ret lib.RTAppID) {
 			if x == nil {
@@ -267,37 +422,14 @@ func (r RTConfigInternal__) Import() RTConfig {
 			}
 			return x.Import()
 		})(r.Channel),
-		AdhocTeam: (func(x *lib.FQAdHocTeamParsedInternal__) *lib.FQAdHocTeamParsed {
-			if x == nil {
-				return nil
-			}
-			tmp := (func(x *lib.FQAdHocTeamParsedInternal__) (ret lib.FQAdHocTeamParsed) {
-				if x == nil {
-					return ret
-				}
-				return x.Import()
-			})(x)
-			return &tmp
-		})(r.AdhocTeam),
 	}
 }
 func (r RTConfig) Export() *RTConfigInternal__ {
 	return &RTConfigInternal__{
-		Team: (func(x *lib.FQTeamParsed) *lib.FQTeamParsedInternal__ {
-			if x == nil {
-				return nil
-			}
-			return (*x).Export()
-		})(r.Team),
+		Team:    r.Team.Export(),
 		AppID:   r.AppID.Export(),
 		Roles:   r.Roles.Export(),
 		Channel: r.Channel.Export(),
-		AdhocTeam: (func(x *lib.FQAdHocTeamParsed) *lib.FQAdHocTeamParsedInternal__ {
-			if x == nil {
-				return nil
-			}
-			return (*x).Export()
-		})(r.AdhocTeam),
 	}
 }
 func (r *RTConfig) Encode(enc rpc.Encoder) error {
@@ -1341,6 +1473,7 @@ func (r *RTChannelMetadataPlaintextAbbrev) Decode(dec rpc.Decoder) error {
 func (r *RTChannelMetadataPlaintextAbbrev) Bytes() []byte { return nil }
 
 func init() {
+	rpc.AddUnique(ConfigTeamTypeUniqueID)
 	rpc.AddUnique(RealTimeProtocolID)
 	rpc.AddUnique(RTChannelSetHashInputTypeUniqueID)
 }

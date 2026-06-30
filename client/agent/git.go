@@ -13,6 +13,7 @@ import (
 	"github.com/foks-proj/go-foks/client/libclient"
 	"github.com/foks-proj/go-foks/client/libgit"
 	"github.com/foks-proj/go-foks/lib/core"
+	"github.com/foks-proj/go-foks/lib/team"
 	"github.com/foks-proj/go-foks/proto/lcl"
 	proto "github.com/foks-proj/go-foks/proto/lib"
 	"github.com/foks-proj/go-foks/proto/rem"
@@ -129,8 +130,22 @@ func (c *AgentConn) GitCreate(
 	if err != nil {
 		return zed, err
 	}
+	typ, err := arg.Cfg.ActingAs.GetT()
+	if err != nil {
+		return zed, err
+	}
+	var actingAs *proto.FQTeamParsed
+	switch typ {
+	case lcl.ConfigTeamType_Named:
+		tmp := arg.Cfg.ActingAs.Named()
+		actingAs = &tmp
+	case lcl.ConfigTeamType_None:
+		// noop
+	default:
+		return zed, core.VersionNotSupportedError("adhoc teams are not supported for git create yet")
+	}
 
-	fqpp, err := libclient.ActivePartyNamed(m.MetaContext, arg.Cfg.ActingAs)
+	fqpp, err := libclient.ActivePartyNamed(m.MetaContext, actingAs)
 	if err != nil {
 		return zed, err
 	}
@@ -162,7 +177,7 @@ func (c *AgentConn) GitLs(ctx context.Context, arg lcl.GitLsArg) ([]proto.GitURL
 		if err != nil {
 			return nil, err
 		}
-		cfg.ActingAs = p
+		cfg.ActingAs = team.WrapNamedPtr(p)
 
 		listSome := func() error {
 			opts := rem.KVListOpts{
@@ -219,7 +234,11 @@ func (c *AgentConn) GitLs(ctx context.Context, arg lcl.GitLsArg) ([]proto.GitURL
 	}
 
 	var ret []proto.GitURL
-	ret, err = listForParty(arg.Cfg.ActingAs)
+	fqtp, err := team.UnwrapNamed(arg.Cfg.ActingAs)
+	if err != nil {
+		return nil, err
+	}
+	ret, err = listForParty(fqtp)
 	if err != nil {
 		return nil, err
 	}

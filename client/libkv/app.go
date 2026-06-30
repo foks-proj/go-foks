@@ -8,6 +8,7 @@ import (
 
 	"github.com/foks-proj/go-foks/client/libclient"
 	"github.com/foks-proj/go-foks/lib/core"
+	"github.com/foks-proj/go-foks/lib/team"
 	"github.com/foks-proj/go-foks/proto/lcl"
 	proto "github.com/foks-proj/go-foks/proto/lib"
 )
@@ -53,7 +54,11 @@ func (a *App) Minder(m MetaContext, actingAs *proto.FQTeamParsed) (*Minder, erro
 	if actingAs == nil {
 		return a.getUser(), nil
 	}
-	fqp, err := a.parent.TeamMinder().ResolveAndReindex(m.MetaContext, *actingAs, nil)
+	fqp, err := a.parent.TeamMinder().ResolveAndReindex(
+		m.MetaContext,
+		team.WrapNamed(*actingAs),
+		nil,
+	)
 	if err != nil {
 		return nil, err
 	}

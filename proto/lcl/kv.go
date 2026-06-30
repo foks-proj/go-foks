@@ -306,7 +306,7 @@ func (f *FileKeyBoxPayload) GetTypeUniqueID() rpc.TypeUniqueID {
 func (f *FileKeyBoxPayload) Bytes() []byte { return nil }
 
 type KVConfig struct {
-	ActingAs       *lib.FQTeamParsed
+	ActingAs       ConfigTeam
 	Roles          lib.RolePairOpt
 	MkdirP         bool
 	OverwriteOk    bool
@@ -319,7 +319,7 @@ type KVConfig struct {
 }
 type KVConfigInternal__ struct {
 	_struct        struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
-	ActingAs       *lib.FQTeamParsedInternal__
+	ActingAs       *ConfigTeamInternal__
 	Roles          *lib.RolePairOptInternal__
 	MkdirP         *bool
 	OverwriteOk    *bool
@@ -333,17 +333,11 @@ type KVConfigInternal__ struct {
 
 func (k KVConfigInternal__) Import() KVConfig {
 	return KVConfig{
-		ActingAs: (func(x *lib.FQTeamParsedInternal__) *lib.FQTeamParsed {
+		ActingAs: (func(x *ConfigTeamInternal__) (ret ConfigTeam) {
 			if x == nil {
-				return nil
+				return ret
 			}
-			tmp := (func(x *lib.FQTeamParsedInternal__) (ret lib.FQTeamParsed) {
-				if x == nil {
-					return ret
-				}
-				return x.Import()
-			})(x)
-			return &tmp
+			return x.Import()
 		})(k.ActingAs),
 		Roles: (func(x *lib.RolePairOptInternal__) (ret lib.RolePairOpt) {
 			if x == nil {
@@ -415,12 +409,7 @@ func (k KVConfigInternal__) Import() KVConfig {
 }
 func (k KVConfig) Export() *KVConfigInternal__ {
 	return &KVConfigInternal__{
-		ActingAs: (func(x *lib.FQTeamParsed) *lib.FQTeamParsedInternal__ {
-			if x == nil {
-				return nil
-			}
-			return (*x).Export()
-		})(k.ActingAs),
+		ActingAs:    k.ActingAs.Export(),
 		Roles:       k.Roles.Export(),
 		MkdirP:      &k.MkdirP,
 		OverwriteOk: &k.OverwriteOk,

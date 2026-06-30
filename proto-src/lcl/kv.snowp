@@ -25,7 +25,7 @@ struct FileKeyBoxPayload @0x9211ae1e17213884 {
 }
 
 struct KVConfig {
-    actingAs @0 : Option(lib.FQTeamParsed);
+    actingAs @0 : ConfigTeam;
     roles @1 : lib.RolePairOpt;
     mkdirP @2 : Bool;
     overwriteOk @3 : Bool;
