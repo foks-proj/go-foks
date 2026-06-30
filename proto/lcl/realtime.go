@@ -220,17 +220,19 @@ func (r *RTChannelSpecifier) Decode(dec rpc.Decoder) error {
 func (r *RTChannelSpecifier) Bytes() []byte { return nil }
 
 type RTConfig struct {
-	Team    *lib.FQTeamParsed
-	AppID   lib.RTAppID
-	Roles   lib.RolePairOpt
-	Channel RTChannelSpecifier
+	Team      *lib.FQTeamParsed
+	AppID     lib.RTAppID
+	Roles     lib.RolePairOpt
+	Channel   RTChannelSpecifier
+	AdhocTeam *lib.FQAdHocTeamParsed
 }
 type RTConfigInternal__ struct {
-	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
-	Team    *lib.FQTeamParsedInternal__
-	AppID   *lib.RTAppIDInternal__
-	Roles   *lib.RolePairOptInternal__
-	Channel *RTChannelSpecifierInternal__
+	_struct   struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
+	Team      *lib.FQTeamParsedInternal__
+	AppID     *lib.RTAppIDInternal__
+	Roles     *lib.RolePairOptInternal__
+	Channel   *RTChannelSpecifierInternal__
+	AdhocTeam *lib.FQAdHocTeamParsedInternal__
 }
 
 func (r RTConfigInternal__) Import() RTConfig {
@@ -265,6 +267,18 @@ func (r RTConfigInternal__) Import() RTConfig {
 			}
 			return x.Import()
 		})(r.Channel),
+		AdhocTeam: (func(x *lib.FQAdHocTeamParsedInternal__) *lib.FQAdHocTeamParsed {
+			if x == nil {
+				return nil
+			}
+			tmp := (func(x *lib.FQAdHocTeamParsedInternal__) (ret lib.FQAdHocTeamParsed) {
+				if x == nil {
+					return ret
+				}
+				return x.Import()
+			})(x)
+			return &tmp
+		})(r.AdhocTeam),
 	}
 }
 func (r RTConfig) Export() *RTConfigInternal__ {
@@ -278,6 +292,12 @@ func (r RTConfig) Export() *RTConfigInternal__ {
 		AppID:   r.AppID.Export(),
 		Roles:   r.Roles.Export(),
 		Channel: r.Channel.Export(),
+		AdhocTeam: (func(x *lib.FQAdHocTeamParsed) *lib.FQAdHocTeamParsedInternal__ {
+			if x == nil {
+				return nil
+			}
+			return (*x).Export()
+		})(r.AdhocTeam),
 	}
 }
 func (r *RTConfig) Encode(enc rpc.Encoder) error {

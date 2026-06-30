@@ -45,8 +45,14 @@ func (q quickKVOpts) SupportsRoles() bool {
 func actAsTeamOpt(
 	cmd *cobra.Command,
 	teamStr *string,
+	adHocTeamStr *string,
 ) {
 	cmd.Flags().StringVarP(teamStr, "team", "t", "", "team to work on behalf of (default is to operate as the logged in user)")
+	if adHocTeamStr != nil {
+		cmd.Flags().StringVar(adHocTeamStr, "adhoc", "",
+			"ad-hoc team to work on behalf of (eg: bob,alice); current user is implied if not specified",
+		)
+	}
 }
 
 func makeKVPath(s string) proto.KVPath {
@@ -135,7 +141,8 @@ func quickKVCmd(
 		RunE:         run,
 	}
 	if !opts.NoSupportTeam {
-		actAsTeamOpt(cmd, &teamStr)
+		// no support for ad-hoc teams just yet on KV commands
+		actAsTeamOpt(cmd, &teamStr, nil)
 	}
 	if !opts.NoSupportMkdirP {
 		cmd.Flags().BoolVarP(&mkdirP, "mkdir-p", "p", false, "create parent directories if they do not exist")

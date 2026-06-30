@@ -384,6 +384,27 @@ struct FQTeamParsed @0xc3e7f63d5c536710 {
     host @1 : Option(ParsedHostname);
 }
 
+enum AdHocParseType {
+    Id @0; 
+    Ids @1; // a common-separate list of UserIDs
+    Names @2;
+}
+
+typedef AdHocTeamString = Text;
+
+variant AdHocTeamParsed switch (t : AdHocParseType) {
+    case Id @0 : EntityID; // can be an AdHocTeamID or an AdHocMashedID
+    case Ids @1 : List(UID); // eventualy we might relax this and allow teams too
+    case Names @2 : List(NameUtf8); // current user is implied if not specified
+}
+
+typedef FQAdHocTeamString = Text;
+
+struct FQAdHocTeamParsed {
+    team @0 : AdHocTeamParsed;
+    host @1 : Option(ParsedHostname);
+}
+
 struct FQPartyParsed {
     party @0 : ParsedParty;
     host @1 : Option(ParsedHostname);

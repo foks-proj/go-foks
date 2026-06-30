@@ -16,6 +16,10 @@ func ParseFQTeam(s proto.FQTeamString) (*proto.FQTeamParsed, error) {
 	return s.Parse(NormalizeName)
 }
 
+func ParseFQAdHocTeam(s proto.FQAdHocTeamString) (*proto.FQAdHocTeamParsed, error) {
+	return s.Parse(NormalizeName)
+}
+
 func ParseFQTeamSimple(s proto.FQTeamString) (*proto.FQTeam, error) {
 	tmp, err := s.Parse(NormalizeName)
 	if err != nil {

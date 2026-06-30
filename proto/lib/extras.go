@@ -2113,6 +2113,121 @@ func (s FQTeamString) Parse(f NameNormFn) (*FQTeamParsed, error) {
 	return &ret, nil
 }
 
+func (s AdHocTeamString) Parse() (*AdHocTeamParsed, error) {
+	tmp := strings.TrimSpace(string(s))
+	if len(tmp) == 0 {
+		return nil, DataError("empty AdHocTeam string can't be parsed")
+	}
+	parts := strings.Split(tmp, ",")
+	var ret AdHocTeamParsed
+
+	type component struct {
+		// only one of these will be set
+		eid EntityID
+		uid *UID
+		un  NameUtf8
+	}
+
+	parseOne := func(s string) (*component, error) {
+		if s[0] == '.' {
+			eid, err := ImportEntityIDFromString(s)
+			if err != nil {
+				return nil, err
+			}
+			switch eid.Type() {
+			case EntityType_AdHocTeam, EntityType_AdHocTeamMashed:
+				return &component{eid: eid}, nil
+			case EntityType_User:
+				uid, err := eid.ToUID()
+				if err != nil {
+					return nil, err
+				}
+				return &component{uid: &uid}, nil
+			default:
+				return nil, DataError("invalid AdHocTeam ID")
+			}
+		} else {
+			un := NameUtf8(s)
+			if len(un) == 0 {
+				return nil, DataError("empty AdHocTeam string can't be parsed")
+			}
+			return &component{un: un}, nil
+		}
+	}
+
+	if len(parts) == 1 {
+		c, err := parseOne(parts[0])
+		if err != nil {
+			return nil, err
+		}
+		switch {
+		case c.eid != nil:
+			ret = NewAdHocTeamParsedWithId(c.eid)
+		case c.uid != nil:
+			ret = NewAdHocTeamParsedWithIds([]UID{*c.uid})
+		case !c.un.IsZero():
+			ret = NewAdHocTeamParsedWithNames([]NameUtf8{c.un})
+		default:
+			return nil, DataError("invalid AdHocTeam string")
+		}
+	} else {
+		var ids []UID
+		var unames []NameUtf8
+		for _, part := range parts {
+			c, err := parseOne(part)
+			if err != nil {
+				return nil, err
+			}
+			switch {
+			case c.eid != nil:
+				return nil, DataError("invalid AdHocTeam string")
+			case c.uid != nil:
+				ids = append(ids, *c.uid)
+			case !c.un.IsZero():
+				unames = append(unames, c.un)
+			default:
+				return nil, DataError("invalid AdHocTeam string")
+			}
+		}
+		switch {
+		case len(ids) > 0 && len(unames) > 0:
+			return nil, DataError("cannot mix IDs and names in AdHocTeam string")
+		case len(ids) > 0:
+			ret = NewAdHocTeamParsedWithIds(ids)
+		case len(unames) > 0:
+			ret = NewAdHocTeamParsedWithNames(unames)
+		default:
+			return nil, DataError("invalid AdHocTeam string")
+		}
+	}
+	return &ret, nil
+}
+
+func (s FQAdHocTeamString) Parse(f NameNormFn) (*FQAdHocTeamParsed, error) {
+	tmp := strings.TrimSpace(string(s))
+	if len(tmp) == 0 {
+		return nil, DataError("empty FQAdHocTeam string can't be parsed")
+	}
+	parts := strings.Split(tmp, "@")
+	if len(parts) > 2 {
+		return nil, DataError("can have at most one @ in a FQAdHocTeam string")
+	}
+	var ret FQAdHocTeamParsed
+	if len(parts) == 2 {
+		h, err := HostString(parts[1]).Parse()
+		if err != nil {
+			return nil, err
+		}
+		ret.Host = h
+	}
+	t, err := AdHocTeamString(parts[0]).Parse()
+	if err != nil {
+		return nil, err
+	}
+	ret.Team = *t
+	return &ret, nil
+}
+
 func (s FQPartyString) Parse(f NameNormFn) (*FQPartyParsed, error) {
 	tmp := strings.TrimSpace(string(s))
 	if len(tmp) == 0 {

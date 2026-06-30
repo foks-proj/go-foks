@@ -101,14 +101,25 @@ func quickRTCmd(
 	if long == "" {
 		long = short
 	}
-	var teamStr string
+	var teamStr, adHocTeamStr string
 	var rrs, wrs, chs, chTier string
 	var rr, wr *proto.Role
 	run := func(cmd *cobra.Command, arg []string) error {
 		var fqt *proto.FQTeamParsed
+		var fqaht *proto.FQAdHocTeamParsed
+		if teamStr != "" && adHocTeamStr != "" {
+			return ArgsError("cannot specify both --team and --adhoc")
+		}
 		if teamStr != "" {
 			var err error
 			fqt, err = core.ParseFQTeam(proto.FQTeamString(teamStr))
+			if err != nil {
+				return err
+			}
+		}
+		if adHocTeamStr != "" {
+			var err error
+			fqaht, err = core.ParseFQAdHocTeam(proto.FQAdHocTeamString(adHocTeamStr))
 			if err != nil {
 				return err
 			}
@@ -137,10 +148,11 @@ func quickRTCmd(
 			return err
 		}
 		cfg := lcl.RTConfig{
-			Team:    fqt,
-			Roles:   proto.RolePairOpt{Read: rr, Write: wr},
-			AppID:   proto.RTAppID_Chat,
-			Channel: *chsp,
+			Team:      fqt,
+			AdhocTeam: fqaht,
+			Roles:     proto.RolePairOpt{Read: rr, Write: wr},
+			AppID:     proto.RTAppID_Chat,
+			Channel:   *chsp,
 		}
 		return quickStartLambda(m, &kvOpts, func(cli lcl.RealTimeClient) error {
 			err := fn(arg, cfg, cli)
@@ -160,7 +172,7 @@ func quickRTCmd(
 		RunE:         run,
 	}
 	if !opts.NoSupportTeam {
-		actAsTeamOpt(cmd, &teamStr)
+		actAsTeamOpt(cmd, &teamStr, &adHocTeamStr)
 	}
 	if opts.SupportReadRole {
 		cmd.Flags().StringVarP(&rrs, "read-role", "r", "", "read role to create as (default depends on subcommand)")

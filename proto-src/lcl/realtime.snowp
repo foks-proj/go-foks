@@ -24,6 +24,7 @@ struct RTConfig {
     appID @1 : lib.RTAppID;
     roles @2 : lib.RolePairOpt;
     channel @3 : RTChannelSpecifier;
+    adhocTeam @4 : Option(lib.FQAdHocTeamParsed);
 }
 
 struct RTChannelMetadataPlaintext {
