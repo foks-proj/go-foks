@@ -5410,3 +5410,11 @@ func (t TeamID) IsAdHocTeam() bool { return t.Type() == EntityType_AdHocTeam }
 func (m AdHocTeamMashedID) ExportToDB() []byte {
 	return m[:]
 }
+
+func (m AdHocTeamMashedID) IsZero() bool {
+	return IsZero(m[:])
+}
+
+func (m AdHocTeamMashedID) EntityID() EntityID {
+	return EntityID(m[:])
+}

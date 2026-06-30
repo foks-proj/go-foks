@@ -581,7 +581,7 @@ func (l *TeamLoader) makeViewToken(m MetaContext) error {
 	idOrName := core.Sel(
 		!l.ntn.IsZero(),
 		proto.NewTeamIDOrNameWithFalse(l.ntn),
-		proto.NewTeamIDOrNameWithTrue(l.Arg.Team.Team.EntityID()),
+		proto.NewTeamIDOrNameWithTrue(l.Arg.LoadEntityID()),
 	)
 
 	req := rem.TeamVOBearerTokenReq{
@@ -1992,8 +1992,12 @@ func (l *TeamLoader) Existing() *lcl.TeamChainState {
 }
 
 type LoadTeamArg struct {
-	Team               proto.FQTeam
-	Name               proto.NameUtf8 // Either this is nonzero, or Team.Team
+
+	// Must specity exactly one of Name, Team, or AdHocMashedName:
+	Team            proto.FQTeam
+	Name            proto.NameUtf8
+	AdHocMashedName proto.AdHocTeamMashedID
+
 	As                 proto.FQParty
 	SrcRole            proto.Role
 	Keys               SharedKeySequence
@@ -2009,9 +2013,22 @@ type LoadTeamArg struct {
 	KeyRefresher func(MetaContext) (SharedKeySequence, error)
 }
 
+func (i LoadTeamArg) LoadEntityID() proto.EntityID {
+	if !i.AdHocMashedName.IsZero() {
+		return i.AdHocMashedName.EntityID()
+	}
+	if !i.Team.Team.IsZero() {
+		return i.Team.Team.EntityID()
+	}
+	return nil
+}
+
 func (l LoadTeamArg) Check() error {
+
 	n := !l.Name.IsZero()
 	i := !l.Team.Team.IsZero()
+	m := !l.AdHocMashedName.IsZero()
+
 	k := l.Keys != nil
 	t := l.Tok != nil
 	ptt := l.LocalParentTeamTok != nil
@@ -2021,11 +2038,22 @@ func (l LoadTeamArg) Check() error {
 		return nil
 	}
 
-	if !n && !i {
-		return core.InternalError("must specify either name or team")
+	var nLoadArgs int
+	if n {
+		nLoadArgs++
 	}
-	if n && i {
-		return core.InternalError("must specify either name or team, not both")
+	if i {
+		nLoadArgs++
+	}
+	if m {
+		nLoadArgs++
+	}
+
+	if nLoadArgs == 0 {
+		return core.InternalError("must specify either name or team or ad-hoc mashed name")
+	}
+	if nLoadArgs != 1 {
+		return core.InternalError("must specify either name or team or ad-hoc mashed name, not more than one")
 	}
 	if ptt && t {
 		return core.InternalError("must specify either local parent team token or permission token, not both")
