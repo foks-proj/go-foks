@@ -123,6 +123,17 @@ func (a *ActiveUserLoader) Run(m MetaContext) error {
 	switch {
 	case err == nil:
 		err = a.uc.UnlockKeys(m, a.opts)
+		if err == nil {
+			// Propagate the UserContext's lockState back to the loader so that
+			// GenerateLockError() can see the actual lock state instead of the
+			// zero value (UserLockState_Unset). Without this, any caller that
+			// passes NeedUnlocked=true (e.g. bot-token new, key add, ...) sees
+			// "internal error: unset lock state" even though the unlock chain
+			// completed successfully. Only meaningful once UnlockKeys has run;
+			// if probe failed to connect, lockState stays Unset. Upstream bug
+			// (initial commit of FOKS, 20ed077);
+			a.lockState = a.uc.lockState
+		}
 	case core.IsConnectError(err):
 		m.Warnw("ActiveUserLoader::Run", "stage", "probe", "err", err)
 		err = nil
@@ -131,15 +142,6 @@ func (a *ActiveUserLoader) Run(m MetaContext) error {
 	if err != nil {
 		return err
 	}
-
-	// Propagate the UserContext's lockState back to the loader so that
-	// GenerateLockError() can see the actual lock state instead of the
-	// zero value (UserLockState_Unset). Without this, any caller that
-	// passes NeedUnlocked=true (e.g. bot-token new, key add, ...) sees
-	// "internal error: unset lock state" even though the unlock chain
-	// completed successfully. Upstream bug (initial commit of FOKS,
-	// 20ed077); patched in SECO-foks fork.
-	a.lockState = a.uc.lockState
 
 	err = a.updateUserContext(m)
 	if err != nil {
