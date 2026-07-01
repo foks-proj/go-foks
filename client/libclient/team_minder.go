@@ -1033,10 +1033,6 @@ func (t *TeamMinder) PopulateTeamName(p *lcl.NamedFQParty) error {
 	return nil
 }
 
-func (t *TeamMinder) resolveTeam2(arg lcl.ConfigTeam) (*proto.FQTeam, error) {
-	return nil, core.NotImplementedError{}
-}
-
 func (t *TeamMinder) resolveTeam(arg lcl.ConfigTeam) (*proto.FQTeam, error) {
 
 	typ, err := arg.GetT()
