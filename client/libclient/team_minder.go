@@ -71,6 +71,7 @@ type TeamMinder struct {
 	teamIndex map[proto.FQTeamString]proto.FQTeam
 	// When the last indexing happened
 	lastIndex time.Time
+	// map of mashed adhoc teamIDs to their
 
 	certsMu sync.Mutex
 	// hold on to certs that we have loaded. they will get stale on admin PUK
@@ -1051,26 +1052,99 @@ func (t *TeamMinder) resolveTeam(arg lcl.ConfigTeam) (*proto.FQTeam, error) {
 	}
 }
 
+func (t *TeamMinder) fromParsedHostname(
+	arg *proto.ParsedHostname,
+) (
+	*proto.HostID,
+	proto.TCPAddr,
+	error,
+) {
+
+	var hostID *proto.HostID
+	var hn proto.TCPAddr
+
+	if arg == nil {
+		tmp := t.au.HostID()
+		hostID = &tmp
+	} else {
+		isHostName, err := arg.GetS()
+		if err != nil {
+			return nil, "", err
+		}
+		if !isHostName {
+			tmp := arg.False()
+			hostID = &tmp
+		} else {
+			hn = arg.True()
+		}
+	}
+	return hostID, hn, nil
+}
+
 func (t *TeamMinder) resolveTeamAdHoc(arg proto.FQAdHocTeamParsed) (*proto.FQTeam, error) {
+	var p0, p1 string
+
+	typ, err := arg.Team.GetT()
+	if err != nil {
+		return nil, err
+	}
+
+	switch typ {
+	case proto.AdHocParseType_Id:
+		tmp := arg.Team.Id()
+		switch tmp.Type() {
+		case proto.EntityType_AdHocTeam:
+			aht, err := tmp.ToTeamID()
+			if err != nil {
+				return nil, err
+			}
+			// Handle this case as we would a named team; everything else is through
+			// different data structures
+			return t.resolveTeamNamed(
+				proto.FQTeamParsed{
+					Team: proto.NewParsedTeamWithFalse(aht),
+					Host: arg.Host,
+				},
+			)
+		case proto.EntityType_AdHocTeamMashed:
+			ahtm, err := tmp.ToAdHocTeamMashedID()
+			if err != nil {
+				return nil, err
+			}
+			p0, err = ahtm.EntityID().StringErr()
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
+
+	hostID, hn, err := t.fromParsedHostname(arg.Host)
+	if err != nil {
+		return nil, err
+	}
+	switch {
+	case hostID != nil:
+		p1, err = hostID.StringErr()
+		if err != nil {
+			return nil, err
+		}
+	case !hn.IsZero():
+		p1 = hn.String()
+	default:
+		return nil, core.InternalError("unexpected nil host")
+	}
+	idx := p0 + "@" + p1
+	use := func(a any) {}
+	use(idx)
+
 	return nil, core.NotImplementedError{}
 }
 
 func (t *TeamMinder) resolveTeamNamed(arg proto.FQTeamParsed) (*proto.FQTeam, error) {
 
-	var hostID *proto.HostID
-
-	if arg.Host == nil {
-		tmp := t.au.HostID()
-		hostID = &tmp
-	} else {
-		isHostName, err := arg.Host.GetS()
-		if err != nil {
-			return nil, err
-		}
-		if !isHostName {
-			tmp := arg.Host.False()
-			hostID = &tmp
-		}
+	hostID, _, err := t.fromParsedHostname(arg.Host)
+	if err != nil {
+		return nil, err
 	}
 
 	var teamID *proto.TeamID
@@ -1101,7 +1175,7 @@ func (t *TeamMinder) resolveTeamNamed(arg proto.FQTeamParsed) (*proto.FQTeam, er
 	case arg.Host != nil:
 		h, err = arg.Host.StringErr()
 	default:
-		err = core.InternalError("unexpeecected nil host")
+		err = core.InternalError("unexpected nil host")
 	}
 	if err != nil {
 		return nil, err

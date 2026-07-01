@@ -5533,3 +5533,7 @@ func (m AdHocTeamMashedID) IsZero() bool {
 func (m AdHocTeamMashedID) EntityID() EntityID {
 	return EntityID(m[:])
 }
+
+func (h ParsedHostname) SimpleIsID() bool {
+	return !h.S
+}
