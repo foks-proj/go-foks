@@ -161,7 +161,10 @@ func (c *ClientConn) auth(
 		if !typ {
 			return core.InternalError("team id expected")
 		}
-		pid = idOrName.True().ToPartyID()
+		pid, err = idOrName.True().ToPartyID()
+		if err != nil {
+			return err
+		}
 		role = tmp.Role
 		if !tmp.Req.Team.Host.Eq(m.HostID().Id) {
 			return core.HostMismatchError{Which: "team host in kv-store auth"}

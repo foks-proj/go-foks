@@ -5,6 +5,7 @@ package libclient
 
 import (
 	"github.com/foks-proj/go-foks/lib/core"
+	"github.com/foks-proj/go-foks/lib/team"
 	proto "github.com/foks-proj/go-foks/proto/lib"
 )
 
@@ -38,7 +39,7 @@ func ActivePartyNamed(
 		return &ret, nil
 	}
 	tm := au.TeamMinder()
-	fqt, err := tm.ResolveAndReindex(m, *actingAs, nil)
+	fqt, err := tm.ResolveAndReindex(m, team.WrapNamed(*actingAs), nil)
 	if err != nil {
 		return nil, err
 	}

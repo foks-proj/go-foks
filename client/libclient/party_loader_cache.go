@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/foks-proj/go-foks/lib/core"
+	"github.com/foks-proj/go-foks/proto/lcl"
 	proto "github.com/foks-proj/go-foks/proto/lib"
 	"github.com/foks-proj/go-foks/proto/rem"
 )
@@ -151,7 +152,7 @@ func (k *PLCNode) refresh(
 
 func (p *PartyLoaderCache) loadTeam(
 	m MetaContext,
-	tm proto.FQTeamParsed,
+	tm lcl.ConfigTeam,
 	opts *PLCOpts,
 ) (
 	*PLCNode, error,
@@ -240,16 +241,20 @@ func (p *PartyLoaderCache) loadTeam(
 // a new object
 func (p *PartyLoaderCache) Load(
 	m MetaContext,
-	actingAs *proto.FQTeamParsed,
+	actingAs lcl.ConfigTeam,
 	opts *PLCOpts,
 ) (
 	*PLCNode,
 	error,
 ) {
-	if actingAs == nil {
+	typ, err := actingAs.GetT()
+	if err != nil {
+		return nil, err
+	}
+	if typ == lcl.ConfigTeamType_None {
 		return p.loadUser(m, opts)
 	}
-	return p.loadTeam(m, *actingAs, opts)
+	return p.loadTeam(m, actingAs, opts)
 }
 
 type BaseMinderNoder interface {
@@ -283,7 +288,7 @@ func NewBaseMinder[N any, P interface {
 
 func (a *BaseMinder[N, P]) GetParty(
 	m MetaContext,
-	t *proto.FQTeamParsed,
+	t lcl.ConfigTeam,
 ) (
 	*N,
 	error,

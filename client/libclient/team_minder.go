@@ -23,6 +23,13 @@ type TeamMinderTestHooks struct {
 	// ad-hoc teams, so tests can confirm the server rejects such edits on its
 	// own. Production code never sets this.
 	AllowAdHocTeamEdits bool
+
+	// AdHocMutateFoundingMembers, if set, rewrites the ad-hoc founding member
+	// roles in place just before the eldest link is built and signed. It lets a
+	// test submit a membership the client would otherwise refuse (e.g. a remote
+	// user or a team) so it can confirm the server's team player rejects it.
+	// Production code never sets this.
+	AdHocMutateFoundingMembers func([]proto.MemberRole)
 }
 
 // teamEditorTestOpts returns the test-only overrides to apply to TeamEditors
@@ -64,6 +71,8 @@ type TeamMinder struct {
 	teamIndex map[proto.FQTeamString]proto.FQTeam
 	// When the last indexing happened
 	lastIndex time.Time
+	// map of mashed adhoc teamIDs to their
+	adhHocTeamIndex map[proto.FQAdHocTeamString]proto.FQTeam
 
 	certsMu sync.Mutex
 	// hold on to certs that we have loaded. they will get stale on admin PUK
@@ -164,6 +173,15 @@ func getApprovedDetails(l proto.TeamMembershipLink) (*MembershipDetails, error) 
 			Approved: true,
 			DstRole:  &appr.Dst.Role,
 			KeyComm:  &appr.KeyComm,
+		}, nil
+	case proto.TeamMembershipLinkState_ApprovedAdHoc:
+		// Ad-hoc membership is approved but has no key commitment (no removal key).
+		aha := l.State.Approvedadhoc()
+		return &MembershipDetails{
+			SrcRole:  l.SrcRole,
+			Approved: true,
+			DstRole:  &aha.Role,
+			KeyComm:  nil,
 		}, nil
 	default:
 		return nil, nil
@@ -409,20 +427,30 @@ func (t *TeamMinder) postMembershipLink(
 	if err != nil {
 		return err
 	}
-	comm, err := core.ComputeKeyCommitment(tw.Tw().rk)
-	if err != nil {
-		return err
+
+	// Ad-hoc teams have no removal key (membership is fixed at founding), so
+	// there's no key commitment to compute or bind -- doing so would dereference
+	// a nil removal key. Record just the dst role/seqno via the ApprovedAdHoc state.
+	var details proto.TeamMembershipDetails
+	if fqt.Team.IsAdHocTeam() {
+		details = proto.NewTeamMembershipDetailsWithApprovedadhoc(*dst)
+	} else {
+		comm, err := core.ComputeKeyCommitment(tw.Tw().rk)
+		if err != nil {
+			return err
+		}
+		details = proto.NewTeamMembershipDetailsWithApproved(
+			proto.TeamMembershipApprovedDetails{
+				Dst:     *dst,
+				KeyComm: *comm,
+			},
+		)
 	}
 	glp := proto.NewGenericLinkPayloadWithTeammembership(
 		proto.TeamMembershipLink{
 			Team:    fqt,
 			SrcRole: tw.LoadArg().SrcRole,
-			State: proto.NewTeamMembershipDetailsWithApproved(
-				proto.TeamMembershipApprovedDetails{
-					Dst:     *dst,
-					KeyComm: *comm,
-				},
-			),
+			State:   details,
 		},
 	)
 
@@ -676,6 +704,14 @@ func (tm *TeamMinder) loadTeamArg(
 		arg.KeyRefresher = au.KeyRefresher
 		cp = au
 	}
+
+	// For adhoc teams, we need to load members to name the team properly.
+	// We might consider caching the UID->Username mappings that we get from
+	// loading users, since that's all we really need.
+	if exnode.Fqt.Team.IsAdHocTeam() {
+		arg.LoadMembers = true
+	}
+
 	return cp, &arg, nil
 }
 
@@ -957,6 +993,13 @@ func (t *TeamMinder) fixExploreWarning(
 		m.Warnw("TeamMinder.fixExploreWarning", "skip", "not-approved", "role", role)
 		return nil
 	}
+	if w.Node.Fqt.Team.IsAdHocTeam() {
+		// Ad-hoc teams are immutable: members can never be removed, so there's
+		// nothing to reconcile. VerifyRemoval would refuse anyway; skip so its
+		// guard error doesn't fail the whole explore.
+		m.Warnw("TeamMinder.fixExploreWarning", "skip", "adhoc-immutable", "team", w.Node.Fqt.Team)
+		return nil
+	}
 	err = w.Loader.VerifyRemoval(m, w.Node.Details.KeyComm)
 	if err != nil {
 		return err
@@ -976,16 +1019,30 @@ func (t *TeamMinder) reindex(state *ExploreState) error {
 
 	t.loadedTeams = make(map[proto.FQTeam]*TeamRecord)
 	t.teamIndex = make(map[proto.FQTeamString]proto.FQTeam)
+	t.adhHocTeamIndex = make(map[proto.FQAdHocTeamString]proto.FQTeam)
 	t.lastIndex = time.Now()
 
 	for fqt, tr := range state.Teams {
 		t.loadedTeams[fqt] = tr
-		names, err := tr.Tw().AllFQStrings()
-		if err != nil {
-			return err
-		}
-		for _, n := range names {
-			t.teamIndex[n] = fqt
+
+		switch {
+		case fqt.Team.IsNamedTeam():
+			names, err := tr.Tw().AllFQStrings()
+			if err != nil {
+				return err
+			}
+			for _, n := range names {
+				t.teamIndex[n] = fqt
+			}
+
+		case fqt.Team.IsAdHocTeam():
+			adhHocNames, err := tr.Tw().AllFQAdHocTeamStrings()
+			if err != nil {
+				return err
+			}
+			for _, n := range adhHocNames {
+				t.adhHocTeamIndex[n] = fqt
+			}
 		}
 	}
 	return nil
@@ -1026,22 +1083,159 @@ func (t *TeamMinder) PopulateTeamName(p *lcl.NamedFQParty) error {
 	return nil
 }
 
-func (t *TeamMinder) resolveTeam(arg proto.FQTeamParsed) (*proto.FQTeam, error) {
+func (t *TeamMinder) resolveTeam(arg lcl.ConfigTeam) (*proto.FQTeam, error) {
+
+	typ, err := arg.GetT()
+	if err != nil {
+		return nil, err
+	}
+	switch typ {
+	case lcl.ConfigTeamType_None:
+		return nil, core.InternalError("no team to resolve by in TeamMinder.resolveTeam")
+	case lcl.ConfigTeamType_Named:
+		return t.resolveTeamNamed(arg.Named())
+	case lcl.ConfigTeamType_AdHoc:
+		return t.resolveTeamAdHoc(arg.Adhoc())
+	default:
+		return nil, core.InternalError("unexpected team type in TeamMinder.resolveTeam")
+	}
+}
+
+func (t *TeamMinder) fromParsedHostname(
+	arg *proto.ParsedHostname,
+) (
+	*proto.HostID,
+	proto.TCPAddr,
+	error,
+) {
 
 	var hostID *proto.HostID
+	var hn proto.TCPAddr
 
-	if arg.Host == nil {
+	if arg == nil {
 		tmp := t.au.HostID()
 		hostID = &tmp
 	} else {
-		isHostName, err := arg.Host.GetS()
+		isHostName, err := arg.GetS()
+		if err != nil {
+			return nil, "", err
+		}
+		if !isHostName {
+			tmp := arg.False()
+			hostID = &tmp
+		} else {
+			hn = arg.True()
+		}
+	}
+	return hostID, hn, nil
+}
+
+func (t *TeamMinder) namesToAdhHocCanonicalString(
+	names []proto.NameUtf8,
+) (
+	proto.AdHocTeamString,
+	error,
+) {
+	return team.NamesToAdhHocCanonicalString(names, t.au.Info.Username.NameUtf8)
+}
+
+func (t *TeamMinder) uidsToAdhHocCanonicalString(
+	uids []proto.UID,
+) (
+	proto.AdHocTeamString,
+	error,
+) {
+	return team.UIDsToAdhHocCanonicalString(uids, t.au.Info.Fqu.Uid)
+}
+
+func (t *TeamMinder) resolveTeamAdHoc(arg proto.FQAdHocTeamParsed) (*proto.FQTeam, error) {
+	var p1 string
+	var p0 proto.AdHocTeamString
+
+	typ, err := arg.Team.GetT()
+	if err != nil {
+		return nil, err
+	}
+
+	switch typ {
+	case proto.AdHocParseType_Id:
+		tmp := arg.Team.Id()
+		switch tmp.Type() {
+		case proto.EntityType_AdHocTeam:
+			aht, err := tmp.ToTeamID()
+			if err != nil {
+				return nil, err
+			}
+			// Handle this case as we would a named team; everything else is through
+			// different data structures
+			return t.resolveTeamNamed(
+				proto.FQTeamParsed{
+					Team: proto.NewParsedTeamWithFalse(aht),
+					Host: arg.Host,
+				},
+			)
+		case proto.EntityType_AdHocTeamMashed:
+			ahtm, err := tmp.ToAdHocTeamMashedID()
+			if err != nil {
+				return nil, err
+			}
+			tmp, err := ahtm.EntityID().StringErr()
+			if err != nil {
+				return nil, err
+			}
+			p0 = proto.AdHocTeamString(tmp)
+		}
+	case proto.AdHocParseType_Names:
+		names := arg.Team.Names()
+		s, err := t.namesToAdhHocCanonicalString(names)
 		if err != nil {
 			return nil, err
 		}
-		if !isHostName {
-			tmp := arg.Host.False()
-			hostID = &tmp
+		p0 = s
+	case proto.AdHocParseType_Ids:
+		uids := arg.Team.Ids()
+		s, err := t.uidsToAdhHocCanonicalString(uids)
+		if err != nil {
+			return nil, err
 		}
+		p0 = s
+	}
+
+	hostID, hn, err := t.fromParsedHostname(arg.Host)
+	if err != nil {
+		return nil, err
+	}
+	switch {
+	case hostID != nil:
+		p1, err = hostID.StringErr()
+		if err != nil {
+			return nil, err
+		}
+	case !hn.IsZero():
+		p1 = hn.String()
+	default:
+		return nil, core.InternalError("unexpected nil host")
+	}
+	idx := proto.FQAdHocTeamString(p0.String() + "@" + p1)
+	t.indexMu.RLock()
+	defer t.indexMu.RUnlock()
+
+	if t.adhHocTeamIndex == nil {
+		return nil, nil
+	}
+
+	fqt, ok := t.adhHocTeamIndex[idx]
+	if !ok {
+		return nil, nil
+	}
+	return &fqt, nil
+}
+
+func (t *TeamMinder) resolveTeamNamed(arg proto.FQTeamParsed) (*proto.FQTeam, error) {
+
+	hostID, _, err := t.fromParsedHostname(arg.Host)
+	if err != nil {
+		return nil, err
 	}
 
 	var teamID *proto.TeamID
@@ -1072,7 +1266,7 @@ func (t *TeamMinder) resolveTeam(arg proto.FQTeamParsed) (*proto.FQTeam, error) 
 	case arg.Host != nil:
 		h, err = arg.Host.StringErr()
 	default:
-		err = core.InternalError("unexpeecected nil host")
+		err = core.InternalError("unexpected nil host")
 	}
 	if err != nil {
 		return nil, err
@@ -1097,12 +1291,12 @@ func (t *TeamMinder) resolveTeam(arg proto.FQTeamParsed) (*proto.FQTeam, error) 
 }
 
 func (t *TeamMinder) Resolve(m MetaContext, arg proto.FQTeamParsed) (*proto.FQTeam, error) {
-	return t.resolveTeam(arg)
+	return t.resolveTeam(team.WrapNamed(arg))
 }
 
 func (t *TeamMinder) ResolveAndReindex(
 	m MetaContext,
-	arg proto.FQTeamParsed,
+	arg lcl.ConfigTeam,
 	opts *LoadTeamOpts,
 ) (
 	*proto.FQTeam,
@@ -1131,7 +1325,7 @@ func (t *TeamMinder) ResolveAndReindex(
 
 func (t *TeamMinder) LoadTeam(
 	m MetaContext,
-	arg proto.FQTeamParsed,
+	arg lcl.ConfigTeam,
 	opts LoadTeamOpts,
 ) (
 	*TeamWrapper,
@@ -1157,7 +1351,7 @@ func (t *TeamMinder) withLoadedTeam(
 	opts LoadTeamOpts,
 	f func(m MetaContext, tm *TeamRecord) error,
 ) error {
-	fqt, err := t.ResolveAndReindex(m, arg, &opts)
+	fqt, err := t.ResolveAndReindex(m, team.WrapNamed(arg), &opts)
 	if err != nil {
 		return err
 	}
@@ -1177,7 +1371,7 @@ func (t *TeamMinder) withLoadedTeamAndAdminToken(
 	opts LoadTeamOpts,
 	f func(m MetaContext, tr *TeamRecord, token *rem.TeamBearerToken) error,
 ) error {
-	fqt, err := t.ResolveAndReindex(m, arg, &opts)
+	fqt, err := t.ResolveAndReindex(m, team.WrapNamed(arg), &opts)
 	if err != nil {
 		return err
 	}
@@ -1385,15 +1579,20 @@ func (t *TeamMinder) DumpMembershipChain(
 		if err != nil {
 			return nil, err
 		}
-		if typ != proto.TeamMembershipLinkState_Approved {
+		var dst proto.RoleAndSeqno
+		switch typ {
+		case proto.TeamMembershipLinkState_Approved:
+			dst = v.State.Approved().Dst
+		case proto.TeamMembershipLinkState_ApprovedAdHoc:
+			dst = v.State.Approvedadhoc()
+		default:
 			continue
 		}
-		appr := v.State.Approved()
 		link := lcl.TeamMembershipChainTeam{
 			Team:    v.Team,
 			SrcRole: v.SrcRole,
-			DstRole: appr.Dst.Role,
-			Seqno:   appr.Dst.Seqno,
+			DstRole: dst.Role,
+			Seqno:   dst.Seqno,
 		}
 		ret = append(ret, link)
 	}

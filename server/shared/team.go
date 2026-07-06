@@ -2192,3 +2192,56 @@ func (a *AdHocTeamNamesManager) InsertPlaceholderTeamName(
 	a.inserted[hostID] = true
 	return nil
 }
+
+func InsertAdHocTeam(
+	m MetaContext,
+	tx pgx.Tx,
+	teamID proto.TeamID,
+	changes []proto.MemberRole,
+) error {
+
+	uids := make([]proto.UID, 0, len(changes))
+
+	for _, chng := range changes {
+		eid := chng.Member.Id.Entity
+		uid, err := eid.ToUID()
+		if err != nil {
+			return err
+		}
+		host := chng.Member.Id.Host
+		if host != nil && !host.Eq(m.HostID().Id) {
+			return core.BadArgsError("ad hoc team member is not in the same host")
+		}
+		uids = append(uids, uid)
+	}
+
+	mashedID, err := team.MashUIDsIntoAdHocTeamID(uids, m.HostID().Id)
+	if err != nil {
+		return err
+	}
+
+	tag, err := tx.Exec(m.Ctx(),
+		`INSERT INTO teams_adhoc (short_host_id, team_id, mashed_id, creator_party_id, ctime)
+		VALUES($1, $2, $3, $4, NOW())`,
+		m.ShortHostID().ExportToDB(),
+		teamID.ExportToDB(),
+		mashedID.ExportToDB(),
+		m.UID().ExportToDB(),
+	)
+	if err != nil {
+		// The mashed_id is H(sorted party IDs), so a repeat creation with the exact
+		// same membership collides on the teams_adhoc_mashed_idx unique index (the
+		// team_id primary key differs each attempt, so it won't be that one). Map
+		// only that specific index violation to a friendly duplicate error; anything
+		// else propagates as-is.
+		if IsDuplicateKeyError(err, "teams_adhoc_mashed_idx") {
+			return core.TeamAdhocDuplicateError{}
+		}
+		return err
+	}
+	if tag.RowsAffected() != 1 {
+		return core.InsertError("teams_adhoc")
+	}
+	// no op for now as we confirm we haven't broken anything with this change
+	return nil
+}

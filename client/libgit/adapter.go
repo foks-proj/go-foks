@@ -15,6 +15,7 @@ import (
 	"github.com/foks-proj/go-foks/client/libclient"
 	"github.com/foks-proj/go-foks/client/libkv"
 	"github.com/foks-proj/go-foks/lib/core"
+	"github.com/foks-proj/go-foks/lib/team"
 	"github.com/foks-proj/go-foks/proto/lcl"
 	proto "github.com/foks-proj/go-foks/proto/lib"
 	"github.com/foks-proj/go-foks/proto/rem"
@@ -149,7 +150,7 @@ func (a *adapter) initOpWithContext(
 	lcl.KVConfig,
 ) {
 	cfg := lcl.KVConfig{
-		ActingAs: a.actingAs,
+		ActingAs: team.WrapNamedPtr(a.actingAs),
 	}
 	mctx := libkv.NewMetaContext(libclient.NewMetaContext(context.Background(), a.g))
 	if a.auOverride != nil {

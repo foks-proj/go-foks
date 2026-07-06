@@ -50,9 +50,65 @@ func lookupTeamMemberVerifyKey(
 	if err != nil {
 		return nil, nil, &maskableError{err: err, mask: false}
 	}
+
+	readRowWithMasking := func(e error, raw []byte) (proto.TeamID, *maskableError) {
+		var ret proto.TeamID
+		if errors.Is(e, pgx.ErrNoRows) {
+			// For timing purposes, if there is no such name, we fill in a
+			// random team ID that will fail the query below. This way a
+			// team-name-not-found condition won't leak (too much) timing info.
+			err = core.RandomFill(ret[:])
+			if err != nil {
+				return ret, &maskableError{err: err, mask: true}
+			}
+			// See above, we just fill in an random teamID, which will fail the query below.
+			return ret, nil
+		}
+		// other errors are masked, but we don't have to worry about timing info leaks
+		if err != nil {
+			return ret, &maskableError{err: err, mask: true}
+		}
+		var teamID proto.TeamID
+		err = teamID.ImportFromDB(raw)
+		if err != nil {
+			return ret, &maskableError{err: err, mask: true}
+		}
+		return teamID, nil
+	}
+
 	var teamID proto.TeamID
 	if isId {
-		teamID = req.Team.IdOrName.True()
+		eid := req.Team.IdOrName.True()
+		switch eid.Type() {
+		case proto.EntityType_NamedTeam, proto.EntityType_AdHocTeam:
+			teamID, err = eid.ToTeamID()
+			if err != nil {
+				return nil, nil, &maskableError{err: err, mask: false}
+			}
+		case proto.EntityType_AdHocTeamMashed:
+			mash, err := eid.ToAdHocTeamMashedID()
+			if err != nil {
+				return nil, nil, &maskableError{err: err, mask: false}
+			}
+			var raw []byte
+			err = rq.QueryRow(m.Ctx(),
+				`SELECT team_id
+				 FROM teams_adhoc
+				 WHERE short_host_id=$1 AND mashed_id=$2`,
+				m.ShortHostID().ExportToDB(),
+				mash.ExportToDB(),
+			).Scan(&raw)
+			var mep *maskableError
+			teamID, mep = readRowWithMasking(err, raw)
+			if mep != nil {
+				return nil, nil, mep
+			}
+		default:
+			return nil, nil, &maskableError{
+				err:  core.BadArgsError("expected a teamID or a mashed teamID"),
+				mask: false,
+			}
+		}
 	} else {
 		name := req.Team.IdOrName.False()
 		err := name.AssertNormalized()
@@ -67,22 +123,10 @@ func lookupTeamMemberVerifyKey(
 			m.ShortHostID().ExportToDB(),
 			name,
 		).Scan(&tmp)
-		if errors.Is(err, pgx.ErrNoRows) {
-			// For timing purposes, if there is no such name, we fill in a
-			// random team ID that will fail the query below. This way a
-			// team-name-not-found condition won't leak (too much) timing info.
-			err = core.RandomFill(teamID[:])
-			if err != nil {
-				return nil, nil, &maskableError{err: err, mask: true}
-			}
-			m.Warnw("lookupTeamMemberVerifyKey", "err", "TeamNameNotFound", "name", name, "randomTeamID", teamID)
-		}
-		if err != nil {
-			return nil, nil, &maskableError{err: err, mask: true}
-		}
-		err = teamID.ImportFromDB(tmp)
-		if err != nil {
-			return nil, nil, &maskableError{err: err, mask: true}
+		var mep *maskableError
+		teamID, mep = readRowWithMasking(err, tmp)
+		if mep != nil {
+			return nil, nil, mep
 		}
 	}
 
@@ -379,7 +423,7 @@ func CheckTeamVOBearerToken(
 		Req: rem.TeamVOBearerTokenReq{
 			Team: proto.FQTeamIDOrName{
 				Host:     m.HostID().Id,
-				IdOrName: proto.NewTeamIDOrNameWithTrue(teamID),
+				IdOrName: proto.NewTeamIDOrNameWithTrue(teamID.EntityID()),
 			},
 			Gen: proto.Generation(g),
 			Member: proto.FQParty{

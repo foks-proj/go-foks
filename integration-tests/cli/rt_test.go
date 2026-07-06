@@ -13,8 +13,104 @@ import (
 	"github.com/foks-proj/go-foks/lib/team"
 	"github.com/foks-proj/go-foks/proto/lcl"
 	proto "github.com/foks-proj/go-foks/proto/lib"
+	"github.com/foks-proj/go-foks/server/shared"
 	"github.com/stretchr/testify/require"
 )
+
+// setVHostOpenViewership flips the vhost that a's active user lives on to open
+// viewership, which ad-hoc teams require. Mirrors the setup in
+// createTeamOpenViewership (team_test.go).
+func setVHostOpenViewership(t *testing.T, a *testAgent) {
+	var u lcl.UserMetadataAndSigchainState
+	a.runCmdToJSON(t, &u, "user", "load-me")
+	m := globalTestEnv.MetaContext()
+	chid, err := m.G().HostIDMap().LookupByHostID(m, u.Fqu.HostID)
+	require.NoError(t, err)
+	m = m.WithHostID(chid)
+	err = shared.VHostSetUserViewership(m, proto.ViewershipMode_Open)
+	require.NoError(t, err)
+}
+
+// TestRTAdHocTeamSendAndReceive exercises the full DM-style ad-hoc-team chat path
+// through the CLI: alice creates an ad-hoc team with bob, makes the default
+// "#general" channel, and the two exchange messages -- alice sends and bob reads
+// it (seeing alice as sender), then bob replies and alice reads both (each sender
+// resolved). Ad-hoc teams are addressed by participant list and require an
+// open-viewership host, so we run on vhost 4 -- the package's open-viewership
+// host (as in createTeamOpenViewership).
+func TestRTAdHocTeamSendAndReceive(t *testing.T) {
+	// Ad-hoc team creation writes to a secondary (team) chain, so keep merkle
+	// moving in the background to provision the signing keys as we go.
+	stopper := runMerkleActivePoker(t)
+	defer stopper()
+
+	// alice signs up on the open-viewership vhost (#4)...
+	alice := newTestAgent(t)
+	alice.runAgent(t)
+	defer alice.stop(t)
+	newUserWithAgentAtVHost(t, alice, 4)
+	merklePoke(t)
+	merklePoke(t)
+	aliceName := getActiveUser(t, alice).Info.Username.NameUtf8
+
+	// ...and flips her vhost to open viewership, which ad-hoc teams require.
+	setVHostOpenViewership(t, alice)
+
+	// bob signs up on the same (now open-viewership) vhost.
+	bob := newTestAgent(t)
+	bob.runAgent(t)
+	defer bob.stop(t)
+	newUserWithAgentAtVHost(t, bob, 4)
+	merklePoke(t)
+	merklePoke(t)
+	bobName := getActiveUser(t, bob).Info.Username.NameUtf8
+
+	// alice creates the ad-hoc team {alice, bob}. The current user (alice) is
+	// implied, so she only names bob.
+	alice.runCmd(t, nil, "adhoc", "create", string(bobName))
+	merklePoke(t)
+	merklePoke(t)
+
+	// Re-creating the team with the identical membership is rejected: the mashed
+	// membership hash is deterministic, so the second create collides on the
+	// server's teams_adhoc_mashed_idx unique index.
+	err := alice.runCmdErr(nil, "adhoc", "create", string(bobName))
+	require.Error(t, err)
+	require.Equal(t, core.TeamAdhocDuplicateError{}, err)
+
+	// alice makes the team's default channel, which renders as "#general".
+	alice.runCmd(t, nil, "rt", "new-channel", "--adhoc", string(bobName))
+
+	// alice sends into #general (the default when --channel is omitted). Both
+	// members are founding owners, so the admin-tier default channel is readable
+	// and writable by each of them.
+	msgFromAlice := "hi bob, welcome to the DM"
+	alice.runCmd(t, nil, "rt", "send", "--adhoc", string(bobName), msgFromAlice)
+
+	// bob reads it back. He addresses the same team by naming alice (bob himself
+	// is the implied current user), and should see alice as the resolved sender.
+	var thread lcl.RTThreadView
+	bob.runCmdToJSON(t, &thread, "rt", "read", "--adhoc", string(aliceName))
+	require.Len(t, thread.Msgs, 1)
+	require.Equal(t, msgFromAlice, string(thread.Msgs[0].Body))
+	require.Equal(t, proto.RTMsgType_Basic, thread.Msgs[0].Typ)
+	require.NotNil(t, thread.Msgs[0].SenderName)
+	require.Equal(t, aliceName, *thread.Msgs[0].SenderName)
+
+	// bob replies; alice reads and should see both messages (newest-first), with
+	// each distinct sender's name resolved through the shared ad-hoc team.
+	msgFromBob := "thanks alice, glad to be here"
+	bob.runCmd(t, nil, "rt", "send", "--adhoc", string(aliceName), msgFromBob)
+
+	alice.runCmdToJSON(t, &thread, "rt", "read", "--adhoc", string(bobName))
+	require.Len(t, thread.Msgs, 2)
+	require.Equal(t, msgFromBob, string(thread.Msgs[0].Body))
+	require.NotNil(t, thread.Msgs[0].SenderName)
+	require.Equal(t, bobName, *thread.Msgs[0].SenderName)
+	require.Equal(t, msgFromAlice, string(thread.Msgs[1].Body))
+	require.NotNil(t, thread.Msgs[1].SenderName)
+	require.Equal(t, aliceName, *thread.Msgs[1].SenderName)
+}
 
 // TestRTChannelMakeAndList exercises the CLI integration for making channels
 // (`rt new-channel`) and reading them back (`rt list-channels`), in both JSON

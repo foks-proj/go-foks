@@ -7,6 +7,7 @@ import (
 	"context"
 
 	"github.com/foks-proj/go-foks/client/libkv"
+	"github.com/foks-proj/go-foks/lib/team"
 	"github.com/foks-proj/go-foks/proto/lcl"
 	proto "github.com/foks-proj/go-foks/proto/lib"
 	"github.com/foks-proj/go-foks/proto/rem"
@@ -14,7 +15,11 @@ import (
 
 func (c *AgentConn) kvInit(ctx context.Context, cfg lcl.KVConfig) (libkv.MetaContext, *libkv.Minder, error) {
 	m := libkv.NewMetaContext(c.MetaContext(ctx))
-	ret, err := libkv.InitReq(m, cfg.ActingAs)
+	fqtp, err := team.UnwrapNamed(cfg.ActingAs)
+	if err != nil {
+		return m, nil, err
+	}
+	ret, err := libkv.InitReq(m, fqtp)
 	if err != nil {
 		return m, nil, err
 	}

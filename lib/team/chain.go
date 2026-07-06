@@ -73,6 +73,26 @@ func findSharedKeyForRole(k []proto.SharedKey, role proto.Role) (*proto.SharedKe
 	return nil, nil
 }
 
+// checkAdHocMembersAreLocalUsers enforces that an ad-hoc team's membership is
+// restricted to local users: every member must be a user (not a team) homed on
+// the team's own host. A local member is encoded with a nil host scope (see
+// FQEntity.AtHost); a non-nil host means a remote user. The team player runs
+// this when opening an ad-hoc team's eldest link, and since the server shares
+// this code path it is also the server-side guard -- so neither a forged chain
+// nor a client that skipped its own checks can establish an ad-hoc team with a
+// team member or a cross-host user.
+func checkAdHocMembersAreLocalUsers(changes []proto.MemberRole) error {
+	for _, ch := range changes {
+		if !ch.Member.Id.Entity.Type().IsUser() {
+			return core.LinkError("ad-hoc team members must be users, not teams")
+		}
+		if ch.Member.Id.Host != nil {
+			return core.LinkError("ad-hoc team members must be local (same-host) users")
+		}
+	}
+	return nil
+}
+
 func OpenEldestLinkWithOTLR(
 	link *proto.LinkOuter,
 	hostID proto.HostID,
@@ -221,6 +241,15 @@ func OpenTeamLink(
 	}
 	if !hostID.Eq(gc.Entity.Host) {
 		return nil, core.LinkError("wrong host given")
+	}
+	// Ad-hoc teams have a fixed membership limited to local users. Enforce this
+	// before computing the roster, so it holds on the server (which opens the
+	// eldest link at create time) and in the client team player (which replays
+	// the chain) alike.
+	if gc.Entity.Entity.Type().IsAdHocTeam() {
+		if err := checkAdHocMembersAreLocalUsers(gc.Changes); err != nil {
+			return nil, err
+		}
 	}
 	if team != nil && !team.EntityID().Eq(gc.Entity.Entity) {
 		return nil, core.LinkError("wrong user given")

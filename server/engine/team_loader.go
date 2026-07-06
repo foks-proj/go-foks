@@ -141,7 +141,12 @@ func checkTeamVOBearerToken(
 	if !isId {
 		return ret, core.InternalError("did not expect teamName name in checkTeamVOBearerToken")
 	}
-	ret = tmp.Req.Team.IdOrName.True()
+	eid := tmp.Req.Team.IdOrName.True()
+	teamID, err := eid.ToTeamID()
+	if err != nil {
+		return ret, err
+	}
+	ret = teamID
 	return ret, nil
 }
 

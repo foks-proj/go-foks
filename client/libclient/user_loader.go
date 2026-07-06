@@ -26,6 +26,7 @@ const (
 	LoadModeDeadSelf   LoadMode = 2
 	LoadModeOthers     LoadMode = 3
 	LoadModeOpenOthers LoadMode = 4
+	LoadModeForAdHoc   LoadMode = 5
 )
 
 func (m LoadMode) IsSelf() bool {
@@ -499,6 +500,8 @@ func (u *UserLoader) loadUserFromServer(m MetaContext) error {
 
 	var auth rem.LoadUserChainAuth
 	switch {
+	case u.arg.LoadMode == LoadModeForAdHoc:
+		auth = rem.NewLoadUserChainAuthWithOpenvhostoraslocaluser()
 	case u.arg.LoadMode == LoadModeOpenOthers:
 		auth = rem.NewLoadUserChainAuthWithOpenvhost()
 	case tok != nil && tok.IsZero():

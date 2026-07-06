@@ -19,8 +19,20 @@ variant RTChannelSpecifier switch (t : RTChannelSpecifierType) {
     default: void;
 }
 
+enum ConfigTeamType {
+    None @0;
+    Named @1;
+    AdHoc @2;
+}
+
+variant ConfigTeam switch (t : ConfigTeamType) @0xd087b3b8ff4bc3ea {
+    case None: void;
+    case Named @1: lib.FQTeamParsed;
+    case AdHoc @2: lib.FQAdHocTeamParsed;
+}
+
 struct RTConfig {
-    team @0 : Option(lib.FQTeamParsed);
+    team @0 : ConfigTeam;
     appID @1 : lib.RTAppID;
     roles @2 : lib.RolePairOpt;
     channel @3 : RTChannelSpecifier;

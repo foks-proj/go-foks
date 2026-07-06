@@ -12,23 +12,26 @@ import (
 type TeamMembershipLinkState int
 
 const (
-	TeamMembershipLinkState_None      TeamMembershipLinkState = 0
-	TeamMembershipLinkState_Requested TeamMembershipLinkState = 1
-	TeamMembershipLinkState_Approved  TeamMembershipLinkState = 2
-	TeamMembershipLinkState_Removed   TeamMembershipLinkState = 3
+	TeamMembershipLinkState_None          TeamMembershipLinkState = 0
+	TeamMembershipLinkState_Requested     TeamMembershipLinkState = 1
+	TeamMembershipLinkState_Approved      TeamMembershipLinkState = 2
+	TeamMembershipLinkState_Removed       TeamMembershipLinkState = 3
+	TeamMembershipLinkState_ApprovedAdHoc TeamMembershipLinkState = 4
 )
 
 var TeamMembershipLinkStateMap = map[string]TeamMembershipLinkState{
-	"None":      0,
-	"Requested": 1,
-	"Approved":  2,
-	"Removed":   3,
+	"None":          0,
+	"Requested":     1,
+	"Approved":      2,
+	"Removed":       3,
+	"ApprovedAdHoc": 4,
 }
 var TeamMembershipLinkStateRevMap = map[TeamMembershipLinkState]string{
 	0: "None",
 	1: "Requested",
 	2: "Approved",
 	3: "Removed",
+	4: "ApprovedAdHoc",
 }
 
 type TeamMembershipLinkStateInternal__ TeamMembershipLinkState
@@ -174,6 +177,7 @@ func (t *TeamMembershipApprovedDetails) Bytes() []byte { return nil }
 type TeamMembershipDetails struct {
 	T     TeamMembershipLinkState
 	F_1__ *TeamMembershipApprovedDetails `json:"f1,omitempty"`
+	F_2__ *RoleAndSeqno                  `json:"f2,omitempty"`
 }
 type TeamMembershipDetailsInternal__ struct {
 	_struct  struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
@@ -183,6 +187,7 @@ type TeamMembershipDetailsInternal__ struct {
 type TeamMembershipDetailsInternalSwitch__ struct {
 	_struct struct{}                                 `codec:",omitempty"` //lint:ignore U1000 msgpack internal field
 	F_1__   *TeamMembershipApprovedDetailsInternal__ `codec:"1"`
+	F_2__   *RoleAndSeqnoInternal__                  `codec:"2"`
 }
 
 func (t TeamMembershipDetails) GetT() (ret TeamMembershipLinkState, err error) {
@@ -190,6 +195,10 @@ func (t TeamMembershipDetails) GetT() (ret TeamMembershipLinkState, err error) {
 	case TeamMembershipLinkState_Approved:
 		if t.F_1__ == nil {
 			return ret, errors.New("unexpected nil case for F_1__")
+		}
+	case TeamMembershipLinkState_ApprovedAdHoc:
+		if t.F_2__ == nil {
+			return ret, errors.New("unexpected nil case for F_2__")
 		}
 	default:
 		break
@@ -205,10 +214,25 @@ func (t TeamMembershipDetails) Approved() TeamMembershipApprovedDetails {
 	}
 	return *t.F_1__
 }
+func (t TeamMembershipDetails) Approvedadhoc() RoleAndSeqno {
+	if t.F_2__ == nil {
+		panic("unexpected nil case; should have been checked")
+	}
+	if t.T != TeamMembershipLinkState_ApprovedAdHoc {
+		panic(fmt.Sprintf("unexpected switch value (%v) when Approvedadhoc is called", t.T))
+	}
+	return *t.F_2__
+}
 func NewTeamMembershipDetailsWithApproved(v TeamMembershipApprovedDetails) TeamMembershipDetails {
 	return TeamMembershipDetails{
 		T:     TeamMembershipLinkState_Approved,
 		F_1__: &v,
+	}
+}
+func NewTeamMembershipDetailsWithApprovedadhoc(v RoleAndSeqno) TeamMembershipDetails {
+	return TeamMembershipDetails{
+		T:     TeamMembershipLinkState_ApprovedAdHoc,
+		F_2__: &v,
 	}
 }
 func NewTeamMembershipDetailsDefault(s TeamMembershipLinkState) TeamMembershipDetails {
@@ -231,6 +255,18 @@ func (t TeamMembershipDetailsInternal__) Import() TeamMembershipDetails {
 			})(x)
 			return &tmp
 		})(t.Switch__.F_1__),
+		F_2__: (func(x *RoleAndSeqnoInternal__) *RoleAndSeqno {
+			if x == nil {
+				return nil
+			}
+			tmp := (func(x *RoleAndSeqnoInternal__) (ret RoleAndSeqno) {
+				if x == nil {
+					return ret
+				}
+				return x.Import()
+			})(x)
+			return &tmp
+		})(t.Switch__.F_2__),
 	}
 }
 func (t TeamMembershipDetails) Export() *TeamMembershipDetailsInternal__ {
@@ -243,6 +279,12 @@ func (t TeamMembershipDetails) Export() *TeamMembershipDetailsInternal__ {
 				}
 				return (*x).Export()
 			})(t.F_1__),
+			F_2__: (func(x *RoleAndSeqno) *RoleAndSeqnoInternal__ {
+				if x == nil {
+					return nil
+				}
+				return (*x).Export()
+			})(t.F_2__),
 		},
 	}
 }
@@ -748,8 +790,8 @@ func (t *TeamInvite) Bytes() []byte { return nil }
 
 type TeamIDOrName struct {
 	Id    bool
-	F_0__ *Name   `json:"f0,omitempty"`
-	F_1__ *TeamID `json:"f1,omitempty"`
+	F_0__ *Name     `json:"f0,omitempty"`
+	F_1__ *EntityID `json:"f1,omitempty"`
 }
 type TeamIDOrNameInternal__ struct {
 	_struct  struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
@@ -757,9 +799,9 @@ type TeamIDOrNameInternal__ struct {
 	Switch__ TeamIDOrNameInternalSwitch__
 }
 type TeamIDOrNameInternalSwitch__ struct {
-	_struct struct{}          `codec:",omitempty"` //lint:ignore U1000 msgpack internal field
-	F_0__   *NameInternal__   `codec:"0"`
-	F_1__   *TeamIDInternal__ `codec:"1"`
+	_struct struct{}            `codec:",omitempty"` //lint:ignore U1000 msgpack internal field
+	F_0__   *NameInternal__     `codec:"0"`
+	F_1__   *EntityIDInternal__ `codec:"1"`
 }
 
 func (t TeamIDOrName) GetId() (ret bool, err error) {
@@ -784,7 +826,7 @@ func (t TeamIDOrName) False() Name {
 	}
 	return *t.F_0__
 }
-func (t TeamIDOrName) True() TeamID {
+func (t TeamIDOrName) True() EntityID {
 	if t.F_1__ == nil {
 		panic("unexpected nil case; should have been checked")
 	}
@@ -799,7 +841,7 @@ func NewTeamIDOrNameWithFalse(v Name) TeamIDOrName {
 		F_0__: &v,
 	}
 }
-func NewTeamIDOrNameWithTrue(v TeamID) TeamIDOrName {
+func NewTeamIDOrNameWithTrue(v EntityID) TeamIDOrName {
 	return TeamIDOrName{
 		Id:    true,
 		F_1__: &v,
@@ -820,11 +862,11 @@ func (t TeamIDOrNameInternal__) Import() TeamIDOrName {
 			})(x)
 			return &tmp
 		})(t.Switch__.F_0__),
-		F_1__: (func(x *TeamIDInternal__) *TeamID {
+		F_1__: (func(x *EntityIDInternal__) *EntityID {
 			if x == nil {
 				return nil
 			}
-			tmp := (func(x *TeamIDInternal__) (ret TeamID) {
+			tmp := (func(x *EntityIDInternal__) (ret EntityID) {
 				if x == nil {
 					return ret
 				}
@@ -844,7 +886,7 @@ func (t TeamIDOrName) Export() *TeamIDOrNameInternal__ {
 				}
 				return (*x).Export()
 			})(t.F_0__),
-			F_1__: (func(x *TeamID) *TeamIDInternal__ {
+			F_1__: (func(x *EntityID) *EntityIDInternal__ {
 				if x == nil {
 					return nil
 				}
@@ -965,7 +1007,210 @@ func (s *SenderPair) Decode(dec rpc.Decoder) error {
 
 func (s *SenderPair) Bytes() []byte { return nil }
 
+type AdHocTeamMashLayout int
+
+const (
+	AdHocTeamMashLayout_UserOwnersOnly AdHocTeamMashLayout = 1
+)
+
+var AdHocTeamMashLayoutMap = map[string]AdHocTeamMashLayout{
+	"UserOwnersOnly": 1,
+}
+var AdHocTeamMashLayoutRevMap = map[AdHocTeamMashLayout]string{
+	1: "UserOwnersOnly",
+}
+
+type AdHocTeamMashLayoutInternal__ AdHocTeamMashLayout
+
+func (a AdHocTeamMashLayoutInternal__) Import() AdHocTeamMashLayout {
+	return AdHocTeamMashLayout(a)
+}
+func (a AdHocTeamMashLayout) Export() *AdHocTeamMashLayoutInternal__ {
+	return ((*AdHocTeamMashLayoutInternal__)(&a))
+}
+
+type AdHocTeamMashInputs struct {
+	Layout AdHocTeamMashLayout
+	F_0__  *[]FQUser `json:"f0,omitempty"`
+}
+type AdHocTeamMashInputsInternal__ struct {
+	_struct  struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
+	Layout   AdHocTeamMashLayout
+	Switch__ AdHocTeamMashInputsInternalSwitch__
+}
+type AdHocTeamMashInputsInternalSwitch__ struct {
+	_struct struct{}               `codec:",omitempty"` //lint:ignore U1000 msgpack internal field
+	F_0__   *[](*FQUserInternal__) `codec:"0"`
+}
+
+func (a AdHocTeamMashInputs) GetLayout() (ret AdHocTeamMashLayout, err error) {
+	switch a.Layout {
+	case AdHocTeamMashLayout_UserOwnersOnly:
+		if a.F_0__ == nil {
+			return ret, errors.New("unexpected nil case for F_0__")
+		}
+	}
+	return a.Layout, nil
+}
+func (a AdHocTeamMashInputs) Userownersonly() []FQUser {
+	if a.F_0__ == nil {
+		panic("unexpected nil case; should have been checked")
+	}
+	if a.Layout != AdHocTeamMashLayout_UserOwnersOnly {
+		panic(fmt.Sprintf("unexpected switch value (%v) when Userownersonly is called", a.Layout))
+	}
+	return *a.F_0__
+}
+func NewAdHocTeamMashInputsWithUserownersonly(v []FQUser) AdHocTeamMashInputs {
+	return AdHocTeamMashInputs{
+		Layout: AdHocTeamMashLayout_UserOwnersOnly,
+		F_0__:  &v,
+	}
+}
+func (a AdHocTeamMashInputsInternal__) Import() AdHocTeamMashInputs {
+	return AdHocTeamMashInputs{
+		Layout: a.Layout,
+		F_0__: (func(x *[](*FQUserInternal__)) *[]FQUser {
+			if x == nil {
+				return nil
+			}
+			tmp := (func(x *[](*FQUserInternal__)) (ret []FQUser) {
+				if x == nil || len(*x) == 0 {
+					return nil
+				}
+				ret = make([]FQUser, len(*x))
+				for k, v := range *x {
+					if v == nil {
+						continue
+					}
+					ret[k] = (func(x *FQUserInternal__) (ret FQUser) {
+						if x == nil {
+							return ret
+						}
+						return x.Import()
+					})(v)
+				}
+				return ret
+			})(x)
+			return &tmp
+		})(a.Switch__.F_0__),
+	}
+}
+func (a AdHocTeamMashInputs) Export() *AdHocTeamMashInputsInternal__ {
+	return &AdHocTeamMashInputsInternal__{
+		Layout: a.Layout,
+		Switch__: AdHocTeamMashInputsInternalSwitch__{
+			F_0__: (func(x *[]FQUser) *[](*FQUserInternal__) {
+				if x == nil {
+					return nil
+				}
+				return (func(x []FQUser) *[](*FQUserInternal__) {
+					if len(x) == 0 {
+						return nil
+					}
+					ret := make([](*FQUserInternal__), len(x))
+					for k, v := range x {
+						ret[k] = v.Export()
+					}
+					return &ret
+				})((*x))
+			})(a.F_0__),
+		},
+	}
+}
+func (a *AdHocTeamMashInputs) Encode(enc rpc.Encoder) error {
+	return enc.Encode(a.Export())
+}
+
+func (a *AdHocTeamMashInputs) Decode(dec rpc.Decoder) error {
+	var tmp AdHocTeamMashInputsInternal__
+	err := dec.Decode(&tmp)
+	if err != nil {
+		return err
+	}
+	*a = tmp.Import()
+	return nil
+}
+
+var AdHocTeamMashInputsTypeUniqueID = rpc.TypeUniqueID(0xd0d412a4ac530382)
+
+func (a *AdHocTeamMashInputs) GetTypeUniqueID() rpc.TypeUniqueID {
+	return AdHocTeamMashInputsTypeUniqueID
+}
+func (a *AdHocTeamMashInputs) Bytes() []byte { return nil }
+
+type AdHocTeamString string
+type AdHocTeamStringInternal__ string
+
+func (a AdHocTeamString) Export() *AdHocTeamStringInternal__ {
+	tmp := ((string)(a))
+	return ((*AdHocTeamStringInternal__)(&tmp))
+}
+func (a AdHocTeamStringInternal__) Import() AdHocTeamString {
+	tmp := (string)(a)
+	return AdHocTeamString((func(x *string) (ret string) {
+		if x == nil {
+			return ret
+		}
+		return *x
+	})(&tmp))
+}
+
+func (a *AdHocTeamString) Encode(enc rpc.Encoder) error {
+	return enc.Encode(a.Export())
+}
+
+func (a *AdHocTeamString) Decode(dec rpc.Decoder) error {
+	var tmp AdHocTeamStringInternal__
+	err := dec.Decode(&tmp)
+	if err != nil {
+		return err
+	}
+	*a = tmp.Import()
+	return nil
+}
+
+func (a AdHocTeamString) Bytes() []byte {
+	return nil
+}
+
+type FQAdHocTeamString string
+type FQAdHocTeamStringInternal__ string
+
+func (f FQAdHocTeamString) Export() *FQAdHocTeamStringInternal__ {
+	tmp := ((string)(f))
+	return ((*FQAdHocTeamStringInternal__)(&tmp))
+}
+func (f FQAdHocTeamStringInternal__) Import() FQAdHocTeamString {
+	tmp := (string)(f)
+	return FQAdHocTeamString((func(x *string) (ret string) {
+		if x == nil {
+			return ret
+		}
+		return *x
+	})(&tmp))
+}
+
+func (f *FQAdHocTeamString) Encode(enc rpc.Encoder) error {
+	return enc.Encode(f.Export())
+}
+
+func (f *FQAdHocTeamString) Decode(dec rpc.Decoder) error {
+	var tmp FQAdHocTeamStringInternal__
+	err := dec.Decode(&tmp)
+	if err != nil {
+		return err
+	}
+	*f = tmp.Import()
+	return nil
+}
+
+func (f FQAdHocTeamString) Bytes() []byte {
+	return nil
+}
+
 func init() {
 	rpc.AddUnique(TeamRemoteMemberViewTokenBoxPayloadTypeUniqueID)
 	rpc.AddUnique(TeamInviteV1TypeUniqueID)
+	rpc.AddUnique(AdHocTeamMashInputsTypeUniqueID)
 }

@@ -11,6 +11,7 @@ import (
 	"github.com/foks-proj/go-foks/client/libclient"
 	"github.com/foks-proj/go-foks/integration-tests/common"
 	"github.com/foks-proj/go-foks/lib/core"
+	"github.com/foks-proj/go-foks/lib/team"
 	"github.com/foks-proj/go-foks/proto/infra"
 	"github.com/foks-proj/go-foks/proto/lcl"
 	proto "github.com/foks-proj/go-foks/proto/lib"
@@ -174,15 +175,15 @@ func TestQuotaAndTeams(t *testing.T) {
 	err = cli.Poke(ctx)
 	require.NoError(t, err)
 
-	team := mdt.tew.makeTeamForOwner(t, mdt.user)
-	fqt := team.ToFQTeamParsed(t)
+	myteam := mdt.tew.makeTeamForOwner(t, mdt.user)
+	fqt := myteam.ToFQTeamParsed(t)
 
 	dev := mdt.dev[0]
 	file := dev.pathify("tm1.txt")
 	sz := 1024 * 30
 	chnk := 4096
 	doublePoke(t, m)
-	tmCfg := lcl.KVConfig{ActingAs: fqt}
+	tmCfg := lcl.KVConfig{ActingAs: team.WrapNamedPtr(fqt)}
 
 	writeRandomFileWithConfig(t, dev.kvm, dev.mc, file, sz, tmCfg, chnk)
 	err = cli.Poke(ctx)
@@ -193,7 +194,7 @@ func TestQuotaAndTeams(t *testing.T) {
 	require.Error(t, err)
 	require.Equal(t, core.OverQuotaError{}, err)
 
-	tid, err := team.id.ToTeamID()
+	tid, err := myteam.id.ToTeamID()
 	require.NoError(t, err)
 	err = cli.AssignQuotaMaster(ctx, infra.AssignQuotaMasterArg{
 		Fqu:  dev.parent.user.FQUser(),
