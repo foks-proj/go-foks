@@ -250,6 +250,26 @@ func TestSimpleCreateTeamAdHoc(t *testing.T) {
 	require.Equal(t, 1, nWinners)
 }
 
+// TestAdHocSecondTeamSameHost creates a second ad-hoc team (with different
+// membership) on the same vhost as the first. The second creation takes the
+// server's placeholder-name fast path (the AdHocTeamNamesManager memo is
+// already set for the host), which no other test exercises: every other
+// fixture stands up a fresh vhost, and the duplicate-create test fails before
+// commit.
+func TestAdHocSecondTeamSameHost(t *testing.T) {
+	defer common.DebugEntryAndExit()()
+
+	f := createAdHocTeamForTest(t, 3)
+
+	// A second team with a strictly smaller founder set: {alice, others[0]}.
+	// Different membership -> different mashed ID -> no duplicate collision.
+	sub := toFQParsedPartyAndRole(f.others[0])
+	sub.Role = &proto.OwnerRole
+	tid2, err := f.tma.CreateAdHoc(f.ma, []lcl.FQPartyParsedAndRole{sub})
+	require.NoError(t, err)
+	require.False(t, tid2.Eq(f.tid))
+}
+
 // TestAdHocTeamRejectsRemoteMemberOnServer confirms the server's team player
 // only accepts ad-hoc teams whose membership is local users. The client refuses
 // to build such a team on its own, so we use a test hook to rewrite a founder

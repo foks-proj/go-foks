@@ -112,8 +112,34 @@ func RetryTxServerConfigDB(
 	return RetryTx(m, db, nm, tryFn)
 }
 
-func RetryTx(m MetaContext, db *pgxpool.Conn, nm string, tryFn func(m MetaContext, tx pgx.Tx) error) error {
+func RetryTx(
+	m MetaContext,
+	db *pgxpool.Conn,
+	nm string,
+	tryFn func(m MetaContext, tx pgx.Tx) error,
+) error {
+	return RetryTx2(
+		m, db, nm,
+		func(m MetaContext, tx pgx.Tx) (func(MetaContext), error) {
+			err := tryFn(m, tx)
+			return nil, err
+		},
+	)
+}
 
+// RetryTx2 is RetryTx with a post-commit success hook: tryFn may return a
+// function that runs exactly once, after (and only after) the transaction
+// commits successfully. If the transaction rolls back or is retried, the hook
+// from that attempt is discarded. Note the hook can be skipped even though the
+// data committed (e.g., the commit succeeds but its acknowledgment is lost),
+// so use it only for effects that tolerate not running -- caches, memos, and
+// other optimization-only state; never for correctness-critical writes.
+func RetryTx2(
+	m MetaContext,
+	db *pgxpool.Conn,
+	nm string,
+	tryFn func(m MetaContext, tx pgx.Tx) (func(MetaContext), error),
+) error {
 	nTries := 5
 	backoff := 1 * time.Millisecond
 	m = m.WithLogTag("dbtx")
@@ -126,12 +152,16 @@ func RetryTx(m MetaContext, db *pgxpool.Conn, nm string, tryFn func(m MetaContex
 		defer func() {
 			err = TxRollback(m.Ctx(), tx, err)
 		}()
-		err = tryFn(m, tx)
+		var succ func(MetaContext)
+		succ, err = tryFn(m, tx)
 		if err != nil {
 			return false, err
 		}
 		err = tx.Commit(m.Ctx())
 		if err == nil {
+			if succ != nil {
+				succ(m)
+			}
 			return false, nil
 		}
 		if !pgconn.SafeToRetry(err) {
@@ -143,7 +173,7 @@ func RetryTx(m MetaContext, db *pgxpool.Conn, nm string, tryFn func(m MetaContex
 		return true, nil
 	}
 
-	for i := 0; i < nTries; i++ {
+	for i := range nTries {
 		if retry, err := tryOnce(i); !retry {
 			return err
 		}

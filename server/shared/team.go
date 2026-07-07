@@ -2170,14 +2170,17 @@ func NewAdHocTeamNamesManager() *AdHocTeamNamesManager {
 
 func (a *AdHocTeamNamesManager) InsertPlaceholderTeamName(
 	m MetaContext, tx pgx.Tx,
-) error {
+) (
+	func(m MetaContext) error,
+	error,
+) {
 	hostID := m.ShortHostID()
 
 	a.Lock()
 	defer a.Unlock()
 	ins := a.inserted[hostID]
 	if ins {
-		return nil
+		return nil, nil
 	}
 	err := InsertNameInner(m, tx, m.HostID(),
 		team.AdHocTeamName,
@@ -2187,10 +2190,14 @@ func (a *AdHocTeamNamesManager) InsertPlaceholderTeamName(
 		true,
 	)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	a.inserted[hostID] = true
-	return nil
+	return func(m MetaContext) error {
+		a.Lock()
+		defer a.Unlock()
+		a.inserted[hostID] = true
+		return nil
+	}, nil
 }
 
 func InsertAdHocTeam(
