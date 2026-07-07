@@ -354,11 +354,11 @@ func (t *TeamMinder) LoadTeamWithFQTeam(
 
 	tr.Lock()
 	defer tr.Unlock()
-	if !opts.Refresh && (!opts.LoadMembers || tr.ldr.Arg.LoadMembers) {
+	if !opts.Refresh && (!opts.LoadMembers || tr.ldr.Arg.LoadMembersFull) {
 		return tr, nil
 	}
 
-	tr.ldr.Arg.LoadMembers = opts.LoadMembers
+	tr.ldr.Arg.LoadMembersFull = opts.LoadMembers
 
 	tw, err := tr.ldr.Run(m)
 	if err != nil {

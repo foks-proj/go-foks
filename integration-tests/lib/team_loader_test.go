@@ -465,11 +465,11 @@ func TestTeamLoadMembers(t *testing.T) {
 
 	mc := tew.NewClientMetaContext(t, coco)
 	twr, err := libclient.LoadTeam(mc, libclient.LoadTeamArg{
-		Team:        t1.FQTeam(t),
-		As:          coco.FQUser().FQParty(),
-		SrcRole:     proto.OwnerRole,
-		Keys:        coco.KeySeq(t, proto.OwnerRole),
-		LoadMembers: true,
+		Team:            t1.FQTeam(t),
+		As:              coco.FQUser().FQParty(),
+		SrcRole:         proto.OwnerRole,
+		Keys:            coco.KeySeq(t, proto.OwnerRole),
+		LoadMembersFull: true,
 	})
 	require.NoError(t, err)
 	x, err := twr.ExportToRoster()
@@ -540,11 +540,11 @@ func TestTeamLoadMembersAsNonAdmin(t *testing.T) {
 
 	mc := tew.NewClientMetaContext(t, sprigatito)
 	twr, err := libclient.LoadTeam(mc, libclient.LoadTeamArg{
-		Team:        t0.FQTeam(t),
-		As:          sprigatito.FQUser().FQParty(),
-		SrcRole:     proto.OwnerRole,
-		Keys:        sprigatito.KeySeq(t, proto.OwnerRole),
-		LoadMembers: true,
+		Team:            t0.FQTeam(t),
+		As:              sprigatito.FQUser().FQParty(),
+		SrcRole:         proto.OwnerRole,
+		Keys:            sprigatito.KeySeq(t, proto.OwnerRole),
+		LoadMembersFull: true,
 	})
 	require.NoError(t, err)
 	x, err := twr.ExportToRoster()

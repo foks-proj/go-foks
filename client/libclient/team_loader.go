@@ -956,7 +956,7 @@ func (l *TeamLoader) loadTeamFromServer(m MetaContext) error {
 			S: l.existing.Name.S + 1,
 		}
 	}
-	if (l.Arg.LoadMembers || l.Arg.LoadMemberNames) && (l.existing == nil || len(l.existing.RemoteViewTokens) == 0) {
+	if (l.Arg.LoadMembersFull || l.Arg.LoadMemberNames) && (l.existing == nil || len(l.existing.RemoteViewTokens) == 0) {
 		arg.LoadRemoteViewTokens = true
 	}
 	res, err := l.rpcLoader.LoadTeamChain(m.Ctx(), arg)
@@ -1430,7 +1430,7 @@ func (p *rosterPackage) load(m MetaContext, l *TeamLoader) error {
 		// entirely. Capture the name now, at skip time: the naming pass reads
 		// it from here, not from the cache, so a TTL eviction in between can't
 		// lose it.
-		if !l.Arg.LoadMembers && !p.isRemote {
+		if !l.Arg.LoadMembersFull && !p.isRemote {
 			fqu := proto.FQUser{Uid: *uid, HostID: p.fqp.Host}
 			if nm, ok := m.G().UsernameCache().Get(m, fqu); ok {
 				p.cachedName = nm
@@ -1558,7 +1558,7 @@ func (l *TeamLoader) destRoleForLoader(m MetaContext) (*core.RoleKey, error) {
 func (l *TeamLoader) loadTokensAndMembers(
 	m MetaContext,
 ) error {
-	if !l.Arg.LoadMembers && !l.Arg.LoadMemberNames {
+	if !l.Arg.LoadMembersFull && !l.Arg.LoadMemberNames {
 		return nil
 	}
 	if l.Arg.Keys == nil {
@@ -1928,7 +1928,7 @@ func (l *TeamLoader) saveState(m MetaContext) error {
 	res.Sctlsc = *l.sctlsc
 
 	switch {
-	case l.Arg.LoadMembers || l.Arg.LoadMemberNames:
+	case l.Arg.LoadMembersFull || l.Arg.LoadMemberNames:
 		lst := make([]proto.TeamRemoteMemberViewTokenInner, 0, len(l.rosterDetails))
 		for _, v := range l.rosterDetails {
 			// Just save the first remote view token for all srcRoles.
@@ -2143,7 +2143,7 @@ type LoadTeamArg struct {
 	Keys               SharedKeySequence
 	Tok                *proto.PermissionToken
 	LocalParentTeamTok *rem.TeamVOBearerToken
-	LoadMembers        bool
+	LoadMembersFull    bool
 	// LoadMemberNames loads the members' usernames (e.g., to name an ad-hoc
 	// team by its participant list) without requiring full member loads: a
 	// member whose name is already in the global UsernameCache is skipped;

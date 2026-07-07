@@ -201,11 +201,11 @@ func TestOpenViewTeamList(t *testing.T) {
 	testLoadFor := func(user *TestUser) {
 		mc := tew.NewClientMetaContext(t, user)
 		twr, err := libclient.LoadTeam(mc, libclient.LoadTeamArg{
-			Team:        tm.FQTeam(t),
-			As:          user.FQUser().FQParty(),
-			SrcRole:     proto.OwnerRole,
-			Keys:        user.KeySeq(t, proto.OwnerRole),
-			LoadMembers: true,
+			Team:            tm.FQTeam(t),
+			As:              user.FQUser().FQParty(),
+			SrcRole:         proto.OwnerRole,
+			Keys:            user.KeySeq(t, proto.OwnerRole),
+			LoadMembersFull: true,
 		},
 		)
 		require.NoError(t, err)
