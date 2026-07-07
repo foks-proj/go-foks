@@ -23,6 +23,7 @@ enum DataType {
     TeamChainState @13;
     UsernameReservation @14;
     UsernameLookup @15;
+    UsernameCacheEntry @16; // soft-state UID -> username memo; see libclient.UsernameLoader
 
     KVRealm @65;
     KVNSRoot @66;

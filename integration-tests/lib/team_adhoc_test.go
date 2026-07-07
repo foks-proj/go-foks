@@ -1,6 +1,7 @@
 package lib
 
 import (
+	"sync"
 	"testing"
 
 	"github.com/foks-proj/go-foks/client/libclient"
@@ -160,6 +161,113 @@ func TestSimpleCreateTeamAdHoc(t *testing.T) {
 	mashed := f.loadTeamViaUIDs(t, true)
 	f.loadTeamViaUIDs(t, false)
 	f.loadTeamViaMashedID(t, *mashed)
+
+	// The loads above ran explore/reindex, which loads every member's user
+	// chain to name the team by participant list; as a side-effect it must
+	// warm the global username cache with each founder's FQUser -> username
+	// mapping, so e.g. RT sender-name resolution doesn't re-load senders.
+	uc := f.ma.G().UsernameLoader()
+	for _, u := range append([]*TestUser{f.alice}, f.others...) {
+		nm, ok := uc.Get(f.ma, proto.FQUser{Uid: u.uid, HostID: u.host})
+		require.True(t, ok, "username cache entry for %s", u.name)
+		require.Equal(t, u.name, nm)
+	}
+
+	// Conversely, once the cache is warm, a re-explore skips the member
+	// user-chain loads entirely (LoadMemberNames) and names the team from the
+	// cache. Prove the skip really happens: poison one founder's cached name
+	// and re-explore with a fresh minder -- the ad-hoc index gets built from
+	// the poisoned entry. If the loader had re-loaded the user chain, the real
+	// name would win and resolution by the poisoned name would fail.
+	bob := f.others[0]
+	bobFqu := proto.FQUser{Uid: bob.uid, HostID: bob.host}
+	poison := proto.NameUtf8("zzpoisonbob")
+	require.NoError(t, uc.Set(f.ma, bobFqu, poison))
+
+	poisoned := []proto.NameUtf8{poison}
+	for _, o := range f.others[1:] {
+		poisoned = append(poisoned, o.name)
+	}
+	tma2 := libclient.NewTeamMinder(f.ma.G().ActiveUser())
+	tm2, err := tma2.LoadTeam(
+		f.ma,
+		lcl.NewConfigTeamWithAdhoc(
+			proto.FQAdHocTeamParsed{
+				Team: proto.NewAdHocTeamParsedWithNames(poisoned),
+			},
+		),
+		libclient.LoadTeamOpts{},
+	)
+	require.NoError(t, err)
+	require.True(t, tm2.FQTeam().Team.Eq(f.tid))
+
+	// Restore the real mapping so later loads aren't contaminated.
+	require.NoError(t, uc.Set(f.ma, bobFqu, bob.name))
+
+	// The cache is two-tiered; the bottom tier is the soft local DB. A fresh
+	// cache with an empty memory tier must still resolve via the DB row that
+	// the Set above just wrote.
+	var uc2 libclient.UsernameLoader
+	nm2, ok := uc2.Get(f.ma, bobFqu)
+	require.True(t, ok)
+	require.Equal(t, bob.name, nm2)
+
+	// Concurrent Loads of the same cold key are single-flighted: exactly one
+	// caller performs the user-chain load (and gets the UserWrapper back);
+	// everyone else waits and shares the name. dave is brand-new, so he's in
+	// neither cache tier; the start barrier maximizes overlap. Run this under
+	// -race to also check the flight's memory synchronization.
+	dave := f.tew.NewTestUserAtVHost(t, f.vhost)
+	f.tew.DirectDoubleMerklePokeInTest(t)
+	daveFqu := proto.FQUser{Uid: dave.uid, HostID: dave.host}
+
+	const nConc = 8
+	var wg sync.WaitGroup
+	start := make(chan struct{})
+	names := make([]proto.NameUtf8, nConc)
+	wraps := make([]*libclient.UserWrapper, nConc)
+	errs := make([]error, nConc)
+	for i := range nConc {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			<-start
+			names[i], wraps[i], errs[i] = uc.Load(f.ma, daveFqu,
+				libclient.LoadUserArg{LoadMode: libclient.LoadModeForAdHoc})
+		}()
+	}
+	close(start)
+	wg.Wait()
+
+	var nWinners int
+	for i := range nConc {
+		require.NoError(t, errs[i])
+		require.Equal(t, dave.name, names[i])
+		if wraps[i] != nil {
+			nWinners++
+		}
+	}
+	require.Equal(t, 1, nWinners)
+}
+
+// TestAdHocSecondTeamSameHost creates a second ad-hoc team (with different
+// membership) on the same vhost as the first. The second creation takes the
+// server's placeholder-name fast path (the AdHocTeamNamesManager memo is
+// already set for the host), which no other test exercises: every other
+// fixture stands up a fresh vhost, and the duplicate-create test fails before
+// commit.
+func TestAdHocSecondTeamSameHost(t *testing.T) {
+	defer common.DebugEntryAndExit()()
+
+	f := createAdHocTeamForTest(t, 3)
+
+	// A second team with a strictly smaller founder set: {alice, others[0]}.
+	// Different membership -> different mashed ID -> no duplicate collision.
+	sub := toFQParsedPartyAndRole(f.others[0])
+	sub.Role = &proto.OwnerRole
+	tid2, err := f.tma.CreateAdHoc(f.ma, []lcl.FQPartyParsedAndRole{sub})
+	require.NoError(t, err)
+	require.False(t, tid2.Eq(f.tid))
 }
 
 // TestAdHocTeamRejectsRemoteMemberOnServer confirms the server's team player

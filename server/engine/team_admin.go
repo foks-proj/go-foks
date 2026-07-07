@@ -52,6 +52,7 @@ type teamCreator struct {
 	openEldestRes *team.OpenEldestRes
 	commonArg     rem.CreateTeamCommonArg
 	nameArg       *teamCreatorNameArg
+	successHooks  []func(m shared.MetaContext) error
 }
 
 type teamEditInterface interface {
@@ -79,27 +80,29 @@ func (c *UserClientConn) CreateTeam(
 	}
 	defer db.Release()
 
-	return shared.RetryTx(m, db, "createTeam", func(m shared.MetaContext, tx pgx.Tx) error {
-		obj := &teamCreator{
-			nameArg: &teamCreatorNameArg{
-				NameUtf8:              arg.NameUtf8,
-				TeamnameCommitmentKey: arg.TeamnameCommitmentKey,
-				Rnr:                   arg.Rnr,
-			},
-			commonArg: rem.CreateTeamCommonArg{
-				Eta:                      arg.Eta,
-				TeamMembershipLink:       arg.TeamMembershipLink,
-				SubchainTreeLocationSeed: arg.SubchainTreeLocationSeed,
-			},
-			teamEditor: &teamEditor{
-				UserClientConn: c,
-				arg:            arg.Eta,
-				tx:             tx,
-			},
-		}
-		obj.teamEditor.vtab = obj
-		return obj.run(m)
-	})
+	return shared.RetryTx2(
+		m, db, "createTeam",
+		func(m shared.MetaContext, tx pgx.Tx) (func(shared.MetaContext), error) {
+			obj := &teamCreator{
+				nameArg: &teamCreatorNameArg{
+					NameUtf8:              arg.NameUtf8,
+					TeamnameCommitmentKey: arg.TeamnameCommitmentKey,
+					Rnr:                   arg.Rnr,
+				},
+				commonArg: rem.CreateTeamCommonArg{
+					Eta:                      arg.Eta,
+					TeamMembershipLink:       arg.TeamMembershipLink,
+					SubchainTreeLocationSeed: arg.SubchainTreeLocationSeed,
+				},
+				teamEditor: &teamEditor{
+					UserClientConn: c,
+					arg:            arg.Eta,
+					tx:             tx,
+				},
+			}
+			obj.teamEditor.vtab = obj
+			return obj.run(m)
+		})
 }
 
 func (c *teamCreator) handleNameReservation(
@@ -110,9 +113,16 @@ func (c *teamCreator) handleNameReservation(
 ) {
 
 	if c.nameArg == nil {
-		err := m.G().AdHocTeamNamesManager().InsertPlaceholderTeamName(m, c.tx)
+		succHook, err := m.G().AdHocTeamNamesManager().InsertPlaceholderTeamName(m, c.tx)
 		if err != nil {
 			return "", err
+		}
+		// The success hook can only be called if the transaction commits successfully.
+		// If the transaction rolls back, the name reservation is not valid, and we
+		// should not mark it as inserted. The hook is nil on the fast path (the
+		// placeholder was already known-inserted for this host).
+		if succHook != nil {
+			c.successHooks = append(c.successHooks, succHook)
 		}
 		return team.AdHocTeamName, nil
 	}
@@ -448,6 +458,29 @@ func (c *teamCreator) checkArgs(m shared.MetaContext) error {
 }
 
 func (c *teamCreator) run(
+	m shared.MetaContext,
+) (
+	func(shared.MetaContext),
+	error,
+) {
+	err := c.runInner(m)
+	if err != nil {
+		return nil, err
+	}
+	if len(c.successHooks) == 0 {
+		return nil, nil
+	}
+	hook := func(m shared.MetaContext) {
+		for _, h := range c.successHooks {
+			if err := h(m); err != nil {
+				m.Warnw("teamCreator.success", "err", err)
+			}
+		}
+	}
+	return hook, err
+}
+
+func (c *teamCreator) runInner(
 	m shared.MetaContext,
 ) error {
 	m = m.WithLogTag("TEAM.CREATE")
@@ -1056,19 +1089,20 @@ func (c *UserClientConn) CreateTeamAdHoc(
 	}
 	defer db.Release()
 
-	return shared.RetryTx(m, db, "createTeamAdhoc", func(m shared.MetaContext, tx pgx.Tx) error {
-		obj := &teamCreator{
-			commonArg: arg,
-			teamEditor: &teamEditor{
-				UserClientConn: c,
-				arg:            arg.Eta,
-				tx:             tx,
-			},
-		}
-
-		obj.teamEditor.vtab = obj
-		return obj.run(m)
-	})
+	return shared.RetryTx2(
+		m, db, "createTeamAdhoc",
+		func(m shared.MetaContext, tx pgx.Tx) (func(shared.MetaContext), error) {
+			obj := &teamCreator{
+				commonArg: arg,
+				teamEditor: &teamEditor{
+					UserClientConn: c,
+					arg:            arg.Eta,
+					tx:             tx,
+				},
+			}
+			obj.teamEditor.vtab = obj
+			return obj.run(m)
+		})
 }
 
 var _ rem.TeamAdminInterface = (*UserClientConn)(nil)

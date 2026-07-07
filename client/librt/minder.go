@@ -3,7 +3,6 @@ package librt
 import (
 	"errors"
 	"fmt"
-	"math/rand"
 	"slices"
 	"strings"
 	"sync"
@@ -64,33 +63,11 @@ type Minder struct {
 
 	msgIDCache *LRU[proto.RTMsgID, proto.RTMsgSeq]
 
-	// usernameCache memoizes UID -> display-name resolutions (each a full user
-	// chain load), which would otherwise be issued per message-sender on every
-	// thread read. Entries expire after a jittered ~6h TTL; see usernameCacheTTL.
-	usernameMu    sync.Mutex
-	usernameCache map[proto.UID]usernameCacheEntry
+	// UID -> display-name resolutions are memoized in the GlobalContext-level
+	// libclient.UsernameLoader (shared with, e.g., ad-hoc team explore/reindex,
+	// which pre-warms it); see resolveSenderName.
 
 	testHooks *MinderTestHooks
-}
-
-type usernameCacheEntry struct {
-	name      proto.NameUtf8
-	expiresAt time.Time
-}
-
-const (
-	// usernameCacheTTLBase is the central lifetime of a cached UID->name entry;
-	// usernameCacheTTLJitter is the random spread added on top so a burst of
-	// entries cached together don't all expire at once and stampede the server.
-	usernameCacheTTLBase   = 6 * time.Hour
-	usernameCacheTTLJitter = 2 * time.Hour
-)
-
-// jitteredUsernameTTL returns a lifetime uniformly in
-// [base - jitter/2, base + jitter/2), centered on base (~6h).
-func jitteredUsernameTTL() time.Duration {
-	return usernameCacheTTLBase - usernameCacheTTLJitter/2 +
-		time.Duration(rand.Int63n(int64(usernameCacheTTLJitter)))
 }
 
 // MinderTestHooks lets tests perturb a Minder. A nil Minder.testHooks, or a nil
@@ -150,9 +127,8 @@ func NewMinderWithCacheSettings(
 		panic("nil active user")
 	}
 	ret := &Minder{
-		au:            au,
-		msgIDCache:    NewLRU[proto.RTMsgID, proto.RTMsgSeq](10_000),
-		usernameCache: make(map[proto.UID]usernameCacheEntry),
+		au:         au,
+		msgIDCache: NewLRU[proto.RTMsgID, proto.RTMsgSeq](10_000),
 	}
 	ret.base = libclient.NewBaseMinder(
 		au,
@@ -1215,36 +1191,12 @@ func (d *Minder) TeamViewToken(
 	return rtp.PLCNode().ViewTok(), nil
 }
 
-// usernameCacheGet returns a cached, unexpired display name for uid, if any.
-func (d *Minder) usernameCacheGet(m MetaContext, uid proto.UID) (proto.NameUtf8, bool) {
-	d.usernameMu.Lock()
-	defer d.usernameMu.Unlock()
-	ent, ok := d.usernameCache[uid]
-	if !ok {
-		return "", false
-	}
-	if !m.G().Now().Before(ent.expiresAt) {
-		delete(d.usernameCache, uid)
-		return "", false
-	}
-	return ent.name, true
-}
-
-// usernameCacheSet records uid -> name with a fresh jittered TTL.
-func (d *Minder) usernameCacheSet(m MetaContext, uid proto.UID, nm proto.NameUtf8) {
-	d.usernameMu.Lock()
-	defer d.usernameMu.Unlock()
-	d.usernameCache[uid] = usernameCacheEntry{
-		name:      nm,
-		expiresAt: m.G().Now().Add(jitteredUsernameTTL()),
-	}
-}
-
 // ResolveSenderNames maps each distinct user-sender UID in msgs to its display
-// name. Resolutions are memoized (see usernameCache) since each cache miss is a
-// full user-chain load; in closed viewership mode the load is mediated through
-// the shared team, so a team view bearer token (tok) is presented. Best-effort:
-// a sender that can't be loaded is omitted from the result rather than failing.
+// name. Resolutions are memoized (see libclient.UsernameLoader) since each cache
+// miss is a full user-chain load; in closed viewership mode the load is mediated
+// through the shared team, so a team view bearer token (tok) is presented.
+// Best-effort: a sender that can't be loaded is omitted from the result rather
+// than failing.
 func (d *Minder) ResolveSenderNames(
 	m MetaContext,
 	team lcl.ConfigTeam,
@@ -1271,36 +1223,36 @@ func (d *Minder) ResolveSenderNames(
 	return ret
 }
 
-// resolveSenderName returns the display name for a single sender UID -- from the
-// cache if present, otherwise via a user-chain load whose result is then cached.
-// Returns false if the user can't be loaded. Ad-hoc teams live on open-viewership
-// hosts and are loaded via LoadModeForAdHoc (open-vhost-or-as-local-user), which
-// resolves symmetrically for any co-member; named teams use the team-mediated
-// (AsLocalTeam) load via the VO bearer token.
+// resolveSenderName returns the display name for a single sender UID, via the
+// UsernameLoader: cache tiers first, then a single-flighted user-chain load.
+// Returns false if the user can't be loaded. Ad-hoc teams live on
+// open-viewership hosts and are loaded via LoadModeForAdHoc
+// (open-vhost-or-as-local-user), which resolves symmetrically for any
+// co-member; named teams use the team-mediated (AsLocalTeam) load via the VO
+// bearer token.
 func (d *Minder) resolveSenderName(
 	m MetaContext,
 	team lcl.ConfigTeam,
 	tok *rem.TeamVOBearerToken,
 	uid proto.UID,
 ) (proto.NameUtf8, bool) {
-	if nm, ok := d.usernameCacheGet(m, uid); ok {
-		return nm, true
-	}
+	// The loader is keyed by FQUser; senders are always on the active user's
+	// host (see decryptAndVerifyMsg's HostMismatchError check).
+	fqu := proto.FQUser{Uid: uid, HostID: d.au.HostID()}
 	loadMode := libclient.LoadModeOthers
 	if typ, err := team.GetT(); err == nil && typ == lcl.ConfigTeamType_AdHoc {
 		loadMode = libclient.LoadModeForAdHoc
 	}
-	uw, err := libclient.LoadUser(m.Base(), libclient.LoadUserArg{
-		Uid:               uid,
-		LoadMode:          loadMode,
-		TeamVOBearerToken: tok,
-	})
+	nm, _, err := m.G().UsernameLoader().Load(m.Base(), fqu,
+		libclient.LoadUserArg{
+			Uid:               uid,
+			LoadMode:          loadMode,
+			TeamVOBearerToken: tok,
+		})
 	if err != nil {
 		m.Warnw("resolveSenderName", "uid", uid, "err", err)
 		return "", false
 	}
-	nm := uw.Name()
-	d.usernameCacheSet(m, uid, nm)
 	return nm, true
 }
 

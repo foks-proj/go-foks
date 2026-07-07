@@ -354,11 +354,11 @@ func (t *TeamMinder) LoadTeamWithFQTeam(
 
 	tr.Lock()
 	defer tr.Unlock()
-	if !opts.Refresh && (!opts.LoadMembers || tr.ldr.Arg.LoadMembers) {
+	if !opts.Refresh && (!opts.LoadMembers || tr.ldr.Arg.LoadMembersFull) {
 		return tr, nil
 	}
 
-	tr.ldr.Arg.LoadMembers = opts.LoadMembers
+	tr.ldr.Arg.LoadMembersFull = opts.LoadMembers
 
 	tw, err := tr.ldr.Run(m)
 	if err != nil {
@@ -705,11 +705,11 @@ func (tm *TeamMinder) loadTeamArg(
 		cp = au
 	}
 
-	// For adhoc teams, we need to load members to name the team properly.
-	// We might consider caching the UID->Username mappings that we get from
-	// loading users, since that's all we really need.
+	// For adhoc teams, we need the members' usernames to name the team by its
+	// participant list; members already in the global UsernameLoader cache are named
+	// from the cache without a user-chain load.
 	if exnode.Fqt.Team.IsAdHocTeam() {
-		arg.LoadMembers = true
+		arg.LoadMemberNames = true
 	}
 
 	return cp, &arg, nil
