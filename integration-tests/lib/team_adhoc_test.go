@@ -160,6 +160,17 @@ func TestSimpleCreateTeamAdHoc(t *testing.T) {
 	mashed := f.loadTeamViaUIDs(t, true)
 	f.loadTeamViaUIDs(t, false)
 	f.loadTeamViaMashedID(t, *mashed)
+
+	// The loads above ran explore/reindex, which loads every member's user
+	// chain to name the team by participant list; as a side-effect it must
+	// warm the global username cache with each founder's FQUser -> username
+	// mapping, so e.g. RT sender-name resolution doesn't re-load senders.
+	uc := f.ma.G().UsernameCache()
+	for _, u := range append([]*TestUser{f.alice}, f.others...) {
+		nm, ok := uc.Get(f.ma, proto.FQUser{Uid: u.uid, HostID: u.host})
+		require.True(t, ok, "username cache entry for %s", u.name)
+		require.Equal(t, u.name, nm)
+	}
 }
 
 // TestAdHocTeamRejectsRemoteMemberOnServer confirms the server's team player

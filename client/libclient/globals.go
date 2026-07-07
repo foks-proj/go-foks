@@ -130,6 +130,8 @@ type GlobalContext struct {
 
 	deviceNameCache DeviceNameCache
 
+	usernameCache UsernameCache
+
 	logRotate *LogRotate
 
 	// We keep track of the last active server after a signup; this way we can debug signup
@@ -158,6 +160,12 @@ func (d *GlobalContext) DeviceNameCache() *DeviceNameCache {
 	d.Lock()
 	defer d.Unlock()
 	return &d.deviceNameCache
+}
+
+func (d *GlobalContext) UsernameCache() *UsernameCache {
+	d.Lock()
+	defer d.Unlock()
+	return &d.usernameCache
 }
 
 func (g *GlobalContext) PushShutdownHook(h func()) {

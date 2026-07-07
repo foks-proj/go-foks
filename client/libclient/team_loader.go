@@ -210,6 +210,38 @@ func (t *TeamWrapper) IsAdHocTeam() bool {
 }
 
 // returns {names X UIDs x ID x MashedIDs   } @ { name X ID }
+// MemberUIDNames returns the FQUser -> username mapping for all local-host user
+// members whose user wrappers were loaded (LoadMembers; currently ad-hoc teams
+// only). Used to warm the global UsernameCache as a side-effect of team
+// explore/reindex, since the member chains were loaded anyway.
+func (t *TeamWrapper) MemberUIDNames() (map[proto.FQUser]proto.NameUtf8, error) {
+	ret := make(map[proto.FQUser]proto.NameUtf8)
+	host := t.prot.Fqt.Host
+	for m := range t.memberMap {
+		if !m.Fqe.Host.Eq(host) {
+			continue
+		}
+		eid := m.Fqe.Entity.Unfix()
+		if !eid.Type().IsUser() {
+			continue
+		}
+		uid, err := eid.ToUID()
+		if err != nil {
+			return nil, err
+		}
+		rp := t.rosterDetails[m.Fqe]
+		if len(rp) == 0 {
+			continue
+		}
+		uw := core.Last(rp).uw
+		if uw == nil {
+			continue
+		}
+		ret[proto.FQUser{Uid: uid, HostID: host}] = uw.prot.Username.B.NameUtf8
+	}
+	return ret, nil
+}
+
 func (t *TeamWrapper) AllFQAdHocTeamStrings() ([]proto.FQAdHocTeamString, error) {
 
 	if !t.IsAdHocTeam() {

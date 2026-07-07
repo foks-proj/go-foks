@@ -1013,7 +1013,7 @@ func (t *TeamMinder) fixExploreWarning(
 	return nil
 }
 
-func (t *TeamMinder) reindex(state *ExploreState) error {
+func (t *TeamMinder) reindex(m MetaContext, state *ExploreState) error {
 	t.indexMu.Lock()
 	defer t.indexMu.Unlock()
 
@@ -1043,6 +1043,19 @@ func (t *TeamMinder) reindex(state *ExploreState) error {
 			for _, n := range adhHocNames {
 				t.adhHocTeamIndex[n] = fqt
 			}
+
+			// The members' user chains were loaded above (LoadMembers) to name
+			// the team by its participant list; harvest the FQUser -> username
+			// pairs into the global cache so sender-name resolution (e.g. in RT
+			// thread reads) doesn't have to re-load each sender.
+			uidNames, err := tr.Tw().MemberUIDNames()
+			if err != nil {
+				return err
+			}
+			uc := m.G().UsernameCache()
+			for fqu, nm := range uidNames {
+				uc.Set(m, fqu, nm)
+			}
 		}
 	}
 	return nil
@@ -1057,7 +1070,7 @@ func (t *TeamMinder) ExploreAndIndex(m MetaContext, opts *LoadTeamOpts) error {
 	if err != nil {
 		return err
 	}
-	err = t.reindex(state)
+	err = t.reindex(m, state)
 	if err != nil {
 		return err
 	}
