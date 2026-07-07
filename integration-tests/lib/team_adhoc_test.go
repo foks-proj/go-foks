@@ -181,7 +181,7 @@ func TestSimpleCreateTeamAdHoc(t *testing.T) {
 	bob := f.others[0]
 	bobFqu := proto.FQUser{Uid: bob.uid, HostID: bob.host}
 	poison := proto.NameUtf8("zzpoisonbob")
-	uc.Set(f.ma, bobFqu, poison)
+	require.NoError(t, uc.Set(f.ma, bobFqu, poison))
 
 	poisoned := []proto.NameUtf8{poison}
 	for _, o := range f.others[1:] {
@@ -201,7 +201,15 @@ func TestSimpleCreateTeamAdHoc(t *testing.T) {
 	require.True(t, tm2.FQTeam().Team.Eq(f.tid))
 
 	// Restore the real mapping so later loads aren't contaminated.
-	uc.Set(f.ma, bobFqu, bob.name)
+	require.NoError(t, uc.Set(f.ma, bobFqu, bob.name))
+
+	// The cache is two-tiered; the bottom tier is the soft local DB. A fresh
+	// cache with an empty memory tier must still resolve via the DB row that
+	// the Set above just wrote.
+	var uc2 libclient.UsernameCache
+	nm2, ok := uc2.Get(f.ma, bobFqu)
+	require.True(t, ok)
+	require.Equal(t, bob.name, nm2)
 }
 
 // TestAdHocTeamRejectsRemoteMemberOnServer confirms the server's team player

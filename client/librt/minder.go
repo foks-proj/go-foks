@@ -1256,7 +1256,10 @@ func (d *Minder) resolveSenderName(
 		return "", false
 	}
 	nm := uw.Name()
-	uc.Set(m.Base(), fqu, nm)
+	// Cache-write failure shouldn't fail the resolution; we have the name.
+	if err := uc.Set(m.Base(), fqu, nm); err != nil {
+		m.Warnw("resolveSenderName", "stage", "usernameCacheSet", "err", err)
+	}
 	return nm, true
 }
 

@@ -1468,9 +1468,12 @@ func (p *rosterPackage) load(m MetaContext, l *TeamLoader) error {
 
 		// Memoize the loaded username so later explores can skip this load
 		// (see LoadMemberNames) and RT sender-name resolution can avoid its
-		// own user-chain load.
-		m.G().UsernameCache().Set(m,
+		// own user-chain load. Cache-write failure is not a load failure.
+		err = m.G().UsernameCache().Set(m,
 			proto.FQUser{Uid: *uid, HostID: p.fqp.Host}, uw.Name())
+		if err != nil {
+			m.Warnw("rosterPackage.load", "stage", "usernameCacheSet", "err", err)
+		}
 	case tid != nil:
 		larg := LoadTeamArg{
 			Team: proto.FQTeam{Host: p.fqp.Host, Team: *tid},

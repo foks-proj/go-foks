@@ -64,6 +64,7 @@ const (
 	DataType_TeamChainState       DataType = 13
 	DataType_UsernameReservation  DataType = 14
 	DataType_UsernameLookup       DataType = 15
+	DataType_UsernameCacheEntry   DataType = 16
 	DataType_KVRealm              DataType = 65
 	DataType_KVNSRoot             DataType = 66
 	DataType_KVDir                DataType = 67
@@ -94,6 +95,7 @@ var DataTypeMap = map[string]DataType{
 	"TeamChainState":       13,
 	"UsernameReservation":  14,
 	"UsernameLookup":       15,
+	"UsernameCacheEntry":   16,
 	"KVRealm":              65,
 	"KVNSRoot":             66,
 	"KVDir":                67,
@@ -123,6 +125,7 @@ var DataTypeRevMap = map[DataType]string{
 	13: "TeamChainState",
 	14: "UsernameReservation",
 	15: "UsernameLookup",
+	16: "UsernameCacheEntry",
 	65: "KVRealm",
 	66: "KVNSRoot",
 	67: "KVDir",
