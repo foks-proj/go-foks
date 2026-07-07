@@ -130,7 +130,7 @@ type GlobalContext struct {
 
 	deviceNameCache DeviceNameCache
 
-	usernameCache UsernameCache
+	usernameLoader UsernameLoader
 
 	logRotate *LogRotate
 
@@ -162,10 +162,10 @@ func (d *GlobalContext) DeviceNameCache() *DeviceNameCache {
 	return &d.deviceNameCache
 }
 
-func (d *GlobalContext) UsernameCache() *UsernameCache {
+func (d *GlobalContext) UsernameLoader() *UsernameLoader {
 	d.Lock()
 	defer d.Unlock()
-	return &d.usernameCache
+	return &d.usernameLoader
 }
 
 func (g *GlobalContext) PushShutdownHook(h func()) {

@@ -60,7 +60,7 @@ Two established patterns:
 - **Generic**: `Cache[S, K, V, VP, MV]` in `client/libclient/cache.go` — one
   fixed scope per instance, memory map + soft-DB, no TTL.
 - **Hand-rolled** (when the scope varies per entry or you need TTL):
-  `UsernameCache` in `client/libclient/username_cache.go`. Rules it follows:
+  `UsernameLoader` in `client/libclient/username_loader.go`. Rules it follows:
   - `sync.RWMutex` map in front; `Get` tries memory, then `DbGet`.
   - TTL: derive expiry from the row's write time returned by `DbGet` — warm the
     memory tier with expiry anchored at the *write* time, not the read time, so
@@ -70,9 +70,16 @@ Two established patterns:
   - Soft-state error handling: a failed DB read/write degrades to a cache miss
     or a warning (`m.Warnw`), never an error for the caller.
   - Register the cache on `GlobalContext` (`globals.go`) with an accessor, next
-    to `deviceNameCache`/`usernameCache`.
+    to `deviceNameCache`/`usernameLoader`.
   - Fill the cache at the site where the data is loaded (right after the
     expensive call), not via a separate harvest pass.
+  - If the miss path is an expensive network load, integrate the load into the
+    same class and **single-flight it per key** (`UsernameLoader.Load`): one
+    caller performs the load, concurrent callers of the same key wait and share
+    a successful result. Share only successes — on failure each waiter falls
+    back to its own load, since the winner's auth mode may not apply to them.
+    Keep the flight map separate from the cache mutex; never hold either across
+    the network call.
 
 ## 5. Verify
 

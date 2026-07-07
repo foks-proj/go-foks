@@ -165,7 +165,7 @@ func TestSimpleCreateTeamAdHoc(t *testing.T) {
 	// chain to name the team by participant list; as a side-effect it must
 	// warm the global username cache with each founder's FQUser -> username
 	// mapping, so e.g. RT sender-name resolution doesn't re-load senders.
-	uc := f.ma.G().UsernameCache()
+	uc := f.ma.G().UsernameLoader()
 	for _, u := range append([]*TestUser{f.alice}, f.others...) {
 		nm, ok := uc.Get(f.ma, proto.FQUser{Uid: u.uid, HostID: u.host})
 		require.True(t, ok, "username cache entry for %s", u.name)
@@ -206,7 +206,7 @@ func TestSimpleCreateTeamAdHoc(t *testing.T) {
 	// The cache is two-tiered; the bottom tier is the soft local DB. A fresh
 	// cache with an empty memory tier must still resolve via the DB row that
 	// the Set above just wrote.
-	var uc2 libclient.UsernameCache
+	var uc2 libclient.UsernameLoader
 	nm2, ok := uc2.Get(f.ma, bobFqu)
 	require.True(t, ok)
 	require.Equal(t, bob.name, nm2)

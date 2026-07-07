@@ -32,8 +32,8 @@ type rosterPackage struct {
 	tw       *TeamWrapper
 
 	// cachedName is set instead of uw when the member's user-chain load was
-	// skipped (LoadMemberNames) because the username was already in the global
-	// UsernameCache. The name is captured here at skip time -- rather than
+	// skipped (LoadMemberNames) because the username was already in the
+	// UsernameLoader cache. The name is captured here at skip time -- rather than
 	// re-read from the cache later -- so a TTL eviction between the skip
 	// decision and the naming pass can't lose it.
 	cachedName proto.NameUtf8
@@ -1425,19 +1425,6 @@ func (p *rosterPackage) load(m MetaContext, l *TeamLoader) error {
 	switch {
 	case uid != nil:
 
-		// If we only need this member's username (LoadMemberNames without full
-		// LoadMembers) and it's already cached, skip the user-chain load
-		// entirely. Capture the name now, at skip time: the naming pass reads
-		// it from here, not from the cache, so a TTL eviction in between can't
-		// lose it.
-		if !l.Arg.LoadMembersFull && !p.isRemote {
-			fqu := proto.FQUser{Uid: *uid, HostID: p.fqp.Host}
-			if nm, ok := m.G().UsernameCache().Get(m, fqu); ok {
-				p.cachedName = nm
-				return nil
-			}
-		}
-
 		mode := core.Sel(
 			l.openView,
 			LoadModeOpenOthers,
@@ -1460,6 +1447,25 @@ func (p *rosterPackage) load(m MetaContext, l *TeamLoader) error {
 			arg.TeamVOBearerToken = tok
 		}
 
+		// If we only need this member's username (LoadMemberNames without
+		// LoadMembersFull), go through the UsernameLoader: a cache hit skips
+		// the user-chain load, concurrent loads of the same user are
+		// single-flighted, and if this call did perform the load we keep the
+		// wrapper anyway.
+		if !l.Arg.LoadMembersFull && !p.isRemote {
+			fqu := proto.FQUser{Uid: *uid, HostID: p.fqp.Host}
+			nm, uw, err := m.G().UsernameLoader().Load(m, fqu, arg)
+			if err != nil {
+				return err
+			}
+			if uw != nil {
+				p.uw = uw
+			} else {
+				p.cachedName = nm
+			}
+			return nil
+		}
+
 		uw, err := LoadUser(m, arg)
 		if err != nil {
 			return err
@@ -1469,7 +1475,7 @@ func (p *rosterPackage) load(m MetaContext, l *TeamLoader) error {
 		// Memoize the loaded username so later explores can skip this load
 		// (see LoadMemberNames) and RT sender-name resolution can avoid its
 		// own user-chain load. Cache-write failure is not a load failure.
-		err = m.G().UsernameCache().Set(m,
+		err = m.G().UsernameLoader().Set(m,
 			proto.FQUser{Uid: *uid, HostID: p.fqp.Host}, uw.Name())
 		if err != nil {
 			m.Warnw("rosterPackage.load", "stage", "usernameCacheSet", "err", err)
@@ -2146,7 +2152,7 @@ type LoadTeamArg struct {
 	LoadMembersFull    bool
 	// LoadMemberNames loads the members' usernames (e.g., to name an ad-hoc
 	// team by its participant list) without requiring full member loads: a
-	// member whose name is already in the global UsernameCache is skipped;
+	// member whose name is already in the global UsernameLoader cache is skipped;
 	// misses are loaded (and cached). LoadMembers subsumes this -- it always
 	// loads every member, which yields the names too.
 	LoadMemberNames  bool

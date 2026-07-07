@@ -706,7 +706,7 @@ func (tm *TeamMinder) loadTeamArg(
 	}
 
 	// For adhoc teams, we need the members' usernames to name the team by its
-	// participant list; members already in the global UsernameCache are named
+	// participant list; members already in the global UsernameLoader cache are named
 	// from the cache without a user-chain load.
 	if exnode.Fqt.Team.IsAdHocTeam() {
 		arg.LoadMemberNames = true

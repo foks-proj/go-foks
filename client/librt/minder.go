@@ -64,7 +64,7 @@ type Minder struct {
 	msgIDCache *LRU[proto.RTMsgID, proto.RTMsgSeq]
 
 	// UID -> display-name resolutions are memoized in the GlobalContext-level
-	// libclient.UsernameCache (shared with, e.g., ad-hoc team explore/reindex,
+	// libclient.UsernameLoader (shared with, e.g., ad-hoc team explore/reindex,
 	// which pre-warms it); see resolveSenderName.
 
 	testHooks *MinderTestHooks
@@ -1192,7 +1192,7 @@ func (d *Minder) TeamViewToken(
 }
 
 // ResolveSenderNames maps each distinct user-sender UID in msgs to its display
-// name. Resolutions are memoized (see libclient.UsernameCache) since each cache
+// name. Resolutions are memoized (see libclient.UsernameLoader) since each cache
 // miss is a full user-chain load; in closed viewership mode the load is mediated
 // through the shared team, so a team view bearer token (tok) is presented.
 // Best-effort: a sender that can't be loaded is omitted from the result rather
@@ -1223,42 +1223,35 @@ func (d *Minder) ResolveSenderNames(
 	return ret
 }
 
-// resolveSenderName returns the display name for a single sender UID -- from the
-// cache if present, otherwise via a user-chain load whose result is then cached.
-// Returns false if the user can't be loaded. Ad-hoc teams live on open-viewership
-// hosts and are loaded via LoadModeForAdHoc (open-vhost-or-as-local-user), which
-// resolves symmetrically for any co-member; named teams use the team-mediated
-// (AsLocalTeam) load via the VO bearer token.
+// resolveSenderName returns the display name for a single sender UID, via the
+// UsernameLoader: cache tiers first, then a single-flighted user-chain load.
+// Returns false if the user can't be loaded. Ad-hoc teams live on
+// open-viewership hosts and are loaded via LoadModeForAdHoc
+// (open-vhost-or-as-local-user), which resolves symmetrically for any
+// co-member; named teams use the team-mediated (AsLocalTeam) load via the VO
+// bearer token.
 func (d *Minder) resolveSenderName(
 	m MetaContext,
 	team lcl.ConfigTeam,
 	tok *rem.TeamVOBearerToken,
 	uid proto.UID,
 ) (proto.NameUtf8, bool) {
-	// The cache is keyed by FQUser; senders are always on the active user's
+	// The loader is keyed by FQUser; senders are always on the active user's
 	// host (see decryptAndVerifyMsg's HostMismatchError check).
 	fqu := proto.FQUser{Uid: uid, HostID: d.au.HostID()}
-	uc := m.G().UsernameCache()
-	if nm, ok := uc.Get(m.Base(), fqu); ok {
-		return nm, true
-	}
 	loadMode := libclient.LoadModeOthers
 	if typ, err := team.GetT(); err == nil && typ == lcl.ConfigTeamType_AdHoc {
 		loadMode = libclient.LoadModeForAdHoc
 	}
-	uw, err := libclient.LoadUser(m.Base(), libclient.LoadUserArg{
-		Uid:               uid,
-		LoadMode:          loadMode,
-		TeamVOBearerToken: tok,
-	})
+	nm, _, err := m.G().UsernameLoader().Load(m.Base(), fqu,
+		libclient.LoadUserArg{
+			Uid:               uid,
+			LoadMode:          loadMode,
+			TeamVOBearerToken: tok,
+		})
 	if err != nil {
 		m.Warnw("resolveSenderName", "uid", uid, "err", err)
 		return "", false
-	}
-	nm := uw.Name()
-	// Cache-write failure shouldn't fail the resolution; we have the name.
-	if err := uc.Set(m.Base(), fqu, nm); err != nil {
-		m.Warnw("resolveSenderName", "stage", "usernameCacheSet", "err", err)
 	}
 	return nm, true
 }
