@@ -173,7 +173,7 @@ func TestSimpleCreateTeamAdHoc(t *testing.T) {
 	}
 
 	// Conversely, once the cache is warm, a re-explore skips the member
-	// user-chain loads entirely (MembersNameOnly) and names the team from the
+	// user-chain loads entirely (LoadMemberNames) and names the team from the
 	// cache. Prove the skip really happens: poison one founder's cached name
 	// and re-explore with a fresh minder -- the ad-hoc index gets built from
 	// the poisoned entry. If the loader had re-loaded the user chain, the real

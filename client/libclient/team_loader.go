@@ -32,7 +32,7 @@ type rosterPackage struct {
 	tw       *TeamWrapper
 
 	// cachedName is set instead of uw when the member's user-chain load was
-	// skipped (MembersNameOnly) because the username was already in the global
+	// skipped (LoadMemberNames) because the username was already in the global
 	// UsernameCache. The name is captured here at skip time -- rather than
 	// re-read from the cache later -- so a TTL eviction between the skip
 	// decision and the naming pass can't lose it.
@@ -251,8 +251,8 @@ func (t *TeamWrapper) AllFQAdHocTeamStrings() ([]proto.FQAdHocTeamString, error)
 			case lst.uw != nil:
 				names = append(names, lst.uw.prot.Username.B.NameUtf8)
 			case !lst.cachedName.IsZero():
-				// The user-chain load was skipped (MembersNameOnly); the name was
-				// captured from the cache at skip time.
+				// The user-chain load was skipped (LoadMemberNames); the name
+				// was captured from the cache at skip time.
 				names = append(names, lst.cachedName)
 			default:
 				badNameList = true
@@ -956,7 +956,7 @@ func (l *TeamLoader) loadTeamFromServer(m MetaContext) error {
 			S: l.existing.Name.S + 1,
 		}
 	}
-	if l.Arg.LoadMembers && (l.existing == nil || len(l.existing.RemoteViewTokens) == 0) {
+	if (l.Arg.LoadMembers || l.Arg.LoadMemberNames) && (l.existing == nil || len(l.existing.RemoteViewTokens) == 0) {
 		arg.LoadRemoteViewTokens = true
 	}
 	res, err := l.rpcLoader.LoadTeamChain(m.Ctx(), arg)
@@ -1425,12 +1425,12 @@ func (p *rosterPackage) load(m MetaContext, l *TeamLoader) error {
 	switch {
 	case uid != nil:
 
-		// If these member loads are only wanted for their usernames (ad-hoc
-		// explore/reindex) and this member's name is already cached, skip the
-		// user-chain load entirely. Capture the name now, at skip time: the
-		// naming pass reads it from here, not from the cache, so a TTL
-		// eviction in between can't lose it.
-		if l.Arg.MembersNameOnly && !p.isRemote {
+		// If we only need this member's username (LoadMemberNames without full
+		// LoadMembers) and it's already cached, skip the user-chain load
+		// entirely. Capture the name now, at skip time: the naming pass reads
+		// it from here, not from the cache, so a TTL eviction in between can't
+		// lose it.
+		if !l.Arg.LoadMembers && !p.isRemote {
 			fqu := proto.FQUser{Uid: *uid, HostID: p.fqp.Host}
 			if nm, ok := m.G().UsernameCache().Get(m, fqu); ok {
 				p.cachedName = nm
@@ -1467,7 +1467,7 @@ func (p *rosterPackage) load(m MetaContext, l *TeamLoader) error {
 		p.uw = uw
 
 		// Memoize the loaded username so later explores can skip this load
-		// (see MembersNameOnly) and RT sender-name resolution can avoid its
+		// (see LoadMemberNames) and RT sender-name resolution can avoid its
 		// own user-chain load.
 		m.G().UsernameCache().Set(m,
 			proto.FQUser{Uid: *uid, HostID: p.fqp.Host}, uw.Name())
@@ -1555,7 +1555,7 @@ func (l *TeamLoader) destRoleForLoader(m MetaContext) (*core.RoleKey, error) {
 func (l *TeamLoader) loadTokensAndMembers(
 	m MetaContext,
 ) error {
-	if !l.Arg.LoadMembers {
+	if !l.Arg.LoadMembers && !l.Arg.LoadMemberNames {
 		return nil
 	}
 	if l.Arg.Keys == nil {
@@ -1925,7 +1925,7 @@ func (l *TeamLoader) saveState(m MetaContext) error {
 	res.Sctlsc = *l.sctlsc
 
 	switch {
-	case l.Arg.LoadMembers:
+	case l.Arg.LoadMembers || l.Arg.LoadMemberNames:
 		lst := make([]proto.TeamRemoteMemberViewTokenInner, 0, len(l.rosterDetails))
 		for _, v := range l.rosterDetails {
 			// Just save the first remote view token for all srcRoles.
@@ -2141,13 +2141,12 @@ type LoadTeamArg struct {
 	Tok                *proto.PermissionToken
 	LocalParentTeamTok *rem.TeamVOBearerToken
 	LoadMembers        bool
-	// MembersNameOnly relaxes LoadMembers: the member loads are only wanted for
-	// their usernames (e.g., naming an ad-hoc team by its participant list), so
-	// a member whose name is already in the global UsernameCache is skipped.
-	// Records loaded this way have incomplete member details (nil uw) and must
-	// not be served to consumers that need full member loads (see
-	// TeamMinder.loadTeamWithFQTeam's reuse check).
-	MembersNameOnly  bool
+	// LoadMemberNames loads the members' usernames (e.g., to name an ad-hoc
+	// team by its participant list) without requiring full member loads: a
+	// member whose name is already in the global UsernameCache is skipped;
+	// misses are loaded (and cached). LoadMembers subsumes this -- it always
+	// loads every member, which yields the names too.
+	LoadMemberNames  bool
 	TestSkipArgCheck bool
 	TestTokenVariant *rem.TokenVariant
 
