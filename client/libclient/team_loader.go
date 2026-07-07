@@ -36,7 +36,7 @@ type rosterPackage struct {
 	// UsernameCache. The name is captured here at skip time -- rather than
 	// re-read from the cache later -- so a TTL eviction between the skip
 	// decision and the naming pass can't lose it.
-	cachedName *proto.NameUtf8
+	cachedName proto.NameUtf8
 }
 
 type HistoricalSenders struct {
@@ -217,38 +217,6 @@ func (t *TeamWrapper) IsAdHocTeam() bool {
 }
 
 // returns {names X UIDs x ID x MashedIDs   } @ { name X ID }
-// MemberUIDNames returns the FQUser -> username mapping for all local-host user
-// members whose user wrappers were loaded (LoadMembers; currently ad-hoc teams
-// only). Used to warm the global UsernameCache as a side-effect of team
-// explore/reindex, since the member chains were loaded anyway.
-func (t *TeamWrapper) MemberUIDNames() (map[proto.FQUser]proto.NameUtf8, error) {
-	ret := make(map[proto.FQUser]proto.NameUtf8)
-	host := t.prot.Fqt.Host
-	for m := range t.memberMap {
-		if !m.Fqe.Host.Eq(host) {
-			continue
-		}
-		eid := m.Fqe.Entity.Unfix()
-		if !eid.Type().IsUser() {
-			continue
-		}
-		uid, err := eid.ToUID()
-		if err != nil {
-			return nil, err
-		}
-		rp := t.rosterDetails[m.Fqe]
-		if len(rp) == 0 {
-			continue
-		}
-		uw := core.Last(rp).uw
-		if uw == nil {
-			continue
-		}
-		ret[proto.FQUser{Uid: uid, HostID: host}] = uw.prot.Username.B.NameUtf8
-	}
-	return ret, nil
-}
-
 func (t *TeamWrapper) AllFQAdHocTeamStrings() ([]proto.FQAdHocTeamString, error) {
 
 	if !t.IsAdHocTeam() {
@@ -282,10 +250,10 @@ func (t *TeamWrapper) AllFQAdHocTeamStrings() ([]proto.FQAdHocTeamString, error)
 			switch {
 			case lst.uw != nil:
 				names = append(names, lst.uw.prot.Username.B.NameUtf8)
-			case lst.cachedName != nil:
+			case !lst.cachedName.IsZero():
 				// The user-chain load was skipped (MembersNameOnly); the name was
 				// captured from the cache at skip time.
-				names = append(names, *lst.cachedName)
+				names = append(names, lst.cachedName)
 			default:
 				badNameList = true
 			}
@@ -1465,7 +1433,7 @@ func (p *rosterPackage) load(m MetaContext, l *TeamLoader) error {
 		if l.Arg.MembersNameOnly && !p.isRemote {
 			fqu := proto.FQUser{Uid: *uid, HostID: p.fqp.Host}
 			if nm, ok := m.G().UsernameCache().Get(m, fqu); ok {
-				p.cachedName = &nm
+				p.cachedName = nm
 				return nil
 			}
 		}
@@ -1497,6 +1465,12 @@ func (p *rosterPackage) load(m MetaContext, l *TeamLoader) error {
 			return err
 		}
 		p.uw = uw
+
+		// Memoize the loaded username so later explores can skip this load
+		// (see MembersNameOnly) and RT sender-name resolution can avoid its
+		// own user-chain load.
+		m.G().UsernameCache().Set(m,
+			proto.FQUser{Uid: *uid, HostID: p.fqp.Host}, uw.Name())
 	case tid != nil:
 		larg := LoadTeamArg{
 			Team: proto.FQTeam{Host: p.fqp.Host, Team: *tid},
