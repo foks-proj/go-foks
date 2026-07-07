@@ -2159,6 +2159,12 @@ func LoadMemberLoadFloor(
 
 type AdHocTeamNamesManager struct {
 	sync.Mutex
+	// inserted[h] means the placeholder name row for host h is known to be
+	// durably committed, so future ad-hoc creations on h may skip the insert.
+	// The flag may safely lag reality (a redundant insert no-ops via ON
+	// CONFLICT DO NOTHING) but must never lead it: if set while the row isn't
+	// committed, later creations skip the insert and their teams insert hits
+	// the teams_short_host_id_name_ascii_fkey FK violation.
 	inserted map[core.ShortHostID]bool
 }
 
@@ -2168,6 +2174,11 @@ func NewAdHocTeamNamesManager() *AdHocTeamNamesManager {
 	}
 }
 
+// InsertPlaceholderTeamName ensures the placeholder ("-") team name row exists
+// for the current host, inserting it into the caller's transaction if this
+// process doesn't already know it to be committed. It returns a success hook
+// (possibly nil) that the caller must run after -- and only after -- tx
+// commits; see the memo-update subtlety below.
 func (a *AdHocTeamNamesManager) InsertPlaceholderTeamName(
 	m MetaContext, tx pgx.Tx,
 ) (
@@ -2180,6 +2191,8 @@ func (a *AdHocTeamNamesManager) InsertPlaceholderTeamName(
 	defer a.Unlock()
 	ins := a.inserted[hostID]
 	if ins {
+		// Fast path: the row is known committed. No insert, and no hook --
+		// there's nothing to record at commit time.
 		return nil, nil
 	}
 	err := InsertNameInner(m, tx, m.HostID(),
@@ -2187,11 +2200,22 @@ func (a *AdHocTeamNamesManager) InsertPlaceholderTeamName(
 		proto.NameUtf8(team.AdHocTeamName),
 		rem.NameType_Team,
 		proto.FirstNameSeqno,
-		true,
+		true, // ON CONFLICT DO NOTHING: the row may exist from a prior process or a concurrent tx
 	)
 	if err != nil {
 		return nil, err
 	}
+
+	// Do NOT set a.inserted here. The insert above lives inside the caller's
+	// still-open transaction, so the row is not yet durable: the tx can roll
+	// back -- most commonly when RetryTx hits a serialization failure and
+	// retries. If the memo were set now, the retry (and every subsequent
+	// ad-hoc creation on this host) would take the fast path above, skip the
+	// insert, and violate the teams -> names FK. So the memo update is
+	// returned as a hook for the caller to run strictly after a successful
+	// commit (see RetryTx2). If the hook never runs -- rollback, or a commit
+	// whose acknowledgment is lost -- the memo just stays false and the next
+	// creation redundantly (and harmlessly) re-inserts.
 	return func(m MetaContext) error {
 		a.Lock()
 		defer a.Unlock()
