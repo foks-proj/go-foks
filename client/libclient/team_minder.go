@@ -354,11 +354,16 @@ func (t *TeamMinder) LoadTeamWithFQTeam(
 
 	tr.Lock()
 	defer tr.Unlock()
-	if !opts.Refresh && (!opts.LoadMembers || tr.ldr.Arg.LoadMembers) {
+	// A record whose members were loaded names-only (ad-hoc explore) has nil
+	// user wrappers for cached members; don't serve it to a caller that wants
+	// full member loads -- fall through and reload.
+	fullMembers := tr.ldr.Arg.LoadMembers && !tr.ldr.Arg.MembersNameOnly
+	if !opts.Refresh && (!opts.LoadMembers || fullMembers) {
 		return tr, nil
 	}
 
 	tr.ldr.Arg.LoadMembers = opts.LoadMembers
+	tr.ldr.Arg.MembersNameOnly = false
 
 	tw, err := tr.ldr.Run(m)
 	if err != nil {
@@ -705,11 +710,12 @@ func (tm *TeamMinder) loadTeamArg(
 		cp = au
 	}
 
-	// For adhoc teams, we need to load members to name the team properly.
-	// We might consider caching the UID->Username mappings that we get from
-	// loading users, since that's all we really need.
+	// For adhoc teams, we need to load members to name the team properly. The
+	// username is all we need, so members already in the global UsernameCache
+	// are skipped (MembersNameOnly) and named from the cache.
 	if exnode.Fqt.Team.IsAdHocTeam() {
 		arg.LoadMembers = true
+		arg.MembersNameOnly = true
 	}
 
 	return cp, &arg, nil

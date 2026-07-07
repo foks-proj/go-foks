@@ -30,6 +30,13 @@ type rosterPackage struct {
 	err      error
 	uw       *UserWrapper
 	tw       *TeamWrapper
+
+	// cachedName is set instead of uw when the member's user-chain load was
+	// skipped (MembersNameOnly) because the username was already in the global
+	// UsernameCache. The name is captured here at skip time -- rather than
+	// re-read from the cache later -- so a TTL eviction between the skip
+	// decision and the naming pass can't lose it.
+	cachedName *proto.NameUtf8
 }
 
 type HistoricalSenders struct {
@@ -252,6 +259,8 @@ func (t *TeamWrapper) AllFQAdHocTeamStrings() ([]proto.FQAdHocTeamString, error)
 	var names []proto.NameUtf8
 	host := t.prot.Fqt.Host
 
+	var badNameList bool
+
 	for m := range t.memberMap {
 		if !m.Fqe.Host.Eq(host) {
 			continue
@@ -266,20 +275,26 @@ func (t *TeamWrapper) AllFQAdHocTeamStrings() ([]proto.FQAdHocTeamString, error)
 		}
 		uids = append(uids, uid)
 		rp := t.rosterDetails[m.Fqe]
-		if len(rp) > 0 {
+		if len(rp) == 0 {
+			badNameList = true
+		} else {
 			lst := core.Last(rp)
-			uw := lst.uw
-			if uw != nil {
-				nm := uw.prot.Username.B.NameUtf8
-				names = append(names, nm)
+			switch {
+			case lst.uw != nil:
+				names = append(names, lst.uw.prot.Username.B.NameUtf8)
+			case lst.cachedName != nil:
+				// The user-chain load was skipped (MembersNameOnly); the name was
+				// captured from the cache at skip time.
+				names = append(names, *lst.cachedName)
+			default:
+				badNameList = true
 			}
+		}
+		if badNameList {
+			break
 		}
 	}
 	uidsJoined, err := team.UIDsToAdhHocCanonicalString(uids, proto.UID{})
-	if err != nil {
-		return nil, err
-	}
-	namesJoined, err := team.NamesToAdhHocCanonicalString(names, "")
 	if err != nil {
 		return nil, err
 	}
@@ -297,9 +312,15 @@ func (t *TeamWrapper) AllFQAdHocTeamStrings() ([]proto.FQAdHocTeamString, error)
 	}
 	p0s := []proto.AdHocTeamString{
 		uidsJoined,
-		namesJoined,
 		proto.AdHocTeamString(mashedStr),
 		proto.AdHocTeamString(tid),
+	}
+	if !badNameList {
+		namesJoined, err := team.NamesToAdhHocCanonicalString(names, "")
+		if err != nil {
+			return nil, err
+		}
+		p0s = append(p0s, namesJoined)
 	}
 	hosts := []string{
 		string(t.hostname.Normalize()),
@@ -1436,6 +1457,19 @@ func (p *rosterPackage) load(m MetaContext, l *TeamLoader) error {
 	switch {
 	case uid != nil:
 
+		// If these member loads are only wanted for their usernames (ad-hoc
+		// explore/reindex) and this member's name is already cached, skip the
+		// user-chain load entirely. Capture the name now, at skip time: the
+		// naming pass reads it from here, not from the cache, so a TTL
+		// eviction in between can't lose it.
+		if l.Arg.MembersNameOnly && !p.isRemote {
+			fqu := proto.FQUser{Uid: *uid, HostID: p.fqp.Host}
+			if nm, ok := m.G().UsernameCache().Get(m, fqu); ok {
+				p.cachedName = &nm
+				return nil
+			}
+		}
+
 		mode := core.Sel(
 			l.openView,
 			LoadModeOpenOthers,
@@ -2133,8 +2167,15 @@ type LoadTeamArg struct {
 	Tok                *proto.PermissionToken
 	LocalParentTeamTok *rem.TeamVOBearerToken
 	LoadMembers        bool
-	TestSkipArgCheck   bool
-	TestTokenVariant   *rem.TokenVariant
+	// MembersNameOnly relaxes LoadMembers: the member loads are only wanted for
+	// their usernames (e.g., naming an ad-hoc team by its participant list), so
+	// a member whose name is already in the global UsernameCache is skipped.
+	// Records loaded this way have incomplete member details (nil uw) and must
+	// not be served to consumers that need full member loads (see
+	// TeamMinder.loadTeamWithFQTeam's reuse check).
+	MembersNameOnly  bool
+	TestSkipArgCheck bool
+	TestTokenVariant *rem.TokenVariant
 
 	// If true, the keys are stale and need to be refreshed.
 	// Also, we can auto-try a key refresh on a permissions error.

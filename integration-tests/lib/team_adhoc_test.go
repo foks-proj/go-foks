@@ -171,6 +171,37 @@ func TestSimpleCreateTeamAdHoc(t *testing.T) {
 		require.True(t, ok, "username cache entry for %s", u.name)
 		require.Equal(t, u.name, nm)
 	}
+
+	// Conversely, once the cache is warm, a re-explore skips the member
+	// user-chain loads entirely (MembersNameOnly) and names the team from the
+	// cache. Prove the skip really happens: poison one founder's cached name
+	// and re-explore with a fresh minder -- the ad-hoc index gets built from
+	// the poisoned entry. If the loader had re-loaded the user chain, the real
+	// name would win and resolution by the poisoned name would fail.
+	bob := f.others[0]
+	bobFqu := proto.FQUser{Uid: bob.uid, HostID: bob.host}
+	poison := proto.NameUtf8("zzpoisonbob")
+	uc.Set(f.ma, bobFqu, poison)
+
+	poisoned := []proto.NameUtf8{poison}
+	for _, o := range f.others[1:] {
+		poisoned = append(poisoned, o.name)
+	}
+	tma2 := libclient.NewTeamMinder(f.ma.G().ActiveUser())
+	tm2, err := tma2.LoadTeam(
+		f.ma,
+		lcl.NewConfigTeamWithAdhoc(
+			proto.FQAdHocTeamParsed{
+				Team: proto.NewAdHocTeamParsedWithNames(poisoned),
+			},
+		),
+		libclient.LoadTeamOpts{},
+	)
+	require.NoError(t, err)
+	require.True(t, tm2.FQTeam().Team.Eq(f.tid))
+
+	// Restore the real mapping so later loads aren't contaminated.
+	uc.Set(f.ma, bobFqu, bob.name)
 }
 
 // TestAdHocTeamRejectsRemoteMemberOnServer confirms the server's team player
