@@ -1,6 +1,7 @@
 package lib
 
 import (
+	"sync"
 	"testing"
 
 	"github.com/foks-proj/go-foks/client/libclient"
@@ -210,6 +211,43 @@ func TestSimpleCreateTeamAdHoc(t *testing.T) {
 	nm2, ok := uc2.Get(f.ma, bobFqu)
 	require.True(t, ok)
 	require.Equal(t, bob.name, nm2)
+
+	// Concurrent Loads of the same cold key are single-flighted: exactly one
+	// caller performs the user-chain load (and gets the UserWrapper back);
+	// everyone else waits and shares the name. dave is brand-new, so he's in
+	// neither cache tier; the start barrier maximizes overlap. Run this under
+	// -race to also check the flight's memory synchronization.
+	dave := f.tew.NewTestUserAtVHost(t, f.vhost)
+	f.tew.DirectDoubleMerklePokeInTest(t)
+	daveFqu := proto.FQUser{Uid: dave.uid, HostID: dave.host}
+
+	const nConc = 8
+	var wg sync.WaitGroup
+	start := make(chan struct{})
+	names := make([]proto.NameUtf8, nConc)
+	wraps := make([]*libclient.UserWrapper, nConc)
+	errs := make([]error, nConc)
+	for i := range nConc {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			<-start
+			names[i], wraps[i], errs[i] = uc.Load(f.ma, daveFqu,
+				libclient.LoadUserArg{LoadMode: libclient.LoadModeForAdHoc})
+		}()
+	}
+	close(start)
+	wg.Wait()
+
+	var nWinners int
+	for i := range nConc {
+		require.NoError(t, errs[i])
+		require.Equal(t, dave.name, names[i])
+		if wraps[i] != nil {
+			nWinners++
+		}
+	}
+	require.Equal(t, 1, nWinners)
 }
 
 // TestAdHocTeamRejectsRemoteMemberOnServer confirms the server's team player
