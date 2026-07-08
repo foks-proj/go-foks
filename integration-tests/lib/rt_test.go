@@ -12,6 +12,7 @@ import (
 	"github.com/foks-proj/go-foks/proto/lcl"
 	proto "github.com/foks-proj/go-foks/proto/lib"
 	"github.com/foks-proj/go-foks/proto/rem"
+	"github.com/foks-proj/go-foks/server/shared"
 	"github.com/stretchr/testify/require"
 )
 
@@ -901,20 +902,20 @@ func TestRTSendReadPermissions(t *testing.T) {
 
 	// "announce": a bottom channel (so coco can see it and read it) that only
 	// admins+ may write to.
-	_, err := minderBluey.MakeChannel(mb, team.WrapNamedPtr(fqt),
+	chAnnounce, err := minderBluey.MakeChannel(mb, team.WrapNamedPtr(fqt),
 		proto.RTAppID_Chat, "announce",
 		"admins post here",
 		proto.RolePairOpt{Read: &proto.DefaultRole, Write: &proto.AdminRole})
 	require.NoError(t, err)
 
 	// "watercooler": a bottom channel any member may write to (positive control).
-	_, err = minderBluey.MakeChannel(mb, team.WrapNamedPtr(fqt), proto.RTAppID_Chat, "watercooler",
+	chWatercooler, err := minderBluey.MakeChannel(mb, team.WrapNamedPtr(fqt), proto.RTAppID_Chat, "watercooler",
 		"anyone posts",
 		proto.RolePairOpt{Read: &proto.DefaultRole, Write: &proto.DefaultRole})
 	require.NoError(t, err)
 
 	// "brass": an admin-tier channel coco shouldn't even be able to see.
-	_, err = minderBluey.MakeChannel(mb, team.WrapNamedPtr(fqt), proto.RTAppID_Chat, "brass",
+	chBrass, err := minderBluey.MakeChannel(mb, team.WrapNamedPtr(fqt), proto.RTAppID_Chat, "brass",
 		"admins only",
 		proto.RolePairOpt{Read: &proto.AdminRole, Write: &proto.AdminRole})
 	require.NoError(t, err)
@@ -957,6 +958,48 @@ func TestRTSendReadPermissions(t *testing.T) {
 	_, err = minderCoco.GetThreadRecentMsgs(mc, team.WrapNamedPtr(fqt), proto.RTAppID_Chat,
 		makeChannelSpecifierWithString("brass"), 0)
 	require.Equal(t, core.RTNotFoundError("channel 'brass'"), err)
+
+	// --- inbox fanout ---
+
+	// Every successful send fans out inbox-version bumps to all channel
+	// members (see user_channels/user_inbox in foks_realtime.sql). Tally:
+	// channel-creation fanouts hit announce {bluey, coco}, watercooler {bluey,
+	// coco}, and brass {bluey} (coco is below its read role); then coco's
+	// watercooler send bumps both members, coco's rejected announce send bumps
+	// no one, and bluey's announce send bumps both members. Reads bump nothing.
+	// So bluey has taken 5 bumps and coco 4, and each user_channels row is
+	// stamped at its owner's global version as of the last delivery into that
+	// channel (or its creation, for brass).
+	rtdb, err := m.Db(shared.DbTypeRealTime)
+	require.NoError(t, err)
+	defer rtdb.Release()
+
+	uiVers := func(u *TestUser) int64 {
+		var v int64
+		err := rtdb.QueryRow(m.Ctx(),
+			`SELECT inbox_version FROM user_inbox
+			 WHERE short_host_id=$1 AND uid=$2 AND app_id='chat'`,
+			m.ShortHostID(), u.uid.ExportToDB()).Scan(&v)
+		require.NoError(t, err)
+		return v
+	}
+	ucVers := func(u *TestUser, ch *proto.RTChannelID) int64 {
+		var v int64
+		err := rtdb.QueryRow(m.Ctx(),
+			`SELECT inbox_version FROM user_channels
+			 WHERE short_host_id=$1 AND channel_id=$2 AND uid=$3`,
+			m.ShortHostID(), ch.Short().Int64(), u.uid.ExportToDB()).Scan(&v)
+		require.NoError(t, err)
+		return v
+	}
+
+	require.Equal(t, int64(5), uiVers(bluey))
+	require.Equal(t, int64(4), uiVers(coco))
+	require.Equal(t, int64(5), ucVers(bluey, chAnnounce))
+	require.Equal(t, int64(4), ucVers(bluey, chWatercooler))
+	require.Equal(t, int64(3), ucVers(bluey, chBrass))
+	require.Equal(t, int64(4), ucVers(coco, chAnnounce))
+	require.Equal(t, int64(3), ucVers(coco, chWatercooler))
 }
 
 // TestRTSendEncryptionRole checks that the server rejects a message encrypted
