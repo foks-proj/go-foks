@@ -234,6 +234,59 @@ func (s *messageSender) insertMessage(
 	return proto.ExportTime(insertTime), nil
 }
 
+// fanoutInboxVersions bumps each channel member's per-(user, app) global inbox
+// version and stamps their user_channels membership row at that new version --
+// the fan-out-on-write described for user_channels/user_inbox in
+// foks_realtime.sql. The stamped row is what the (uid, app_id, inbox_version)
+// index scans to answer "which threads changed since version X" on the
+// member's next inbox sync. Membership is the set of user_channels rows for
+// this channel (written by the channel-creation fanout); both statements are
+// set-based and run in the send transaction, so the fanout commits or rolls
+// back atomically with the message itself.
+func (s *messageSender) fanoutInboxVersions(
+	m shared.MetaContext,
+	insertTime time.Time,
+) error {
+	// Bump each member's (uid, app) global inbox version. The insert arm is
+	// paranoia -- the channel-creation fanout writes user_inbox before
+	// user_channels -- but keeps a missing row self-healing. The ORDER BY
+	// makes concurrent sends into different channels with overlapping
+	// membership acquire user_inbox row locks in a consistent order, avoiding
+	// deadlocks.
+	_, err := s.tx.Exec(
+		m.Ctx(),
+		`INSERT INTO user_inbox (short_host_id, uid, app_id, inbox_version, mtime)
+		 SELECT uc.short_host_id, uc.uid, uc.app_id, 1, NOW()
+		   FROM user_channels uc
+		  WHERE uc.short_host_id=$1 AND uc.channel_id=$2
+		  ORDER BY uc.uid
+		 ON CONFLICT (short_host_id, uid, app_id)
+		 DO UPDATE SET inbox_version = user_inbox.inbox_version + 1, mtime = NOW()`,
+		m.ShortHostID(),
+		s.channelID(),
+	)
+	if err != nil {
+		return err
+	}
+
+	// Stamp each membership row at its owner's just-bumped global version, and
+	// refresh the denormalized last-message time for inbox ordering. Reads the
+	// user_inbox rows written above in the same transaction.
+	_, err = s.tx.Exec(
+		m.Ctx(),
+		`UPDATE user_channels uc
+		 SET inbox_version = ui.inbox_version, last_msg_time = $3, mtime = NOW()
+		 FROM user_inbox ui
+		 WHERE ui.short_host_id = uc.short_host_id
+		   AND ui.uid = uc.uid AND ui.app_id = uc.app_id
+		   AND uc.short_host_id=$1 AND uc.channel_id=$2`,
+		m.ShortHostID(),
+		s.channelID(),
+		insertTime,
+	)
+	return err
+}
+
 func (s *messageSender) run(m shared.MetaContext) (*rem.RTSendRes, error) {
 	err := s.lockChannel(m)
 	if err != nil {
@@ -254,6 +307,10 @@ func (s *messageSender) run(m shared.MetaContext) (*rem.RTSendRes, error) {
 		return nil, err
 	}
 	insertTime, err := s.insertMessage(m, senderNo, seq)
+	if err != nil {
+		return nil, err
+	}
+	err = s.fanoutInboxVersions(m, insertTime.Import())
 	if err != nil {
 		return nil, err
 	}

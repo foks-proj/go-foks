@@ -1,6 +1,8 @@
 package realtime
 
 import (
+	"bytes"
+	"slices"
 	"time"
 
 	"github.com/foks-proj/go-foks/lib/core"
@@ -573,6 +575,13 @@ func (c *channelMaker) fanoutUsers(m shared.MetaContext) error {
 		return err
 	}
 
+	// Deterministic order: fanoutToUser takes user_inbox row locks, so sorting
+	// by UID keeps the lock order consistent with the message-send fanout
+	// (messageSender.fanoutInboxVersions, which ORDERs BY uid), avoiding
+	// deadlocks between concurrent transactions over overlapping member sets.
+	slices.SortFunc(uids, func(a, b proto.UID) int {
+		return bytes.Compare(a[:], b[:])
+	})
 	for _, uid := range uids {
 		err = c.fanoutToUser(m, uid)
 		if err != nil {
