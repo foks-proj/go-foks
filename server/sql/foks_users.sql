@@ -605,7 +605,9 @@ CREATE TABLE local_joinreqs (
     PRIMARY KEY(short_host_id, team_id, token),
     FOREIGN KEY(short_host_id, team_id) REFERENCES teams(short_host_id, team_id)
 );
-CREATE UNIQUE INDEX local_joinreq_joiner_idx ON local_joinreqs(short_host_id, team_id, joiner_party_id, joiner_src_role_type, joiner_src_viz_level);
+/* Partial (state='pending'): one PENDING join request per joiner at a time;
+   historical approved/rejected rows don't block a rejoin (see patch p6). */
+CREATE UNIQUE INDEX local_joinreq_joiner_idx ON local_joinreqs(short_host_id, team_id, joiner_party_id, joiner_src_role_type, joiner_src_viz_level) WHERE state = 'pending';
 CREATE INDEX local_joinreqs_inbox_idx ON local_joinreqs(short_host_id, team_id, state, ctime);
 
 CREATE TYPE team_bearer_token_state as ENUM('inert', 'active', 'expired', 'revoked');
