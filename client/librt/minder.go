@@ -817,6 +817,39 @@ func (d *Minder) Send(
 	return d.SendWithTestHooks(m, team, appID, channel, body, nil)
 }
 
+// ReadThrough advances the caller's read pointer in a channel to seq, so
+// their other devices learn the read state via the resulting inbox-version
+// bump. The pointer is monotonic server-side: a stale or repeated mark is a
+// silent no-op (and bumps nothing).
+func (d *Minder) ReadThrough(
+	m MetaContext,
+	team lcl.ConfigTeam,
+	appID proto.RTAppID,
+	channel lcl.RTChannelSpecifier,
+	seq proto.RTMsgSeq,
+) error {
+	err := assertTeam(team)
+	if err != nil {
+		return err
+	}
+	rtp, err := d.base.GetParty(m.Base(), team)
+	if err != nil {
+		return err
+	}
+	ch, err := d.resolveChannel(m, rtp, appID, channel)
+	if err != nil {
+		return err
+	}
+	_, cli, err := d.clientLocal(m.Base(), d.au)
+	if err != nil {
+		return err
+	}
+	return cli.RtReadThrough(m.Ctx(), rem.RTReadThroughArg{
+		ChannelID: ch.Id,
+		Seq:       seq,
+	})
+}
+
 func (d *Minder) cacheMsgID(
 	q proto.RTMsgSeq,
 	i proto.RTMsgID,

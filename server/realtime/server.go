@@ -97,7 +97,8 @@ func (c *ClientConn) RtGetChangedThreads(ctx context.Context, arg rem.RTGetChang
 	return res, core.NotImplementedError{}
 }
 func (c *ClientConn) RtReadThrough(ctx context.Context, arg rem.RTReadThroughArg) error {
-	return core.NotImplementedError{}
+	m := shared.NewMetaContextConn(ctx, c)
+	return MarkReadThrough(m, arg)
 }
 func (c *ClientConn) RtPollInbox(ctx context.Context, arg rem.RTPollInboxArg) (res proto.RTInboxPollRes, err error) {
 	return res, core.NotImplementedError{}

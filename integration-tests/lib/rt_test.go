@@ -1000,6 +1000,62 @@ func TestRTSendReadPermissions(t *testing.T) {
 	require.Equal(t, int64(3), ucVers(bluey, chBrass))
 	require.Equal(t, int64(4), ucVers(coco, chAnnounce))
 	require.Equal(t, int64(3), ucVers(coco, chWatercooler))
+
+	// --- read receipts ---
+
+	ucRead := func(u *TestUser, ch *proto.RTChannelID) int64 {
+		var v int64
+		err := rtdb.QueryRow(m.Ctx(),
+			`SELECT read_through FROM user_channels
+			 WHERE short_host_id=$1 AND channel_id=$2 AND uid=$3`,
+			m.ShortHostID(), ch.Short().Int64(), u.uid.ExportToDB()).Scan(&v)
+		require.NoError(t, err)
+		return v
+	}
+
+	// coco marks announce read through its one message: her read pointer
+	// advances, her global inbox version bumps, and the announce row is
+	// stamped at the new version -- just like a delivery -- so her other
+	// devices pick up the read state.
+	err = minderCoco.ReadThrough(mc, team.WrapNamedPtr(fqt), proto.RTAppID_Chat,
+		makeChannelSpecifierWithString("announce"), 1)
+	require.NoError(t, err)
+	require.Equal(t, int64(5), uiVers(coco))
+	require.Equal(t, int64(5), ucVers(coco, chAnnounce))
+	require.Equal(t, int64(1), ucRead(coco, chAnnounce))
+
+	// Repeating the same mark (or any stale one) is a no-op: the pointer is
+	// monotonic and nothing bumps, so racing devices can't churn each other.
+	err = minderCoco.ReadThrough(mc, team.WrapNamedPtr(fqt), proto.RTAppID_Chat,
+		makeChannelSpecifierWithString("announce"), 1)
+	require.NoError(t, err)
+	require.Equal(t, int64(5), uiVers(coco))
+	require.Equal(t, int64(5), ucVers(coco, chAnnounce))
+
+	// Marking past the last message is a client bug and is rejected.
+	err = minderCoco.ReadThrough(mc, team.WrapNamedPtr(fqt), proto.RTAppID_Chat,
+		makeChannelSpecifierWithString("announce"), 2)
+	require.Equal(t, core.BadArgsError("read-through seq exceeds last message"), err)
+
+	// A read receipt requires read permission, like the read itself; coco
+	// can't even address brass, so resolution fails client-side.
+	err = minderCoco.ReadThrough(mc, team.WrapNamedPtr(fqt), proto.RTAppID_Chat,
+		makeChannelSpecifierWithString("brass"), 1)
+	require.Error(t, err)
+
+	// brass has no messages at all, so there's nothing to mark read.
+	err = minderBluey.ReadThrough(mb, team.WrapNamedPtr(fqt), proto.RTAppID_Chat,
+		makeChannelSpecifierWithString("brass"), 1)
+	require.Equal(t, core.BadArgsError("read-through seq exceeds last message"), err)
+
+	// The owner's receipt bumps only her own inbox, not coco's.
+	err = minderBluey.ReadThrough(mb, team.WrapNamedPtr(fqt), proto.RTAppID_Chat,
+		makeChannelSpecifierWithString("watercooler"), 1)
+	require.NoError(t, err)
+	require.Equal(t, int64(6), uiVers(bluey))
+	require.Equal(t, int64(6), ucVers(bluey, chWatercooler))
+	require.Equal(t, int64(1), ucRead(bluey, chWatercooler))
+	require.Equal(t, int64(5), uiVers(coco))
 }
 
 // TestRTSendEncryptionRole checks that the server rejects a message encrypted
