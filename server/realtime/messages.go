@@ -365,6 +365,189 @@ func SendMessage(
 	return res, nil
 }
 
+// readThroughMarker advances the calling user's read pointer in one channel
+// and, if the pointer actually moved, bumps the caller's global inbox version
+// and stamps their user_channels row at it -- exactly as a delivery would (see
+// "read_through" in chat-server-design.md). That's how the caller's *other*
+// devices learn the read state on their next inbox sync. Unlike the send
+// fanout, only the calling user's rows are touched.
+type readThroughMarker struct {
+	arg    rem.RTReadThroughArg
+	reader proto.UID
+	userdb shared.Querier
+	tx     pgx.Tx
+
+	// loaded from the channels row
+	parentTeam proto.TeamID
+	readRole   proto.Role
+	lastSeq    *int64
+	appID      string
+}
+
+func (r *readThroughMarker) channelID() int64 { return r.arg.ChannelID.Short().Int64() }
+
+// loadChannel reads the channel's team, read role, last seq, and app. No row
+// lock: an honest client only marks messages it has already received, which
+// are committed and thus visible to our snapshot, so last_msg_seq can't race
+// backwards under us.
+func (r *readThroughMarker) loadChannel(m shared.MetaContext) error {
+	var teamRaw []byte
+	var rrt, rvl int
+	err := r.tx.QueryRow(
+		m.Ctx(),
+		`SELECT parent_team_id, read_role_type, read_role_viz_level,
+		        last_msg_seq, app_id
+		 FROM channels
+		 WHERE short_host_id=$1 AND channel_id=$2`,
+		m.ShortHostID(),
+		r.channelID(),
+	).Scan(&teamRaw, &rrt, &rvl, &r.lastSeq, &r.appID)
+	if err == pgx.ErrNoRows {
+		return core.RowNotFoundError{}
+	}
+	if err != nil {
+		return err
+	}
+	err = r.parentTeam.ImportFromDB(teamRaw)
+	if err != nil {
+		return err
+	}
+	return r.readRole.ImportFromDB(rrt, rvl)
+}
+
+// authorize applies the same check as a thread read: the caller's team role
+// must be at or above the channel's read role.
+func (r *readThroughMarker) authorize(m shared.MetaContext) error {
+	role, err := AuthorizeUserForTeam(m, r.userdb, r.parentTeam)
+	if err != nil {
+		return err
+	}
+	readRole, err := core.ImportRole(r.readRole)
+	if err != nil {
+		return err
+	}
+	if role.LessThan(*readRole) {
+		return core.PermissionError("user role too low to read channel")
+	}
+	return nil
+}
+
+func (r *readThroughMarker) run(m shared.MetaContext) error {
+	err := r.loadChannel(m)
+	if err != nil {
+		return err
+	}
+	err = r.authorize(m)
+	if err != nil {
+		return err
+	}
+
+	seq := r.arg.Seq.Int64()
+	if seq <= 0 {
+		return core.BadArgsError("read-through seq must be positive")
+	}
+	if r.lastSeq == nil || seq > *r.lastSeq {
+		return core.BadArgsError("read-through seq exceeds last message")
+	}
+
+	// Advance monotonically. A stale or repeated mark (seq at or below the
+	// current pointer) is a no-op and must NOT bump the inbox version, or
+	// out-of-order marks from racing devices would churn every device's sync.
+	tag, err := r.tx.Exec(
+		m.Ctx(),
+		`UPDATE user_channels
+		 SET read_through=$4, mtime=NOW()
+		 WHERE short_host_id=$1 AND channel_id=$2 AND uid=$3
+		   AND read_through < $4`,
+		m.ShortHostID(),
+		r.channelID(),
+		r.reader.ExportToDB(),
+		seq,
+	)
+	if err != nil {
+		return err
+	}
+	if tag.RowsAffected() == 0 {
+		// Distinguish a stale mark (no-op success) from a missing membership
+		// row (the user was never fanned into this channel).
+		var one int
+		err = r.tx.QueryRow(
+			m.Ctx(),
+			`SELECT 1 FROM user_channels
+			 WHERE short_host_id=$1 AND channel_id=$2 AND uid=$3`,
+			m.ShortHostID(),
+			r.channelID(),
+			r.reader.ExportToDB(),
+		).Scan(&one)
+		if err == pgx.ErrNoRows {
+			return core.RowNotFoundError{}
+		}
+		return err
+	}
+
+	// The pointer moved: bump the caller's global inbox version and stamp this
+	// row at it, "like a send would do" (chat-server-design.md), so the
+	// caller's other devices pick the read state up on their next sync.
+	var vers int64
+	err = r.tx.QueryRow(
+		m.Ctx(),
+		`INSERT INTO user_inbox (short_host_id, uid, app_id, inbox_version, mtime)
+		 VALUES ($1, $2, $3, 1, NOW())
+		 ON CONFLICT (short_host_id, uid, app_id)
+		 DO UPDATE SET inbox_version = user_inbox.inbox_version + 1, mtime = NOW()
+		 RETURNING inbox_version`,
+		m.ShortHostID(),
+		r.reader.ExportToDB(),
+		r.appID,
+	).Scan(&vers)
+	if err != nil {
+		return err
+	}
+	_, err = r.tx.Exec(
+		m.Ctx(),
+		`UPDATE user_channels
+		 SET inbox_version=$4
+		 WHERE short_host_id=$1 AND channel_id=$2 AND uid=$3`,
+		m.ShortHostID(),
+		r.channelID(),
+		r.reader.ExportToDB(),
+		vers,
+	)
+	return err
+}
+
+// MarkReadThrough advances the authenticated user's (m.UID()) read pointer in
+// a channel.
+func MarkReadThrough(
+	m shared.MetaContext,
+	arg rem.RTReadThroughArg,
+) error {
+	rtdb, err := m.Db(shared.DbTypeRealTime)
+	if err != nil {
+		return err
+	}
+	defer rtdb.Release()
+	userdb, err := m.Db(shared.DbTypeUsers)
+	if err != nil {
+		return err
+	}
+	defer userdb.Release()
+
+	return shared.RetryTx(m,
+		rtdb,
+		"realtime.MarkReadThrough",
+		func(m shared.MetaContext, tx pgx.Tx) error {
+			r := readThroughMarker{
+				arg:    arg,
+				reader: m.UID(),
+				userdb: userdb,
+				tx:     tx,
+			}
+			return r.run(m)
+		},
+	)
+}
+
 // loadChannelForRead returns the channel's parent team and read role, for
 // authorizing a thread fetch.
 func loadChannelForRead(
