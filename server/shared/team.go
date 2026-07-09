@@ -4,7 +4,9 @@
 package shared
 
 import (
+	"bytes"
 	"errors"
+	"slices"
 	"sync"
 
 	"github.com/foks-proj/go-foks/lib/core"
@@ -47,6 +49,51 @@ func EditMembers(
 	}
 	for _, chng := range changes {
 		err := EditMember(m, tx, team, seqno, epno, chng, hepkm)
+		if err != nil {
+			return err
+		}
+	}
+	return bumpUserMembershipVers(m, tx, changes)
+}
+
+// bumpUserMembershipVers records, for every local user member in the change
+// set, that their team memberships changed -- in the same transaction as the
+// team_members writes, which is what makes the signal exact for readers (see
+// user_membership_vers in foks_users.sql). Sorted by UID so concurrent team
+// edits over overlapping member sets take row locks in a consistent order.
+func bumpUserMembershipVers(
+	m MetaContext,
+	tx pgx.Tx,
+	changes []proto.MemberRole,
+) error {
+	var uids []proto.UID
+	for _, chng := range changes {
+		id := chng.Member.Id
+		if !id.Entity.Type().IsUser() {
+			continue
+		}
+		if id.Host != nil && !id.Host.Eq(m.HostID().Id) {
+			continue
+		}
+		uid, err := id.Entity.ToUID()
+		if err != nil {
+			return err
+		}
+		uids = append(uids, uid)
+	}
+	slices.SortFunc(uids, func(a, b proto.UID) int {
+		return bytes.Compare(a[:], b[:])
+	})
+	for _, uid := range uids {
+		_, err := tx.Exec(
+			m.Ctx(),
+			`INSERT INTO user_membership_vers (short_host_id, uid, vers, mtime)
+			 VALUES ($1, $2, 1, NOW())
+			 ON CONFLICT (short_host_id, uid)
+			 DO UPDATE SET vers = user_membership_vers.vers + 1, mtime = NOW()`,
+			m.ShortHostID().ExportToDB(),
+			uid.ExportToDB(),
+		)
 		if err != nil {
 			return err
 		}

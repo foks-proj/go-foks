@@ -34,14 +34,44 @@ type RTInboxHubKey struct {
 // replaces the wake *source* with Redis pub/sub (and thus cross-process
 // wakes) without changing pollers or writers.
 type RTInboxHub struct {
-	sync.Mutex
+	sync.RWMutex
 	waiters map[RTInboxHubKey]map[chan struct{}]bool
+
+	// lastReconciled memoizes, per key, the user_membership_vers value that
+	// the late-join fan-in has successfully reconciled through (issue #301).
+	// In-process only, like the waiters: a restart just means one redundant
+	// reconcile per user on first contact.
+	lastReconciled map[RTInboxHubKey]int64
 }
 
 func NewRTInboxHub() *RTInboxHub {
 	return &RTInboxHub{
-		waiters: make(map[RTInboxHubKey]map[chan struct{}]bool),
+		waiters:        make(map[RTInboxHubKey]map[chan struct{}]bool),
+		lastReconciled: make(map[RTInboxHubKey]int64),
 	}
+}
+
+// ReconciledThrough returns the membership version the late-join fan-in has
+// successfully reconciled k through, and whether any reconcile has completed.
+func (h *RTInboxHub) ReconciledThrough(k RTInboxHubKey) (int64, bool) {
+	h.RLock()
+	defer h.RUnlock()
+	v, ok := h.lastReconciled[k]
+	return v, ok
+}
+
+// SetReconciledThrough advances (monotonically) the reconciled-through memo.
+// Callers must pass a version read BEFORE the reconcile's queries ran, and
+// call this only after its writes have committed -- a failed or in-flight
+// reconcile must not mask a membership change, and a change that lands
+// mid-reconcile keeps a higher version and re-triggers.
+func (h *RTInboxHub) SetReconciledThrough(k RTInboxHubKey, vers int64) {
+	h.Lock()
+	defer h.Unlock()
+	if cur, ok := h.lastReconciled[k]; ok && cur >= vers {
+		return
+	}
+	h.lastReconciled[k] = vers
 }
 
 // Subscribe registers a waiter and returns its one-shot wake channel, which
@@ -88,7 +118,7 @@ func (h *RTInboxHub) Wake(k RTInboxHubKey) {
 // metrics and tests (e.g., deterministically waiting for a poller to park
 // before triggering the bump that should wake it).
 func (h *RTInboxHub) NumWaiters(k RTInboxHubKey) int {
-	h.Lock()
-	defer h.Unlock()
+	h.RLock()
+	defer h.RUnlock()
 	return len(h.waiters[k])
 }

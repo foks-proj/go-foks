@@ -1206,6 +1206,91 @@ func TestRTSendReadPermissions(t *testing.T) {
 	require.NoError(t, out.err)
 	require.True(t, out.res.Bumped)
 	require.Equal(t, proto.RTInboxVersion(7), out.res.InboxVersion)
+
+	// --- late-join fan-in (issue #301) ---
+
+	// dave joins the team long after every channel was created, so the
+	// creation fanout never saw him. His first poll runs the reconcile pass:
+	// it fans him into the two member-readable channels (one fresh version
+	// bump per row, per the unique-index invariant), so the poll's first read
+	// sees head 2 > since 0 and returns immediately.
+	dave := tew.NewTestUser(t)
+	tew.DirectDoubleMerklePokeInTest(t)
+	tm.makeChanges(t, m, bluey,
+		[]proto.MemberRole{
+			dave.toMemberRole(t, proto.DefaultRole, tm.hepks),
+		}, nil,
+	)
+	mdv := librt.NewMetaContext(tew.NewClientMetaContextWithEracer(t, dave))
+	minderDave := librt.NewMinder(mdv.G().ActiveUser())
+
+	pres, err = minderDave.PollInbox(mdv, proto.RTAppID_Chat, 0, 10*time.Second)
+	require.NoError(t, err)
+	require.True(t, pres.Bumped)
+	require.Equal(t, proto.RTInboxVersion(2), pres.InboxVersion)
+
+	// The sync (which also reconciles, idempotently) shows the two
+	// member-readable channels at distinct backfill versions, unread, with
+	// their last-message previews; brass stays invisible (admin read role).
+	// The backfill allocates versions in channel-ID order, and channel IDs
+	// are random, so compute the expected order rather than assuming it.
+	first, second := chAnnounce, chWatercooler
+	if chWatercooler.Short().Int64() < chAnnounce.Short().Int64() {
+		first, second = chWatercooler, chAnnounce
+	}
+	delta, err = minderDave.GetChangedThreads(mdv, proto.RTAppID_Chat, 0, 0)
+	require.NoError(t, err)
+	require.Equal(t, proto.RTInboxVersion(2), delta.InboxVersion)
+	require.Equal(t, []row{
+		{id: *first, vers: 1, read: 0, last: true},
+		{id: *second, vers: 2, read: 0, last: true},
+	}, summarize(delta))
+
+	// Caught up: nothing new, and the reconcile doesn't re-fan-in.
+	delta, err = minderDave.GetChangedThreads(mdv, proto.RTAppID_Chat, 2, 0)
+	require.NoError(t, err)
+	require.Equal(t, proto.RTInboxVersion(2), delta.InboxVersion)
+	require.Empty(t, delta.Channels)
+
+	// Before the fan-in, dave's read receipt would have failed on the missing
+	// membership row; now it lands and bumps him like any member.
+	err = minderDave.ReadThrough(mdv, team.WrapNamedPtr(fqt), proto.RTAppID_Chat,
+		makeChannelSpecifierWithString("announce"), 1)
+	require.NoError(t, err)
+	require.Equal(t, int64(3), uiVers(dave))
+	require.Equal(t, int64(3), ucVers(dave, chAnnounce))
+	require.Equal(t, int64(1), ucRead(dave, chAnnounce))
+
+	// A role change re-triggers the fan-in via the membership-version marker
+	// (bumped in the same transaction as the team_members change): promoting
+	// dave to admin puts brass within his read role, and his next sync
+	// discovers it -- no fixed reconcile cadence involved.
+	tm.makeChanges(t, m, bluey,
+		[]proto.MemberRole{
+			dave.toMemberRole(t, proto.AdminRole, tm.hepks),
+		}, nil,
+	)
+	delta, err = minderDave.GetChangedThreads(mdv, proto.RTAppID_Chat, 3, 0)
+	require.NoError(t, err)
+	require.Equal(t, proto.RTInboxVersion(4), delta.InboxVersion)
+	require.Equal(t, []row{
+		{id: *chBrass, vers: 4, read: 0, last: false},
+	}, summarize(delta))
+
+	// The persistent tier of the reconciled-through cursor tracks dave's
+	// membership-change marker: one bump for his add, one for his promotion.
+	// (The in-memory tier fronts this row; it's what a process restart -- or
+	// another realtime server -- would warm from instead of re-reconciling.)
+	var cursorVers int64
+	err = rtdb.QueryRow(m.Ctx(),
+		`SELECT vers FROM fanin_cursors
+		 WHERE short_host_id=$1 AND uid=$2 AND app_id='chat'`,
+		m.ShortHostID(), dave.uid.ExportToDB()).Scan(&cursorVers)
+	require.NoError(t, err)
+	require.Equal(t, int64(2), cursorVers)
+
+	// And nobody else's inbox moved.
+	require.Equal(t, int64(7), uiVers(bluey))
 }
 
 // TestRTSendEncryptionRole checks that the server rejects a message encrypted
