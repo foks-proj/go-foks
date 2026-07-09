@@ -850,6 +850,51 @@ func (d *Minder) ReadThrough(
 	})
 }
 
+// GetInboxVersion returns the caller's current global inbox version for the
+// app -- the head that GetChangedThreads pages toward.
+func (d *Minder) GetInboxVersion(
+	m MetaContext,
+	appID proto.RTAppID,
+) (
+	proto.RTInboxVersion,
+	error,
+) {
+	_, cli, err := d.clientLocal(m.Base(), d.au)
+	if err != nil {
+		return 0, err
+	}
+	return cli.RtGetInboxVersion(m.Ctx(), rem.RTInboxKey{AppID: appID})
+}
+
+// GetChangedThreads fetches one page of the caller's inbox delta: channels
+// whose per-user inbox version bumped past since, oldest bump first, plus the
+// current head. Paginate by re-issuing with since = the highest inboxVersion
+// received, until it reaches the head. max=0 uses the server's default page
+// size.
+func (d *Minder) GetChangedThreads(
+	m MetaContext,
+	appID proto.RTAppID,
+	since proto.RTInboxVersion,
+	max uint64,
+) (
+	*rem.RTInboxDelta,
+	error,
+) {
+	_, cli, err := d.clientLocal(m.Base(), d.au)
+	if err != nil {
+		return nil, err
+	}
+	res, err := cli.RtGetChangedThreads(m.Ctx(), rem.RTGetChangedThreadsArg{
+		AppID: appID,
+		Since: since,
+		Max:   max,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
 func (d *Minder) cacheMsgID(
 	q proto.RTMsgSeq,
 	i proto.RTMsgID,

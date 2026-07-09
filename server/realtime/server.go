@@ -91,10 +91,16 @@ func (c *ClientConn) RtGetThread(ctx context.Context, arg rem.RTThreadQuery) (re
 	return *ret, nil
 }
 func (c *ClientConn) RtGetInboxVersion(ctx context.Context, arg rem.RTInboxKey) (res proto.RTInboxVersion, err error) {
-	return res, core.NotImplementedError{}
+	m := shared.NewMetaContextConn(ctx, c)
+	return GetInboxVersion(m, arg)
 }
 func (c *ClientConn) RtGetChangedThreads(ctx context.Context, arg rem.RTGetChangedThreadsArg) (res rem.RTInboxDelta, err error) {
-	return res, core.NotImplementedError{}
+	m := shared.NewMetaContextConn(ctx, c)
+	ret, err := GetChangedThreads(m, arg)
+	if err != nil {
+		return res, err
+	}
+	return *ret, nil
 }
 func (c *ClientConn) RtReadThrough(ctx context.Context, arg rem.RTReadThroughArg) error {
 	m := shared.NewMetaContextConn(ctx, c)
@@ -104,7 +110,7 @@ func (c *ClientConn) RtPollInbox(ctx context.Context, arg rem.RTPollInboxArg) (r
 	return res, core.NotImplementedError{}
 }
 func (c *ClientConn) RtSelectVHost(ctx context.Context, arg proto.HostID) error {
-	return core.NotImplementedError{}
+	return shared.SelectVHost(ctx, c, arg)
 }
 func (c *ClientConn) RtGetThreadRecents(
 	ctx context.Context,
