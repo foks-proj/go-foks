@@ -353,6 +353,10 @@ type channelMaker struct {
 	userdb  *pgxpool.Conn
 	rtdbtx  pgx.Tx
 	dstRole *core.RoleKey
+
+	// members whose inbox versions the fanout bumped; the caller wakes their
+	// parked long-pollers after the transaction commits.
+	wakeUIDs []proto.UID
 }
 
 func (c *channelMaker) checkPerms(m shared.MetaContext) error {
@@ -627,6 +631,7 @@ func (c *channelMaker) fanoutUsers(m shared.MetaContext) error {
 			return err
 		}
 	}
+	c.wakeUIDs = uids
 	return nil
 }
 
@@ -721,25 +726,24 @@ func MakeChannel(
 	}
 	defer userdb.Release()
 
-	err = shared.RetryTx(m,
+	return shared.RetryTx2(m,
 		rtdb,
 		"realtime.MakeChannel",
-		func(m shared.MetaContext, tx pgx.Tx) error {
+		func(m shared.MetaContext, tx pgx.Tx) (func(shared.MetaContext), error) {
 			mk := channelMaker{
 				md:     md,
 				vers:   vers,
 				rtdbtx: tx,
 				userdb: userdb,
 			}
-			err = mk.run(m)
-			if err != nil {
-				return err
+			if err := mk.run(m); err != nil {
+				return nil, err
 			}
-			return nil
+			// Once the fan-in bumps commit, wake the members' parked
+			// long-pollers so the channel surfaces immediately.
+			return func(m shared.MetaContext) {
+				wakeInboxPollers(m, md.AppID, mk.wakeUIDs)
+			}, nil
 		},
 	)
-	if err != nil {
-		return err
-	}
-	return nil
 }

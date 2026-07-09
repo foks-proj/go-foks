@@ -107,7 +107,12 @@ func (c *ClientConn) RtReadThrough(ctx context.Context, arg rem.RTReadThroughArg
 	return MarkReadThrough(m, arg)
 }
 func (c *ClientConn) RtPollInbox(ctx context.Context, arg rem.RTPollInboxArg) (res proto.RTInboxPollRes, err error) {
-	return res, core.NotImplementedError{}
+	m := shared.NewMetaContextConn(ctx, c)
+	ret, err := PollInbox(m, arg)
+	if err != nil {
+		return res, err
+	}
+	return *ret, nil
 }
 func (c *ClientConn) RtSelectVHost(ctx context.Context, arg proto.HostID) error {
 	return shared.SelectVHost(ctx, c, arg)

@@ -1,6 +1,8 @@
 package realtime
 
 import (
+	"time"
+
 	"github.com/foks-proj/go-foks/lib/core"
 	proto "github.com/foks-proj/go-foks/proto/lib"
 	"github.com/foks-proj/go-foks/proto/rem"
@@ -12,6 +14,24 @@ import (
 // doesn't ask for a specific size (max=0).
 const defaultInboxPage = 100
 const maxInboxPage = 1000
+
+const (
+	// Timeout default (when the client passes 0) and cap: keep well under
+	// typical LB idle timeouts. The client immediately re-issues on return.
+	defaultPollInboxTimeout = 25 * time.Second
+	maxPollInboxTimeout     = 55 * time.Second
+)
+
+func cappedPollTimeout(d proto.DurationMilli) time.Duration {
+	ret := d.Duration()
+	if ret == 0 {
+		return defaultPollInboxTimeout
+	}
+	if ret > maxPollInboxTimeout {
+		return maxPollInboxTimeout
+	}
+	return ret
+}
 
 func cappedInboxPage(max uint64) uint64 {
 	if max == 0 {
@@ -255,4 +275,89 @@ func readChangedChannels(
 		return nil, err
 	}
 	return ret, nil
+}
+
+// PollInbox blocks until the caller's inbox version for the app advances past
+// arg.Since, the (capped) timeout elapses, or the caller disconnects. It
+// returns the current head either way, with Bumped saying which happened; a
+// stale Since (head already past it) returns immediately. The client is
+// expected to re-issue the poll as soon as it returns (after running a
+// rtGetChangedThreads sync on a bump).
+//
+// Parked pollers are woken by the in-process RTInboxHub, which writers signal
+// after their transactions commit. The subscribe-BEFORE-read order below is
+// what makes the park race-free: a bump landing between our version read and
+// the select still closes the channel we already hold. Wakes carry no data,
+// so we always re-read the version after one -- a spurious wake just loops.
+func PollInbox(
+	m shared.MetaContext,
+	arg rem.RTPollInboxArg,
+) (
+	*proto.RTInboxPollRes,
+	error,
+) {
+	hub := m.G().RTInboxHub()
+	key := shared.RTInboxHubKey{
+		HostID: m.ShortHostID(),
+		Uid:    m.UID(),
+		App:    arg.AppID,
+	}
+	deadline := time.Now().Add(cappedPollTimeout(arg.Timeout))
+
+	// oneRound runs a single subscribe/read/park round, with the subscription
+	// (and the park timer) released via defer on every exit path. A nil, nil
+	// return means "go around again" -- after a wake or the final deadline
+	// tick -- and the next round re-subscribes before re-reading.
+	oneRound := func() (*proto.RTInboxPollRes, error) {
+		ch := hub.Subscribe(key)
+		defer hub.Unsubscribe(key, ch)
+
+		vers, err := pollInboxOnce(m, arg.AppID)
+		if err != nil {
+			return nil, err
+		}
+		if vers > arg.Since {
+			return &proto.RTInboxPollRes{Bumped: true, InboxVersion: vers}, nil
+		}
+		remain := time.Until(deadline)
+		if remain <= 0 {
+			return &proto.RTInboxPollRes{Bumped: false, InboxVersion: vers}, nil
+		}
+		timer := time.NewTimer(remain)
+		defer timer.Stop()
+		select {
+		case <-ch:
+			// Woken; the next round re-reads.
+		case <-m.Ctx().Done():
+			return nil, m.Ctx().Err()
+		case <-timer.C:
+			// Deadline; the next round's read returns not-bumped.
+		}
+		return nil, nil
+	}
+
+	for {
+		res, err := oneRound()
+		if res != nil || err != nil {
+			return res, err
+		}
+	}
+}
+
+// pollInboxOnce reads the caller's current head, acquiring and releasing the
+// pooled connection around the single query: a parked poller must not pin a
+// connection for its whole (potentially ~minute-long) wait.
+func pollInboxOnce(
+	m shared.MetaContext,
+	app proto.RTAppID,
+) (
+	proto.RTInboxVersion,
+	error,
+) {
+	db, err := m.Db(shared.DbTypeRealTime)
+	if err != nil {
+		return 0, err
+	}
+	defer db.Release()
+	return readInboxVersion(m, db, m.UID(), app)
 }

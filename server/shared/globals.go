@@ -73,6 +73,9 @@ type GlobalContext struct {
 	// each host ID. We keep track of this here.
 	ahtMgr *AdHocTeamNamesManager
 
+	// Wakes parked rtPollInbox long-pollers on committed inbox bumps.
+	rtInboxHub *RTInboxHub
+
 	// A lot of services might need to poll the Merkle Query service. Available here
 	merkleGCli *BackendClient
 
@@ -152,6 +155,7 @@ func NewGlobalContext(opts *GlobalContextOpts) *GlobalContext {
 		testing:         testing,
 		oauth2ConfigSet: sso.NewOAuth2ConfigSet(),
 		ahtMgr:          NewAdHocTeamNamesManager(),
+		rtInboxHub:      NewRTInboxHub(),
 	}
 }
 
@@ -180,6 +184,12 @@ func (g *GlobalContext) AdHocTeamNamesManager() *AdHocTeamNamesManager {
 	g.RLock()
 	defer g.RUnlock()
 	return g.ahtMgr
+}
+
+func (g *GlobalContext) RTInboxHub() *RTInboxHub {
+	g.RLock()
+	defer g.RUnlock()
+	return g.rtInboxHub
 }
 
 func (g *GlobalContext) SetVanityHelper(v VanityHelper) {
