@@ -5286,6 +5286,21 @@ func (v RTAppID) ExportToDB() (string, error) {
 	return "", DataError(fmt.Sprintf("bad RTAppID (%d) for DB", v))
 }
 
+// ImportFromDB is the inverse of RTAppID.ExportToDB.
+func (v *RTAppID) ImportFromDB(s string) error {
+	switch s {
+	case "chat":
+		*v = RTAppID_Chat
+	case "crdt":
+		*v = RTAppID_Crdt
+	case "notif":
+		*v = RTAppID_Notif
+	default:
+		return DataError(fmt.Sprintf("bad app_id (%q) from DB", s))
+	}
+	return nil
+}
+
 func (t RTMsgType) ExportToDB() (string, error) {
 	switch t {
 	case RTMsgType_Basic:

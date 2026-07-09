@@ -895,6 +895,35 @@ func (d *Minder) GetChangedThreads(
 	return &res, nil
 }
 
+// PollInbox long-polls the server: it blocks until the caller's inbox version
+// advances past since, or the timeout (0 = server default) elapses, returning
+// the current head with Bumped saying which happened. Re-issue on return,
+// running a GetChangedThreads sync first when Bumped. A stand-in for real
+// server push (Stage 2c).
+func (d *Minder) PollInbox(
+	m MetaContext,
+	appID proto.RTAppID,
+	since proto.RTInboxVersion,
+	timeout time.Duration,
+) (
+	*proto.RTInboxPollRes,
+	error,
+) {
+	_, cli, err := d.clientLocal(m.Base(), d.au)
+	if err != nil {
+		return nil, err
+	}
+	res, err := cli.RtPollInbox(m.Ctx(), rem.RTPollInboxArg{
+		AppID:   appID,
+		Since:   since,
+		Timeout: proto.ExportDurationMilli(timeout),
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
 func (d *Minder) cacheMsgID(
 	q proto.RTMsgSeq,
 	i proto.RTMsgID,

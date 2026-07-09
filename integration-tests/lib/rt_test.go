@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"slices"
 	"testing"
+	"time"
 
 	"github.com/foks-proj/go-foks/client/libclient"
 	"github.com/foks-proj/go-foks/client/librt"
@@ -1153,6 +1154,58 @@ func TestRTSendReadPermissions(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, proto.RTInboxVersion(5), delta.InboxVersion)
 	require.Empty(t, delta.Channels)
+
+	// --- long poll ---
+
+	// A poll from the current head parks and, with nothing arriving, reports
+	// no bump when its timeout lapses. The duration only bounds how long the
+	// server holds the call -- the deadline path fires regardless of how slow
+	// the machine is -- so keep it small.
+	pres, err := minderBluey.PollInbox(mb, proto.RTAppID_Chat, 6, 100*time.Millisecond)
+	require.NoError(t, err)
+	require.False(t, pres.Bumped)
+	require.Equal(t, proto.RTInboxVersion(6), pres.InboxVersion)
+
+	// A stale since returns immediately: the head is already past it.
+	pres, err = minderBluey.PollInbox(mb, proto.RTAppID_Chat, 5, 10*time.Second)
+	require.NoError(t, err)
+	require.True(t, pres.Bumped)
+	require.Equal(t, proto.RTInboxVersion(6), pres.InboxVersion)
+
+	// A parked poller is woken by a delivery. The wake comes from the
+	// in-process hub after the send's transaction commits -- not DB polling --
+	// so this returns promptly rather than at the 10s timeout. The test env
+	// shares the realtime server's GlobalContext, so we can watch the hub
+	// directly and hold the send until the poller has actually subscribed:
+	// this deterministically exercises the parked-wake path with no fixed
+	// sleep. (Every interleaving asserts identically anyway -- a poll arriving
+	// after the send returns Bumped off its initial read -- but that path is
+	// already covered by the stale-since case above.)
+	type pollOut struct {
+		res *proto.RTInboxPollRes
+		err error
+	}
+	pollCh := make(chan pollOut, 1)
+	go func() {
+		r, e := minderBluey.PollInbox(mb, proto.RTAppID_Chat, 6, 10*time.Second)
+		pollCh <- pollOut{res: r, err: e}
+	}()
+	hub := m.G().RTInboxHub()
+	hubKey := shared.RTInboxHubKey{
+		HostID: m.ShortHostID(),
+		Uid:    bluey.uid,
+		App:    proto.RTAppID_Chat,
+	}
+	require.Eventually(t,
+		func() bool { return hub.NumWaiters(hubKey) > 0 },
+		10*time.Second, 5*time.Millisecond)
+	_, err = minderBluey.Send(mb, team.WrapNamedPtr(fqt), proto.RTAppID_Chat,
+		makeChannelSpecifierWithString("watercooler"), []byte("wake up"))
+	require.NoError(t, err)
+	out := <-pollCh
+	require.NoError(t, out.err)
+	require.True(t, out.res.Bumped)
+	require.Equal(t, proto.RTInboxVersion(7), out.res.InboxVersion)
 }
 
 // TestRTSendEncryptionRole checks that the server rejects a message encrypted
