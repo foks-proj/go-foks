@@ -181,8 +181,18 @@ CREATE TABLE user_channels (
     PRIMARY KEY(short_host_id, channel_id, uid),
     FOREIGN KEY(short_host_id, channel_id) REFERENCES channels(short_host_id, channel_id)
 );
-/* hot index: drives the get_changed_threads inbox sync */
-CREATE INDEX user_channels_inbox_idx ON user_channels(short_host_id, uid, app_id, inbox_version);
+/*
+ * Hot index: drives the get_changed_threads inbox sync. UNIQUE enforces the
+ * invariant that no two of a user's channel rows share an inbox version:
+ * every version number is allocated by a serialized +1 bump of the user's
+ * user_inbox row, and each allocation stamps exactly one user_channels row.
+ * get_changed_threads' cursor pagination (since = highest version received,
+ * LIMIT n) depends on this -- if a version could span rows, a page boundary
+ * could split the group and the client would skip the remainder forever. Any
+ * future batch writer (e.g., late-join backfill, issue #301) must allocate
+ * one version per stamped row, and this index makes violations fail loudly.
+ */
+CREATE UNIQUE INDEX user_channels_inbox_idx ON user_channels(short_host_id, uid, app_id, inbox_version);
 
 /*
  * user_inbox: per (user, app) global inbox version. Bumped on every
@@ -239,3 +249,5 @@ CREATE TABLE schema_patches (
     ctime TIMESTAMPTZ NOT NULL
 );
 INSERT INTO schema_patches (id, ctime) VALUES (1, NOW());
+INSERT INTO schema_patches (id, ctime) VALUES (2, NOW());
+INSERT INTO schema_patches (id, ctime) VALUES (3, NOW());

@@ -1056,6 +1056,103 @@ func TestRTSendReadPermissions(t *testing.T) {
 	require.Equal(t, int64(6), ucVers(bluey, chWatercooler))
 	require.Equal(t, int64(1), ucRead(bluey, chWatercooler))
 	require.Equal(t, int64(5), uiVers(coco))
+
+	// --- inbox sync ---
+
+	// The heads reported over RPC match the versions we asserted in the DB.
+	hv, err := minderBluey.GetInboxVersion(mb, proto.RTAppID_Chat)
+	require.NoError(t, err)
+	require.Equal(t, proto.RTInboxVersion(6), hv)
+	hv, err = minderCoco.GetInboxVersion(mc, proto.RTAppID_Chat)
+	require.NoError(t, err)
+	require.Equal(t, proto.RTInboxVersion(5), hv)
+
+	// One assertable summary per returned inbox channel.
+	type row struct {
+		id   proto.RTChannelID
+		vers proto.RTInboxVersion
+		read proto.RTMsgSeq
+		last bool // has a last-message preview
+	}
+	summarize := func(d *rem.RTInboxDelta) []row {
+		var out []row
+		for _, ch := range d.Channels {
+			require.False(t, ch.Hidden)
+			require.False(t, ch.Muted)
+			require.False(t, ch.Md.Unreadable)
+			out = append(out, row{
+				id:   ch.Md.Id,
+				vers: ch.InboxVersion,
+				read: ch.ReadThrough,
+				last: ch.Md.LastMsg != nil,
+			})
+		}
+		return out
+	}
+
+	// coco's full sync (since=0): both channels she's fanned into, oldest bump
+	// first; brass never appears (she was never fanned in, and it's admin-tier
+	// besides). Announce carries her read receipt.
+	delta, err := minderCoco.GetChangedThreads(mc, proto.RTAppID_Chat, 0, 0)
+	require.NoError(t, err)
+	require.Equal(t, proto.RTInboxVersion(5), delta.InboxVersion)
+	require.Equal(t, []row{
+		{id: *chWatercooler, vers: 3, read: 0, last: true},
+		{id: *chAnnounce, vers: 5, read: 1, last: true},
+	}, summarize(delta))
+
+	// Cursor pagination: advancing since past watercooler's bump leaves only
+	// announce; advancing to the head leaves nothing.
+	delta, err = minderCoco.GetChangedThreads(mc, proto.RTAppID_Chat, 3, 0)
+	require.NoError(t, err)
+	require.Equal(t, []row{
+		{id: *chAnnounce, vers: 5, read: 1, last: true},
+	}, summarize(delta))
+	delta, err = minderCoco.GetChangedThreads(mc, proto.RTAppID_Chat, 5, 0)
+	require.NoError(t, err)
+	require.Equal(t, proto.RTInboxVersion(5), delta.InboxVersion)
+	require.Empty(t, delta.Channels)
+
+	// bluey's full sync: all three channels, oldest bump first. brass has no
+	// messages, so no last-message preview.
+	delta, err = minderBluey.GetChangedThreads(mb, proto.RTAppID_Chat, 0, 0)
+	require.NoError(t, err)
+	require.Equal(t, proto.RTInboxVersion(6), delta.InboxVersion)
+	require.Equal(t, []row{
+		{id: *chBrass, vers: 3, read: 0, last: false},
+		{id: *chAnnounce, vers: 5, read: 0, last: true},
+		{id: *chWatercooler, vers: 6, read: 1, last: true},
+	}, summarize(delta))
+
+	// Paged: a max of 2 returns the two oldest bumps; re-issuing with since =
+	// the highest version received returns the rest. The head rides along on
+	// every page so the client knows when it has caught up.
+	delta, err = minderBluey.GetChangedThreads(mb, proto.RTAppID_Chat, 0, 2)
+	require.NoError(t, err)
+	require.Equal(t, proto.RTInboxVersion(6), delta.InboxVersion)
+	require.Equal(t, []row{
+		{id: *chBrass, vers: 3, read: 0, last: false},
+		{id: *chAnnounce, vers: 5, read: 0, last: true},
+	}, summarize(delta))
+	delta, err = minderBluey.GetChangedThreads(mb, proto.RTAppID_Chat, 5, 2)
+	require.NoError(t, err)
+	require.Equal(t, []row{
+		{id: *chWatercooler, vers: 6, read: 1, last: true},
+	}, summarize(delta))
+
+	// Stale membership rows must not leak: remove coco from the team, and her
+	// lingering user_channels rows (there's no un-fanout) stop appearing in
+	// her sync -- the delta re-authorizes against the current team roster. The
+	// head is her own per-user counter, so it still reports.
+	tm.makeChanges(t, m, bluey,
+		[]proto.MemberRole{
+			coco.toMemberRole(t, proto.NewRoleDefault(proto.RoleType_NONE), nil),
+		}, nil,
+	)
+	delta, err = minderCoco.GetChangedThreads(mc, proto.RTAppID_Chat, 0, 0)
+	require.NoError(t, err)
+	require.Equal(t, proto.RTInboxVersion(5), delta.InboxVersion)
+	require.Empty(t, delta.Channels)
 }
 
 // TestRTSendEncryptionRole checks that the server rejects a message encrypted
