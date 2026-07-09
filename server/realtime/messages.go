@@ -371,12 +371,10 @@ func SendMessage(
 	defer userdb.Release()
 
 	var res *rem.RTSendRes
-	var wakeUIDs []proto.UID
-	var appID proto.RTAppID
-	err = shared.RetryTx(m,
+	err = shared.RetryTx2(m,
 		rtdb,
 		"realtime.SendMessage",
-		func(m shared.MetaContext, tx pgx.Tx) error {
+		func(m shared.MetaContext, tx pgx.Tx) (func(shared.MetaContext), error) {
 			s := messageSender{
 				arg:    arg,
 				sender: m.UID(),
@@ -385,21 +383,19 @@ func SendMessage(
 			}
 			tmp, err := s.run(m)
 			if err != nil {
-				return err
+				return nil, err
 			}
 			res = tmp
-			wakeUIDs = s.wakeUIDs
-			appID = s.appID
-			return nil
+			// Once the fanout's bumps commit, wake the members' parked
+			// long-pollers.
+			return func(m shared.MetaContext) {
+				wakeInboxPollers(m, s.appID, s.wakeUIDs)
+			}, nil
 		},
 	)
 	if err != nil {
 		return nil, err
 	}
-	// The bumps are committed; wake the members' parked long-pollers. (If a
-	// wake is ever lost -- say the commit's ack was -- pollers catch up at
-	// their poll timeout.)
-	wakeInboxPollers(m, appID, wakeUIDs)
 	return res, nil
 }
 
@@ -596,36 +592,30 @@ func MarkReadThrough(
 	}
 	defer userdb.Release()
 
-	var bumped bool
-	var app proto.RTAppID
-	err = shared.RetryTx(m,
+	return shared.RetryTx2(m,
 		rtdb,
 		"realtime.MarkReadThrough",
-		func(m shared.MetaContext, tx pgx.Tx) error {
+		func(m shared.MetaContext, tx pgx.Tx) (func(shared.MetaContext), error) {
 			r := readThroughMarker{
 				arg:    arg,
 				reader: m.UID(),
 				userdb: userdb,
 				tx:     tx,
 			}
-			err := r.run(m)
-			if err != nil {
-				return err
+			if err := r.run(m); err != nil {
+				return nil, err
 			}
-			bumped = r.bumped
-			app = r.app
-			return nil
+			// A stale mark advances nothing and must wake nobody.
+			if !r.bumped {
+				return nil, nil
+			}
+			// Once the bump commits, wake the caller's own parked pollers
+			// (their other devices).
+			return func(m shared.MetaContext) {
+				wakeInboxPollers(m, r.app, []proto.UID{r.reader})
+			}, nil
 		},
 	)
-	if err != nil {
-		return err
-	}
-	// Wake the caller's own parked pollers (their other devices) -- but only
-	// if the pointer actually advanced; a stale mark bumps nothing.
-	if bumped {
-		wakeInboxPollers(m, app, []proto.UID{m.UID()})
-	}
-	return nil
 }
 
 // loadChannelForRead returns the channel's parent team and read role, for
