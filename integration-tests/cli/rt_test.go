@@ -210,6 +210,31 @@ func TestRTSendAndRead(t *testing.T) {
 	// Sending to a non-existent channel should fail.
 	err := b.runCmdErr(nil, "rt", "send", "-t", tm, "--channel", "nope", "lost message")
 	require.Error(t, err)
+
+	// `rt inbox` syncs the inbox to local storage and renders it from there:
+	// one row for #foo with all three messages unread. --local-only skips the
+	// sync and must render identically from disk alone.
+	var inbox lcl.RTInboxView
+	b.runCmdToJSON(t, &inbox, "rt", "inbox")
+	require.Len(t, inbox.Rows, 1)
+	require.Equal(t, proto.RTChannelName("foo"), inbox.Rows[0].Ch.Name)
+	require.Equal(t, proto.RTMsgSeq(3), inbox.Rows[0].LastSeq)
+	require.Equal(t, uint64(3), inbox.Rows[0].Unread)
+
+	var inbox2 lcl.RTInboxView
+	b.runCmdToJSON(t, &inbox2, "rt", "inbox", "--local-only")
+	require.Equal(t, inbox, inbox2)
+
+	// The text renderer shows the channel name and its unread count.
+	var terminalUI terminalUI
+	uis := libclient.UIs{
+		Terminal: &terminalUI,
+	}
+	err = b.runCmdErrWithUIs(uis, "rt", "inbox")
+	require.NoError(t, err)
+	out := terminalUI.String()
+	require.Contains(t, out, "#foo")
+	require.Contains(t, out, "3")
 }
 
 // TestRTSendAndReadCrossMember verifies sender-name resolution across two

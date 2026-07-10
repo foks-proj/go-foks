@@ -38,6 +38,8 @@ enum DataType {
     RTThreadMsgData @97;
     RTOutboxMsg @98;
     RTChannelSet @99;
+    RTInboxSyncState @100; // cursor + channelID index; see librt inbox syncer
+    RTInboxChannel @101;   // one rem.RTInboxChannel row per channel
 }
 
 typedef ScopeLabel = Blob;

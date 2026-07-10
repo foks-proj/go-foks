@@ -1114,6 +1114,49 @@ func TestRTSendReadPermissions(t *testing.T) {
 	require.Equal(t, proto.RTInboxVersion(5), delta.InboxVersion)
 	require.Empty(t, delta.Channels)
 
+	// --- inbox persistence (#303) ---
+
+	// One assertable summary per locally-rendered inbox row; the name field
+	// proves the render decrypted the stored (still-boxed) channel metadata.
+	type irow struct {
+		id      proto.RTChannelID
+		name    proto.RTChannelName
+		vers    proto.RTInboxVersion
+		read    proto.RTMsgSeq
+		lastSeq proto.RTMsgSeq
+		unread  uint64
+	}
+	summarizeView := func(v *lcl.RTInboxView) []irow {
+		var out []irow
+		for _, r := range v.Rows {
+			out = append(out, irow{
+				id:      r.Ch.Id,
+				name:    r.Ch.Name,
+				vers:    r.InboxVersion,
+				read:    r.ReadThrough,
+				lastSeq: r.LastSeq,
+				unread:  r.Unread,
+			})
+		}
+		return out
+	}
+
+	// coco persists her inbox to local soft storage: the full sync applies both
+	// channel rows and lands the cursor at her head. The local render -- a pure
+	// disk read -- computes unread = lastSeq - readThrough per channel and
+	// returns rows newest bump first.
+	csum, err := minderCoco.SyncInbox(mc, proto.RTAppID_Chat)
+	require.NoError(t, err)
+	require.Equal(t, proto.RTInboxVersion(5), csum.Vers)
+	require.Equal(t, uint64(2), csum.NumChanged)
+	cview, err := minderCoco.LocalInbox(mc, proto.RTAppID_Chat)
+	require.NoError(t, err)
+	require.Equal(t, proto.RTInboxVersion(5), cview.Vers)
+	require.Equal(t, []irow{
+		{id: *chAnnounce, name: "announce", vers: 5, read: 1, lastSeq: 1, unread: 0},
+		{id: *chWatercooler, name: "watercooler", vers: 3, read: 0, lastSeq: 1, unread: 1},
+	}, summarizeView(cview))
+
 	// bluey's full sync: all three channels, oldest bump first. brass has no
 	// messages, so no last-message preview.
 	delta, err = minderBluey.GetChangedThreads(mb, proto.RTAppID_Chat, 0, 0)
@@ -1154,6 +1197,15 @@ func TestRTSendReadPermissions(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, proto.RTInboxVersion(5), delta.InboxVersion)
 	require.Empty(t, delta.Channels)
+
+	// coco's persisted rows are now stranded locally (there are no tombstones,
+	// per the accepted-staleness notes in #303); re-syncing is an incremental
+	// no-op -- the server returns nothing for her and the stored cursor stays
+	// put rather than resetting to a full sync.
+	csum, err = minderCoco.SyncInbox(mc, proto.RTAppID_Chat)
+	require.NoError(t, err)
+	require.Equal(t, proto.RTInboxVersion(5), csum.Vers)
+	require.Equal(t, uint64(0), csum.NumChanged)
 
 	// --- long poll ---
 
@@ -1291,6 +1343,77 @@ func TestRTSendReadPermissions(t *testing.T) {
 
 	// And nobody else's inbox moved.
 	require.Equal(t, int64(7), uiVers(bluey))
+
+	// --- inbox persistence, continued ---
+
+	// bluey's full sync persists all three channels in one page.
+	bsum, err := minderBluey.SyncInbox(mb, proto.RTAppID_Chat)
+	require.NoError(t, err)
+	require.Equal(t, proto.RTInboxVersion(7), bsum.Vers)
+	require.Equal(t, uint64(3), bsum.NumChanged)
+
+	expectedBluey := []irow{
+		{id: *chWatercooler, name: "watercooler", vers: 7, read: 1, lastSeq: 2, unread: 1},
+		{id: *chAnnounce, name: "announce", vers: 5, read: 0, lastSeq: 1, unread: 1},
+		{id: *chBrass, name: "brass", vers: 3, read: 0, lastSeq: 0, unread: 0},
+	}
+	bview, err := minderBluey.LocalInbox(mb, proto.RTAppID_Chat)
+	require.NoError(t, err)
+	require.Equal(t, proto.RTInboxVersion(7), bview.Vers)
+	require.Equal(t, expectedBluey, summarizeView(bview))
+
+	// The render is served from disk: a fresh Minder with no warm state shows
+	// the same inbox, and re-syncing from the persisted cursor is a no-op
+	// rather than a since=0 full sync.
+	minderBluey2 := librt.NewMinder(mb.G().ActiveUser())
+	bview, err = minderBluey2.LocalInbox(mb, proto.RTAppID_Chat)
+	require.NoError(t, err)
+	require.Equal(t, expectedBluey, summarizeView(bview))
+	bsum, err = minderBluey2.SyncInbox(mb, proto.RTAppID_Chat)
+	require.NoError(t, err)
+	require.Equal(t, proto.RTInboxVersion(7), bsum.Vers)
+	require.Equal(t, uint64(0), bsum.NumChanged)
+
+	// New activity re-fetches exactly the bumped row on the next incremental
+	// sync; the merge is whole-row overwrite, so announce jumps to the new
+	// version/lastSeq while the other rows are untouched.
+	_, err = minderBluey.Send(mb, team.WrapNamedPtr(fqt), proto.RTAppID_Chat,
+		makeChannelSpecifierWithString("announce"), []byte("second notice"))
+	require.NoError(t, err)
+	bsum, err = minderBluey.SyncInbox(mb, proto.RTAppID_Chat)
+	require.NoError(t, err)
+	require.Equal(t, proto.RTInboxVersion(8), bsum.Vers)
+	require.Equal(t, uint64(1), bsum.NumChanged)
+	bview, err = minderBluey.LocalInbox(mb, proto.RTAppID_Chat)
+	require.NoError(t, err)
+	require.Equal(t, []irow{
+		{id: *chAnnounce, name: "announce", vers: 8, read: 0, lastSeq: 2, unread: 2},
+		{id: *chWatercooler, name: "watercooler", vers: 7, read: 1, lastSeq: 2, unread: 1},
+		{id: *chBrass, name: "brass", vers: 3, read: 0, lastSeq: 0, unread: 0},
+	}, summarizeView(bview))
+
+	// dave syncs with page size 1: each page applies its rows and advances the
+	// cursor in one transaction (a crash mid-sync resumes at the last applied
+	// page), and the paged result matches what a single-shot sync stores. His
+	// announce row took bluey's send above, so it sits at his head.
+	dsum, err := minderDave.SyncInboxWithPageSize(mdv, proto.RTAppID_Chat, 1)
+	require.NoError(t, err)
+	require.Equal(t, proto.RTInboxVersion(5), dsum.Vers)
+	require.Equal(t, uint64(3), dsum.NumChanged)
+	// The announce/watercooler backfill versions were allocated in channel-ID
+	// order (channel IDs are random), so compute watercooler's expected slot.
+	wcVers := proto.RTInboxVersion(2)
+	if chWatercooler == first {
+		wcVers = 1
+	}
+	dview, err := minderDave.LocalInbox(mdv, proto.RTAppID_Chat)
+	require.NoError(t, err)
+	require.Equal(t, proto.RTInboxVersion(5), dview.Vers)
+	require.Equal(t, []irow{
+		{id: *chAnnounce, name: "announce", vers: 5, read: 1, lastSeq: 2, unread: 1},
+		{id: *chBrass, name: "brass", vers: 4, read: 0, lastSeq: 0, unread: 0},
+		{id: *chWatercooler, name: "watercooler", vers: wcVers, read: 0, lastSeq: 2, unread: 2},
+	}, summarizeView(dview))
 }
 
 // TestRTSendEncryptionRole checks that the server rejects a message encrypted

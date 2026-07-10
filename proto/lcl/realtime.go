@@ -657,6 +657,342 @@ func (r *RTChannelSetForTeam) Decode(dec rpc.Decoder) error {
 
 func (r *RTChannelSetForTeam) Bytes() []byte { return nil }
 
+type RTInboxScope struct {
+	Fqu   lib.FQUser
+	AppID lib.RTAppID
+}
+type RTInboxScopeInternal__ struct {
+	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
+	Fqu     *lib.FQUserInternal__
+	AppID   *lib.RTAppIDInternal__
+}
+
+func (r RTInboxScopeInternal__) Import() RTInboxScope {
+	return RTInboxScope{
+		Fqu: (func(x *lib.FQUserInternal__) (ret lib.FQUser) {
+			if x == nil {
+				return ret
+			}
+			return x.Import()
+		})(r.Fqu),
+		AppID: (func(x *lib.RTAppIDInternal__) (ret lib.RTAppID) {
+			if x == nil {
+				return ret
+			}
+			return x.Import()
+		})(r.AppID),
+	}
+}
+func (r RTInboxScope) Export() *RTInboxScopeInternal__ {
+	return &RTInboxScopeInternal__{
+		Fqu:   r.Fqu.Export(),
+		AppID: r.AppID.Export(),
+	}
+}
+func (r *RTInboxScope) Encode(enc rpc.Encoder) error {
+	return enc.Encode(r.Export())
+}
+
+func (r *RTInboxScope) Decode(dec rpc.Decoder) error {
+	var tmp RTInboxScopeInternal__
+	err := dec.Decode(&tmp)
+	if err != nil {
+		return err
+	}
+	*r = tmp.Import()
+	return nil
+}
+
+func (r *RTInboxScope) Bytes() []byte { return nil }
+
+type RTInboxSyncState struct {
+	Vers     lib.RTInboxVersion
+	Channels []lib.RTChannelID
+}
+type RTInboxSyncStateInternal__ struct {
+	_struct  struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
+	Vers     *lib.RTInboxVersionInternal__
+	Channels *[](*lib.RTChannelIDInternal__)
+}
+
+func (r RTInboxSyncStateInternal__) Import() RTInboxSyncState {
+	return RTInboxSyncState{
+		Vers: (func(x *lib.RTInboxVersionInternal__) (ret lib.RTInboxVersion) {
+			if x == nil {
+				return ret
+			}
+			return x.Import()
+		})(r.Vers),
+		Channels: (func(x *[](*lib.RTChannelIDInternal__)) (ret []lib.RTChannelID) {
+			if x == nil || len(*x) == 0 {
+				return nil
+			}
+			ret = make([]lib.RTChannelID, len(*x))
+			for k, v := range *x {
+				if v == nil {
+					continue
+				}
+				ret[k] = (func(x *lib.RTChannelIDInternal__) (ret lib.RTChannelID) {
+					if x == nil {
+						return ret
+					}
+					return x.Import()
+				})(v)
+			}
+			return ret
+		})(r.Channels),
+	}
+}
+func (r RTInboxSyncState) Export() *RTInboxSyncStateInternal__ {
+	return &RTInboxSyncStateInternal__{
+		Vers: r.Vers.Export(),
+		Channels: (func(x []lib.RTChannelID) *[](*lib.RTChannelIDInternal__) {
+			if len(x) == 0 {
+				return nil
+			}
+			ret := make([](*lib.RTChannelIDInternal__), len(x))
+			for k, v := range x {
+				ret[k] = v.Export()
+			}
+			return &ret
+		})(r.Channels),
+	}
+}
+func (r *RTInboxSyncState) Encode(enc rpc.Encoder) error {
+	return enc.Encode(r.Export())
+}
+
+func (r *RTInboxSyncState) Decode(dec rpc.Decoder) error {
+	var tmp RTInboxSyncStateInternal__
+	err := dec.Decode(&tmp)
+	if err != nil {
+		return err
+	}
+	*r = tmp.Import()
+	return nil
+}
+
+func (r *RTInboxSyncState) Bytes() []byte { return nil }
+
+type RTInboxRowView struct {
+	Ch           RTChannelMetadataPlaintext
+	InboxVersion lib.RTInboxVersion
+	ReadThrough  lib.RTMsgSeq
+	LastSeq      lib.RTMsgSeq
+	LastTime     lib.Time
+	Unread       uint64
+	Hidden       bool
+	Muted        bool
+}
+type RTInboxRowViewInternal__ struct {
+	_struct      struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
+	Ch           *RTChannelMetadataPlaintextInternal__
+	InboxVersion *lib.RTInboxVersionInternal__
+	ReadThrough  *lib.RTMsgSeqInternal__
+	LastSeq      *lib.RTMsgSeqInternal__
+	LastTime     *lib.TimeInternal__
+	Unread       *uint64
+	Hidden       *bool
+	Muted        *bool
+}
+
+func (r RTInboxRowViewInternal__) Import() RTInboxRowView {
+	return RTInboxRowView{
+		Ch: (func(x *RTChannelMetadataPlaintextInternal__) (ret RTChannelMetadataPlaintext) {
+			if x == nil {
+				return ret
+			}
+			return x.Import()
+		})(r.Ch),
+		InboxVersion: (func(x *lib.RTInboxVersionInternal__) (ret lib.RTInboxVersion) {
+			if x == nil {
+				return ret
+			}
+			return x.Import()
+		})(r.InboxVersion),
+		ReadThrough: (func(x *lib.RTMsgSeqInternal__) (ret lib.RTMsgSeq) {
+			if x == nil {
+				return ret
+			}
+			return x.Import()
+		})(r.ReadThrough),
+		LastSeq: (func(x *lib.RTMsgSeqInternal__) (ret lib.RTMsgSeq) {
+			if x == nil {
+				return ret
+			}
+			return x.Import()
+		})(r.LastSeq),
+		LastTime: (func(x *lib.TimeInternal__) (ret lib.Time) {
+			if x == nil {
+				return ret
+			}
+			return x.Import()
+		})(r.LastTime),
+		Unread: (func(x *uint64) (ret uint64) {
+			if x == nil {
+				return ret
+			}
+			return *x
+		})(r.Unread),
+		Hidden: (func(x *bool) (ret bool) {
+			if x == nil {
+				return ret
+			}
+			return *x
+		})(r.Hidden),
+		Muted: (func(x *bool) (ret bool) {
+			if x == nil {
+				return ret
+			}
+			return *x
+		})(r.Muted),
+	}
+}
+func (r RTInboxRowView) Export() *RTInboxRowViewInternal__ {
+	return &RTInboxRowViewInternal__{
+		Ch:           r.Ch.Export(),
+		InboxVersion: r.InboxVersion.Export(),
+		ReadThrough:  r.ReadThrough.Export(),
+		LastSeq:      r.LastSeq.Export(),
+		LastTime:     r.LastTime.Export(),
+		Unread:       &r.Unread,
+		Hidden:       &r.Hidden,
+		Muted:        &r.Muted,
+	}
+}
+func (r *RTInboxRowView) Encode(enc rpc.Encoder) error {
+	return enc.Encode(r.Export())
+}
+
+func (r *RTInboxRowView) Decode(dec rpc.Decoder) error {
+	var tmp RTInboxRowViewInternal__
+	err := dec.Decode(&tmp)
+	if err != nil {
+		return err
+	}
+	*r = tmp.Import()
+	return nil
+}
+
+func (r *RTInboxRowView) Bytes() []byte { return nil }
+
+type RTInboxView struct {
+	Rows []RTInboxRowView
+	Vers lib.RTInboxVersion
+}
+type RTInboxViewInternal__ struct {
+	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
+	Rows    *[](*RTInboxRowViewInternal__)
+	Vers    *lib.RTInboxVersionInternal__
+}
+
+func (r RTInboxViewInternal__) Import() RTInboxView {
+	return RTInboxView{
+		Rows: (func(x *[](*RTInboxRowViewInternal__)) (ret []RTInboxRowView) {
+			if x == nil || len(*x) == 0 {
+				return nil
+			}
+			ret = make([]RTInboxRowView, len(*x))
+			for k, v := range *x {
+				if v == nil {
+					continue
+				}
+				ret[k] = (func(x *RTInboxRowViewInternal__) (ret RTInboxRowView) {
+					if x == nil {
+						return ret
+					}
+					return x.Import()
+				})(v)
+			}
+			return ret
+		})(r.Rows),
+		Vers: (func(x *lib.RTInboxVersionInternal__) (ret lib.RTInboxVersion) {
+			if x == nil {
+				return ret
+			}
+			return x.Import()
+		})(r.Vers),
+	}
+}
+func (r RTInboxView) Export() *RTInboxViewInternal__ {
+	return &RTInboxViewInternal__{
+		Rows: (func(x []RTInboxRowView) *[](*RTInboxRowViewInternal__) {
+			if len(x) == 0 {
+				return nil
+			}
+			ret := make([](*RTInboxRowViewInternal__), len(x))
+			for k, v := range x {
+				ret[k] = v.Export()
+			}
+			return &ret
+		})(r.Rows),
+		Vers: r.Vers.Export(),
+	}
+}
+func (r *RTInboxView) Encode(enc rpc.Encoder) error {
+	return enc.Encode(r.Export())
+}
+
+func (r *RTInboxView) Decode(dec rpc.Decoder) error {
+	var tmp RTInboxViewInternal__
+	err := dec.Decode(&tmp)
+	if err != nil {
+		return err
+	}
+	*r = tmp.Import()
+	return nil
+}
+
+func (r *RTInboxView) Bytes() []byte { return nil }
+
+type RTInboxSyncSummary struct {
+	Vers       lib.RTInboxVersion
+	NumChanged uint64
+}
+type RTInboxSyncSummaryInternal__ struct {
+	_struct    struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
+	Vers       *lib.RTInboxVersionInternal__
+	NumChanged *uint64
+}
+
+func (r RTInboxSyncSummaryInternal__) Import() RTInboxSyncSummary {
+	return RTInboxSyncSummary{
+		Vers: (func(x *lib.RTInboxVersionInternal__) (ret lib.RTInboxVersion) {
+			if x == nil {
+				return ret
+			}
+			return x.Import()
+		})(r.Vers),
+		NumChanged: (func(x *uint64) (ret uint64) {
+			if x == nil {
+				return ret
+			}
+			return *x
+		})(r.NumChanged),
+	}
+}
+func (r RTInboxSyncSummary) Export() *RTInboxSyncSummaryInternal__ {
+	return &RTInboxSyncSummaryInternal__{
+		Vers:       r.Vers.Export(),
+		NumChanged: &r.NumChanged,
+	}
+}
+func (r *RTInboxSyncSummary) Encode(enc rpc.Encoder) error {
+	return enc.Encode(r.Export())
+}
+
+func (r *RTInboxSyncSummary) Decode(dec rpc.Decoder) error {
+	var tmp RTInboxSyncSummaryInternal__
+	err := dec.Decode(&tmp)
+	if err != nil {
+		return err
+	}
+	*r = tmp.Import()
+	return nil
+}
+
+func (r *RTInboxSyncSummary) Bytes() []byte { return nil }
+
 type RTMsgView struct {
 	Seq        lib.RTMsgSeq
 	MsgID      lib.RTMsgID
@@ -1062,11 +1398,60 @@ func (c *ClientRTGetThreadArg) Decode(dec rpc.Decoder) error {
 
 func (c *ClientRTGetThreadArg) Bytes() []byte { return nil }
 
+type ClientRTInboxViewArg struct {
+	AppID     lib.RTAppID
+	LocalOnly bool
+}
+type ClientRTInboxViewArgInternal__ struct {
+	_struct   struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
+	AppID     *lib.RTAppIDInternal__
+	LocalOnly *bool
+}
+
+func (c ClientRTInboxViewArgInternal__) Import() ClientRTInboxViewArg {
+	return ClientRTInboxViewArg{
+		AppID: (func(x *lib.RTAppIDInternal__) (ret lib.RTAppID) {
+			if x == nil {
+				return ret
+			}
+			return x.Import()
+		})(c.AppID),
+		LocalOnly: (func(x *bool) (ret bool) {
+			if x == nil {
+				return ret
+			}
+			return *x
+		})(c.LocalOnly),
+	}
+}
+func (c ClientRTInboxViewArg) Export() *ClientRTInboxViewArgInternal__ {
+	return &ClientRTInboxViewArgInternal__{
+		AppID:     c.AppID.Export(),
+		LocalOnly: &c.LocalOnly,
+	}
+}
+func (c *ClientRTInboxViewArg) Encode(enc rpc.Encoder) error {
+	return enc.Encode(c.Export())
+}
+
+func (c *ClientRTInboxViewArg) Decode(dec rpc.Decoder) error {
+	var tmp ClientRTInboxViewArgInternal__
+	err := dec.Decode(&tmp)
+	if err != nil {
+		return err
+	}
+	*c = tmp.Import()
+	return nil
+}
+
+func (c *ClientRTInboxViewArg) Bytes() []byte { return nil }
+
 type RealTimeInterface interface {
 	ClientRTMakeChannel(context.Context, ClientRTMakeChannelArg) (lib.RTChannelID, error)
 	ClientRTListChannelsForTeam(context.Context, RTConfig) (RTChannelSetForTeam, error)
 	ClientRTSend(context.Context, ClientRTSendArg) (lib.RTMsgSeq, error)
 	ClientRTGetThread(context.Context, ClientRTGetThreadArg) (RTThreadView, error)
+	ClientRTInboxView(context.Context, ClientRTInboxViewArg) (RTInboxView, error)
 	ErrorWrapper() func(error) lib.Status
 	CheckArgHeader(ctx context.Context, h Header) error
 	MakeResHeader() Header
@@ -1199,6 +1584,27 @@ func (c RealTimeClient) ClientRTGetThread(ctx context.Context, arg ClientRTGetTh
 	res = tmp.Data.Import()
 	return
 }
+func (c RealTimeClient) ClientRTInboxView(ctx context.Context, arg ClientRTInboxViewArg) (res RTInboxView, err error) {
+	warg := &rpc.DataWrap[Header, *ClientRTInboxViewArgInternal__]{
+		Data: arg.Export(),
+	}
+	if c.MakeArgHeader != nil {
+		warg.Header = c.MakeArgHeader()
+	}
+	var tmp rpc.DataWrap[Header, RTInboxViewInternal__]
+	err = c.Cli.Call2(ctx, rpc.NewMethodV2(RealTimeProtocolID, 4, "RealTime.clientRTInboxView"), warg, &tmp, 0*time.Millisecond, realTimeErrorUnwrapperAdapter{h: c.ErrorUnwrapper})
+	if err != nil {
+		return
+	}
+	if c.CheckResHeader != nil {
+		err = c.CheckResHeader(ctx, tmp.Header)
+		if err != nil {
+			return
+		}
+	}
+	res = tmp.Data.Import()
+	return
+}
 func RealTimeProtocol(i RealTimeInterface) rpc.ProtocolV2 {
 	return rpc.ProtocolV2{
 		Name: "RealTime",
@@ -1319,6 +1725,35 @@ func RealTimeProtocol(i RealTimeInterface) rpc.ProtocolV2 {
 					},
 				},
 				Name: "clientRTGetThread",
+			},
+			4: {
+				ServeHandlerDescription: rpc.ServeHandlerDescription{
+					MakeArg: func() interface{} {
+						var ret rpc.DataWrap[Header, *ClientRTInboxViewArgInternal__]
+						return &ret
+					},
+					Handler: func(ctx context.Context, args interface{}) (interface{}, error) {
+						typedWrappedArg, ok := args.(*rpc.DataWrap[Header, *ClientRTInboxViewArgInternal__])
+						if !ok {
+							err := rpc.NewTypeError((*rpc.DataWrap[Header, *ClientRTInboxViewArgInternal__])(nil), args)
+							return nil, err
+						}
+						if err := i.CheckArgHeader(ctx, typedWrappedArg.Header); err != nil {
+							return nil, err
+						}
+						typedArg := typedWrappedArg.Data
+						tmp, err := i.ClientRTInboxView(ctx, (typedArg.Import()))
+						if err != nil {
+							return nil, err
+						}
+						ret := rpc.DataWrap[Header, *RTInboxViewInternal__]{
+							Data:   tmp.Export(),
+							Header: i.MakeResHeader(),
+						}
+						return &ret, nil
+					},
+				},
+				Name: "clientRTInboxView",
 			},
 		},
 		WrapError: RealTimeMakeGenericErrorWrapper(i.ErrorWrapper()),

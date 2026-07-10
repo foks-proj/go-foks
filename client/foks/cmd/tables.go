@@ -747,6 +747,73 @@ func (r rtChannelRow) lessThan(other tableRow) bool {
 
 var _ tableRow = rtChannelRow{}
 
+type rtInboxRow struct {
+	name   string
+	tier   proto.RTChannelTier
+	team   string
+	unread uint64
+	last   string
+	vers   proto.RTInboxVersion
+}
+
+func (r rtInboxRow) toTableRow() table.Row {
+	unread := ""
+	if r.unread > 0 {
+		unread = fmt.Sprintf("%d", r.unread)
+	}
+	return table.Row{
+		r.name,
+		rtChannelTierGlyph(r.tier),
+		unread,
+		r.last,
+		r.team,
+	}
+}
+
+func (r rtInboxRow) headers() table.Row {
+	return table.Row{
+		"Channel",
+		"Tier",
+		"Unread",
+		"Last Activity",
+		"Team",
+	}
+}
+
+// Newest inbox bump on top, mirroring LocalInbox's ordering.
+func (r rtInboxRow) lessThan(other tableRow) bool {
+	return r.vers > other.(rtInboxRow).vers
+}
+
+var _ tableRow = rtInboxRow{}
+
+func outputRTInboxTable(
+	m libclient.MetaContext,
+	opts outputTableOpts,
+	view lcl.RTInboxView,
+) error {
+	conv := func(_ int, r lcl.RTInboxRowView) (tableRow, error) {
+		team, err := r.Ch.ParentTeam.EntityID().StringErr()
+		if err != nil {
+			return nil, err
+		}
+		var last string
+		if r.LastSeq > 0 {
+			last = r.LastTime.Import().Local().Format("2006-01-02 15:04:05")
+		}
+		ret := rtInboxRow{
+			name:   displayRTChannelName(r.Ch.Name),
+			tier:   r.Ch.Tier,
+			team:   team,
+			unread: r.Unread,
+			last:   last,
+			vers:   r.InboxVersion,
+		}
+		return ret, nil
+	}
+	return convertAndOutputRows(m, opts, view.Rows, conv, nil)
+}
+
 func outputRTChannelListTable(
 	m libclient.MetaContext,
 	opts outputTableOpts,
