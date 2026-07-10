@@ -139,6 +139,15 @@ func GetChangedThreads(
 		Channels: []rem.RTInboxChannel{},
 	}
 
+	// Late-join fan-in (issue #301): backfill membership rows for channels the
+	// user gained access to after creation; the fresh bumps make them surface
+	// in this very sync. Best-effort -- a transient failure just defers
+	// discovery to the next call.
+	err = reconcileUserChannels(m, arg.AppID)
+	if err != nil {
+		m.Warnw("GetChangedThreads", "stage", "reconcile", "err", err)
+	}
+
 	head, err := readInboxVersion(m, rtdb, m.UID(), arg.AppID)
 	if err != nil {
 		return nil, err
@@ -302,6 +311,14 @@ func PollInbox(
 		Uid:    m.UID(),
 		App:    arg.AppID,
 	}
+	// Late-join fan-in (issue #301), best-effort: if it backfills anything,
+	// the caller's version bumps, so the first read below returns Bumped
+	// immediately and the client runs the sync that discovers the channels.
+	err := reconcileUserChannels(m, arg.AppID)
+	if err != nil {
+		m.Warnw("PollInbox", "stage", "reconcile", "err", err)
+	}
+
 	deadline := time.Now().Add(cappedPollTimeout(arg.Timeout))
 
 	// oneRound runs a single subscribe/read/park round, with the subscription

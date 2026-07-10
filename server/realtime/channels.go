@@ -545,10 +545,9 @@ func (c *channelMaker) fanoutUsers(m shared.MetaContext) error {
 	// device-membership convention used by AuthorizeUserForTeam: local host,
 	// source role Owner, most-recent active row.
 	//
-	// NOTE (issue #301): this is the ONLY writer of user_channels membership
-	// rows, so a user added to the team (or promoted past the read role) after
-	// channel creation never gets fanned in: no delivery bumps, invisible to
-	// rtGetChangedThreads, and rtReadThrough fails. The inverse (removal) is
+	// Users added to the team (or promoted past the read role) after channel
+	// creation are fanned in lazily by reconcileUserChannels (fanin.go), which
+	// runs on inbox sync and poll; see issue #301. The inverse (removal) is
 	// handled by re-authorizing at sync time.
 	readRole, err := core.ImportRole(c.md.Roles.Read)
 	if err != nil {
@@ -644,9 +643,37 @@ func (c *channelMaker) fanoutToUser(m shared.MetaContext, uid proto.UID) error {
 	if err != nil {
 		return err
 	}
+	inserted, err := fanUserIntoChannel(m, c.rtdbtx, uid, app, c.md.Id.Short())
+	if err != nil {
+		return err
+	}
+	if !inserted {
+		// The channel is brand new inside this very transaction, so an
+		// existing membership row can only be a bug.
+		return core.InsertError("failed insert into user_channels, unexpected")
+	}
+	return nil
+}
 
+// fanUserIntoChannel bumps the user's per-app inbox version and writes their
+// denormalized user_channels membership row at that fresh version -- one
+// version allocation per stamped row, as the UNIQUE user_channels_inbox_idx
+// requires. Shared by the channel-creation fanout and the late-join fan-in
+// (issue #301). Returns false if the membership row already existed (a benign
+// race for the late-join path: a concurrent device fanned the user in first;
+// the version bump is then a harmless gap).
+func fanUserIntoChannel(
+	m shared.MetaContext,
+	tx pgx.Tx,
+	uid proto.UID,
+	appDB string,
+	channelID proto.RTChannelIDShort,
+) (
+	bool,
+	error,
+) {
 	var inboxVers int64
-	err = c.rtdbtx.QueryRow(
+	err := tx.QueryRow(
 		m.Ctx(),
 		`INSERT INTO user_inbox (short_host_id, uid, app_id, inbox_version, mtime)
 		 VALUES ($1, $2, $3, 1, NOW())
@@ -655,13 +682,13 @@ func (c *channelMaker) fanoutToUser(m shared.MetaContext, uid proto.UID) error {
 		 RETURNING inbox_version`,
 		m.ShortHostID(),
 		uid.ExportToDB(),
-		app,
+		appDB,
 	).Scan(&inboxVers)
 	if err != nil {
-		return err
+		return false, err
 	}
 
-	_, err = c.rtdbtx.Exec(
+	tag, err := tx.Exec(
 		m.Ctx(),
 		`INSERT INTO user_channels
 			(short_host_id, channel_id, uid, app_id, inbox_version,
@@ -669,20 +696,18 @@ func (c *channelMaker) fanoutToUser(m shared.MetaContext, uid proto.UID) error {
 			 ctime, mtime)
 		VALUES ($1, $2, $3, $4, $5,
 		        NOW(), NULL, 0, false, false,
-		        NOW(), NOW())`,
+		        NOW(), NOW())
+		ON CONFLICT (short_host_id, channel_id, uid) DO NOTHING`,
 		m.ShortHostID(),
-		int64(c.md.Id.Short()),
+		channelID.Int64(),
 		uid.ExportToDB(),
-		app,
+		appDB,
 		inboxVers,
 	)
-	if shared.IsDuplicateKeyError(err, "user_channels_pkey") {
-		return core.InsertError("failed insert into user_channels, unexpected")
-	}
 	if err != nil {
-		return err
+		return false, err
 	}
-	return nil
+	return tag.RowsAffected() == 1, nil
 }
 
 func (c *channelMaker) run(m shared.MetaContext) error {
