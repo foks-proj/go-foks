@@ -1654,6 +1654,22 @@ func (d *Minder) GetThreadView(
 	for i := range msgs {
 		ret.Msgs = append(ret.Msgs, threadMessageToView(&msgs[i], names))
 	}
+
+	// Viewing a page implies reading it: advance the read pointer to the
+	// newest message shown, so unread counts (and the viewer's other devices)
+	// catch up on the next inbox sync. The pointer is monotonic server-side --
+	// stale marks no-op -- so paging back through history never regresses it.
+	// Best-effort: the read itself already succeeded.
+	if len(msgs) > 0 {
+		maxSeq := msgs[0].Seq
+		for i := range msgs[1:] {
+			maxSeq = max(maxSeq, msgs[i+1].Seq)
+		}
+		err = d.ReadThrough(m, team, appID, channel, maxSeq)
+		if err != nil {
+			m.Warnw("GetThreadView", "stage", "readThrough", "err", err)
+		}
+	}
 	return &ret, nil
 }
 

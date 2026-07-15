@@ -102,26 +102,13 @@ func TestRTAdHocTeamSendAndReceive(t *testing.T) {
 	msgFromBob := "thanks alice, glad to be here"
 	bob.runCmd(t, nil, "rt", "send", "--adhoc", string(aliceName), msgFromBob)
 
-	alice.runCmdToJSON(t, &thread, "rt", "read", "--adhoc", string(bobName))
-	require.Len(t, thread.Msgs, 2)
-	require.Equal(t, msgFromBob, string(thread.Msgs[0].Body))
-	require.NotNil(t, thread.Msgs[0].SenderName)
-	require.Equal(t, bobName, *thread.Msgs[0].SenderName)
-	require.Equal(t, msgFromAlice, string(thread.Msgs[1].Body))
-	require.NotNil(t, thread.Msgs[1].SenderName)
-	require.Equal(t, aliceName, *thread.Msgs[1].SenderName)
-
-	// The inbox renders the ad-hoc team DM-style: each viewer sees the *other*
-	// member's name -- not their own, and not the raw team ID. The expected
-	// name goes through the same normalization the canonical member list uses.
+	// Before alice reads the reply, her inbox counts it as unread: her own
+	// message was implicitly read by sending it, but bob's reply is news.
 	expectTeam := func(other proto.NameUtf8) proto.NameUtf8 {
 		s, err := team.NamesToAdhHocCanonicalString([]proto.NameUtf8{other}, "")
 		require.NoError(t, err)
 		return proto.NameUtf8(s)
 	}
-
-	// alice has bob's reply unread: her own message was implicitly read by
-	// sending it, and nothing has marked bob's reply read.
 	var ainbox lcl.RTInboxView
 	alice.runCmdToJSON(t, &ainbox, "rt", "inbox")
 	require.Len(t, ainbox.Rows, 1)
@@ -134,7 +121,26 @@ func TestRTAdHocTeamSendAndReceive(t *testing.T) {
 	require.NotNil(t, arow.LastSender)
 	require.Equal(t, bobName, *arow.LastSender)
 
-	// bob sent the last message, so nothing is unread for him.
+	alice.runCmdToJSON(t, &thread, "rt", "read", "--adhoc", string(bobName))
+	require.Len(t, thread.Msgs, 2)
+	require.Equal(t, msgFromBob, string(thread.Msgs[0].Body))
+	require.NotNil(t, thread.Msgs[0].SenderName)
+	require.Equal(t, bobName, *thread.Msgs[0].SenderName)
+	require.Equal(t, msgFromAlice, string(thread.Msgs[1].Body))
+	require.NotNil(t, thread.Msgs[1].SenderName)
+	require.Equal(t, aliceName, *thread.Msgs[1].SenderName)
+
+	// Reading the thread marked it read (viewing a page advances the read
+	// pointer), so alice's unread count clears. The inbox renders the ad-hoc
+	// team DM-style throughout: each viewer sees the *other* member's name --
+	// not their own, and not the raw team ID.
+	alice.runCmdToJSON(t, &ainbox, "rt", "inbox")
+	require.Len(t, ainbox.Rows, 1)
+	require.Equal(t, uint64(0), ainbox.Rows[0].Unread)
+	require.Equal(t, proto.RTMsgSeq(2), ainbox.Rows[0].ReadThrough)
+
+	// bob sent the last message (sending implies reading), so nothing is
+	// unread for him either.
 	var binbox lcl.RTInboxView
 	bob.runCmdToJSON(t, &binbox, "rt", "inbox")
 	require.Len(t, binbox.Rows, 1)
