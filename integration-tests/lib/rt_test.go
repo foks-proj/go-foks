@@ -1014,6 +1014,15 @@ func TestRTSendReadPermissions(t *testing.T) {
 		return v
 	}
 
+	// Sending implies reading: the send fanout stamped each sender's own read
+	// pointer at their message (no extra version bump -- see above), so a
+	// member's own messages never count against their unread badge. Recipients'
+	// pointers are untouched.
+	require.Equal(t, int64(1), ucRead(coco, chWatercooler))
+	require.Equal(t, int64(1), ucRead(bluey, chAnnounce))
+	require.Equal(t, int64(0), ucRead(bluey, chWatercooler))
+	require.Equal(t, int64(0), ucRead(coco, chAnnounce))
+
 	// coco marks announce read through its one message: her read pointer
 	// advances, her global inbox version bumps, and the announce row is
 	// stamped at the new version -- just like a delivery -- so her other
@@ -1093,12 +1102,13 @@ func TestRTSendReadPermissions(t *testing.T) {
 
 	// coco's full sync (since=0): both channels she's fanned into, oldest bump
 	// first; brass never appears (she was never fanned in, and it's admin-tier
-	// besides). Announce carries her read receipt.
+	// besides). Announce carries her explicit read receipt; watercooler carries
+	// the implicit one from her own send (sending implies reading).
 	delta, err := minderCoco.GetChangedThreads(mc, proto.RTAppID_Chat, 0, 0)
 	require.NoError(t, err)
 	require.Equal(t, proto.RTInboxVersion(5), delta.InboxVersion)
 	require.Equal(t, []row{
-		{id: *chWatercooler, vers: 3, read: 0, last: true},
+		{id: *chWatercooler, vers: 3, read: 1, last: true},
 		{id: *chAnnounce, vers: 5, read: 1, last: true},
 	}, summarize(delta))
 
@@ -1116,8 +1126,11 @@ func TestRTSendReadPermissions(t *testing.T) {
 
 	// --- inbox persistence (#303) ---
 
-	// One assertable summary per locally-rendered inbox row; the name field
-	// proves the render decrypted the stored (still-boxed) channel metadata.
+	// One assertable summary per locally-rendered inbox row. The name field
+	// proves the render decrypted the stored (still-boxed) channel metadata;
+	// team proves the teamname cache resolved the parent-team ID; snippet and
+	// sender prove the last message was prefetched into the local message
+	// cache, decrypted at render, and its sender's name resolved.
 	type irow struct {
 		id      proto.RTChannelID
 		name    proto.RTChannelName
@@ -1125,18 +1138,31 @@ func TestRTSendReadPermissions(t *testing.T) {
 		read    proto.RTMsgSeq
 		lastSeq proto.RTMsgSeq
 		unread  uint64
+		team    proto.NameUtf8
+		snippet string
+		sender  proto.NameUtf8
 	}
 	summarizeView := func(v *lcl.RTInboxView) []irow {
 		var out []irow
 		for _, r := range v.Rows {
-			out = append(out, irow{
+			ir := irow{
 				id:      r.Ch.Id,
 				name:    r.Ch.Name,
 				vers:    r.InboxVersion,
 				read:    r.ReadThrough,
 				lastSeq: r.LastSeq,
 				unread:  r.Unread,
-			})
+			}
+			if r.TeamName != nil {
+				ir.team = *r.TeamName
+			}
+			if r.Snippet != nil {
+				ir.snippet = *r.Snippet
+			}
+			if r.LastSender != nil {
+				ir.sender = *r.LastSender
+			}
+			out = append(out, ir)
 		}
 		return out
 	}
@@ -1144,7 +1170,8 @@ func TestRTSendReadPermissions(t *testing.T) {
 	// coco persists her inbox to local soft storage: the full sync applies both
 	// channel rows and lands the cursor at her head. The local render -- a pure
 	// disk read -- computes unread = lastSeq - readThrough per channel and
-	// returns rows newest bump first.
+	// returns rows newest bump first. Nothing is unread: announce she marked
+	// read explicitly, and watercooler's only message is her own.
 	csum, err := minderCoco.SyncInbox(mc, proto.RTAppID_Chat)
 	require.NoError(t, err)
 	require.Equal(t, proto.RTInboxVersion(5), csum.Vers)
@@ -1153,8 +1180,10 @@ func TestRTSendReadPermissions(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, proto.RTInboxVersion(5), cview.Vers)
 	require.Equal(t, []irow{
-		{id: *chAnnounce, name: "announce", vers: 5, read: 1, lastSeq: 1, unread: 0},
-		{id: *chWatercooler, name: "watercooler", vers: 3, read: 0, lastSeq: 1, unread: 1},
+		{id: *chAnnounce, name: "announce", vers: 5, read: 1, lastSeq: 1, unread: 0,
+			team: tm.nm, snippet: "official notice", sender: bluey.name},
+		{id: *chWatercooler, name: "watercooler", vers: 3, read: 1, lastSeq: 1, unread: 0,
+			team: tm.nm, snippet: "hi all", sender: coco.name},
 	}, summarizeView(cview))
 
 	// bluey's full sync: all three channels, oldest bump first. brass has no
@@ -1164,7 +1193,7 @@ func TestRTSendReadPermissions(t *testing.T) {
 	require.Equal(t, proto.RTInboxVersion(6), delta.InboxVersion)
 	require.Equal(t, []row{
 		{id: *chBrass, vers: 3, read: 0, last: false},
-		{id: *chAnnounce, vers: 5, read: 0, last: true},
+		{id: *chAnnounce, vers: 5, read: 1, last: true},
 		{id: *chWatercooler, vers: 6, read: 1, last: true},
 	}, summarize(delta))
 
@@ -1176,7 +1205,7 @@ func TestRTSendReadPermissions(t *testing.T) {
 	require.Equal(t, proto.RTInboxVersion(6), delta.InboxVersion)
 	require.Equal(t, []row{
 		{id: *chBrass, vers: 3, read: 0, last: false},
-		{id: *chAnnounce, vers: 5, read: 0, last: true},
+		{id: *chAnnounce, vers: 5, read: 1, last: true},
 	}, summarize(delta))
 	delta, err = minderBluey.GetChangedThreads(mb, proto.RTAppID_Chat, 5, 2)
 	require.NoError(t, err)
@@ -1352,10 +1381,15 @@ func TestRTSendReadPermissions(t *testing.T) {
 	require.Equal(t, proto.RTInboxVersion(7), bsum.Vers)
 	require.Equal(t, uint64(3), bsum.NumChanged)
 
+	// Nothing is unread for bluey: the last message in each nonempty channel is
+	// her own, and sending stamps the sender's read pointer.
 	expectedBluey := []irow{
-		{id: *chWatercooler, name: "watercooler", vers: 7, read: 1, lastSeq: 2, unread: 1},
-		{id: *chAnnounce, name: "announce", vers: 5, read: 0, lastSeq: 1, unread: 1},
-		{id: *chBrass, name: "brass", vers: 3, read: 0, lastSeq: 0, unread: 0},
+		{id: *chWatercooler, name: "watercooler", vers: 7, read: 2, lastSeq: 2, unread: 0,
+			team: tm.nm, snippet: "wake up", sender: bluey.name},
+		{id: *chAnnounce, name: "announce", vers: 5, read: 1, lastSeq: 1, unread: 0,
+			team: tm.nm, snippet: "official notice", sender: bluey.name},
+		{id: *chBrass, name: "brass", vers: 3, read: 0, lastSeq: 0, unread: 0,
+			team: tm.nm},
 	}
 	bview, err := minderBluey.LocalInbox(mb, proto.RTAppID_Chat)
 	require.NoError(t, err)
@@ -1387,9 +1421,12 @@ func TestRTSendReadPermissions(t *testing.T) {
 	bview, err = minderBluey.LocalInbox(mb, proto.RTAppID_Chat)
 	require.NoError(t, err)
 	require.Equal(t, []irow{
-		{id: *chAnnounce, name: "announce", vers: 8, read: 0, lastSeq: 2, unread: 2},
-		{id: *chWatercooler, name: "watercooler", vers: 7, read: 1, lastSeq: 2, unread: 1},
-		{id: *chBrass, name: "brass", vers: 3, read: 0, lastSeq: 0, unread: 0},
+		{id: *chAnnounce, name: "announce", vers: 8, read: 2, lastSeq: 2, unread: 0,
+			team: tm.nm, snippet: "second notice", sender: bluey.name},
+		{id: *chWatercooler, name: "watercooler", vers: 7, read: 2, lastSeq: 2, unread: 0,
+			team: tm.nm, snippet: "wake up", sender: bluey.name},
+		{id: *chBrass, name: "brass", vers: 3, read: 0, lastSeq: 0, unread: 0,
+			team: tm.nm},
 	}, summarizeView(bview))
 
 	// dave syncs with page size 1: each page applies its rows and advances the
@@ -1409,10 +1446,16 @@ func TestRTSendReadPermissions(t *testing.T) {
 	dview, err := minderDave.LocalInbox(mdv, proto.RTAppID_Chat)
 	require.NoError(t, err)
 	require.Equal(t, proto.RTInboxVersion(5), dview.Vers)
+	// dave's unread counts are real: bluey wrote the last messages, and dave has
+	// only read announce through seq 1. His sync prefetched messages he never
+	// read into his local cache, so the snippets render from disk.
 	require.Equal(t, []irow{
-		{id: *chAnnounce, name: "announce", vers: 5, read: 1, lastSeq: 2, unread: 1},
-		{id: *chBrass, name: "brass", vers: 4, read: 0, lastSeq: 0, unread: 0},
-		{id: *chWatercooler, name: "watercooler", vers: wcVers, read: 0, lastSeq: 2, unread: 2},
+		{id: *chAnnounce, name: "announce", vers: 5, read: 1, lastSeq: 2, unread: 1,
+			team: tm.nm, snippet: "second notice", sender: bluey.name},
+		{id: *chBrass, name: "brass", vers: 4, read: 0, lastSeq: 0, unread: 0,
+			team: tm.nm},
+		{id: *chWatercooler, name: "watercooler", vers: wcVers, read: 0, lastSeq: 2, unread: 2,
+			team: tm.nm, snippet: "wake up", sender: bluey.name},
 	}, summarizeView(dview))
 }
 

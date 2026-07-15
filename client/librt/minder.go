@@ -1337,6 +1337,10 @@ func (d *Minder) ResolveSenderNames(
 // (open-vhost-or-as-local-user), which resolves symmetrically for any
 // co-member; named teams use the team-mediated (AsLocalTeam) load via the VO
 // bearer token.
+//
+// A cached bearer token can go stale inside the team-cache freshness window --
+// e.g. when the caller's own role in the team just changed -- so a stale-token
+// rejection force-refreshes the team (minting a fresh token) and retries once.
 func (d *Minder) resolveSenderName(
 	m MetaContext,
 	team lcl.ConfigTeam,
@@ -1350,12 +1354,25 @@ func (d *Minder) resolveSenderName(
 	if typ, err := team.GetT(); err == nil && typ == lcl.ConfigTeamType_AdHoc {
 		loadMode = libclient.LoadModeForAdHoc
 	}
-	nm, _, err := m.G().UsernameLoader().Load(m.Base(), fqu,
-		libclient.LoadUserArg{
-			Uid:               uid,
-			LoadMode:          loadMode,
-			TeamVOBearerToken: tok,
-		})
+	load := func(tok *rem.TeamVOBearerToken) (proto.NameUtf8, error) {
+		nm, _, err := m.G().UsernameLoader().Load(m.Base(), fqu,
+			libclient.LoadUserArg{
+				Uid:               uid,
+				LoadMode:          loadMode,
+				TeamVOBearerToken: tok,
+			})
+		return nm, err
+	}
+	nm, err := load(tok)
+	var staleErr core.TeamBearerTokenStaleError
+	if errors.As(err, &staleErr) {
+		rtp, err2 := d.base.GetPartyForceRefresh(m.Base(), team)
+		if err2 != nil {
+			m.Warnw("resolveSenderName", "stage", "staleRefresh", "uid", uid, "err", err2)
+			return "", false
+		}
+		nm, err = load(rtp.PLCNode().ViewTok())
+	}
 	if err != nil {
 		m.Warnw("resolveSenderName", "uid", uid, "err", err)
 		return "", false

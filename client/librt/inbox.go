@@ -7,6 +7,8 @@ import (
 	"cmp"
 	"errors"
 	"slices"
+	"strings"
+	"unicode/utf8"
 
 	"github.com/foks-proj/go-foks/client/libclient"
 	"github.com/foks-proj/go-foks/lib/core"
@@ -147,6 +149,22 @@ func (d *Minder) SyncInboxWithPageSize(
 		}
 		numChanged += uint64(len(delta.Channels))
 
+		// Prefetch each changed channel's last message into the local message
+		// cache, so LocalInbox can render a snippet without the network.
+		// Best-effort and after the page apply: the rows are already durable,
+		// and a failure just means no snippet until the channel next bumps.
+		for i := range delta.Channels {
+			ch := &delta.Channels[i]
+			if ch.Md.LastMsg == nil {
+				continue
+			}
+			err := d.prefetchLastMsg(m, ch)
+			if err != nil {
+				m.Warnw("SyncInbox", "stage", "prefetchLastMsg",
+					"chid", ch.Md.Id, "err", err)
+			}
+		}
+
 		// The head rides along on every page purely as a termination hint; it
 		// is never stored (there may be unapplied bumps at versions between the
 		// cursor and the head).
@@ -196,6 +214,19 @@ func (d *Minder) LocalInbox(
 	return &ret, nil
 }
 
+// configTeamByID addresses a parent team by its ID, using the ad-hoc arm for
+// ad-hoc team IDs so resolution takes the ad-hoc path.
+func configTeamByID(teamID proto.TeamID) lcl.ConfigTeam {
+	if teamID.IsAdHocTeam() {
+		return lcl.NewConfigTeamWithAdhoc(proto.FQAdHocTeamParsed{
+			Team: proto.NewAdHocTeamParsedWithId(teamID.EntityID()),
+		})
+	}
+	return team.WrapNamed(proto.FQTeamParsed{
+		Team: proto.NewParsedTeamWithFalse(teamID),
+	})
+}
+
 // renderInboxRow decrypts one stored inbox row into its view form, loading the
 // parent team's party (and keys) by ID via the shared party-loader cache.
 func (d *Minder) renderInboxRow(
@@ -205,9 +236,7 @@ func (d *Minder) renderInboxRow(
 	*lcl.RTInboxRowView,
 	error,
 ) {
-	cfgTeam := team.WrapNamed(proto.FQTeamParsed{
-		Team: proto.NewParsedTeamWithFalse(row.Md.ParentTeam),
-	})
+	cfgTeam := configTeamByID(row.Md.ParentTeam)
 	rtp, err := d.base.GetParty(m.Base(), cfgTeam)
 	if err != nil {
 		return nil, err
@@ -223,12 +252,139 @@ func (d *Minder) renderInboxRow(
 		Hidden:       row.Hidden,
 		Muted:        row.Muted,
 	}
+
+	// Team display name, via the teamname cache -- the GetParty above fills it
+	// whenever it (re)loads the team, so a miss is rare and just falls back to
+	// the ID at the display layer. An ad-hoc team's cached name is its full
+	// member list; drop the viewer's own name for DM-style display.
+	fqt := proto.FQTeam{Team: row.Md.ParentTeam, Host: d.au.HostID()}
+	if nm, ok := m.G().TeamnameLoader().Get(m.Base(), fqt); ok {
+		if row.Md.ParentTeam.IsAdHocTeam() {
+			nm = team.StripSelfFromAdHocName(nm, d.au.Info.Username.NameUtf8)
+		}
+		ret.TeamName = &nm
+	}
+
 	if row.Md.LastMsg != nil {
 		ret.LastSeq = row.Md.LastMsg.Seq
 		ret.LastTime = row.Md.LastMsg.InsertTime
 		if ret.LastSeq > ret.ReadThrough {
 			ret.Unread = uint64(ret.LastSeq - ret.ReadThrough)
 		}
+		d.fillSnippet(m, rtp, cfgTeam, row, &ret)
 	}
 	return &ret, nil
+}
+
+// fillSnippet decorates a row view with a decrypted one-line preview of the
+// channel's last message, plus its sender's display name, when the message is
+// in the local cache (SyncInbox prefetches it there). Best-effort: any failure
+// leaves the fields nil rather than failing the render.
+func (d *Minder) fillSnippet(
+	m MetaContext,
+	rtp *RTParty,
+	cfgTeam lcl.ConfigTeam,
+	row *rem.RTInboxChannel,
+	out *lcl.RTInboxRowView,
+) {
+	seq := row.Md.LastMsg.Seq
+	enc, err := dbGetMsgs(m, d.au, row.Md.Id, seq, seq)
+	if err != nil {
+		m.Warnw("fillSnippet", "stage", "dbGet", "chid", row.Md.Id, "err", err)
+		return
+	}
+	if len(enc) != 1 {
+		return // not cached; no snippet
+	}
+	msgs, err := d.decodeMsgs(m, rtp, row.Md.AppID, row.Md.Id, enc)
+	if err != nil || len(msgs) != 1 {
+		if err != nil {
+			m.Warnw("fillSnippet", "stage", "decode", "chid", row.Md.Id, "err", err)
+		}
+		return
+	}
+	msg := msgs[0]
+	sn := snippet(msg.Body)
+	out.Snippet = &sn
+	if msg.Sender != nil && msg.Sender.IsUser() {
+		if uid, err := msg.Sender.UID(); err == nil {
+			if nm, ok := d.resolveSenderName(m, cfgTeam, rtp.PLCNode().ViewTok(), uid); ok {
+				out.LastSender = &nm
+			}
+		}
+	}
+}
+
+// snippetMaxLen bounds the snippet payload shipped over the agent RPC; it is
+// NOT display policy. Rendering to an actual width (console, window) is the
+// view layer's job -- see the CLI's inbox table, which fits the snippet to the
+// live terminal width. This just keeps a pathological multi-KB message body
+// from riding along with every inbox render.
+const snippetMaxLen = 512
+
+// snippet reduces a message body to its first line, bounded by snippetMaxLen.
+func snippet(body []byte) string {
+	s := string(body)
+	if i := strings.IndexAny(s, "\r\n"); i >= 0 {
+		s = s[:i]
+	}
+	if len(s) > snippetMaxLen {
+		cut := snippetMaxLen
+		for cut > 0 && !utf8.RuneStart(s[cut]) {
+			cut--
+		}
+		s = s[:cut] + "…"
+	}
+	return s
+}
+
+// prefetchLastMsg ensures a channel's last message sits in the local message
+// cache, fetching (and verifying) it from the server when absent, so the inbox
+// can render last-message snippets offline.
+func (d *Minder) prefetchLastMsg(
+	m MetaContext,
+	row *rem.RTInboxChannel,
+) error {
+	seq := row.Md.LastMsg.Seq
+	cached, err := dbGetMsgs(m, d.au, row.Md.Id, seq, seq)
+	if err != nil {
+		return err
+	}
+	if len(cached) > 0 {
+		return nil
+	}
+	rtp, err := d.base.GetParty(m.Base(), configTeamByID(row.Md.ParentTeam))
+	if err != nil {
+		return err
+	}
+	pr, cli, err := d.clientLocal(m.Base(), d.au)
+	if err != nil {
+		return err
+	}
+	d.serverThreadReads.Add(1)
+	page, err := cli.RtGetThread(m.Ctx(), rem.RTThreadQuery{
+		ChannelID: row.Md.Id,
+		Seqs:      []proto.RTMsgSeq{seq},
+	})
+	if err != nil {
+		return err
+	}
+	d.hookReadRes(&page)
+	sess := newMsgSession()
+	err = sess.loadFromServer(extractAllSeqIDPairsFromRTThreadPage(&page))
+	if err != nil {
+		return err
+	}
+	// The decode path only consults ch.Id from the request metadata, so a stub
+	// with just the ID suffices; the full decrypted channel metadata isn't
+	// needed to verify and cache a message.
+	irr := &initReqResult{
+		hostId: pr.Chain().HostID(),
+		rtp:    rtp,
+		appID:  row.Md.AppID,
+		cli:    cli,
+		ch:     &lcl.RTChannelMetadataPlaintext{Id: row.Md.Id},
+	}
+	_, err = d.decodeAndCacheServerMsgs(m, sess, irr, page.SeqMsgs)
+	return err
 }

@@ -256,6 +256,7 @@ func (s *messageSender) insertMessage(
 func (s *messageSender) fanoutInboxVersions(
 	m shared.MetaContext,
 	insertTime time.Time,
+	seq int64,
 ) error {
 	// Bump each member's (uid, app) global inbox version. The insert arm is
 	// paranoia -- the channel-creation fanout writes user_inbox before
@@ -301,11 +302,19 @@ func (s *messageSender) fanoutInboxVersions(
 
 	// Stamp each membership row at its owner's just-bumped global version, and
 	// refresh the denormalized last-message time for inbox ordering. Reads the
-	// user_inbox rows written above in the same transaction.
+	// user_inbox rows written above in the same transaction. Sending implies
+	// reading: the sender's own read pointer advances to the new message in the
+	// same stamp (GREATEST keeps it monotonic), so a member's own messages never
+	// count against their unread badge. No extra version is consumed -- the row
+	// was bumping for the delivery anyway, so other devices pick the read state
+	// up along with the message.
 	_, err = s.tx.Exec(
 		m.Ctx(),
 		`UPDATE user_channels uc
-		 SET inbox_version = ui.inbox_version, last_msg_time = $3, mtime = NOW()
+		 SET inbox_version = ui.inbox_version, last_msg_time = $3, mtime = NOW(),
+		     read_through = CASE WHEN uc.uid = $4
+		                         THEN GREATEST(uc.read_through, $5)
+		                         ELSE uc.read_through END
 		 FROM user_inbox ui
 		 WHERE ui.short_host_id = uc.short_host_id
 		   AND ui.uid = uc.uid AND ui.app_id = uc.app_id
@@ -313,6 +322,8 @@ func (s *messageSender) fanoutInboxVersions(
 		m.ShortHostID(),
 		s.channelID(),
 		insertTime,
+		s.sender.ExportToDB(),
+		seq,
 	)
 	return err
 }
@@ -340,7 +351,7 @@ func (s *messageSender) run(m shared.MetaContext) (*rem.RTSendRes, error) {
 	if err != nil {
 		return nil, err
 	}
-	err = s.fanoutInboxVersions(m, insertTime.Import())
+	err = s.fanoutInboxVersions(m, insertTime.Import(), seq)
 	if err != nil {
 		return nil, err
 	}

@@ -84,6 +84,10 @@ struct RTInboxRowView {
     unread @5 : Uint;                     // max(lastSeq - readThrough, 0)
     hidden @6 : Bool;
     muted @7 : Bool;
+    teamName @8 : Option(lib.NameUtf8);   // via the teamname cache; nil if unresolved
+    snippet @9 : Option(Text);            // first line of the last message, decrypted at render;
+                                          // nil if the message isn't in the local cache
+    lastSender @10 : Option(lib.NameUtf8); // last message's sender; nil if unresolved
 }
 
 // The viewer's inbox, rendered entirely from local storage.

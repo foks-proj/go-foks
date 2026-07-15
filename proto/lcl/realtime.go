@@ -783,6 +783,9 @@ type RTInboxRowView struct {
 	Unread       uint64
 	Hidden       bool
 	Muted        bool
+	TeamName     *lib.NameUtf8
+	Snippet      *string
+	LastSender   *lib.NameUtf8
 }
 type RTInboxRowViewInternal__ struct {
 	_struct      struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
@@ -794,6 +797,9 @@ type RTInboxRowViewInternal__ struct {
 	Unread       *uint64
 	Hidden       *bool
 	Muted        *bool
+	TeamName     *lib.NameUtf8Internal__
+	Snippet      *string
+	LastSender   *lib.NameUtf8Internal__
 }
 
 func (r RTInboxRowViewInternal__) Import() RTInboxRowView {
@@ -846,6 +852,42 @@ func (r RTInboxRowViewInternal__) Import() RTInboxRowView {
 			}
 			return *x
 		})(r.Muted),
+		TeamName: (func(x *lib.NameUtf8Internal__) *lib.NameUtf8 {
+			if x == nil {
+				return nil
+			}
+			tmp := (func(x *lib.NameUtf8Internal__) (ret lib.NameUtf8) {
+				if x == nil {
+					return ret
+				}
+				return x.Import()
+			})(x)
+			return &tmp
+		})(r.TeamName),
+		Snippet: (func(x *string) *string {
+			if x == nil {
+				return nil
+			}
+			tmp := (func(x *string) (ret string) {
+				if x == nil {
+					return ret
+				}
+				return *x
+			})(x)
+			return &tmp
+		})(r.Snippet),
+		LastSender: (func(x *lib.NameUtf8Internal__) *lib.NameUtf8 {
+			if x == nil {
+				return nil
+			}
+			tmp := (func(x *lib.NameUtf8Internal__) (ret lib.NameUtf8) {
+				if x == nil {
+					return ret
+				}
+				return x.Import()
+			})(x)
+			return &tmp
+		})(r.LastSender),
 	}
 }
 func (r RTInboxRowView) Export() *RTInboxRowViewInternal__ {
@@ -858,6 +900,19 @@ func (r RTInboxRowView) Export() *RTInboxRowViewInternal__ {
 		Unread:       &r.Unread,
 		Hidden:       &r.Hidden,
 		Muted:        &r.Muted,
+		TeamName: (func(x *lib.NameUtf8) *lib.NameUtf8Internal__ {
+			if x == nil {
+				return nil
+			}
+			return (*x).Export()
+		})(r.TeamName),
+		Snippet: r.Snippet,
+		LastSender: (func(x *lib.NameUtf8) *lib.NameUtf8Internal__ {
+			if x == nil {
+				return nil
+			}
+			return (*x).Export()
+		})(r.LastSender),
 	}
 }
 func (r *RTInboxRowView) Encode(enc rpc.Encoder) error {
