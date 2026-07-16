@@ -308,7 +308,7 @@ func (d *Minder) fillSnippet(
 	out.Snippet = &sn
 	if msg.Sender != nil && msg.Sender.IsUser() {
 		if uid, err := msg.Sender.UID(); err == nil {
-			if nm, ok := d.resolveSenderName(m, cfgTeam, rtp.PLCNode().ViewTok(), uid); ok {
+			if nm, ok := d.resolveSenderName(m, cfgTeam, rtp, uid); ok {
 				out.LastSender = &nm
 			}
 		}

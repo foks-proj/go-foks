@@ -78,6 +78,17 @@ func (k TeamRemovalKey) Eq(k2 TeamRemovalKey) bool {
 	return hmac.Equal(k[:], k2[:])
 }
 
+// Eq compares bearer tokens in constant time (they're secrets, so a
+// short-circuiting comparison could leak via timing if ever used against
+// attacker-supplied input). Pointer form since tokens are optional in many
+// spots; nil equals only nil.
+func (t *TeamVOBearerToken) Eq(t2 *TeamVOBearerToken) bool {
+	if t == nil || t2 == nil {
+		return t == t2
+	}
+	return hmac.Equal(t[:], t2[:])
+}
+
 func (r TeamRawInboxRowVar) Token() (lib.TeamRSVP, error) {
 	var zed lib.TeamRSVP
 	typ, err := r.GetT()
