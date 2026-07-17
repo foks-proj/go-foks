@@ -273,7 +273,7 @@ func (d *Minder) renderInboxRow(
 		ret.LastSeq = row.Md.LastMsg.Seq
 		ret.LastTime = row.Md.LastMsg.InsertTime
 		if ret.LastSeq > ret.ReadThrough {
-			ret.Unread = uint64(ret.LastSeq - ret.ReadThrough)
+			ret.NumUnread = uint64(ret.LastSeq - ret.ReadThrough)
 		}
 		d.fillSnippet(m, rtp, cfgTeam, row, &ret)
 	}

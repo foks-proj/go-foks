@@ -1151,7 +1151,7 @@ func TestRTSendReadPermissions(t *testing.T) {
 				vers:    r.InboxVersion,
 				read:    r.ReadThrough,
 				lastSeq: r.LastSeq,
-				unread:  r.Unread,
+				unread:  r.NumUnread,
 			}
 			if r.TeamName != nil {
 				ir.team = *r.TeamName

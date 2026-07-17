@@ -780,7 +780,7 @@ type RTInboxRowView struct {
 	ReadThrough  lib.RTMsgSeq
 	LastSeq      lib.RTMsgSeq
 	LastTime     lib.Time
-	Unread       uint64
+	NumUnread    uint64
 	Hidden       bool
 	Muted        bool
 	TeamName     *lib.NameUtf8
@@ -794,7 +794,7 @@ type RTInboxRowViewInternal__ struct {
 	ReadThrough  *lib.RTMsgSeqInternal__
 	LastSeq      *lib.RTMsgSeqInternal__
 	LastTime     *lib.TimeInternal__
-	Unread       *uint64
+	NumUnread    *uint64
 	Hidden       *bool
 	Muted        *bool
 	TeamName     *lib.NameUtf8Internal__
@@ -834,12 +834,12 @@ func (r RTInboxRowViewInternal__) Import() RTInboxRowView {
 			}
 			return x.Import()
 		})(r.LastTime),
-		Unread: (func(x *uint64) (ret uint64) {
+		NumUnread: (func(x *uint64) (ret uint64) {
 			if x == nil {
 				return ret
 			}
 			return *x
-		})(r.Unread),
+		})(r.NumUnread),
 		Hidden: (func(x *bool) (ret bool) {
 			if x == nil {
 				return ret
@@ -897,7 +897,7 @@ func (r RTInboxRowView) Export() *RTInboxRowViewInternal__ {
 		ReadThrough:  r.ReadThrough.Export(),
 		LastSeq:      r.LastSeq.Export(),
 		LastTime:     r.LastTime.Export(),
-		Unread:       &r.Unread,
+		NumUnread:    &r.NumUnread,
 		Hidden:       &r.Hidden,
 		Muted:        &r.Muted,
 		TeamName: (func(x *lib.NameUtf8) *lib.NameUtf8Internal__ {

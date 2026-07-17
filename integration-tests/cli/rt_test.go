@@ -115,7 +115,7 @@ func TestRTAdHocTeamSendAndReceive(t *testing.T) {
 	arow := ainbox.Rows[0]
 	require.NotNil(t, arow.TeamName)
 	require.Equal(t, expectTeam(bobName), *arow.TeamName)
-	require.Equal(t, uint64(1), arow.Unread)
+	require.Equal(t, uint64(1), arow.NumUnread)
 	require.NotNil(t, arow.Snippet)
 	require.Equal(t, msgFromBob, *arow.Snippet)
 	require.NotNil(t, arow.LastSender)
@@ -136,7 +136,7 @@ func TestRTAdHocTeamSendAndReceive(t *testing.T) {
 	// not their own, and not the raw team ID.
 	alice.runCmdToJSON(t, &ainbox, "rt", "inbox")
 	require.Len(t, ainbox.Rows, 1)
-	require.Equal(t, uint64(0), ainbox.Rows[0].Unread)
+	require.Equal(t, uint64(0), ainbox.Rows[0].NumUnread)
 	require.Equal(t, proto.RTMsgSeq(2), ainbox.Rows[0].ReadThrough)
 
 	// bob sent the last message (sending implies reading), so nothing is
@@ -147,7 +147,7 @@ func TestRTAdHocTeamSendAndReceive(t *testing.T) {
 	brow := binbox.Rows[0]
 	require.NotNil(t, brow.TeamName)
 	require.Equal(t, expectTeam(aliceName), *brow.TeamName)
-	require.Equal(t, uint64(0), brow.Unread)
+	require.Equal(t, uint64(0), brow.NumUnread)
 }
 
 // TestRTChannelMakeAndList exercises the CLI integration for making channels
@@ -260,7 +260,7 @@ func TestRTSendAndRead(t *testing.T) {
 	require.Equal(t, proto.RTChannelName("foo"), inbox.Rows[0].Ch.Name)
 	require.Equal(t, proto.RTMsgSeq(3), inbox.Rows[0].LastSeq)
 	require.Equal(t, proto.RTMsgSeq(3), inbox.Rows[0].ReadThrough)
-	require.Equal(t, uint64(0), inbox.Rows[0].Unread)
+	require.Equal(t, uint64(0), inbox.Rows[0].NumUnread)
 	require.NotNil(t, inbox.Rows[0].TeamName)
 	require.Equal(t, proto.NameUtf8(tm), *inbox.Rows[0].TeamName)
 	require.NotNil(t, inbox.Rows[0].Snippet)

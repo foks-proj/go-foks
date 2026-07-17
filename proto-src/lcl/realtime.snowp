@@ -81,7 +81,7 @@ struct RTInboxRowView {
     readThrough @2 : lib.RTMsgSeq;        // viewer's read pointer; 0 = nothing read
     lastSeq @3 : lib.RTMsgSeq;            // last message in channel; 0 = no messages
     lastTime @4 : lib.Time;               // server insert time of last message; 0 if none
-    unread @5 : Uint;                     // max(lastSeq - readThrough, 0)
+    numUnread @5 : Uint;                  // max(lastSeq - readThrough, 0)
     hidden @6 : Bool;
     muted @7 : Bool;
     teamName @8 : Option(lib.NameUtf8);   // via the teamname cache; nil if unresolved

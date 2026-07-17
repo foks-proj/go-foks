@@ -838,7 +838,7 @@ func outputRTInboxTable(
 			name:   displayRTChannelName(r.Ch.Name),
 			tier:   r.Ch.Tier,
 			team:   team,
-			unread: r.Unread,
+			unread: r.NumUnread,
 			msg:    msg,
 			last:   last,
 			vers:   r.InboxVersion,
