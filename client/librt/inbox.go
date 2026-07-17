@@ -310,13 +310,9 @@ func (d *Minder) fillSnippet(
 	msg := msgs[0]
 	sn := snippet(msg.Body)
 	out.Snippet = &sn
-	if msg.Sender != nil && msg.Sender.IsUser() {
-		if uid, err := msg.Sender.UID(); err == nil {
-			if nm, err := d.resolveSenderName(m, cfgTeam, rtp, uid); err == nil {
-				out.LastSender = &nm
-			}
-		}
-	}
+	out.LastSender = core.Ptr(
+		d.resolveSenderNameFromPartyIDShowError(m, cfgTeam, rtp, msg.Sender),
+	)
 }
 
 // snippetMaxLen bounds the snippet payload shipped over the agent RPC; it is

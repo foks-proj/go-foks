@@ -1303,16 +1303,45 @@ func (d *Minder) ResolveSenderNames(
 		if _, ok := ret[uid]; ok {
 			continue
 		}
-		nm, err := d.resolveSenderName(m, team, rtp, uid)
-		var resolved proto.NameUtf8
-		if err == nil {
-			resolved = nm
-		} else {
-			resolved = proto.NameUtf8(fmt.Sprintf("<error: %s>", err.Error()))
-		}
-		ret[uid] = resolved
+		ret[uid] = d.resolveSenderNameFromUIDShowError(m, team, rtp, uid)
 	}
 	return ret, nil
+}
+
+func fmtNameUtf8Error(err error) proto.NameUtf8 {
+	return proto.NameUtf8(fmt.Sprintf("<error: %s>", err.Error()))
+}
+
+func (d *Minder) resolveSenderNameFromUIDShowError(
+	m MetaContext,
+	team lcl.ConfigTeam,
+	rtp *RTParty,
+	uid proto.UID,
+) proto.NameUtf8 {
+	nm, err := d.resolveSenderName(m, team, rtp, uid)
+	if err != nil {
+		return fmtNameUtf8Error(err)
+	}
+	return nm
+}
+
+func (d *Minder) resolveSenderNameFromPartyIDShowError(
+	m MetaContext,
+	team lcl.ConfigTeam,
+	rtp *RTParty,
+	partyID *proto.PartyID,
+) proto.NameUtf8 {
+	if partyID == nil {
+		return "<nil>"
+	}
+	if !partyID.IsUser() {
+		return "<non-user>"
+	}
+	uid, err := partyID.UID()
+	if err != nil {
+		return fmtNameUtf8Error(err)
+	}
+	return d.resolveSenderNameFromUIDShowError(m, team, rtp, uid)
 }
 
 // resolveSenderName returns the display name for a single sender UID, via the
