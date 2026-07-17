@@ -24,6 +24,7 @@ enum DataType {
     UsernameReservation @14;
     UsernameLookup @15;
     UsernameCacheEntry @16; // soft-state UID -> username memo; see libclient.UsernameLoader
+    TeamnameCacheEntry @17; // soft-state TeamID -> teamname memo; see libclient.TeamnameLoader
 
     KVRealm @65;
     KVNSRoot @66;
@@ -38,6 +39,8 @@ enum DataType {
     RTThreadMsgData @97;
     RTOutboxMsg @98;
     RTChannelSet @99;
+    RTInboxSyncState @100; // cursor + channelID index; see librt inbox syncer
+    RTInboxChannel @101;   // one rem.RTInboxChannel row per channel
 }
 
 typedef ScopeLabel = Blob;

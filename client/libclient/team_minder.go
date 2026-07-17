@@ -337,6 +337,37 @@ func (t *TeamMinder) getTeamWithRefresh(
 	return tr, nil
 }
 
+func (t *TeamMinder) fillTeamnameCache(m MetaContext, tw *TeamWrapper, fqt proto.FQTeam) error {
+	// Fill the teamname cache at the load site (every team load funnels
+	// through here), so ID-only display paths like the RT inbox can show
+	// names. An ad-hoc team has no name of its own; cache its canonical
+	// member-name list ("alice,bob,charlie") -- the full list, since the cache
+	// is shared across the agent's local users. Viewer-relative display
+	// (dropping the viewer's own name) happens at render time.
+	var nm proto.NameUtf8
+
+	// In the case of adhoc teams, generate an adhoc name and fill the cache.
+	if tw.IsAdHocTeam() {
+		var err error
+		nm, err = tw.AdHocDisplayName()
+		if err != nil {
+			return err
+		}
+	} else {
+		nm = tw.Name()
+	}
+	if nm.IsZero() {
+		return core.NameError("no name")
+	}
+
+	err := m.G().TeamnameLoader().Set(m, fqt, nm)
+	if err != nil {
+		m.Warnw("LoadTeamWithFQTeam", "stage", "teamnameCache", "fqt", fqt, "err", err)
+		return err
+	}
+	return nil
+}
+
 // LoadTeamWithFQTeam is a high-level function that accesses the result of prior explorations,
 // or a new one if the opts.Refresh flag is set to true.
 func (t *TeamMinder) LoadTeamWithFQTeam(
@@ -360,11 +391,22 @@ func (t *TeamMinder) LoadTeamWithFQTeam(
 
 	tr.ldr.Arg.LoadMembersFull = opts.LoadMembers
 
+	// An ad-hoc team is named by its member list, so have the loader capture
+	// member usernames (cheap: username-cache hits skip the user-chain loads),
+	// as the explore path already does. The teamname-cache fill below needs
+	// them.
+	if fqt.Team.IsAdHocTeam() {
+		tr.ldr.Arg.LoadMemberNames = true
+	}
+
 	tw, err := tr.ldr.Run(m)
 	if err != nil {
 		return nil, err
 	}
 	tr.tw = tw
+
+	_ = t.fillTeamnameCache(m, tw, fqt)
+
 	return tr, nil
 }
 

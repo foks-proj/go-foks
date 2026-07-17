@@ -31,7 +31,7 @@ type messageSender struct {
 	parentTeam proto.TeamID
 	writeRole  proto.Role
 	readRole   proto.Role
-	prevSeq    int64
+	prevSeq    proto.RTMsgSeq
 	appID      proto.RTAppID
 
 	// members whose inbox versions the fanout bumped; the caller wakes their
@@ -47,7 +47,7 @@ func (s *messageSender) channelID() int64 { return int64(s.arg.Chid) }
 func (s *messageSender) lockChannel(m shared.MetaContext) error {
 	var teamRaw []byte
 	var wrt, wvl, rrt, rvl int
-	var prevSeq *int64
+	var prevSeqRaw *int64
 	var appRaw string
 	err := s.tx.QueryRow(
 		m.Ctx(),
@@ -58,7 +58,7 @@ func (s *messageSender) lockChannel(m shared.MetaContext) error {
 		 FOR UPDATE`,
 		m.ShortHostID(),
 		s.channelID(),
-	).Scan(&teamRaw, &wrt, &wvl, &rrt, &rvl, &prevSeq, &appRaw)
+	).Scan(&teamRaw, &wrt, &wvl, &rrt, &rvl, &prevSeqRaw, &appRaw)
 	if err == pgx.ErrNoRows {
 		return core.RowNotFoundError{}
 	}
@@ -81,8 +81,8 @@ func (s *messageSender) lockChannel(m shared.MetaContext) error {
 	if err != nil {
 		return err
 	}
-	if prevSeq != nil {
-		s.prevSeq = *prevSeq
+	if prevSeqRaw != nil {
+		s.prevSeq = proto.RTMsgSeq(*prevSeqRaw)
 	}
 	return nil
 }
@@ -154,7 +154,7 @@ func (s *messageSender) internSender(m shared.MetaContext) (int, error) {
 func (s *messageSender) insertMessage(
 	m shared.MetaContext,
 	senderNo int,
-	seq int64,
+	seq proto.RTMsgSeq,
 ) (
 	proto.Time,
 	error,
@@ -204,7 +204,7 @@ func (s *messageSender) insertMessage(
 		 RETURNING insert_time`,
 		m.ShortHostID(),
 		s.channelID(),
-		seq,
+		seq.Int64(),
 		s.arg.Md.MsgID.Bytes(),
 		typ,
 		naclctxt,
@@ -256,6 +256,7 @@ func (s *messageSender) insertMessage(
 func (s *messageSender) fanoutInboxVersions(
 	m shared.MetaContext,
 	insertTime time.Time,
+	seq proto.RTMsgSeq,
 ) error {
 	// Bump each member's (uid, app) global inbox version. The insert arm is
 	// paranoia -- the channel-creation fanout writes user_inbox before
@@ -301,11 +302,19 @@ func (s *messageSender) fanoutInboxVersions(
 
 	// Stamp each membership row at its owner's just-bumped global version, and
 	// refresh the denormalized last-message time for inbox ordering. Reads the
-	// user_inbox rows written above in the same transaction.
+	// user_inbox rows written above in the same transaction. Sending implies
+	// reading: the sender's own read pointer advances to the new message in the
+	// same stamp (GREATEST keeps it monotonic), so a member's own messages never
+	// count against their unread badge. No extra version is consumed -- the row
+	// was bumping for the delivery anyway, so other devices pick the read state
+	// up along with the message.
 	_, err = s.tx.Exec(
 		m.Ctx(),
 		`UPDATE user_channels uc
-		 SET inbox_version = ui.inbox_version, last_msg_time = $3, mtime = NOW()
+		 SET inbox_version = ui.inbox_version, last_msg_time = $3, mtime = NOW(),
+		     read_through = CASE WHEN uc.uid = $4
+		                         THEN GREATEST(uc.read_through, $5)
+		                         ELSE uc.read_through END
 		 FROM user_inbox ui
 		 WHERE ui.short_host_id = uc.short_host_id
 		   AND ui.uid = uc.uid AND ui.app_id = uc.app_id
@@ -313,6 +322,8 @@ func (s *messageSender) fanoutInboxVersions(
 		m.ShortHostID(),
 		s.channelID(),
 		insertTime,
+		s.sender.ExportToDB(),
+		seq.Int64(),
 	)
 	return err
 }
@@ -329,7 +340,7 @@ func (s *messageSender) run(m shared.MetaContext) (*rem.RTSendRes, error) {
 	seq := s.prevSeq + 1
 	// Optional optimistic-concurrency check from the client.
 	if s.arg.ExpectedPrevSeq.IsValid() &&
-		s.arg.ExpectedPrevSeq.Int64() != s.prevSeq {
+		s.arg.ExpectedPrevSeq != s.prevSeq {
 		return nil, core.RTRaceError{Which: "messages"}
 	}
 	senderNo, err := s.internSender(m)
@@ -340,7 +351,7 @@ func (s *messageSender) run(m shared.MetaContext) (*rem.RTSendRes, error) {
 	if err != nil {
 		return nil, err
 	}
-	err = s.fanoutInboxVersions(m, insertTime.Import())
+	err = s.fanoutInboxVersions(m, insertTime.Import(), seq)
 	if err != nil {
 		return nil, err
 	}

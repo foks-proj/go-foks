@@ -58,6 +58,50 @@ struct RTChannelSetForTeam {
     team @3 : lib.TeamID;
 }
 
+// DB scope for locally-persisted inbox sync state: the inbox is viewer-scoped
+// state spanning many parties, so it's keyed by the viewing user plus the app.
+struct RTInboxScope {
+    fqu @0 : lib.FQUser;
+    appID @1 : lib.RTAppID;
+}
+
+// Singleton row (per RTInboxScope) holding the inbox sync cursor and the index
+// of channels with persisted RTInboxChannel rows. The KV layer can't enumerate
+// keys within a scope, hence the explicit index; it's small (channel counts are
+// modest in Stage 1a) and is updated atomically with the rows it indexes.
+struct RTInboxSyncState {
+    vers @0 : lib.RTInboxVersion;         // highest inbox version *applied* locally
+    channels @1 : List(lib.RTChannelID);  // channels with a persisted row
+}
+
+// One decrypted inbox channel as presented to the CLI / app layer.
+struct RTInboxRowView {
+    ch @0 : RTChannelMetadataPlaintext;
+    inboxVersion @1 : lib.RTInboxVersion; // version at which this channel last bumped
+    readThrough @2 : lib.RTMsgSeq;        // viewer's read pointer; 0 = nothing read
+    lastSeq @3 : lib.RTMsgSeq;            // last message in channel; 0 = no messages
+    lastTime @4 : lib.Time;               // server insert time of last message; 0 if none
+    numUnread @5 : Uint;                  // max(lastSeq - readThrough, 0)
+    hidden @6 : Bool;
+    muted @7 : Bool;
+    teamName @8 : lib.NameUtf8;           // via the teamname cache; empty if unresolved
+    snippet @9 : Option(Text);            // first line of the last message, decrypted at render;
+                                          // nil if the message isn't in the local cache
+    lastSender @10 : lib.NameUtf8;        // last message's sender; empty if unresolved
+}
+
+// The viewer's inbox, rendered entirely from local storage.
+struct RTInboxView {
+    rows @0 : List(RTInboxRowView);       // newest bump first
+    vers @1 : lib.RTInboxVersion;         // local sync cursor
+}
+
+// What a SyncInbox pass did.
+struct RTInboxSyncSummary {
+    vers @0 : lib.RTInboxVersion;         // cursor after the sync
+    numChanged @1 : Uint;                 // channel rows applied
+}
+
 // A decrypted message as presented to the CLI / app layer.
 struct RTMsgView {
     seq @0 : lib.RTMsgSeq;
@@ -101,6 +145,11 @@ protocol RealTime
         num @1 : Uint,          /* max messages in the page; 0 = default */
         before @2 : lib.RTMsgSeq /* page messages older than this seq (exclusive); 0 = most recent */
     ) -> RTThreadView;
+
+    clientRTInboxView @4 (
+        appID @0 : lib.RTAppID,
+        localOnly @1 : Bool     /* skip the network sync; render from disk only */
+    ) -> RTInboxView;
 
 }
 

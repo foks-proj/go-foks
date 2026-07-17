@@ -78,6 +78,11 @@ func NewPartyLoaderCache(au *UserContext) *PartyLoaderCache {
 
 type PLCOpts struct {
 	Lock bool
+	// ForceRefresh bypasses the node-freshness shortcut for team loads, forcing
+	// a reload (and hence a fresh view bearer token). Used to recover when a
+	// cached token turns out to be stale server-side -- e.g. the caller's role
+	// in the team changed inside the freshness window.
+	ForceRefresh bool
 }
 
 func (p *PartyLoaderCache) getLockedNode(
@@ -184,7 +189,7 @@ func (p *PartyLoaderCache) loadTeam(
 		if err != nil {
 			return nil, err
 		}
-		if isFresh {
+		if isFresh && (opts == nil || !opts.ForceRefresh) {
 			return plcn, nil
 		}
 	}
@@ -293,7 +298,31 @@ func (a *BaseMinder[N, P]) GetParty(
 	*N,
 	error,
 ) {
-	plcn, err := a.plc.Load(m, t, &PLCOpts{})
+	return a.getParty(m, t, &PLCOpts{})
+}
+
+// GetPartyForceRefresh is GetParty, but reloads the party's backing team even
+// if the cached node is still fresh -- e.g. to mint a new view bearer token
+// after the server rejected the cached one as stale.
+func (a *BaseMinder[N, P]) GetPartyForceRefresh(
+	m MetaContext,
+	t lcl.ConfigTeam,
+) (
+	*N,
+	error,
+) {
+	return a.getParty(m, t, &PLCOpts{ForceRefresh: true})
+}
+
+func (a *BaseMinder[N, P]) getParty(
+	m MetaContext,
+	t lcl.ConfigTeam,
+	opts *PLCOpts,
+) (
+	*N,
+	error,
+) {
+	plcn, err := a.plc.Load(m, t, opts)
 	if err != nil {
 		return nil, err
 	}
