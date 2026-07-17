@@ -31,7 +31,7 @@ type messageSender struct {
 	parentTeam proto.TeamID
 	writeRole  proto.Role
 	readRole   proto.Role
-	prevSeq    int64
+	prevSeq    proto.RTMsgSeq
 	appID      proto.RTAppID
 
 	// members whose inbox versions the fanout bumped; the caller wakes their
@@ -47,7 +47,7 @@ func (s *messageSender) channelID() int64 { return int64(s.arg.Chid) }
 func (s *messageSender) lockChannel(m shared.MetaContext) error {
 	var teamRaw []byte
 	var wrt, wvl, rrt, rvl int
-	var prevSeq *int64
+	var prevSeqRaw *int64
 	var appRaw string
 	err := s.tx.QueryRow(
 		m.Ctx(),
@@ -58,7 +58,7 @@ func (s *messageSender) lockChannel(m shared.MetaContext) error {
 		 FOR UPDATE`,
 		m.ShortHostID(),
 		s.channelID(),
-	).Scan(&teamRaw, &wrt, &wvl, &rrt, &rvl, &prevSeq, &appRaw)
+	).Scan(&teamRaw, &wrt, &wvl, &rrt, &rvl, &prevSeqRaw, &appRaw)
 	if err == pgx.ErrNoRows {
 		return core.RowNotFoundError{}
 	}
@@ -81,8 +81,8 @@ func (s *messageSender) lockChannel(m shared.MetaContext) error {
 	if err != nil {
 		return err
 	}
-	if prevSeq != nil {
-		s.prevSeq = *prevSeq
+	if prevSeqRaw != nil {
+		s.prevSeq = proto.RTMsgSeq(*prevSeqRaw)
 	}
 	return nil
 }
@@ -154,7 +154,7 @@ func (s *messageSender) internSender(m shared.MetaContext) (int, error) {
 func (s *messageSender) insertMessage(
 	m shared.MetaContext,
 	senderNo int,
-	seq int64,
+	seq proto.RTMsgSeq,
 ) (
 	proto.Time,
 	error,
@@ -204,7 +204,7 @@ func (s *messageSender) insertMessage(
 		 RETURNING insert_time`,
 		m.ShortHostID(),
 		s.channelID(),
-		seq,
+		seq.Int64(),
 		s.arg.Md.MsgID.Bytes(),
 		typ,
 		naclctxt,
@@ -256,7 +256,7 @@ func (s *messageSender) insertMessage(
 func (s *messageSender) fanoutInboxVersions(
 	m shared.MetaContext,
 	insertTime time.Time,
-	seq int64,
+	seq proto.RTMsgSeq,
 ) error {
 	// Bump each member's (uid, app) global inbox version. The insert arm is
 	// paranoia -- the channel-creation fanout writes user_inbox before
@@ -323,7 +323,7 @@ func (s *messageSender) fanoutInboxVersions(
 		s.channelID(),
 		insertTime,
 		s.sender.ExportToDB(),
-		seq,
+		seq.Int64(),
 	)
 	return err
 }
@@ -340,7 +340,7 @@ func (s *messageSender) run(m shared.MetaContext) (*rem.RTSendRes, error) {
 	seq := s.prevSeq + 1
 	// Optional optimistic-concurrency check from the client.
 	if s.arg.ExpectedPrevSeq.IsValid() &&
-		s.arg.ExpectedPrevSeq.Int64() != s.prevSeq {
+		s.arg.ExpectedPrevSeq != s.prevSeq {
 		return nil, core.RTRaceError{Which: "messages"}
 	}
 	senderNo, err := s.internSender(m)
