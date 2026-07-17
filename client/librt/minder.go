@@ -1274,42 +1274,22 @@ func (d *Minder) initReq(
 	}, nil
 }
 
-// TeamViewToken returns the team's view bearer token, used for AsLocalTeam user
-// loads. The agent uses it to resolve message-sender UIDs to usernames: in
-// closed viewership mode, co-members can only load each other mediated through
-// the shared team, not directly. Returns nil if the team carries no view token
-// (e.g. it was loaded as self/owner); callers should treat name resolution as
-// best-effort and tolerate a nil token.
-func (d *Minder) TeamViewToken(
-	m MetaContext,
-	team lcl.ConfigTeam,
-) (
-	*rem.TeamVOBearerToken,
-	error,
-) {
-	err := assertTeam(team)
-	if err != nil {
-		return nil, err
-	}
-	rtp, err := d.base.GetParty(m.Base(), team)
-	if err != nil {
-		return nil, err
-	}
-	return rtp.PLCNode().ViewTok(), nil
-}
-
 // ResolveSenderNames maps each distinct user-sender UID in msgs to its display
 // name. Resolutions are memoized (see libclient.UsernameLoader) since each cache
 // miss is a full user-chain load; in closed viewership mode the load is mediated
-// through the shared team, so a team view bearer token (tok) is presented.
-// Best-effort: a sender that can't be loaded is omitted from the result rather
-// than failing.
+// through the shared team, presenting the team's view bearer token -- read
+// fresh from rtp's shared PLCNode per sender (see resolveSenderName), so a
+// mid-loop token refresh benefits every later sender. Best-effort: a sender
+// that can't be loaded is omitted from the result rather than failing.
 func (d *Minder) ResolveSenderNames(
 	m MetaContext,
 	team lcl.ConfigTeam,
-	tok *rem.TeamVOBearerToken,
+	rtp *RTParty,
 	msgs []ThreadMessage,
-) map[proto.UID]proto.NameUtf8 {
+) (
+	map[proto.UID]proto.NameUtf8,
+	error,
+) {
 	ret := make(map[proto.UID]proto.NameUtf8)
 	for i := range msgs {
 		sender := msgs[i].Sender
@@ -1318,16 +1298,50 @@ func (d *Minder) ResolveSenderNames(
 		}
 		uid, err := sender.UID()
 		if err != nil {
-			continue
+			return nil, err
 		}
 		if _, ok := ret[uid]; ok {
 			continue
 		}
-		if nm, ok := d.resolveSenderName(m, team, tok, uid); ok {
-			ret[uid] = nm
-		}
+		ret[uid] = d.resolveSenderNameFromUIDShowError(m, team, rtp, uid)
 	}
-	return ret
+	return ret, nil
+}
+
+func fmtNameUtf8Error(err error) proto.NameUtf8 {
+	return proto.NameUtf8(fmt.Sprintf("<error: %s>", err.Error()))
+}
+
+func (d *Minder) resolveSenderNameFromUIDShowError(
+	m MetaContext,
+	team lcl.ConfigTeam,
+	rtp *RTParty,
+	uid proto.UID,
+) proto.NameUtf8 {
+	nm, err := d.resolveSenderName(m, team, rtp, uid)
+	if err != nil {
+		return fmtNameUtf8Error(err)
+	}
+	return nm
+}
+
+func (d *Minder) resolveSenderNameFromPartyIDShowError(
+	m MetaContext,
+	team lcl.ConfigTeam,
+	rtp *RTParty,
+	partyID *proto.PartyID,
+) proto.NameUtf8 {
+	if partyID == nil {
+		return "<nil>"
+	}
+	if !partyID.IsUser() {
+		return "<non-user>"
+	}
+	uid, err := partyID.UID()
+	if err != nil {
+		return fmtNameUtf8Error(err)
+	}
+	return d.resolveSenderNameFromUIDShowError(m, team, rtp, uid)
 }
 
 // resolveSenderName returns the display name for a single sender UID, via the
@@ -1337,12 +1351,22 @@ func (d *Minder) ResolveSenderNames(
 // (open-vhost-or-as-local-user), which resolves symmetrically for any
 // co-member; named teams use the team-mediated (AsLocalTeam) load via the VO
 // bearer token.
+//
+// The token is read from rtp's PLCNode at call time, not taken as a parameter:
+// a cached token can go stale inside the team-cache freshness window (e.g. the
+// caller's own role in the team just changed), and the recovery below refreshes
+// the shared node in place -- so one refresh heals every subsequent resolve
+// against the same team, rather than each sender re-tripping on a stale
+// snapshot.
 func (d *Minder) resolveSenderName(
 	m MetaContext,
 	team lcl.ConfigTeam,
-	tok *rem.TeamVOBearerToken,
+	rtp *RTParty,
 	uid proto.UID,
-) (proto.NameUtf8, bool) {
+) (
+	proto.NameUtf8,
+	error,
+) {
 	// The loader is keyed by FQUser; senders are always on the active user's
 	// host (see decryptAndVerifyMsg's HostMismatchError check).
 	fqu := proto.FQUser{Uid: uid, HostID: d.au.HostID()}
@@ -1350,17 +1374,45 @@ func (d *Minder) resolveSenderName(
 	if typ, err := team.GetT(); err == nil && typ == lcl.ConfigTeamType_AdHoc {
 		loadMode = libclient.LoadModeForAdHoc
 	}
-	nm, _, err := m.G().UsernameLoader().Load(m.Base(), fqu,
-		libclient.LoadUserArg{
-			Uid:               uid,
-			LoadMode:          loadMode,
-			TeamVOBearerToken: tok,
-		})
-	if err != nil {
-		m.Warnw("resolveSenderName", "uid", uid, "err", err)
-		return "", false
+	load := func(tok *rem.TeamVOBearerToken) (proto.NameUtf8, error) {
+		nm, _, err := m.G().UsernameLoader().Load(m.Base(), fqu,
+			libclient.LoadUserArg{
+				Uid:               uid,
+				LoadMode:          loadMode,
+				TeamVOBearerToken: tok,
+			})
+		return nm, err
 	}
-	return nm, true
+	tok := rtp.PLCNode().ViewTok()
+	nm, err := load(tok)
+	if err == nil {
+		return nm, nil
+	}
+	var staleErr core.TeamBearerTokenStaleError
+	if !errors.As(err, &staleErr) {
+		m.Warnw("resolveSenderName", "stage", "nonStale", "uid", uid, "err", err)
+		return "", err
+	}
+	// Stale token. If a concurrent resolve already refreshed the team, the
+	// shared node holds a new token -- just use it. Otherwise force one
+	// refresh; it lands in the node, so later resolves fast-path. ViewTok
+	// returns a fresh copy per call, so compare by value (nil = no token).
+	if fresh := rtp.PLCNode().ViewTok(); !fresh.Eq(tok) {
+		tok = fresh
+	} else {
+		rtp, err := d.base.GetPartyForceRefresh(m.Base(), team)
+		if err != nil {
+			m.Warnw("resolveSenderName", "stage", "staleRefresh", "uid", uid, "err", err)
+			return "", err
+		}
+		tok = rtp.PLCNode().ViewTok()
+	}
+	nm, err = load(tok)
+	if err != nil {
+		m.Warnw("resolveSenderName", "stage", "staleRetry", "uid", uid, "err", err)
+		return "", err
+	}
+	return nm, nil
 }
 
 // if inc > 1, sort ascending
@@ -1627,15 +1679,34 @@ func (d *Minder) GetThreadView(
 	if err != nil {
 		return nil, err
 	}
-	tok, err := d.TeamViewToken(m, team)
+	rtp, err := d.base.GetParty(m.Base(), team)
 	if err != nil {
 		return nil, err
 	}
-	names := d.ResolveSenderNames(m, team, tok, msgs)
+	names, err := d.ResolveSenderNames(m, team, rtp, msgs)
+	if err != nil {
+		return nil, err
+	}
 
 	ret := lcl.RTThreadView{AtBeginning: atBeginning}
 	for i := range msgs {
 		ret.Msgs = append(ret.Msgs, threadMessageToView(&msgs[i], names))
+	}
+
+	// Viewing a page implies reading it: advance the read pointer to the
+	// newest message shown, so unread counts (and the viewer's other devices)
+	// catch up on the next inbox sync. The pointer is monotonic server-side --
+	// stale marks no-op -- so paging back through history never regresses it.
+	// Best-effort: the read itself already succeeded.
+	if len(msgs) > 0 {
+		maxSeq := msgs[0].Seq
+		for i := range msgs[1:] {
+			maxSeq = max(maxSeq, msgs[i+1].Seq)
+		}
+		err = d.ReadThrough(m, team, appID, channel, maxSeq)
+		if err != nil {
+			m.Warnw("GetThreadView", "stage", "readThrough", "err", err)
+		}
 	}
 	return &ret, nil
 }

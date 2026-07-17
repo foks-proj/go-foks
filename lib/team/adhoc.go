@@ -120,6 +120,35 @@ func NamesToAdhHocCanonicalString(
 	), nil
 }
 
+// StripSelfFromAdHocName drops the viewer's own username from a canonical
+// ad-hoc member-name list ("alice,bob,charlie" -> "bob,charlie" for alice),
+// for DM-style display of ad-hoc teams. A name that doesn't parse, or a list
+// that would strip to nothing (a solo team), is returned unchanged.
+func StripSelfFromAdHocName(
+	nm proto.NameUtf8,
+	self proto.NameUtf8,
+) (
+	proto.NameUtf8,
+	error,
+) {
+	selfNorm, err := core.NormalizeName(self)
+	if err != nil {
+		return "", err
+	}
+	parts := strings.Split(nm.String(), ",")
+	kept := make([]string, 0, len(parts))
+	for _, p := range parts {
+		// Canonical lists hold normalized names, so direct comparison works.
+		if !proto.Name(p).Eq(selfNorm) {
+			kept = append(kept, p)
+		}
+	}
+	if len(kept) == 0 || len(kept) == len(parts) {
+		return nm, nil
+	}
+	return proto.NameUtf8(strings.Join(kept, ",")), nil
+}
+
 func UIDsToAdhHocCanonicalString(
 	uids []proto.UID,
 	uid proto.UID,

@@ -384,6 +384,41 @@ func outputRTThread(m libclient.MetaContext, thread lcl.RTThreadView) error {
 	return nil
 }
 
+func rtInbox(m libclient.MetaContext, top *cobra.Command) {
+	var localOnly bool
+	quickRTCmd(
+		m, top,
+		"inbox", []string{"i"},
+		"show the inbox",
+		"sync the inbox from the server, then render it from local storage: "+
+			"one line per channel across all teams, with locally-computed unread "+
+			"counts. --local-only skips the sync and renders from disk alone.",
+		quickRTOpts{NoSupportTeam: true},
+		func(cmd *cobra.Command) {
+			cmd.Flags().BoolVar(&localOnly, "local-only", false,
+				"skip the network sync; render from local storage only")
+		},
+		func(args []string, cfg lcl.RTConfig, cli lcl.RealTimeClient) error {
+			if len(args) != 0 {
+				return ArgsError("inbox takes no arguments")
+			}
+			view, err := cli.ClientRTInboxView(m.Ctx(),
+				lcl.ClientRTInboxViewArg{
+					AppID:     cfg.AppID,
+					LocalOnly: localOnly,
+				},
+			)
+			if err != nil {
+				return err
+			}
+			if m.G().Cfg().JSONOutput() {
+				return JSONOutput(m, view)
+			}
+			return outputRTInboxTable(m, outputTableOpts{headers: true}, view)
+		},
+	)
+}
+
 func rtCmd(m libclient.MetaContext) *cobra.Command {
 	top := &cobra.Command{
 		Use:     "rt",
@@ -398,6 +433,7 @@ func rtCmd(m libclient.MetaContext) *cobra.Command {
 	rtListChannels(m, top)
 	rtSend(m, top)
 	rtRead(m, top)
+	rtInbox(m, top)
 	return top
 }
 

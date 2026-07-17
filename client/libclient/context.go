@@ -194,5 +194,8 @@ func (g *GlobalContext) WarnwWithContext(
 
 func (m MetaContext) SetAsAgent() error {
 	return m.g.SetAsAgent(m.Ctx())
+}
 
+func (m MetaContext) Now() time.Time {
+	return m.g.Now()
 }

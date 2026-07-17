@@ -65,6 +65,7 @@ const (
 	DataType_UsernameReservation  DataType = 14
 	DataType_UsernameLookup       DataType = 15
 	DataType_UsernameCacheEntry   DataType = 16
+	DataType_TeamnameCacheEntry   DataType = 17
 	DataType_KVRealm              DataType = 65
 	DataType_KVNSRoot             DataType = 66
 	DataType_KVDir                DataType = 67
@@ -77,6 +78,8 @@ const (
 	DataType_RTThreadMsgData      DataType = 97
 	DataType_RTOutboxMsg          DataType = 98
 	DataType_RTChannelSet         DataType = 99
+	DataType_RTInboxSyncState     DataType = 100
+	DataType_RTInboxChannel       DataType = 101
 )
 
 var DataTypeMap = map[string]DataType{
@@ -96,6 +99,7 @@ var DataTypeMap = map[string]DataType{
 	"UsernameReservation":  14,
 	"UsernameLookup":       15,
 	"UsernameCacheEntry":   16,
+	"TeamnameCacheEntry":   17,
 	"KVRealm":              65,
 	"KVNSRoot":             66,
 	"KVDir":                67,
@@ -108,36 +112,41 @@ var DataTypeMap = map[string]DataType{
 	"RTThreadMsgData":      97,
 	"RTOutboxMsg":          98,
 	"RTChannelSet":         99,
+	"RTInboxSyncState":     100,
+	"RTInboxChannel":       101,
 }
 var DataTypeRevMap = map[DataType]string{
-	0:  "None",
-	1:  "YubiKey",
-	3:  "TreeLocation",
-	4:  "MerkleRootByHash",
-	5:  "MerkleRootHashByEpno",
-	6:  "MerkleLatestEpno",
-	7:  "Hostchain",
-	8:  "SharedKeyCacheEntry",
-	9:  "UserSigchainState",
-	10: "SubkeyBox",
-	11: "User",
-	12: "GenericChainState",
-	13: "TeamChainState",
-	14: "UsernameReservation",
-	15: "UsernameLookup",
-	16: "UsernameCacheEntry",
-	65: "KVRealm",
-	66: "KVNSRoot",
-	67: "KVDir",
-	68: "KVDirent",
-	69: "KVFileHeader",
-	70: "KVFileChunk",
-	71: "KVNSName",
-	72: "KVSymlink",
-	73: "KVGitRefSet",
-	97: "RTThreadMsgData",
-	98: "RTOutboxMsg",
-	99: "RTChannelSet",
+	0:   "None",
+	1:   "YubiKey",
+	3:   "TreeLocation",
+	4:   "MerkleRootByHash",
+	5:   "MerkleRootHashByEpno",
+	6:   "MerkleLatestEpno",
+	7:   "Hostchain",
+	8:   "SharedKeyCacheEntry",
+	9:   "UserSigchainState",
+	10:  "SubkeyBox",
+	11:  "User",
+	12:  "GenericChainState",
+	13:  "TeamChainState",
+	14:  "UsernameReservation",
+	15:  "UsernameLookup",
+	16:  "UsernameCacheEntry",
+	17:  "TeamnameCacheEntry",
+	65:  "KVRealm",
+	66:  "KVNSRoot",
+	67:  "KVDir",
+	68:  "KVDirent",
+	69:  "KVFileHeader",
+	70:  "KVFileChunk",
+	71:  "KVNSName",
+	72:  "KVSymlink",
+	73:  "KVGitRefSet",
+	97:  "RTThreadMsgData",
+	98:  "RTOutboxMsg",
+	99:  "RTChannelSet",
+	100: "RTInboxSyncState",
+	101: "RTInboxChannel",
 }
 
 type DataTypeInternal__ DataType
