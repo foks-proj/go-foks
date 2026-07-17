@@ -260,7 +260,11 @@ func (d *Minder) renderInboxRow(
 	fqt := proto.FQTeam{Team: row.Md.ParentTeam, Host: d.au.HostID()}
 	if nm, ok := m.G().TeamnameLoader().Get(m.Base(), fqt); ok {
 		if row.Md.ParentTeam.IsAdHocTeam() {
-			nm = team.StripSelfFromAdHocName(nm, d.au.Info.Username.NameUtf8)
+			nm, err = team.StripSelfFromAdHocName(nm, d.au.Info.Username.NameUtf8)
+			if err != nil {
+				nm = "<error>"
+				m.Warnw("renderInboxRow", "stage", "stripSelfFromAdHocName", "err", err)
+			}
 		}
 		ret.TeamName = &nm
 	}
@@ -308,7 +312,7 @@ func (d *Minder) fillSnippet(
 	out.Snippet = &sn
 	if msg.Sender != nil && msg.Sender.IsUser() {
 		if uid, err := msg.Sender.UID(); err == nil {
-			if nm, ok := d.resolveSenderName(m, cfgTeam, rtp, uid); ok {
+			if nm, err := d.resolveSenderName(m, cfgTeam, rtp, uid); err == nil {
 				out.LastSender = &nm
 			}
 		}

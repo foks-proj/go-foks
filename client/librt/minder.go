@@ -1286,7 +1286,10 @@ func (d *Minder) ResolveSenderNames(
 	team lcl.ConfigTeam,
 	rtp *RTParty,
 	msgs []ThreadMessage,
-) map[proto.UID]proto.NameUtf8 {
+) (
+	map[proto.UID]proto.NameUtf8,
+	error,
+) {
 	ret := make(map[proto.UID]proto.NameUtf8)
 	for i := range msgs {
 		sender := msgs[i].Sender
@@ -1295,16 +1298,21 @@ func (d *Minder) ResolveSenderNames(
 		}
 		uid, err := sender.UID()
 		if err != nil {
-			continue
+			return nil, err
 		}
 		if _, ok := ret[uid]; ok {
 			continue
 		}
-		if nm, ok := d.resolveSenderName(m, team, rtp, uid); ok {
-			ret[uid] = nm
+		nm, err := d.resolveSenderName(m, team, rtp, uid)
+		var resolved proto.NameUtf8
+		if err == nil {
+			resolved = nm
+		} else {
+			resolved = proto.NameUtf8(fmt.Sprintf("<error: %s>", err.Error()))
 		}
+		ret[uid] = resolved
 	}
-	return ret
+	return ret, nil
 }
 
 // resolveSenderName returns the display name for a single sender UID, via the
@@ -1326,7 +1334,10 @@ func (d *Minder) resolveSenderName(
 	team lcl.ConfigTeam,
 	rtp *RTParty,
 	uid proto.UID,
-) (proto.NameUtf8, bool) {
+) (
+	proto.NameUtf8,
+	error,
+) {
 	// The loader is keyed by FQUser; senders are always on the active user's
 	// host (see decryptAndVerifyMsg's HostMismatchError check).
 	fqu := proto.FQUser{Uid: uid, HostID: d.au.HostID()}
@@ -1346,12 +1357,12 @@ func (d *Minder) resolveSenderName(
 	tok := rtp.PLCNode().ViewTok()
 	nm, err := load(tok)
 	if err == nil {
-		return nm, true
+		return nm, nil
 	}
 	var staleErr core.TeamBearerTokenStaleError
 	if !errors.As(err, &staleErr) {
 		m.Warnw("resolveSenderName", "stage", "nonStale", "uid", uid, "err", err)
-		return "", false
+		return "", err
 	}
 	// Stale token. If a concurrent resolve already refreshed the team, the
 	// shared node holds a new token -- just use it. Otherwise force one
@@ -1363,16 +1374,16 @@ func (d *Minder) resolveSenderName(
 		rtp, err := d.base.GetPartyForceRefresh(m.Base(), team)
 		if err != nil {
 			m.Warnw("resolveSenderName", "stage", "staleRefresh", "uid", uid, "err", err)
-			return "", false
+			return "", err
 		}
 		tok = rtp.PLCNode().ViewTok()
 	}
 	nm, err = load(tok)
 	if err != nil {
 		m.Warnw("resolveSenderName", "stage", "staleRetry", "uid", uid, "err", err)
-		return "", false
+		return "", err
 	}
-	return nm, true
+	return nm, nil
 }
 
 // if inc > 1, sort ascending
@@ -1643,7 +1654,10 @@ func (d *Minder) GetThreadView(
 	if err != nil {
 		return nil, err
 	}
-	names := d.ResolveSenderNames(m, team, rtp, msgs)
+	names, err := d.ResolveSenderNames(m, team, rtp, msgs)
+	if err != nil {
+		return nil, err
+	}
 
 	ret := lcl.RTThreadView{AtBeginning: atBeginning}
 	for i := range msgs {
