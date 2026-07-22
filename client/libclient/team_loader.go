@@ -498,7 +498,11 @@ func (w *TeamWrapper) BookendSigningKey(
 	}, nil
 }
 
-func (r *rosterPackage) Export() lcl.TeamRosterMember {
+// Export renders one roster row. localHostname is the loaded team's own
+// hostname, used for members whose chain load was skipped on a username-cache
+// hit: the cache stores bare names, and that skip is gated on !isRemote, so
+// such a member is always on the team's host.
+func (r *rosterPackage) Export(localHostname proto.Hostname) lcl.TeamRosterMember {
 	ret := lcl.TeamRosterMember{
 		Mem: lcl.NamedFQParty{
 			Fqp: r.fqp,
@@ -520,6 +524,13 @@ func (r *rosterPackage) Export() lcl.TeamRosterMember {
 		ret.Mem.Name = r.tw.prot.Name.B.NameUtf8
 		ret.Mem.Host = r.tw.hostname
 		ret.NumMembers = int64(len(r.tw.prot.Members))
+	case !r.cachedName.IsZero():
+		// LoadMemberNames hit the username cache and skipped the chain load, so
+		// there's no UserWrapper to read from. NumMembers (a device count) needs
+		// the chain and stays zero -- callers wanting it must ask for
+		// LoadMembers.
+		ret.Mem.Name = r.cachedName
+		ret.Mem.Host = localHostname
 	}
 	return ret
 }
@@ -542,7 +553,7 @@ func (w *TeamWrapper) ExportToRoster() (*lcl.TeamRoster, error) {
 			// note that we still export the roster details even if we failed to load
 			// the user, since we still can display uid/hostid (just not username).
 			// i.e. we are not checking v.err here.
-			x := v.Export()
+			x := v.Export(w.hostname)
 			roster = append(roster, x)
 		}
 	}
