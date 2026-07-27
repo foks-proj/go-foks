@@ -176,6 +176,18 @@ func (p Path) Rename(newPath Path) error {
 	return os.Rename(p.String(), newPath.String())
 }
 
+// Symlink creates link as a symbolic link pointing to p, following the
+// argument order of os.Symlink.
+func (p Path) Symlink(link Path) error {
+	if p.IsNil() {
+		return errors.New("cannot symlink to nil path")
+	}
+	if link.IsNil() {
+		return errors.New("cannot create symlink at nil path")
+	}
+	return os.Symlink(p.String(), link.String())
+}
+
 func (p Path) ReadDir() ([]os.DirEntry, error) {
 	return os.ReadDir(p.String())
 }

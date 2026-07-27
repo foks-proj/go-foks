@@ -11,6 +11,13 @@ import (
 
 const DefProbePort = proto.DefProbePort
 const AppName = "foks"
+const AppDisplayName = "FOKS"
+
+// AppBundleID is the reverse-DNS identifier for FOKS. On macOS it names the
+// app bundle that gives the launchd agent (labeled AppBundleID + ".agent") a
+// display name and icon in System Settings.
+const AppBundleID = "com.ne43.foks"
+
 const DefProbeAddr = proto.TCPAddr("foks.app")
 
 var MkdirAllMode = fs.FileMode(0o750)

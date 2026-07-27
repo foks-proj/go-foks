@@ -31,10 +31,14 @@ type Plist struct {
 
 func (p *Plist) Template() string {
 	return `<?xml version='1.0' encoding='UTF-8'?>
-<!DOCTYPE plist PUBLIC \"-//Apple Computer//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\" >
+<!DOCTYPE plist PUBLIC "-//Apple Computer//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd" >
 <plist version='1.0'>
 	<dict>
 	  <key>Label</key><string>{{.Label}}</string>
+	  <key>AssociatedBundleIdentifiers</key>
+	  <array>
+	    <string>{{.BundleID}}</string>
+	  </array>
 	  <key>ProgramArguments</key>
 	  <array>
 	    <string>{{.Program}}</string>
@@ -110,6 +114,14 @@ func (p *Plist) Load(m MetaContext) error {
 	if err != nil {
 		return err
 	}
+
+	// Give Background Task Management a bundle to resolve our name and icon
+	// against; best-effort, since the agent runs fine without it.
+	ab, err := NewAppBundle()
+	if err == nil {
+		_ = ab.Install(m)
+	}
+
 	d, err := p.Domain(m)
 	if err != nil {
 		return err
@@ -297,17 +309,19 @@ func (p *Plist) Write(m MetaContext) error {
 	cfg = fix(cfg)
 	logDir := fix(core.Path(p.logDir))
 	data := struct {
-		Label   string
-		Program string
-		Home    core.Path
-		Config  core.Path
-		LogDir  core.Path
+		Label    string
+		BundleID string
+		Program  string
+		Home     core.Path
+		Config   core.Path
+		LogDir   core.Path
 	}{
-		Label:   p.label,
-		Program: prog,
-		Home:    home,
-		Config:  cfg,
-		LogDir:  logDir,
+		Label:    p.label,
+		BundleID: AppBundleID,
+		Program:  prog,
+		Home:     home,
+		Config:   cfg,
+		LogDir:   logDir,
 	}
 	plistPath := core.Path(p.path)
 
