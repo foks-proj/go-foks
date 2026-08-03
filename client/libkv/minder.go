@@ -1612,11 +1612,15 @@ func (k *Minder) GetUsage(
 	if err != nil {
 		return nil, err
 	}
-	auth, cli, err := k.client(m, kvp)
-	if err != nil {
-		return nil, err
-	}
-	res, err := cli.KvUsage(m.Ctx(), *auth)
+	var res proto.KVUsage
+	err = k.withFreshToken(m, kvp, func(m MetaContext) error {
+		auth, cli, err := k.client(m, kvp)
+		if err != nil {
+			return err
+		}
+		res, err = cli.KvUsage(m.Ctx(), *auth)
+		return err
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -1896,10 +1900,6 @@ func (k *Minder) AcquireLock(
 	if err != nil {
 		return nil, err
 	}
-	auth, cli, err := k.client(m, kvp)
-	if err != nil {
-		return nil, err
-	}
 	var lockID rem.LockID
 	err = core.RandomFill(lockID[:])
 	if err != nil {
@@ -1920,10 +1920,16 @@ func (k *Minder) AcquireLock(
 		timeout = kvcfg.LockTimeout
 	}
 
-	err = cli.KvLockAcquire(m.Ctx(), rem.KvLockAcquireArg{
-		Auth:    *auth,
-		Lock:    plock,
-		Timeout: proto.ExportDurationMilli(timeout),
+	err = k.withFreshToken(m, kvp, func(m MetaContext) error {
+		auth, cli, err := k.client(m, kvp)
+		if err != nil {
+			return err
+		}
+		return cli.KvLockAcquire(m.Ctx(), rem.KvLockAcquireArg{
+			Auth:    *auth,
+			Lock:    plock,
+			Timeout: proto.ExportDurationMilli(timeout),
+		})
 	})
 	if err != nil {
 		return nil, err
@@ -1943,16 +1949,14 @@ func (l *Lock) Release(m MetaContext) error {
 		return err
 	}
 
-	auth, cli, err := l.Minder.client(m, kvp)
-	if err != nil {
-		return err
-	}
-	err = cli.KvLockRelease(m.Ctx(), rem.KvLockReleaseArg{
-		Auth: *auth,
-		Lock: l.KVLock,
+	return l.Minder.withFreshToken(m, kvp, func(m MetaContext) error {
+		auth, cli, err := l.Minder.client(m, kvp)
+		if err != nil {
+			return err
+		}
+		return cli.KvLockRelease(m.Ctx(), rem.KvLockReleaseArg{
+			Auth: *auth,
+			Lock: l.KVLock,
+		})
 	})
-	if err != nil {
-		return err
-	}
-	return nil
 }
