@@ -14,10 +14,28 @@ type PLCNode struct {
 	sync.RWMutex
 	id            proto.FQParty
 	au            proto.FQUser
+	tm            *lcl.ConfigTeam // how this party was named on load; nil for the active user
 	skm           SharedKeyManager
 	voTok         *rem.TeamVOBearerToken
 	refreshTime   time.Time
 	directDstRole *proto.Role // might be null if we don't have direct membership
+}
+
+// Invalidate expires the node's cached state -- crucially its VO bearer token --
+// so the next Load re-mints rather than handing back a token the server has
+// already rejected. The stale token is deliberately left in place: if the reload
+// fails we'd rather retry with a doomed token than fail differently ("no VO
+// token") on a path that only wanted to refresh it.
+func (p *PLCNode) Invalidate() {
+	p.Lock()
+	defer p.Unlock()
+	p.refreshTime = time.Time{}
+}
+
+func (p *PLCNode) configTeam() *lcl.ConfigTeam {
+	p.RLock()
+	defer p.RUnlock()
+	return p.tm
 }
 
 func (p *PLCNode) DirectDstRole() *proto.Role {
@@ -141,10 +159,12 @@ func (n *PLCNode) isFresh(m MetaContext) (bool, error) {
 
 func (k *PLCNode) refresh(
 	m MetaContext,
+	tm lcl.ConfigTeam,
 	tw *TeamWrapper,
 	userRoleInTeam *proto.Role,
 ) {
 	k.refreshTime = m.G().Now()
+	k.tm = &tm
 	k.skm = tw.KeyRing()
 	k.voTok = tw.VOBearerToken()
 	k.directDstRole = userRoleInTeam
@@ -229,9 +249,31 @@ func (p *PartyLoaderCache) loadTeam(
 	if memb != nil {
 		mr = &memb.Mr.DstRole
 	}
-	plcn.refresh(m, tw, mr)
+	plcn.refresh(m, tm, tw, mr)
 
 	return plcn, nil
+}
+
+// Refresh forces a reload of a node whose cached VO bearer token the server has
+// rejected, bypassing the TeamCacheTimeout freshness window. Without it a token
+// invalidated by a roster change (see the "stale member" rejection in
+// CheckTeamVOBearerToken) keeps being replayed until the window expires -- on
+// mobile that window is minutes, so every team KV op fails in the meantime.
+// Reloading via TeamMinder alone does not help: it refreshes a different cache,
+// and the token callers actually present comes from here.
+//
+// A no-op for the active user's own node, which carries no token.
+func (p *PartyLoaderCache) Refresh(m MetaContext, n *PLCNode) error {
+	if n == nil {
+		return nil
+	}
+	tm := n.configTeam()
+	if tm == nil {
+		return nil
+	}
+	n.Invalidate()
+	_, err := p.loadTeam(m, *tm, &PLCOpts{})
+	return err
 }
 
 // Load a PLCNode, from a FQTeamParsed if specified. Return a PLCNode, which
