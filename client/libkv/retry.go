@@ -4,6 +4,7 @@
 package libkv
 
 import (
+	"errors"
 	"time"
 
 	"github.com/foks-proj/go-foks/lib/core"
@@ -105,6 +106,52 @@ type kvRetryOptions struct {
 	skipCacheCheck bool
 }
 
+// isStaleTeamTokenError reports the server refusing the team VO bearer token
+// that this party has cached. It goes stale on any roster write touching the
+// member it was minted for -- the token is pinned to one team_members row --
+// and also once it ages out. Both are cured by minting a new one.
+func isStaleTeamTokenError(err error) bool {
+	if err == nil {
+		return false
+	}
+	var stale core.TeamBearerTokenStaleError
+	if errors.As(err, &stale) {
+		return true
+	}
+	var nf core.NotFoundError
+	if errors.As(err, &nf) && nf == core.NotFoundError("team vo bearer token") {
+		return true
+	}
+	return false
+}
+
+// withFreshToken runs f, and if the server rejected the party's cached VO bearer
+// token, re-mints it and runs f exactly once more. The rejection happens in the
+// server's auth step, before any part of the operation is applied, so replaying
+// f is safe.
+//
+// This is what makes a freshly-admitted member's first write work: admission
+// supersedes the team_members row their token was minted against, and nothing
+// else in the client notices until the freshness window expires.
+func (k *Minder) withFreshToken(
+	m MetaContext,
+	kvp *KVParty,
+	f func(m MetaContext) error,
+) error {
+	err := f(m)
+	if !isStaleTeamTokenError(err) {
+		return err
+	}
+	rerr := k.au.PartyLoaderCache().Refresh(m.Base(), kvp.plcn)
+	if rerr != nil {
+		// Report the rejection, not the refresh failure -- the former is what
+		// the caller's operation actually hit.
+		m.Warnw("withFreshToken", "stage", "refresh", "err", rerr, "orig", err)
+		return err
+	}
+	return f(m)
+}
+
 func (k *Minder) retryCacheLoop(
 	m MetaContext,
 	kvp *KVParty,
@@ -114,6 +161,19 @@ func (k *Minder) retryCacheLoop(
 }
 
 func (k *Minder) retryCacheLoopWithOptions(
+	m MetaContext,
+	kvp *KVParty,
+	opts kvRetryOptions,
+	f func(m MetaContext) error,
+) error {
+	// Wraps the whole cache-race loop rather than f alone, so a stale token
+	// surfacing from the loop's own cache check is caught too.
+	return k.withFreshToken(m, kvp, func(m MetaContext) error {
+		return k.cacheRaceLoop(m, kvp, opts, f)
+	})
+}
+
+func (k *Minder) cacheRaceLoop(
 	m MetaContext,
 	kvp *KVParty,
 	opts kvRetryOptions,
