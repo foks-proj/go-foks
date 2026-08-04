@@ -149,6 +149,11 @@ func (k *Minder) withFreshToken(
 		m.Warnw("withFreshToken", "stage", "refresh", "err", rerr, "orig", err)
 		return err
 	}
+	// Logged because a successful recovery is otherwise invisible: the server
+	// returns both rejections without logging, and a replayed op looks exactly
+	// like one that never went stale. Without this line the only way to tell
+	// whether this path ran is a negative control against a build without it.
+	m.Infow("withFreshToken", "stage", "re-minted", "party", kvp.Id(), "rejection", err)
 	return f(m)
 }
 
