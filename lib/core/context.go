@@ -38,6 +38,15 @@ func (m MetaContext) Ctx() context.Context {
 	return m.ctx
 }
 
+// WithRpcStats scopes RPC accounting to the returned MetaContext: every
+// outbound RPC issued under it is counted, until the scope is abandoned. See
+// RpcStats for what the numbers mean.
+func (m MetaContext) WithRpcStats() (MetaContext, *RpcStats) {
+	var st *RpcStats
+	m.ctx, st = WithRpcStats(m.ctx)
+	return m, st
+}
+
 func (m MetaContext) WithLogTag(k string) MetaContext {
 	m.ctx = ctxlog.WithLogTag(m.ctx, k)
 	return m

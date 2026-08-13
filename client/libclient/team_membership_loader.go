@@ -63,6 +63,40 @@ func NewTMLTeam(m MetaContext, arg LoadTeamArg, ric proto.Role) (*TMLTeam, error
 	}, nil
 }
 
+// NewTMLTeamFromLoaded builds a TMLTeam around a team the caller has already
+// loaded, so Init reuses that work instead of loading the same team a second
+// time. The membership chain needs two things from the team load -- the view
+// token to fetch with, and the wrapper to bookend signing keys against -- and
+// a completed loader already holds both.
+//
+// The explore path measured 16 loadTeamChain calls for 8 teams, plus a fresh
+// view token minted per load (two more round trips each), because it loaded
+// every team once to walk it and again to construct this. The loader's own Arg
+// is taken rather than the caller's copy: makeViewToken resolves a
+// load-by-name into a team ID and writes it back there, so the caller's copy
+// can still be missing it.
+func NewTMLTeamFromLoaded(
+	m MetaContext,
+	ldr *TeamLoader,
+	tw *TeamWrapper,
+	ric proto.Role,
+) (*TMLTeam, error) {
+	au := m.G().ActiveUser()
+	if au == nil {
+		return nil, core.NoActiveUserError{}
+	}
+	if ldr == nil || tw == nil {
+		return nil, core.InternalError("NewTMLTeamFromLoaded needs a completed load")
+	}
+	return &TMLTeam{
+		au:        au,
+		arg:       ldr.Arg,
+		tmLoader:  ldr,
+		tmWrapper: tw,
+		ric:       ric,
+	}, nil
+}
+
 func (t *TMLTeam) SeedCommitment() *proto.TreeLocationCommitment {
 	return t.tmWrapper.SeedCommitment()
 }
@@ -108,6 +142,11 @@ func (t *TMLTeam) BookendSigningKey(
 }
 
 func (t *TMLTeam) Init(m MetaContext) error {
+	// Already loaded by the caller (see NewTMLTeamFromLoaded) -- reloading
+	// would repeat a chain fetch and a token mint for no new information.
+	if t.tmLoader != nil && t.tmWrapper != nil {
+		return nil
+	}
 	l := NewTeamLoader(t.au, t.arg)
 	w, err := l.Run(m)
 	if err != nil {

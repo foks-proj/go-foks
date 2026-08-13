@@ -504,7 +504,16 @@ func (c *RpcClient) Call2(ctx context.Context, method rpc.Methoder, arg interfac
 	}
 	c.inc()
 	defer c.dec()
+
+	// Every generated client funnels through here, so this is the one place
+	// that sees all outbound traffic. Costs two wall-clock reads per call when
+	// no collector is in scope, which is the common case; the Begin/End pair
+	// is what lets a scope tell overlapping calls from sequential ones.
+	st := RpcStatsFromContext(ctx)
+	start := c.now()
+	st.Begin(start)
 	err = gcli.Call2(ctx, method, arg, res, timeout, ew)
+	st.End(method.String(), start, c.now(), err)
 
 	if errors.Is(err, io.EOF) {
 		return RPCEOFError{}
