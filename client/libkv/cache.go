@@ -349,6 +349,13 @@ func (m MetaContext) Base() libclient.MetaContext {
 	return m.MetaContext
 }
 
+func (m MetaContext) WithRpcStats() (MetaContext, *core.RpcStats) {
+	ret := m
+	var st *core.RpcStats
+	ret.MetaContext, st = m.MetaContext.WithRpcStats()
+	return ret, st
+}
+
 func NewMetaContext(m libclient.MetaContext) MetaContext {
 	return MetaContext{
 		MetaContext: m,

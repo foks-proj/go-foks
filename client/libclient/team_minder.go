@@ -14,6 +14,7 @@ import (
 	"github.com/foks-proj/go-foks/proto/lcl"
 	proto "github.com/foks-proj/go-foks/proto/lib"
 	"github.com/foks-proj/go-foks/proto/rem"
+	"go.uber.org/zap/zapcore"
 )
 
 type TeamMinderTestHooks struct {
@@ -1495,6 +1496,21 @@ func (t *TeamMinder) ListMemberships(
 	error,
 ) {
 	var ret lcl.ListMembershipsRes
+
+	// The whole team graph is crawled on every call, so account for the round
+	// trips that costs: wall time minus rpcMs is the part that is local crypto
+	// and SQLite rather than the server.
+	m, stats := m.WithRpcStats()
+	start := time.Now()
+	defer func() {
+		// Gated so the summary is not built when the level discards it; this
+		// runs once per call, unlike the per-read GetFile scope, so Info is
+		// the right level for it.
+		if m.G().Log().Core().Enabled(zapcore.InfoLevel) {
+			m.Infow("TeamMinder.ListMemberships", stats.LogArgs(time.Since(start), 6)...)
+		}
+	}()
+
 	err := t.ExploreAndIndex(m, opts)
 	if err != nil {
 		return nil, err

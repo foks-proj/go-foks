@@ -1084,9 +1084,15 @@ func (c *Config) JSONOutput() bool {
 }
 
 func (c *Config) RPCLogOptions() (rpc.LogOptions, error) {
-	c.Lock()
-	defer c.Unlock()
-	return rpc.ParseStandardLogOptions(c.fl.rpcLogOpts)
+	// Resolve the same way as every other setting -- flag, then env, then
+	// config file. Reading c.fl.rpcLogOpts alone meant RPC tracing could only
+	// ever be turned on by a command-line flag, which the mobile agent has no
+	// way to pass; there the env var and config file are the only handles.
+	opts, err := c.RpcLogOpts()
+	if err != nil {
+		return nil, err
+	}
+	return rpc.ParseStandardLogOptions(opts)
 }
 
 type MerkleRaceRetryConfig struct {

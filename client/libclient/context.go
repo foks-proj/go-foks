@@ -75,6 +75,13 @@ func (m MetaContext) WithLogTag(k string) MetaContext {
 	return ret
 }
 
+func (m MetaContext) WithRpcStats() (MetaContext, *core.RpcStats) {
+	ret := m
+	var st *core.RpcStats
+	ret.MetaContext, st = m.MetaContext.WithRpcStats()
+	return ret, st
+}
+
 func (m MetaContext) BackgroundWithCancel() (MetaContext, func()) {
 	ret := m
 	var f func()
