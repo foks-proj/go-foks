@@ -216,17 +216,21 @@ func (t *TeamWrapper) IsAdHocTeam() bool {
 	return t.prot.Fqt.Team.IsAdHocTeam()
 }
 
-// returns {names X UIDs x ID x MashedIDs   } @ { name X ID }
-func (t *TeamWrapper) AllFQAdHocTeamStrings() ([]proto.FQAdHocTeamString, error) {
-
-	if !t.IsAdHocTeam() {
-		return nil, nil
+// adHocMemberIDsAndNames collects the local-host user members of an ad-hoc
+// team: their UIDs, and their usernames when every member's name is known
+// (from its loaded user chain, or captured from the username cache when the
+// chain load was skipped -- see LoadMemberNames). nameListOK is false when any
+// member's name is missing; the UID list is complete regardless.
+func (t *TeamWrapper) adHocMemberIDsAndNames() (
+	uids []proto.UID,
+	names []proto.NameUtf8,
+	err error,
+) {
+	err = t.index() // memberMap is built lazily
+	if err != nil {
+		return nil, nil, err
 	}
-
-	var uids []proto.UID
-	var names []proto.NameUtf8
 	host := t.prot.Fqt.Host
-
 	var badNameList bool
 
 	for m := range t.memberMap {
@@ -239,7 +243,7 @@ func (t *TeamWrapper) AllFQAdHocTeamStrings() ([]proto.FQAdHocTeamString, error)
 		}
 		uid, err := eid.ToUID()
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 		uids = append(uids, uid)
 		rp := t.rosterDetails[m.Fqe]
@@ -258,9 +262,45 @@ func (t *TeamWrapper) AllFQAdHocTeamStrings() ([]proto.FQAdHocTeamString, error)
 				badNameList = true
 			}
 		}
-		if badNameList {
-			break
-		}
+	}
+	if badNameList {
+		names = nil
+	}
+	return uids, names, nil
+}
+
+// AdHocDisplayName renders an ad-hoc team as its canonical member-name list
+// ("alice,bob,charlie"), the closest thing such a team has to a name. Returns
+// false for non-ad-hoc teams or when some member's username isn't known.
+func (t *TeamWrapper) AdHocDisplayName() (proto.NameUtf8, error) {
+	if !t.IsAdHocTeam() {
+		return "", core.InternalError("not an ad-hoc team")
+	}
+	_, names, err := t.adHocMemberIDsAndNames()
+	if err != nil {
+		return "", err
+	}
+	if len(names) == 0 {
+		return "", core.NameError("no names")
+	}
+	s, err := team.NamesToAdhHocCanonicalString(names, "")
+	if err != nil {
+		return "", err
+	}
+	return proto.NameUtf8(s), nil
+}
+
+// returns {names X UIDs x ID x MashedIDs   } @ { name X ID }
+func (t *TeamWrapper) AllFQAdHocTeamStrings() ([]proto.FQAdHocTeamString, error) {
+
+	if !t.IsAdHocTeam() {
+		return nil, nil
+	}
+
+	host := t.prot.Fqt.Host
+	uids, names, err := t.adHocMemberIDsAndNames()
+	if err != nil {
+		return nil, err
 	}
 	uidsJoined, err := team.UIDsToAdhHocCanonicalString(uids, proto.UID{})
 	if err != nil {
@@ -283,7 +323,7 @@ func (t *TeamWrapper) AllFQAdHocTeamStrings() ([]proto.FQAdHocTeamString, error)
 		proto.AdHocTeamString(mashedStr),
 		proto.AdHocTeamString(tid),
 	}
-	if !badNameList {
+	if len(names) > 0 {
 		namesJoined, err := team.NamesToAdhHocCanonicalString(names, "")
 		if err != nil {
 			return nil, err

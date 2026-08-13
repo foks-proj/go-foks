@@ -15,12 +15,19 @@ type App struct {
 	sync.Mutex
 	parent *libclient.UserContext
 	teams  map[proto.FQTeam]*Minder
+	user   *Minder // team-independent flows (e.g. the inbox); lazily made
+
+	// One lock per appID serializes inbox syncs for this user (the App is a
+	// per-UserContext singleton), so concurrent syncs can't interleave their
+	// page applies -- even across Minders.
+	inboxSyncLocks map[proto.RTAppID]*sync.Mutex
 }
 
 func NewApp(u *libclient.UserContext) *App {
 	return &App{
-		parent: u,
-		teams:  make(map[proto.FQTeam]*Minder),
+		parent:         u,
+		teams:          make(map[proto.FQTeam]*Minder),
+		inboxSyncLocks: make(map[proto.RTAppID]*sync.Mutex),
 	}
 }
 func (k *App) Cleanup(m libclient.MetaContext) error { return nil }
@@ -56,6 +63,29 @@ func (a *App) Minder(m MetaContext, actingAs lcl.ConfigTeam) (*Minder, error) {
 	return ret, nil
 }
 
+// UserMinder returns the user-scoped Minder, for flows that aren't tied to any
+// one team -- like the inbox, which spans all of the user's teams. Per-team
+// parties are still loaded lazily through its BaseMinder as needed.
+func (a *App) UserMinder() *Minder {
+	a.Lock()
+	defer a.Unlock()
+	if a.user == nil {
+		a.user = NewMinder(a.parent)
+	}
+	return a.user
+}
+
+func (a *App) inboxSyncLock(appID proto.RTAppID) *sync.Mutex {
+	a.Lock()
+	defer a.Unlock()
+	lk := a.inboxSyncLocks[appID]
+	if lk == nil {
+		lk = &sync.Mutex{}
+		a.inboxSyncLocks[appID] = lk
+	}
+	return lk
+}
+
 func appFromMeta(m MetaContext) (*App, error) {
 	au, err := m.ActiveConnectedUser(&libclient.ACUOpts{AssertUnlocked: true})
 	if err != nil {
@@ -87,4 +117,19 @@ func InitReq(
 		return nil, err
 	}
 	return ret, nil
+}
+
+// InitUserReq is InitReq for user-scoped requests that don't act as any one
+// team, like inbox sync and render.
+func InitUserReq(
+	m MetaContext,
+) (
+	*Minder,
+	error,
+) {
+	app, err := appFromMeta(m)
+	if err != nil {
+		return nil, err
+	}
+	return app.UserMinder(), nil
 }

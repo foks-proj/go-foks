@@ -116,4 +116,30 @@ func (c *AgentConn) ClientRTGetThread(
 	return *view, nil
 }
 
+func (c *AgentConn) ClientRTInboxView(
+	ctx context.Context,
+	arg lcl.ClientRTInboxViewArg,
+) (
+	lcl.RTInboxView,
+	error,
+) {
+	var zed lcl.RTInboxView
+	m := librt.NewMetaContext(c.MetaContext(ctx))
+	minder, err := librt.InitUserReq(m)
+	if err != nil {
+		return zed, err
+	}
+	if !arg.LocalOnly {
+		_, err = minder.SyncInbox(m, arg.AppID)
+		if err != nil {
+			return zed, err
+		}
+	}
+	view, err := minder.LocalInbox(m, arg.AppID)
+	if err != nil {
+		return zed, err
+	}
+	return *view, nil
+}
+
 var _ lcl.RealTimeInterface = (*AgentConn)(nil)

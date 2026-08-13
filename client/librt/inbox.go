@@ -1,0 +1,397 @@
+// Copyright (c) 2025 ne43, Inc.
+// Licensed under the MIT License. See LICENSE in the project root for details.
+
+package librt
+
+import (
+	"cmp"
+	"errors"
+	"fmt"
+	"slices"
+	"strings"
+	"unicode/utf8"
+
+	"github.com/foks-proj/go-foks/client/libclient"
+	"github.com/foks-proj/go-foks/lib/core"
+	"github.com/foks-proj/go-foks/lib/team"
+	"github.com/foks-proj/go-foks/proto/lcl"
+	proto "github.com/foks-proj/go-foks/proto/lib"
+	"github.com/foks-proj/go-foks/proto/rem"
+)
+
+// The inbox syncer persists the inbox-version delta (issue #303) to local soft
+// SQLite so app starts render instantly/offline and resync incrementally from
+// the stored cursor instead of a since=0 full sync.
+//
+// Storage layout, all soft state under scope lcl.RTInboxScope{fqu, appID} (the
+// inbox is viewer-scoped state spanning many parties):
+//   - DataType_RTInboxChannel, key = channelID: one wire-shape rem.RTInboxChannel
+//     per channel, denormalized like the server's user_channels. The channel
+//     name/desc inside remain in their secretboxes -- plaintext never hits the
+//     local DB; LocalInbox decrypts at render time.
+//   - DataType_RTInboxSyncState, key = EmptyKey: the sync cursor plus the index
+//     of persisted channelIDs (the KV layer can't enumerate keys in a scope).
+//
+// Each page applies atomically (rows + cursor in one DbPutTx), with the cursor
+// advanced to the highest version *applied*, never the server-reported head --
+// a crash mid-multi-page sync resumes at the last applied page. Merge is
+// whole-row overwrite; server-side monotonicity makes the server copy win.
+// All of it is self-healing soft state: wiping it just costs a full resync.
+
+func (d *Minder) inboxScope(appID proto.RTAppID) lcl.RTInboxScope {
+	return lcl.RTInboxScope{Fqu: d.au.FQU(), AppID: appID}
+}
+
+func (d *Minder) dbGetInboxSyncState(
+	m MetaContext,
+	appID proto.RTAppID,
+) (
+	lcl.RTInboxSyncState,
+	error,
+) {
+	var ret lcl.RTInboxSyncState
+	scope := d.inboxScope(appID)
+	_, err := m.DbGet(&ret, libclient.DbTypeSoft, &scope,
+		lcl.DataType_RTInboxSyncState, core.EmptyKey{})
+	if errors.Is(err, core.RowNotFoundError{}) {
+		return lcl.RTInboxSyncState{}, nil // never synced; cursor 0 = full sync
+	}
+	if err != nil {
+		return ret, err
+	}
+	return ret, nil
+}
+
+// SyncInbox pages rtGetChangedThreads from the locally-stored cursor and
+// applies each page transactionally (channel rows + advanced cursor). Syncs
+// for the same (user × app) are serialized so they can't interleave. Returns
+// what changed: the post-sync cursor and how many channel rows were applied.
+func (d *Minder) SyncInbox(
+	m MetaContext,
+	appID proto.RTAppID,
+) (
+	*lcl.RTInboxSyncSummary,
+	error,
+) {
+	return d.SyncInboxWithPageSize(m, appID, 0)
+}
+
+// SyncInboxWithPageSize is SyncInbox with an explicit page size for the
+// underlying rtGetChangedThreads calls; 0 = server default. Tests use small
+// pages to exercise the per-page atomic apply and crash-resume cursor.
+func (d *Minder) SyncInboxWithPageSize(
+	m MetaContext,
+	appID proto.RTAppID,
+	pageSize uint64,
+) (
+	*lcl.RTInboxSyncSummary,
+	error,
+) {
+	app, err := GetApp(d.au)
+	if err != nil {
+		return nil, err
+	}
+	lk := app.inboxSyncLock(appID)
+	lk.Lock()
+	defer lk.Unlock()
+
+	scope := d.inboxScope(appID)
+	state, err := d.dbGetInboxSyncState(m, appID)
+	if err != nil {
+		return nil, err
+	}
+	indexed := make(map[proto.RTChannelID]struct{}, len(state.Channels))
+	for _, chid := range state.Channels {
+		indexed[chid] = struct{}{}
+	}
+
+	var numChanged uint64
+	for {
+		delta, err := d.GetChangedThreads(m, appID, state.Vers, pageSize)
+		if err != nil {
+			return nil, err
+		}
+		if len(delta.Channels) == 0 {
+			break
+		}
+		pageVers := state.Vers
+		args := make([]libclient.PutArg, 0, len(delta.Channels)+1)
+		for i := range delta.Channels {
+			ch := &delta.Channels[i]
+			if ch.InboxVersion > pageVers {
+				pageVers = ch.InboxVersion
+			}
+			if _, ok := indexed[ch.Md.Id]; !ok {
+				indexed[ch.Md.Id] = struct{}{}
+				state.Channels = append(state.Channels, ch.Md.Id)
+			}
+			args = append(args, libclient.PutArg{
+				Scope: &scope,
+				Typ:   lcl.DataType_RTInboxChannel,
+				Key:   ch.Md.Id,
+				Val:   ch,
+			})
+		}
+		// A page that doesn't advance the cursor would loop forever; the server
+		// guarantees returned bumps are strictly past `since`.
+		if pageVers <= state.Vers {
+			return nil, core.BadServerDataError("inbox delta did not advance the cursor")
+		}
+		state.Vers = pageVers
+		args = append(args, libclient.PutArg{
+			Scope: &scope,
+			Typ:   lcl.DataType_RTInboxSyncState,
+			Key:   core.EmptyKey{},
+			Val:   &state,
+		})
+		err = m.DbPutTx(libclient.DbTypeSoft, args)
+		if err != nil {
+			return nil, err
+		}
+		numChanged += uint64(len(delta.Channels))
+
+		// Prefetch each changed channel's last message into the local message
+		// cache, so LocalInbox can render a snippet without the network.
+		// Best-effort and after the page apply: the rows are already durable,
+		// and a failure just means no snippet until the channel next bumps.
+		for i := range delta.Channels {
+			ch := &delta.Channels[i]
+			if ch.Md.LastMsg == nil {
+				continue
+			}
+			err := d.prefetchLastMsg(m, ch)
+			if err != nil {
+				m.Warnw("SyncInbox", "stage", "prefetchLastMsg",
+					"chid", ch.Md.Id, "err", err)
+			}
+		}
+
+		// The head rides along on every page purely as a termination hint; it
+		// is never stored (there may be unapplied bumps at versions between the
+		// cursor and the head).
+		if state.Vers >= delta.InboxVersion {
+			break
+		}
+	}
+	return &lcl.RTInboxSyncSummary{Vers: state.Vers, NumChanged: numChanged}, nil
+}
+
+// LocalInbox renders the inbox for (user × app) entirely from local storage --
+// no network. Channel names/descs are decrypted at render time with the parent
+// team's keys; a row that can't be read anymore (lost access, left team) is
+// skipped rather than failing the render, since this is all soft state. Rows
+// come back newest bump first.
+func (d *Minder) LocalInbox(
+	m MetaContext,
+	appID proto.RTAppID,
+) (
+	*lcl.RTInboxView,
+	error,
+) {
+	scope := d.inboxScope(appID)
+	state, err := d.dbGetInboxSyncState(m, appID)
+	if err != nil {
+		return nil, err
+	}
+	ret := lcl.RTInboxView{Vers: state.Vers}
+	for _, chid := range state.Channels {
+		var row rem.RTInboxChannel
+		_, err := m.DbGet(&row, libclient.DbTypeSoft, &scope,
+			lcl.DataType_RTInboxChannel, chid)
+		if err != nil {
+			m.Warnw("LocalInbox", "stage", "dbGet", "chid", chid, "err", err)
+			continue
+		}
+		rv, err := d.renderInboxRow(m, &row)
+		if err != nil {
+			m.Warnw("LocalInbox", "stage", "render", "chid", chid, "err", err)
+			continue
+		}
+		ret.Rows = append(ret.Rows, *rv)
+	}
+	slices.SortFunc(ret.Rows, func(a, b lcl.RTInboxRowView) int {
+		return cmp.Compare(b.InboxVersion, a.InboxVersion)
+	})
+	return &ret, nil
+}
+
+// configTeamByID addresses a parent team by its ID, using the ad-hoc arm for
+// ad-hoc team IDs so resolution takes the ad-hoc path.
+func configTeamByID(teamID proto.TeamID) lcl.ConfigTeam {
+	if teamID.IsAdHocTeam() {
+		return lcl.NewConfigTeamWithAdhoc(proto.FQAdHocTeamParsed{
+			Team: proto.NewAdHocTeamParsedWithId(teamID.EntityID()),
+		})
+	}
+	return team.WrapNamed(proto.FQTeamParsed{
+		Team: proto.NewParsedTeamWithFalse(teamID),
+	})
+}
+
+func (d *Minder) maybePopulateTeamName(m MetaContext, fqt proto.FQTeam) proto.NameUtf8 {
+	nm, ok := m.G().TeamnameLoader().Get(m.Base(), fqt)
+	if !ok {
+		return ""
+	}
+	if !fqt.Team.IsAdHocTeam() {
+		return nm
+	}
+	nm, err := team.StripSelfFromAdHocName(nm, d.au.Info.Username.NameUtf8)
+	if err != nil {
+		m.Warnw("renderInboxRow", "stage", "stripSelfFromAdHocName", "err", err)
+		return proto.NameUtf8(fmt.Sprintf("<error in strip: %s>", err.Error()))
+	}
+	return nm
+}
+
+// renderInboxRow decrypts one stored inbox row into its view form, loading the
+// parent team's party (and keys) by ID via the shared party-loader cache.
+func (d *Minder) renderInboxRow(
+	m MetaContext,
+	row *rem.RTInboxChannel,
+) (
+	*lcl.RTInboxRowView,
+	error,
+) {
+	cfgTeam := configTeamByID(row.Md.ParentTeam)
+	rtp, err := d.base.GetParty(m.Base(), cfgTeam)
+	if err != nil {
+		return nil, err
+	}
+	md, err := d.decryptChannelMetadata(m, rtp, row.Md)
+	if err != nil {
+		return nil, err
+	}
+	ret := lcl.RTInboxRowView{
+		Ch:           *md,
+		InboxVersion: row.InboxVersion,
+		ReadThrough:  row.ReadThrough,
+		Hidden:       row.Hidden,
+		Muted:        row.Muted,
+	}
+
+	// Team display name, via the teamname cache -- the GetParty above fills it
+	// whenever it (re)loads the team, so a miss is rare and just falls back to
+	// the ID at the display layer. An ad-hoc team's cached name is its full
+	// member list; drop the viewer's own name for DM-style display.
+	fqt := proto.FQTeam{Team: row.Md.ParentTeam, Host: d.au.HostID()}
+
+	ret.TeamName = d.maybePopulateTeamName(m, fqt)
+
+	if row.Md.LastMsg != nil {
+		ret.LastSeq = row.Md.LastMsg.Seq
+		ret.LastTime = row.Md.LastMsg.InsertTime
+		if ret.LastSeq > ret.ReadThrough {
+			ret.NumUnread = uint64(ret.LastSeq - ret.ReadThrough)
+		}
+		d.fillSnippet(m, rtp, cfgTeam, row, &ret)
+	}
+	return &ret, nil
+}
+
+// fillSnippet decorates a row view with a decrypted one-line preview of the
+// channel's last message, plus its sender's display name, when the message is
+// in the local cache (SyncInbox prefetches it there). Best-effort: any failure
+// leaves the fields nil rather than failing the render.
+func (d *Minder) fillSnippet(
+	m MetaContext,
+	rtp *RTParty,
+	cfgTeam lcl.ConfigTeam,
+	row *rem.RTInboxChannel,
+	out *lcl.RTInboxRowView,
+) {
+	seq := row.Md.LastMsg.Seq
+	enc, err := dbGetMsgs(m, d.au, row.Md.Id, seq, seq)
+	if err != nil {
+		m.Warnw("fillSnippet", "stage", "dbGet", "chid", row.Md.Id, "err", err)
+		return
+	}
+	if len(enc) != 1 {
+		return // not cached; no snippet
+	}
+	msgs, err := d.decodeMsgs(m, rtp, row.Md.AppID, row.Md.Id, enc)
+	if err != nil || len(msgs) != 1 {
+		if err != nil {
+			m.Warnw("fillSnippet", "stage", "decode", "chid", row.Md.Id, "err", err)
+		}
+		return
+	}
+	msg := msgs[0]
+	sn := snippet(msg.Body)
+	out.Snippet = &sn
+	out.LastSender = d.resolveSenderNameFromPartyIDShowError(m, cfgTeam, rtp, msg.Sender)
+}
+
+// snippetMaxLen bounds the snippet payload shipped over the agent RPC; it is
+// NOT display policy. Rendering to an actual width (console, window) is the
+// view layer's job -- see the CLI's inbox table, which fits the snippet to the
+// live terminal width. This just keeps a pathological multi-KB message body
+// from riding along with every inbox render.
+const snippetMaxLen = 512
+
+// snippet reduces a message body to its first line, bounded by snippetMaxLen.
+func snippet(body []byte) string {
+	s := string(body)
+	if i := strings.IndexAny(s, "\r\n"); i >= 0 {
+		s = s[:i]
+	}
+	if len(s) > snippetMaxLen {
+		cut := snippetMaxLen
+		for cut > 0 && !utf8.RuneStart(s[cut]) {
+			cut--
+		}
+		s = s[:cut] + "…"
+	}
+	return s
+}
+
+// prefetchLastMsg ensures a channel's last message sits in the local message
+// cache, fetching (and verifying) it from the server when absent, so the inbox
+// can render last-message snippets offline.
+func (d *Minder) prefetchLastMsg(
+	m MetaContext,
+	row *rem.RTInboxChannel,
+) error {
+	seq := row.Md.LastMsg.Seq
+	cached, err := dbGetMsgs(m, d.au, row.Md.Id, seq, seq)
+	if err != nil {
+		return err
+	}
+	if len(cached) > 0 {
+		return nil
+	}
+	rtp, err := d.base.GetParty(m.Base(), configTeamByID(row.Md.ParentTeam))
+	if err != nil {
+		return err
+	}
+	pr, cli, err := d.clientLocal(m.Base(), d.au)
+	if err != nil {
+		return err
+	}
+	d.serverThreadReads.Add(1)
+	page, err := cli.RtGetThread(m.Ctx(), rem.RTThreadQuery{
+		ChannelID: row.Md.Id,
+		Seqs:      []proto.RTMsgSeq{seq},
+	})
+	if err != nil {
+		return err
+	}
+	d.hookReadRes(&page)
+	sess := newMsgSession()
+	err = sess.loadFromServer(extractAllSeqIDPairsFromRTThreadPage(&page))
+	if err != nil {
+		return err
+	}
+	// The decode path only consults ch.Id from the request metadata, so a stub
+	// with just the ID suffices; the full decrypted channel metadata isn't
+	// needed to verify and cache a message.
+	irr := &initReqResult{
+		hostId: pr.Chain().HostID(),
+		rtp:    rtp,
+		appID:  row.Md.AppID,
+		cli:    cli,
+		ch:     &lcl.RTChannelMetadataPlaintext{Id: row.Md.Id},
+	}
+	_, err = d.decodeAndCacheServerMsgs(m, sess, irr, page.SeqMsgs)
+	return err
+}

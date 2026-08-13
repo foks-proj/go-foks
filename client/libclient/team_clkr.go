@@ -158,9 +158,13 @@ type CLKROneTeam struct {
 	parent *CLKR
 	fqt    proto.FQTeam
 
+	// actorRole is the role of the party we are running CLKR *as*. It gates
+	// whether we may act at all, and which members we may touch. It is never
+	// the role we write into a change; see doOneMember.
+	actorRole *core.RoleKey
+
 	// internal state fields that are updated as we go
 	changes []proto.MemberRole
-	dstRole *proto.Role
 	roster  *team.Roster
 	tw      *TeamWrapper
 	hepks   *core.HEPKSet
@@ -180,13 +184,8 @@ func (c *CLKROneTeam) run(
 		return err
 	}
 
-	doIt, err := c.checkAdmin(m)
-	if err != nil {
-		return err
-	}
-
-	if !doIt {
-		m.Infow("clkr", "team", c.tw.FQTeam(), "role", *c.dstRole,
+	if !c.actorRole.IsAdminOrAbove() {
+		m.Infow("clkr", "team", c.tw.FQTeam(), "actorRole", c.actorRole.Export(),
 			"why", "not admin or above", "action", "skip")
 		return nil
 	}
@@ -293,24 +292,17 @@ func (c *CLKROneTeam) loadTeam(m MetaContext) error {
 		return core.TeamExploreError("load as party not found in team")
 	}
 
+	actorRole, err := core.ImportRole(tmem.Mr.DstRole)
+	if err != nil {
+		return err
+	}
+
 	c.member = tr.member
-	c.dstRole = &tmem.Mr.DstRole
+	c.actorRole = actorRole
 	c.roster = ldr.rosterPost
 	c.tw = tw
 	c.ldr = ldr
 	return nil
-}
-
-func (c *CLKROneTeam) checkAdmin(m MetaContext) (bool, error) {
-	ok, err := c.dstRole.IsAdminOrAbove()
-	if err != nil {
-		return false, err
-	}
-
-	if !ok {
-		return false, nil
-	}
-	return true, nil
 }
 
 func (c *CLKROneTeam) checkMembers(m MetaContext) error {
@@ -336,6 +328,18 @@ func (c *CLKROneTeam) doOneMember(
 	fqe proto.FQEntityFixed,
 	deet *rosterPackage,
 ) error {
+
+	// A doer may not touch a member whose role is above its own; the roster
+	// would reject the whole change set (see RosterCore.checkChangesLocked),
+	// which in turn aborts the sweep for every remaining team. Skip them so one
+	// stale owner doesn't block an admin's rekey of everyone else. Such members
+	// must be picked up by an owner-run CLKR.
+	if c.actorRole.LessThan(deet.info.Role) {
+		m.Infow("doOneMember", "team", c.tw.FQTeam(), "member", fqe.Unfix(),
+			"memberRole", deet.info.Role.Export(), "actorRole", c.actorRole.Export(),
+			"why", "above actor role", "action", "skip")
+		return nil
+	}
 
 	srcRk, err := core.ImportRole(deet.srcRole)
 	if err != nil {
@@ -387,8 +391,10 @@ func (c *CLKROneTeam) doOneMember(
 
 	m.Infow("doOneMember", "tmk", tmk)
 
+	// CLKR refreshes keys; it never changes roles. Carry the member's own
+	// role through, not the actor's.
 	tmr := proto.MemberRole{
-		DstRole: *c.dstRole,
+		DstRole: deet.info.Role.Export(),
 		Member: proto.Member{
 			Id:      fqe.Unfix().AtHost(c.tw.prot.Fqt.Host),
 			SrcRole: deet.srcRole,

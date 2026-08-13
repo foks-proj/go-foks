@@ -102,6 +102,23 @@ func TestRTAdHocTeamSendAndReceive(t *testing.T) {
 	msgFromBob := "thanks alice, glad to be here"
 	bob.runCmd(t, nil, "rt", "send", "--adhoc", string(aliceName), msgFromBob)
 
+	// Before alice reads the reply, her inbox counts it as unread: her own
+	// message was implicitly read by sending it, but bob's reply is news.
+	expectTeam := func(other proto.NameUtf8) proto.NameUtf8 {
+		s, err := team.NamesToAdhHocCanonicalString([]proto.NameUtf8{other}, "")
+		require.NoError(t, err)
+		return proto.NameUtf8(s)
+	}
+	var ainbox lcl.RTInboxView
+	alice.runCmdToJSON(t, &ainbox, "rt", "inbox")
+	require.Len(t, ainbox.Rows, 1)
+	arow := ainbox.Rows[0]
+	require.Equal(t, expectTeam(bobName), arow.TeamName)
+	require.Equal(t, uint64(1), arow.NumUnread)
+	require.NotNil(t, arow.Snippet)
+	require.Equal(t, msgFromBob, *arow.Snippet)
+	require.Equal(t, bobName, arow.LastSender)
+
 	alice.runCmdToJSON(t, &thread, "rt", "read", "--adhoc", string(bobName))
 	require.Len(t, thread.Msgs, 2)
 	require.Equal(t, msgFromBob, string(thread.Msgs[0].Body))
@@ -110,6 +127,24 @@ func TestRTAdHocTeamSendAndReceive(t *testing.T) {
 	require.Equal(t, msgFromAlice, string(thread.Msgs[1].Body))
 	require.NotNil(t, thread.Msgs[1].SenderName)
 	require.Equal(t, aliceName, *thread.Msgs[1].SenderName)
+
+	// Reading the thread marked it read (viewing a page advances the read
+	// pointer), so alice's unread count clears. The inbox renders the ad-hoc
+	// team DM-style throughout: each viewer sees the *other* member's name --
+	// not their own, and not the raw team ID.
+	alice.runCmdToJSON(t, &ainbox, "rt", "inbox")
+	require.Len(t, ainbox.Rows, 1)
+	require.Equal(t, uint64(0), ainbox.Rows[0].NumUnread)
+	require.Equal(t, proto.RTMsgSeq(2), ainbox.Rows[0].ReadThrough)
+
+	// bob sent the last message (sending implies reading), so nothing is
+	// unread for him either.
+	var binbox lcl.RTInboxView
+	bob.runCmdToJSON(t, &binbox, "rt", "inbox")
+	require.Len(t, binbox.Rows, 1)
+	brow := binbox.Rows[0]
+	require.Equal(t, expectTeam(aliceName), brow.TeamName)
+	require.Equal(t, uint64(0), brow.NumUnread)
 }
 
 // TestRTChannelMakeAndList exercises the CLI integration for making channels
@@ -210,6 +245,39 @@ func TestRTSendAndRead(t *testing.T) {
 	// Sending to a non-existent channel should fail.
 	err := b.runCmdErr(nil, "rt", "send", "-t", tm, "--channel", "nope", "lost message")
 	require.Error(t, err)
+
+	// `rt inbox` syncs the inbox to local storage and renders it from there:
+	// one row for #foo showing the team's name (not its ID) and a snippet of
+	// the last message. Nothing is unread -- every message is bob's own, and
+	// sending implies reading. --local-only skips the sync and must render
+	// identically from disk alone.
+	var inbox lcl.RTInboxView
+	b.runCmdToJSON(t, &inbox, "rt", "inbox")
+	require.Len(t, inbox.Rows, 1)
+	require.Equal(t, proto.RTChannelName("foo"), inbox.Rows[0].Ch.Name)
+	require.Equal(t, proto.RTMsgSeq(3), inbox.Rows[0].LastSeq)
+	require.Equal(t, proto.RTMsgSeq(3), inbox.Rows[0].ReadThrough)
+	require.Equal(t, uint64(0), inbox.Rows[0].NumUnread)
+	require.Equal(t, proto.NameUtf8(tm), inbox.Rows[0].TeamName)
+	require.NotNil(t, inbox.Rows[0].Snippet)
+	require.Equal(t, "a third one", *inbox.Rows[0].Snippet)
+	require.Equal(t, bob.username, inbox.Rows[0].LastSender)
+
+	var inbox2 lcl.RTInboxView
+	b.runCmdToJSON(t, &inbox2, "rt", "inbox", "--local-only")
+	require.Equal(t, inbox, inbox2)
+
+	// The text renderer shows the channel, the team name, and the snippet.
+	var terminalUI terminalUI
+	uis := libclient.UIs{
+		Terminal: &terminalUI,
+	}
+	err = b.runCmdErrWithUIs(uis, "rt", "inbox")
+	require.NoError(t, err)
+	out := terminalUI.String()
+	require.Contains(t, out, "#foo")
+	require.Contains(t, out, tm)
+	require.Contains(t, out, "a third one")
 }
 
 // TestRTSendAndReadCrossMember verifies sender-name resolution across two

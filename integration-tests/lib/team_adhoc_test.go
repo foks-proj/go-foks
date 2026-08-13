@@ -207,7 +207,7 @@ func TestSimpleCreateTeamAdHoc(t *testing.T) {
 	// The cache is two-tiered; the bottom tier is the soft local DB. A fresh
 	// cache with an empty memory tier must still resolve via the DB row that
 	// the Set above just wrote.
-	var uc2 libclient.UsernameLoader
+	uc2 := libclient.NewUsernameLoader()
 	nm2, ok := uc2.Get(f.ma, bobFqu)
 	require.True(t, ok)
 	require.Equal(t, bob.name, nm2)

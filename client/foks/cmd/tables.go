@@ -8,9 +8,11 @@ import (
 	"sort"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"github.com/foks-proj/go-foks/client/libclient"
 	"github.com/foks-proj/go-foks/lib/core"
+	"github.com/foks-proj/go-foks/lib/libterm"
 	"github.com/foks-proj/go-foks/proto/lcl"
 	proto "github.com/foks-proj/go-foks/proto/lib"
 	"github.com/jedib0t/go-pretty/v6/table"
@@ -746,6 +748,130 @@ func (r rtChannelRow) lessThan(other tableRow) bool {
 }
 
 var _ tableRow = rtChannelRow{}
+
+type rtInboxRow struct {
+	name   string
+	tier   proto.RTChannelTier
+	team   string
+	unread uint64
+	msg    string
+	last   string
+	vers   proto.RTInboxVersion
+}
+
+func (r rtInboxRow) toTableRow() table.Row {
+	unread := ""
+	if r.unread > 0 {
+		unread = fmt.Sprintf("%d", r.unread)
+	}
+	return table.Row{
+		r.name,
+		rtChannelTierGlyph(r.tier),
+		unread,
+		r.msg,
+		r.last,
+		r.team,
+	}
+}
+
+func (r rtInboxRow) headers() table.Row {
+	return table.Row{
+		"Channel",
+		"Tier",
+		"Unread",
+		"Last Message",
+		"Last Activity",
+		"Team",
+	}
+}
+
+// Newest inbox bump on top, mirroring LocalInbox's ordering.
+func (r rtInboxRow) lessThan(other tableRow) bool {
+	return r.vers > other.(rtInboxRow).vers
+}
+
+var _ tableRow = rtInboxRow{}
+
+// truncateToWidth caps s at width runes, marking the cut with an ellipsis.
+func truncateToWidth(s string, width int) string {
+	if width <= 0 || utf8.RuneCountInString(s) <= width {
+		return s
+	}
+	runes := []rune(s)
+	if width == 1 {
+		return "…"
+	}
+	return string(runes[:width-1]) + "…"
+}
+
+func outputRTInboxTable(
+	m libclient.MetaContext,
+	opts outputTableOpts,
+	view lcl.RTInboxView,
+) error {
+	rows := make([]rtInboxRow, 0, len(view.Rows))
+	fixed := 0
+	for _, r := range view.Rows {
+		team := ""
+		switch {
+		case !r.TeamName.IsZero():
+			team = r.TeamName.String()
+		default:
+			// The teamname cache had no answer; fall back to the raw ID.
+			s, err := r.Ch.ParentTeam.EntityID().StringErr()
+			if err != nil {
+				return err
+			}
+			team = s
+		}
+		var last, msg string
+		if r.LastSeq > 0 {
+			last = r.LastTime.Import().Local().Format("2006-01-02 15:04:05")
+		}
+		if r.Snippet != nil {
+			msg = *r.Snippet
+			if !r.LastSender.IsZero() {
+				msg = r.LastSender.String() + ": " + msg
+			}
+		}
+		row := rtInboxRow{
+			name:   displayRTChannelName(r.Ch.Name),
+			tier:   r.Ch.Tier,
+			team:   team,
+			unread: r.NumUnread,
+			msg:    msg,
+			last:   last,
+			vers:   r.InboxVersion,
+		}
+		rows = append(rows, row)
+		width := utf8.RuneCountInString(row.name) +
+			1 + // tier glyph
+			len("Unread") +
+			utf8.RuneCountInString(last) +
+			utf8.RuneCountInString(team)
+		fixed = max(fixed, width)
+	}
+
+	// When stdout is a live terminal, fit the snippet column to it: it absorbs
+	// whatever width the other columns leave over (~3 chars of border/padding
+	// per column edge). Piped or captured output is not truncated -- files and
+	// greps want the full content.
+	budget := 0
+	if dims, err := libterm.GetTermDims(); err == nil {
+		const numCols, minSnippet = 6, 16
+		budget = dims.Width - fixed - 3*(numCols+1)
+		budget = max(budget, minSnippet)
+	}
+
+	conv := func(i int, _ lcl.RTInboxRowView) (tableRow, error) {
+		row := rows[i]
+		if budget > 0 {
+			row.msg = truncateToWidth(row.msg, budget)
+		}
+		return row, nil
+	}
+	return convertAndOutputRows(m, opts, view.Rows, conv, nil)
+}
 
 func outputRTChannelListTable(
 	m libclient.MetaContext,

@@ -630,6 +630,27 @@ func TestTeamChangeMembershipClosedViewership(t *testing.T) {
 	// specify the source role
 	x.runCmd(t, nil, "team", "change-roles", teamName, yuid+"/o->m/0")
 	merklePoke(t)
+
+	// Issue #314: remove y from the team, then let y re-accept the same
+	// invite. The insert into local_joinreqs used to hit the "one join
+	// request per joiner EVER" unique index and fail with
+	// TeamInviteAlreadyAcceptedError, leaving no way back in via the
+	// normal flow.
+	x.runCmd(t, nil, "team", "change-roles", teamName, yusername.String()+"->n")
+	merklePoke(t)
+
+	var ros lcl.TeamRoster
+	x.runCmdToJSON(t, &ros, "team", "ls", teamName)
+	require.Equal(t, 1, len(ros.Members))
+
+	y.runCmd(t, nil, "team", "accept", inviteStr)
+	x.runCmdToJSON(t, &inb, "team", "inbox", teamName)
+	require.Equal(t, 1, len(inb.Rows))
+	x.runCmd(t, nil, "team", "admit", teamName, string(inb.Rows[0].Tok.String())+"/m/0")
+	merklePoke(t)
+
+	x.runCmdToJSON(t, &ros, "team", "ls", teamName)
+	require.Equal(t, 2, len(ros.Members))
 }
 
 func TestTeamChangeMembershipClosedViewershipTestReload(t *testing.T) {
