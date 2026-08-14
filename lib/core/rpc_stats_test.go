@@ -93,7 +93,7 @@ func TestRpcStatsAccounting(t *testing.T) {
 
 	require.Equal(t, 3, st.Calls())
 	require.Equal(t, 110*time.Millisecond, st.Duration())
-	require.Equal(t, 1, st.errCount())
+	require.Equal(t, 1, st.ErrCount())
 
 	// Costliest method first, so a truncated breakdown keeps what matters.
 	byMethod := st.ByMethod()
@@ -204,4 +204,55 @@ func TestRpcStatsSequentialCallsHaveNoOverlap(t *testing.T) {
 	}
 	require.EqualValues(t, 800, kv["localMs"])
 	require.NotContains(t, kv, "rpcOverlap")
+}
+
+func TestReportRpcScopeNoReporter(t *testing.T) {
+	SetRpcScopeReporter(nil)
+	_, st := WithRpcStats(context.Background())
+	rec(st, "M", t0, t0.Add(time.Second))
+	// The default: no reporter installed, so a scope closing is inert.
+	require.NotPanics(t, func() { ReportRpcScope("Op", time.Second, st) })
+}
+
+func TestReportRpcScopeDelivers(t *testing.T) {
+	t.Cleanup(func() { SetRpcScopeReporter(nil) })
+
+	type got struct {
+		name  string
+		wall  time.Duration
+		calls int
+		busy  time.Duration
+	}
+	var seen []got
+	SetRpcScopeReporter(func(name string, wall time.Duration, st *RpcStats) {
+		seen = append(seen, got{name, wall, st.Calls(), st.Busy()})
+	})
+
+	_, st := WithRpcStats(context.Background())
+	rec(st, "A", t0, t0.Add(100*time.Millisecond))
+	rec(st, "B", t0.Add(200*time.Millisecond), t0.Add(500*time.Millisecond))
+	ReportRpcScope("Op", 900*time.Millisecond, st)
+
+	require.Len(t, seen, 1)
+	require.Equal(t, "Op", seen[0].name)
+	require.Equal(t, 900*time.Millisecond, seen[0].wall)
+	require.Equal(t, 2, seen[0].calls)
+	// Busy is the union of the two non-overlapping intervals, so localMs the
+	// bridge derives (wall - busy) stays honest: 900 - 400 = 500ms local.
+	require.Equal(t, 400*time.Millisecond, seen[0].busy)
+}
+
+func TestSetRpcScopeReporterReplacesAndClears(t *testing.T) {
+	t.Cleanup(func() { SetRpcScopeReporter(nil) })
+
+	var first, second int
+	SetRpcScopeReporter(func(string, time.Duration, *RpcStats) { first++ })
+	ReportRpcScope("Op", 0, nil)
+	SetRpcScopeReporter(func(string, time.Duration, *RpcStats) { second++ })
+	ReportRpcScope("Op", 0, nil)
+	SetRpcScopeReporter(nil)
+	ReportRpcScope("Op", 0, nil)
+
+	require.Equal(t, 1, first)
+	require.Equal(t, 1, second)
 }
