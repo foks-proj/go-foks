@@ -5,14 +5,12 @@ package libkv
 
 import (
 	"io"
-	"time"
 
 	"github.com/foks-proj/go-foks/lib/core"
 	"github.com/foks-proj/go-foks/lib/kv"
 	"github.com/foks-proj/go-foks/proto/lcl"
 	proto "github.com/foks-proj/go-foks/proto/lib"
 	"github.com/foks-proj/go-foks/proto/rem"
-	"go.uber.org/zap/zapcore"
 	"golang.org/x/crypto/nacl/secretbox"
 )
 
@@ -111,13 +109,8 @@ func (k *Minder) GetFile(
 	// constantly, so a line per read would swamp a normal log, and building
 	// the summary sorts the per-method map and formats a string. Checking the
 	// level first keeps both off the hot path when nobody is looking.
-	m, stats := m.WithRpcStats()
-	start := time.Now()
-	defer func() {
-		if m.G().Log().Core().Enabled(zapcore.DebugLevel) {
-			m.Debugw("KVMinder.GetFile", stats.LogArgs(time.Since(start), 6)...)
-		}
-	}()
+	m, done := k.instrumentScope(m, "KVMinder.GetFile")
+	defer done()
 
 	kvp, err := k.initReq(m, cfg)
 	if err != nil {

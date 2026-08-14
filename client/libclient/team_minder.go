@@ -1683,11 +1683,13 @@ func (t *TeamMinder) ListMemberships(
 	m, stats := m.WithRpcStats()
 	start := time.Now()
 	defer func() {
+		wall := time.Since(start)
+		core.ReportRpcScope("TeamMinder.ListMemberships", wall, stats)
 		// Gated so the summary is not built when the level discards it; this
 		// runs once per call, unlike the per-read GetFile scope, so Info is
 		// the right level for it.
 		if m.G().Log().Core().Enabled(zapcore.InfoLevel) {
-			m.Infow("TeamMinder.ListMemberships", stats.LogArgs(time.Since(start), 6)...)
+			m.Infow("TeamMinder.ListMemberships", stats.LogArgs(wall, 6)...)
 		}
 	}()
 

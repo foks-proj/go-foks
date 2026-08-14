@@ -9,6 +9,7 @@ import (
 	"sort"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -221,7 +222,7 @@ func (s *RpcStats) LogArgs(wall time.Duration, topN int) []any {
 		ret = append(ret, "rpcOverlap",
 			fmt.Sprintf("%.1fx", float64(rpc)/float64(busy)))
 	}
-	if errs := s.errCount(); errs > 0 {
+	if errs := s.ErrCount(); errs > 0 {
 		ret = append(ret, "rpcErrs", errs)
 	}
 	byMethod := s.ByMethod()
@@ -238,11 +239,81 @@ func (s *RpcStats) LogArgs(wall time.Duration, topN int) []any {
 	return append(ret, "top", strings.Join(parts, " "))
 }
 
-func (s *RpcStats) errCount() int {
+// ErrCount is the number of RPCs in the scope that returned an error. Read by
+// LogArgs and by any registered RpcScopeReporter, for which a scope's timings
+// mean something different when some of its calls failed.
+func (s *RpcStats) ErrCount() int {
 	if s == nil {
 		return 0
 	}
 	s.Lock()
 	defer s.Unlock()
 	return s.errs
+}
+
+// ── Scope reporting ──
+//
+// The scopes above report through zap, which is the right answer for the CLI
+// and the server and no answer at all on mobile: go-foks writes its log inside
+// the iOS app container, where no device capture has ever reached it. The
+// gomobile bridge already carries its own diagnostic channel out to the app
+// (foks-gomobile/slowcalls.go), and it cannot open these scopes itself --
+// RpcStats propagates by context value, and the bridge talks to the agent over
+// a loopback RPC, across which context values do not travel. So the scope has
+// to hand its numbers to whoever is embedding this library.
+//
+// A hook rather than a method on GlobalContext: this is measurement, not
+// behaviour, there is exactly one implementation per process, and a nil
+// default keeps the CLI and server paths at one atomic load per scope.
+
+// RpcScopeReporter receives one finished WithRpcStats scope. `wall` is the
+// operation's total time; everything else is read off `st`, whose accessors
+// are safe to call from here.
+//
+// Called on whichever goroutine ran the scope -- GetFile runs inside fan-outs
+// -- so an implementation must be safe for concurrent use and must not block.
+type RpcScopeReporter func(name string, wall time.Duration, st *RpcStats)
+
+var rpcScopeReporter atomic.Pointer[RpcScopeReporter]
+
+// SetRpcScopeReporter installs the process-wide reporter, replacing any
+// previous one. Pass nil to uninstall. Safe to call at any time; a scope
+// already running reports to whichever reporter is installed when it finishes.
+func SetRpcScopeReporter(fn RpcScopeReporter) {
+	if fn == nil {
+		rpcScopeReporter.Store(nil)
+		return
+	}
+	rpcScopeReporter.Store(&fn)
+}
+
+// ReportRpcScope hands a finished scope to the installed reporter. No-op when
+// none is installed, which is the default and the case for every non-mobile
+// build.
+//
+// A panicking reporter is contained and then UNINSTALLED. Observing must not be
+// able to change what it observes: the reporter is supplied by the embedding
+// binary, runs on whichever goroutine closed the scope, and GetFile closes one
+// inside a fan-out -- so without this, a bug in a diagnostic could unwind
+// through an unrelated sibling read and fail a real operation. Measurement is
+// never worth that.
+//
+// Uninstalled rather than merely recovered because a reporter that panics once
+// will panic every time, and paying a recover per scope forever to keep
+// swallowing it is worse than losing the diagnostic. A silent instrument is a
+// better failure than a client that breaks only when instrumented. This mirrors
+// the same decision on the JS side of this bridge (setNativeCallObserver in
+// apps/mobile/src/lib/nativeTrace.ts), which disarms its sink for the same
+// reason.
+func ReportRpcScope(name string, wall time.Duration, st *RpcStats) {
+	fn := rpcScopeReporter.Load()
+	if fn == nil {
+		return
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			rpcScopeReporter.CompareAndSwap(fn, nil)
+		}
+	}()
+	(*fn)(name, wall, st)
 }
