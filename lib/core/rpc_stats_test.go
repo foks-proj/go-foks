@@ -256,3 +256,29 @@ func TestSetRpcScopeReporterReplacesAndClears(t *testing.T) {
 	require.Equal(t, 1, first)
 	require.Equal(t, 1, second)
 }
+
+// The reporter is name-keyed, so a newly-instrumented operation needs no
+// change anywhere else — this pins that, since the KVMinder.List scope was
+// added precisely because the instrument could not see the client's largest
+// consumer.
+func TestReportRpcScopeCarriesTheOperationName(t *testing.T) {
+	t.Cleanup(func() { SetRpcScopeReporter(nil) })
+
+	seen := map[string]int{}
+	SetRpcScopeReporter(func(name string, _ time.Duration, st *RpcStats) {
+		seen[name] += st.Calls()
+	})
+
+	for _, name := range []string{"KVMinder.GetFile", "KVMinder.List", "TeamMinder.ListMemberships"} {
+		_, st := WithRpcStats(context.Background())
+		rec(st, "M", t0, t0.Add(10*time.Millisecond))
+		rec(st, "M", t0.Add(10*time.Millisecond), t0.Add(20*time.Millisecond))
+		ReportRpcScope(name, 20*time.Millisecond, st)
+	}
+
+	require.Equal(t, map[string]int{
+		"KVMinder.GetFile":           2,
+		"KVMinder.List":              2,
+		"TeamMinder.ListMemberships": 2,
+	}, seen)
+}

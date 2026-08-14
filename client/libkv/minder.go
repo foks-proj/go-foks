@@ -14,6 +14,7 @@ import (
 	"github.com/foks-proj/go-foks/proto/lcl"
 	proto "github.com/foks-proj/go-foks/proto/lib"
 	"github.com/foks-proj/go-foks/proto/rem"
+	"go.uber.org/zap/zapcore"
 )
 
 type KVParty struct {
@@ -1637,6 +1638,25 @@ func (k *Minder) List(
 	*lcl.CliKVListRes,
 	error,
 ) {
+	// Counted for the same reason GetFile is: a listing walks the path one
+	// segment per round trip before it enumerates anything, so "how many hops
+	// did that cost" is the first question about a slow one.
+	//
+	// This scope was the gap that mattered. GetFile and ListMemberships were
+	// instrumented first, and a device capture then found that the client's
+	// directory listings -- which land here, not in GetFile -- were 47% of ALL
+	// bridge time. The operation the instrument most needed to see was the one
+	// it could not.
+	m, stats := m.WithRpcStats()
+	start := time.Now()
+	defer func() {
+		wall := time.Since(start)
+		core.ReportRpcScope("KVMinder.List", wall, stats)
+		if m.G().Log().Core().Enabled(zapcore.DebugLevel) {
+			m.Debugw("KVMinder.List", stats.LogArgs(wall, 6)...)
+		}
+	}()
+
 	kvp, err := k.initReq(m, cfg)
 	if err != nil {
 		return nil, err
