@@ -282,3 +282,24 @@ func TestReportRpcScopeCarriesTheOperationName(t *testing.T) {
 		"TeamMinder.ListMemberships": 2,
 	}, seen)
 }
+
+func TestReportRpcScopeContainsAndDisarmsAPanickingReporter(t *testing.T) {
+	t.Cleanup(func() { SetRpcScopeReporter(nil) })
+
+	calls := 0
+	SetRpcScopeReporter(func(string, time.Duration, *RpcStats) {
+		calls++
+		panic("reporter is broken")
+	})
+
+	// The instrumented operation must survive: GetFile closes a scope inside a
+	// fan-out, so an unwinding panic here would fail unrelated sibling reads.
+	require.NotPanics(t, func() { ReportRpcScope("Op", time.Second, nil) })
+	require.Equal(t, 1, calls)
+
+	// ...and the reporter is uninstalled, because one that panics once panics
+	// every time; paying a recover per scope forever to keep swallowing it is
+	// worse than losing the diagnostic.
+	require.NotPanics(t, func() { ReportRpcScope("Op", time.Second, nil) })
+	require.Equal(t, 1, calls, "a panicking reporter must not be called again")
+}

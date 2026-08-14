@@ -5,14 +5,12 @@ package libkv
 
 import (
 	"io"
-	"time"
 
 	"github.com/foks-proj/go-foks/lib/core"
 	"github.com/foks-proj/go-foks/lib/kv"
 	"github.com/foks-proj/go-foks/proto/lcl"
 	proto "github.com/foks-proj/go-foks/proto/lib"
 	"github.com/foks-proj/go-foks/proto/rem"
-	"go.uber.org/zap/zapcore"
 	"golang.org/x/crypto/nacl/secretbox"
 )
 
@@ -111,19 +109,8 @@ func (k *Minder) GetFile(
 	// constantly, so a line per read would swamp a normal log, and building
 	// the summary sorts the per-method map and formats a string. Checking the
 	// level first keeps both off the hot path when nobody is looking.
-	m, stats := m.WithRpcStats()
-	start := time.Now()
-	defer func() {
-		wall := time.Since(start)
-		// Unconditional, unlike the log line below: the reporter is nil in
-		// every build that has not installed one, and the mobile bridge that
-		// does install one aggregates rather than emitting per call, so the
-		// Debug gate would only hide the reads it most needs to count.
-		core.ReportRpcScope("KVMinder.GetFile", wall, stats)
-		if m.G().Log().Core().Enabled(zapcore.DebugLevel) {
-			m.Debugw("KVMinder.GetFile", stats.LogArgs(wall, 6)...)
-		}
-	}()
+	m, done := k.instrumentScope(m, "KVMinder.GetFile")
+	defer done()
 
 	kvp, err := k.initReq(m, cfg)
 	if err != nil {

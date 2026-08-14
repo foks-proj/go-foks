@@ -290,10 +290,30 @@ func SetRpcScopeReporter(fn RpcScopeReporter) {
 // ReportRpcScope hands a finished scope to the installed reporter. No-op when
 // none is installed, which is the default and the case for every non-mobile
 // build.
+//
+// A panicking reporter is contained and then UNINSTALLED. Observing must not be
+// able to change what it observes: the reporter is supplied by the embedding
+// binary, runs on whichever goroutine closed the scope, and GetFile closes one
+// inside a fan-out -- so without this, a bug in a diagnostic could unwind
+// through an unrelated sibling read and fail a real operation. Measurement is
+// never worth that.
+//
+// Uninstalled rather than merely recovered because a reporter that panics once
+// will panic every time, and paying a recover per scope forever to keep
+// swallowing it is worse than losing the diagnostic. A silent instrument is a
+// better failure than a client that breaks only when instrumented. This mirrors
+// the same decision on the JS side of this bridge (setNativeCallObserver in
+// apps/mobile/src/lib/nativeTrace.ts), which disarms its sink for the same
+// reason.
 func ReportRpcScope(name string, wall time.Duration, st *RpcStats) {
 	fn := rpcScopeReporter.Load()
 	if fn == nil {
 		return
 	}
+	defer func() {
+		if r := recover(); r != nil {
+			rpcScopeReporter.CompareAndSwap(fn, nil)
+		}
+	}()
 	(*fn)(name, wall, st)
 }

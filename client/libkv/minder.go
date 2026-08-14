@@ -1628,6 +1628,32 @@ func (k *Minder) GetUsage(
 	return &res, nil
 }
 
+// instrumentScope opens an RPC-accounting scope and returns the derived
+// MetaContext plus the closure that reports it. Use as:
+//
+//	m, done := k.instrumentScope(m, "KVMinder.GetFile")
+//	defer done()
+//
+// Shared by GetFile and List, which had byte-identical blocks differing only
+// in the name -- so a change to how scopes report had to be remembered twice
+// and could silently drift.
+//
+// The report is unconditional while the log line stays Debug-gated: an
+// embedder aggregates rather than logging per call, so the level would hide
+// exactly the reads that most need counting, whereas building the zap summary
+// sorts a map and formats a string and is worth skipping when nobody reads it.
+func (k *Minder) instrumentScope(m MetaContext, name string) (MetaContext, func()) {
+	m, stats := m.WithRpcStats()
+	start := time.Now()
+	return m, func() {
+		wall := time.Since(start)
+		core.ReportRpcScope(name, wall, stats)
+		if m.G().Log().Core().Enabled(zapcore.DebugLevel) {
+			m.Debugw(name, stats.LogArgs(wall, 6)...)
+		}
+	}
+}
+
 func (k *Minder) List(
 	m MetaContext,
 	cfg lcl.KVConfig,
@@ -1647,15 +1673,8 @@ func (k *Minder) List(
 	// directory listings -- which land here, not in GetFile -- were 47% of ALL
 	// bridge time. The operation the instrument most needed to see was the one
 	// it could not.
-	m, stats := m.WithRpcStats()
-	start := time.Now()
-	defer func() {
-		wall := time.Since(start)
-		core.ReportRpcScope("KVMinder.List", wall, stats)
-		if m.G().Log().Core().Enabled(zapcore.DebugLevel) {
-			m.Debugw("KVMinder.List", stats.LogArgs(wall, 6)...)
-		}
-	}()
+	m, done := k.instrumentScope(m, "KVMinder.List")
+	defer done()
 
 	kvp, err := k.initReq(m, cfg)
 	if err != nil {
