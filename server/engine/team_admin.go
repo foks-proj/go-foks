@@ -587,6 +587,17 @@ func (c *teamEditor) openLink(m shared.MetaContext) (*team.OpenTeamLinkRes, erro
 	if err != nil {
 		return nil, err
 	}
+
+	// Refuse an edit that takes the team from having at least one owner to
+	// having none — nobody would be left who could ever add an owner back
+	// (issue #309). This is the authoritative guard: the client enforces the
+	// same rule via GameplanOpts.RequireOwner, but a doctored client can skip
+	// it. Only the >=1 -> 0 transition is blocked, so teams that are already
+	// ownerless can still rekey.
+	if roster.HasOwner() && !res.RosterPost.HasOwner() {
+		return nil, core.TeamRosterError("edit would leave team without an owner")
+	}
+
 	return res, nil
 }
 

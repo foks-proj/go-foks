@@ -156,6 +156,21 @@ func MakeChange(mrq proto.MemberRoleSeqno, mh proto.HostID) (*Change, *proto.Tea
 	return chng, &tk, nil
 }
 
+// HasMemberRole reports whether the party named in mr, at its source role, is
+// currently in the roster. Host scoping matches MakeChange, so the answer is
+// exactly "would a change set containing mr touch an existing member?"
+func (r *RosterCore) HasMemberRole(mr proto.MemberRole, mh proto.HostID) (bool, error) {
+	fqef, err := mr.Member.Id.WithHost(mh).Fixed()
+	if err != nil {
+		return false, err
+	}
+	srcRole, err := core.ImportRole(mr.Member.SrcRole)
+	if err != nil {
+		return false, err
+	}
+	return r.Has(MemberID{Fqe: *fqef, SrcRole: *srcRole}), nil
+}
+
 func MakeChangeSet(v []proto.MemberRoleSeqno, mh proto.HostID) (ChangeSet, *MemberKeysSet, error) {
 	ret := make(ChangeSet, len(v))
 	ads := NewMemberKeysSet()
@@ -223,6 +238,12 @@ func (r *Roster) Load(
 
 type GameplanOpts struct {
 	TestingNoCheck bool
+
+	// RequireOwner refuses a change set that takes the roster from having at
+	// least one owner to having none. Set when building or accepting new
+	// links; left unset when replaying existing chains, which must load even
+	// if they contain a link that stranded the team (issue #309).
+	RequireOwner bool
 }
 
 func (r *Roster) Gameplan(
