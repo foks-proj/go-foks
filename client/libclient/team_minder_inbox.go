@@ -1180,6 +1180,30 @@ func (t *TeamMinder) getOrLoadInboxRow(
 	return nil, core.NotFoundError("inbox row")
 }
 
+// checkAdmitteesNotAlreadyMembers refuses RSVPs for parties already in the
+// roster. Such an RSVP is almost certainly a mistake — typically an admin who
+// accepted their own invite (issue #309). Admitting it would silently rewrite
+// the existing membership (e.g. demote an owner to member), so refuse and
+// point at change-roles, which exists for that purpose.
+func checkAdmitteesNotAlreadyMembers(
+	rows []proto.MemberRole,
+	host proto.HostID,
+	roster *team.Roster,
+) error {
+	for _, mr := range rows {
+		isMemb, err := roster.HasMemberRole(mr, host)
+		if err != nil {
+			return err
+		}
+		if isMemb {
+			return core.TeamRosterError(
+				"party is already a member of the team; use change-roles to change their role",
+			)
+		}
+	}
+	return nil
+}
+
 func (t *TeamMinder) TeamAdmit(
 	m MetaContext,
 	arg lcl.TeamAdmitArg,
@@ -1240,6 +1264,11 @@ func (t *TeamMinder) TeamAdmit(
 
 	tr.Lock()
 	defer tr.Unlock()
+
+	err = checkAdmitteesNotAlreadyMembers(rows, fqt.Host, tr.ldr.rosterPost)
+	if err != nil {
+		return err
+	}
 
 	editor := TeamEditor{
 		tl:      tr.ldr,
