@@ -69,6 +69,36 @@ func (v *vHostInit) writePublicZone(m MetaContext) error {
 	return StorePublicZoneWithProbe(m, *k, ufsMap)
 }
 
+// WritePublicZoneForVHost re-signs and re-stores the public zone for the
+// vhost with the given hostname; use it to refresh existing vhosts after the
+// fleet grows a new front-facing service (as with realtime/chat) that their
+// zones predate. It mirrors what vHostInit.writePublicZone wrote at creation
+// time: every front-facing service is addressed at the vhost's own hostname
+// (not the config's external addresses, which name the primary host), and
+// the zone is signed with the vhost's metadata signing key, loaded from the
+// standard per-vhost private keys directory.
+func WritePublicZoneForVHost(m MetaContext, hn proto.Hostname) error {
+	hn = hn.Normalize()
+	hid, err := m.G().HostIDMap().LookupByHostname(m, hn)
+	if err != nil {
+		return err
+	}
+	m = m.WithHostID(hid)
+	ioer, err := m.PrivateHostKeyIOer(hid.Id, proto.EntityType_HostMetadataSigner)
+	if err != nil {
+		return err
+	}
+	hk, err := ReadHostKey(m.Ctx(), ioer)
+	if err != nil {
+		return err
+	}
+	ufsMap := make(map[proto.ServerType]proto.Hostname)
+	for _, st := range proto.FrontFacingServers {
+		ufsMap[st] = hn
+	}
+	return StorePublicZoneWithProbe(m, *hk, ufsMap)
+}
+
 func (v *vHostInit) checkLimits(m MetaContext) error {
 	db, err := m.Db(DbTypeUsers)
 	if err != nil {
