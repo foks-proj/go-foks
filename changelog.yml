@@ -2,6 +2,31 @@ project: foks
 maintaner: Maxwell Krohn <max@ne43.com>
 
 changelog:
+  - version: 0.1.9
+    urgency: medium
+    stable: true
+    date: 2026-08-20 19:00:00 -0500
+    changes:
+      - desc: add 'foks git delete' (aliases rm/remove) to delete a git repository
+        closes: ["#279"]
+      - desc: normalize all server DB timestamps to UTC
+        closes: []
+      - desc: work in progress on realtime chat (channels, send/read, ad-hoc teams); not yet ready for use
+        closes: []
+      - desc: speed up username display with a global client-side cache
+        closes: ["#296"]
+      - desc: fixes for iOS embedding (shared-home crash guard, standalone config setters)
+        closes: []
+      - desc: fix propagation of passphrase lock state to the background user loader
+        closes: []
+      - desc: show FOKS name and icon for the macOS agent in Login Items & Extensions
+        closes: ["#312"]
+      - desc: allow former members to rejoin a team via invite after removal
+        closes: ["#314"]
+      - desc: fix background team rekey (CLKR) bug that changed member roles during rekeying
+        closes: []
+      - desc: block admitting an existing member and any change leaving a team without an owner
+        closes: ["#309"]
   - version: 0.1.8
     urgency: low
     stable: true
