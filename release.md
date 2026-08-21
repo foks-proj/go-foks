@@ -87,7 +87,7 @@
   - git checkout master
   - git reset --hard upstream/master
   - cd ../go-foks/scripts
-  - mark the GH release live via the web interface
+  - gh release edit vX.Y.Z --draft=false
   - ./winget-gen.bash ../../winget-pkgs
   - cd ../../winget-pkgs
   - git add manifests/n/ne43/foks
