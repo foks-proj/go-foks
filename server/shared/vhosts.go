@@ -79,7 +79,14 @@ func (v *vHostInit) writePublicZone(m MetaContext) error {
 // standard per-vhost private keys directory.
 func WritePublicZoneForVHost(m MetaContext, hn proto.Hostname) error {
 	hn = hn.Normalize()
-	hid, err := m.G().HostIDMap().LookupByHostname(m, hn)
+	// Strict: LookupByHostname falls back to the primary host when the
+	// hostname is unknown, which here would sign the PRIMARY host's zone
+	// while addressing every front-facing service at the unknown hostname --
+	// so a typo in --vhost silently overwrites the primary zone and points
+	// clients at a host that does not exist. An unknown vhost must fail.
+	hid, err := m.G().HostIDMap().LookupByHostnameWithFallbackBehavior(
+		m, hn, HostnameLookupFallbackNone,
+	)
 	if err != nil {
 		return err
 	}
