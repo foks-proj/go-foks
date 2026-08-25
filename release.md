@@ -21,9 +21,6 @@
   - cd ../pkgs 
   - cp ../go-foks/build/foks_*.deb public/pool/main/f/
   - git commit -a -m "Add foks_*.deb to public pool"
-  - git push
-  - cd src/pkgs
-  - git pull
   - bash -x scripts/make-debian-repo.bash
   - git add public
   - git commit -a -m 'debian vX.Y.Z'
@@ -40,7 +37,7 @@
   - cd ../pkgs
   - git pull
   - mkdir rpm-in
-  - cd rpm-in && cp ../go-foks/build/foks-*.rpm .
+  - cd rpm-in && cp ../../go-foks/build/foks-*.rpm .
   - cd ..
   - git add rpm-in
   - git commit -a -m "Add foks-*.rpm to public pool"
@@ -58,14 +55,14 @@
 
 - static Linux
   - make musl
-  - cd build && gh release upload vX.Y.Z foks-linux-musl
+  - cd build && gh release upload vX.Y.Z foks-*.musl.linux.a*
 
 - brew 
   - make brew
-  - cd build && gh release upload vX.Y.Z foks-darwin-x86_64.tar.gz
-  - cd ../pkgs && git pull && cp ../go-foks/build/foks-*.zip public/stable/darwin/
+  - cd build && gh release upload vX.Y.Z foks-*-darwin*
+  - cd ../../pkgs && git pull && cp ../go-foks/build/foks-*.zip public/stable/darwin/
   - cp ../go-foks/changelog.yml public/stable/changelog.yml
-  - git add public/stable/darwin/foks-*.zip
+  - git add public/stable
   - git commit -a -m "Add foks-*.zip to public pool"
   - git push
   - cd ../../homebrew-cask/Casks/f
@@ -90,7 +87,7 @@
   - git checkout master
   - git reset --hard upstream/master
   - cd ../go-foks/scripts
-  - mark the GH release live via the web interface
+  - gh release edit vX.Y.Z --draft=false
   - ./winget-gen.bash ../../winget-pkgs
   - cd ../../winget-pkgs
   - git add manifests/n/ne43/foks

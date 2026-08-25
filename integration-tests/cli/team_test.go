@@ -751,3 +751,54 @@ func TestTeamChangeMembershipClosedViewershipTestReload(t *testing.T) {
 
 	checkMembershipChain(proto.OwnerRole)
 }
+
+// Issue #309: an owner accepts their own team invite and admits themselves at
+// a lower role, demoting themselves and — as the sole owner — bricking the
+// team. Admitting a party that's already a member must fail, as must any
+// change that would leave the team without an owner.
+func TestIssue309SelfInviteDemotion(t *testing.T) {
+	x := newTestAgent(t)
+	x.runAgent(t)
+	defer x.stop(t)
+	stopper := runMerkleActivePoker(t)
+	defer stopper()
+	newUserWithAgentAtVHost(t, x, 0)
+	merklePoke(t)
+	merklePoke(t)
+
+	var res lcl.TeamCreateRes
+	teamName := "selfies"
+	x.runCmdToJSON(t, &res, "team", "create", teamName)
+	merklePoke(t)
+
+	var res3 proto.TeamInvite
+	x.runCmdToJSON(t, &res3, "team", "invite", teamName)
+	inviteStr, err := team.ExportTeamInvite(res3)
+	require.NoError(t, err)
+
+	// x can still accept its own invite (it just parks an RSVP in the inbox)...
+	x.runCmd(t, nil, "team", "accept", inviteStr)
+	merklePoke(t)
+
+	// ...but admitting the RSVP would demote the owner, and must fail.
+	var inb lcl.TeamInbox
+	x.runCmdToJSON(t, &inb, "team", "inbox", teamName)
+	require.Equal(t, 1, len(inb.Rows))
+	err = x.runCmdErr(nil, "team", "admit", teamName, string(inb.Rows[0].Tok.String())+"/m/0")
+	require.Error(t, err)
+	require.Equal(t, core.TeamRosterError(
+		"party is already a member of the team; use change-roles to change their role"), err)
+
+	// A direct self-demotion of the sole owner must also fail — it would
+	// leave the team with no owner, permanently stuck.
+	xusername := x.status(t).Users[0].Info.Username.NameUtf8
+	err = x.runCmdErr(nil, "team", "change-roles", teamName, xusername.String()+"->m/0")
+	require.Error(t, err)
+	require.Equal(t, core.TeamRosterError("change would leave team without an owner"), err)
+
+	// The owner is unharmed.
+	var ros lcl.TeamRoster
+	x.runCmdToJSON(t, &ros, "team", "ls", teamName)
+	require.Equal(t, 1, len(ros.Members))
+	require.Equal(t, proto.OwnerRole, ros.Members[0].DstRole)
+}

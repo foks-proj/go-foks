@@ -266,7 +266,7 @@ func (t *TeamEditor) runGameplan(m MetaContext) error {
 		t.cp.FQParty().Host,
 		mrq,
 		vk.GetEntityID(),
-		nil,
+		&team.GameplanOpts{RequireOwner: true},
 	)
 	if err != nil {
 		return err
