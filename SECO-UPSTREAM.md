@@ -46,13 +46,13 @@ user hits; keep it local if it encodes how SECO deploys or what SECO builds.**
 | explore double-load | [#325](https://github.com/foks-proj/go-foks/pull/325) | 60→36 round trips. Shipped **without** its budget test — see RpcStats below. |
 | roster by member names | [#326](https://github.com/foks-proj/go-foks/pull/326) | Uses upstream's own username cache (#298) on a path that missed it. |
 | `--vhost` strict lookup | [#327](https://github.com/foks-proj/go-foks/pull/327) | Typo'd `--vhost` rewrote the **primary** host's public zone. Found by cubic on our merge PR #21. |
+| `patch-db --yes` | [#328](https://github.com/foks-proj/go-foks/pull/328) | Unattended deploys can't answer a prompt. |
+| `Config.RPCLogOptions` via env/config | [#329](https://github.com/foks-proj/go-foks/pull/329) | Flag-only, so the mobile agent could never enable RPC tracing. |
 
 ## Queued — decided yes, not yet opened
 
 | Change | Waiting on | Notes |
 |---|---|---|
-| `patch-db --yes` | nothing — open it | ~20 LoC. Unattended deploys can't answer a prompt. |
-| `Config.RPCLogOptions` via env/config | nothing — open it | ~10 LoC. Flag-only today, so the mobile agent can never enable RPC tracing. Must be split out of our RpcStats commit. |
 | parallel explore waves | **#325 landing** | 4533→1367ms. Builds on #325; racing it would conflict. |
 | `TeamCancelRequest` + `TeamReject` | nothing — open it | Withdraw your own join request; let an admin deliberately reject one. Upstream calls `RejectJoinReq` only automatically on cycle errors — there is no deliberate path. |
 | issue: how should "leave a team" be modelled? | nothing — open it | See `TeamLeaveSelf` under Declined. Ask before spending a PR. |
