@@ -69,6 +69,37 @@ func (r *RosterCore) Len() int {
 	return len(r.members)
 }
 
+func (r *RosterCore) hasOwnerLocked() bool {
+	for _, mi := range r.members {
+		if mi.Role.Typ == proto.RoleType_OWNER {
+			return true
+		}
+	}
+	return false
+}
+
+// HasOwner returns true if at least one member of the roster holds the
+// owner role.
+func (r *RosterCore) HasOwner() bool {
+	if r == nil {
+		return false
+	}
+	r.Lock()
+	defer r.Unlock()
+	return r.hasOwnerLocked()
+}
+
+// Has returns true if the given member is currently in the roster.
+func (r *RosterCore) Has(m MemberID) bool {
+	if r == nil {
+		return false
+	}
+	r.Lock()
+	defer r.Unlock()
+	_, found := r.members[m]
+	return found
+}
+
 func (r *RosterCore) Add(m MemberID, k core.RoleKey, g proto.Generation, q proto.Seqno, t proto.Time) {
 	r.Lock()
 	defer r.Unlock()
@@ -521,6 +552,16 @@ func (d ChangeSet) Gameplan(
 	}
 
 	rPost = rPre.Clone().Apply(d)
+
+	// Refuse to take the team from having at least one owner to having none:
+	// nobody would be left who could ever add an owner back, so the team
+	// would be permanently stuck (issue #309). Only enforced when the caller
+	// opts in — replay of already-accepted chains must stay lenient — and
+	// only on the >=1 -> 0 transition, so teams that are already ownerless
+	// can still rekey.
+	if opts != nil && opts.RequireOwner && rPre.hasOwnerLocked() && !rPost.hasOwnerLocked() {
+		return nil, nil, nil, core.TeamRosterError("change would leave team without an owner")
+	}
 
 	sched, keysPost = rPre.planChangesLocked(d, keysPre, rPost, forcedNewKeyGens)
 	return rPost, sched, keysPost, nil

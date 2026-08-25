@@ -65,9 +65,7 @@ srv-install: srv-assets
 
 .PHONY: ghcr-login
 ghcr-login:
-	foks kv get --team build.server /secrets/github/classic-access-token-ghcr - | \
-		docker login ghcr.io --username maxtaco --password-stdin
-
+	gh auth token | docker login ghcr.io --username maxtaco --password-stdin
 
 .PHONY: foks-server-docker-image-latest
 foks-server-docker-image-latest:

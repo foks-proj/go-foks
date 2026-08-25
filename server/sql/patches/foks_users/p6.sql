@@ -1,3 +1,4 @@
+
 /*
  * user_membership_vers: one row per (host, user), whose vers is bumped -- in
  * the same transaction as the team_members write it describes -- whenever the

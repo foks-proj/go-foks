@@ -15,17 +15,16 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     env:
-      # Packages to lint + test. TEMPORARY exclusion of client/ and
-      # integration-tests/: the client/ tree (upstream go-foks client code) does
-      # not typecheck after the "Update to latest upstream version" merge — its
-      # call sites drifted from the new upstream APIs (FQTeamParsed->ConfigTeam,
-      # MetaContext.ActiveConnectedUser/DbPutTx/Warnw, ChannelSetCache.Get/Put) —
-      # and integration-tests/ imports it. SECO ships the SERVER (server/ + lib/
-      # + proto/, all clean) and its mobile client pins an older go-foks
-      # separately, so these trees are unused by what we build yet turned CI
-      # permanently red. Restore `./...` once the client half of the merge is
-      # reconciled.
-      GO_PKGS: "./server/... ./lib/... ./proto/... ./conf/... ./tools/... ./play/..."
+      # Packages to lint + test. client/ is back in: the API drift that made it
+      # untypecheckable after the first upstream merge is reconciled, and it is
+      # where most of this fork's own changes live, so leaving it out meant our
+      # own work was the only code CI never checked.
+      #
+      # integration-tests/ stays out because it needs a live postgres and the
+      # rest of the server estate, which this workflow does not provision.
+      # Upstream runs plain `./...` here; matching that needs the services
+      # wired up first.
+      GO_PKGS: "./server/... ./lib/... ./proto/... ./conf/... ./tools/... ./play/... ./client/..."
     steps:
       - uses: actions/checkout@v5
 
