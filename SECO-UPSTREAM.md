@@ -48,14 +48,17 @@ user hits; keep it local if it encodes how SECO deploys or what SECO builds.**
 | `--vhost` strict lookup | [#327](https://github.com/foks-proj/go-foks/pull/327) | Typo'd `--vhost` rewrote the **primary** host's public zone. Found by cubic on our merge PR #21. |
 | `patch-db --yes` | [#328](https://github.com/foks-proj/go-foks/pull/328) | Unattended deploys can't answer a prompt. |
 | `Config.RPCLogOptions` via env/config | [#329](https://github.com/foks-proj/go-foks/pull/329) | Flag-only, so the mobile agent could never enable RPC tracing. |
+| `TeamCancelRequest` + `TeamReject` | [#330](https://github.com/foks-proj/go-foks/pull/330) | Deliberately excludes `TeamLeaveSelf` — see Declined, and issue [#331](https://github.com/foks-proj/go-foks/issues/331). |
 
 ## Queued — decided yes, not yet opened
 
 | Change | Waiting on | Notes |
 |---|---|---|
 | parallel explore waves | **#325 landing** | 4533→1367ms. Builds on #325; racing it would conflict. |
-| `TeamCancelRequest` + `TeamReject` | nothing — open it | Withdraw your own join request; let an admin deliberately reject one. Upstream calls `RejectJoinReq` only automatically on cycle errors — there is no deliberate path. |
-| issue: how should "leave a team" be modelled? | nothing — open it | See `TeamLeaveSelf` under Declined. Ask before spending a PR. |
+
+
+Only one item is queued, and it names a real blocker. Anything else that belongs
+here should be opened instead of parked.
 
 ## Declined — considered, rejected, stays rejected
 
@@ -76,7 +79,9 @@ needs this hook. #325's body offers the hook separately. If maxtaco asks for it,
 that is a request, not a re-proposal — reopen this decision then, and not before.
 
 ### `TeamLeaveSelf`
-**Local, and do not propose without the design conversation first.**
+**Local pending [#331](https://github.com/foks-proj/go-foks/issues/331)**, the design
+question we raised upstream rather than proposing an API for. Revisit when it
+gets an answer; do not propose before then.
 
 It writes only the member's own membership chain. It does *not* update
 `team_members` or rotate PTKs — that needs an admin `EditTeam` with role `NONE`.
