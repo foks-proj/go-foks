@@ -264,9 +264,15 @@ func (t *TeamRecord) Member() CryptoPartier {
 }
 
 type LoadTeamOpts struct {
-	LoadMembers bool
-	Refresh     bool
-	NoUpdates   bool
+	// LoadMembers loads every member in full -- each one's user chain is
+	// fetched from the server, bypassing the UsernameLoader cache and its
+	// singleflight. Only ask for this if you need per-member chain data
+	// (device counts, keys); for a roster of names and roles, use
+	// LoadMemberNames, which is cheap and deduplicated.
+	LoadMembers     bool
+	LoadMemberNames bool
+	Refresh         bool
+	NoUpdates       bool
 }
 
 func (t *TeamMinder) GetTeam(fqt proto.FQTeam) *TeamRecord {
@@ -385,11 +391,19 @@ func (t *TeamMinder) LoadTeamWithFQTeam(
 
 	tr.Lock()
 	defer tr.Unlock()
-	if !opts.Refresh && (!opts.LoadMembers || tr.ldr.Arg.LoadMembersFull) {
+	if !opts.Refresh &&
+		(!opts.LoadMembers || tr.ldr.Arg.LoadMembersFull) &&
+		(!opts.LoadMemberNames || tr.ldr.Arg.LoadMemberNames || tr.ldr.Arg.LoadMembersFull) {
 		return tr, nil
 	}
 
 	tr.ldr.Arg.LoadMembersFull = opts.LoadMembers
+	// Sticky, unlike LoadMembersFull: a later full-member load also yields the
+	// names, so once a caller has asked for names we keep supplying them rather
+	// than silently dropping back to a roster with blank usernames.
+	if opts.LoadMemberNames {
+		tr.ldr.Arg.LoadMemberNames = true
+	}
 
 	// An ad-hoc team is named by its member list, so have the loader capture
 	// member usernames (cheap: username-cache hits skip the user-chain loads),
@@ -1438,7 +1452,12 @@ func (t *TeamMinder) ListTeamRoster(
 	err := t.withLoadedTeam(
 		m,
 		arg,
-		LoadTeamOpts{LoadMembers: true, Refresh: true},
+		// Names, not full member loads: the roster shows usernames and roles,
+		// none of which needs a member's user chain. LoadMembers used to be set
+		// here, which re-fetched every member's chain from the server on every
+		// call -- with Refresh defeating the memo, a roster of N members cost N
+		// chain loads each time the screen asked for it.
+		LoadTeamOpts{LoadMemberNames: true, Refresh: true},
 		func(m MetaContext, tm *TeamRecord) error {
 			tmp, err := tm.Tw().ExportToRoster()
 			if err != nil {
