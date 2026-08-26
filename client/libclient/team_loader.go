@@ -32,7 +32,7 @@ type rosterPackage struct {
 	tw       *TeamWrapper
 
 	// cached is set instead of uw when the member's user-chain load was
-	// skipped (LoadMemberNames) because the username was already in the
+	// skipped (MemberLoadNames) because the username was already in the
 	// UsernameLoader cache. Both fields are captured at skip time -- rather
 	// than re-read from the cache later -- so a TTL eviction between the skip
 	// decision and the naming pass can't lose them.
@@ -234,7 +234,7 @@ func (t *TeamWrapper) IsAdHocTeam() bool {
 // adHocMemberIDsAndNames collects the local-host user members of an ad-hoc
 // team: their UIDs, and their usernames when every member's name is known
 // (from its loaded user chain, or captured from the username cache when the
-// chain load was skipped -- see LoadMemberNames). nameListOK is false when any
+// chain load was skipped -- see MemberLoadNames). nameListOK is false when any
 // member's name is missing; the UID list is complete regardless.
 func (t *TeamWrapper) adHocMemberIDsAndNames() (
 	uids []proto.UID,
@@ -270,7 +270,7 @@ func (t *TeamWrapper) adHocMemberIDsAndNames() (
 			case lst.uw != nil:
 				names = append(names, lst.uw.prot.Username.B.NameUtf8)
 			case !lst.cached.IsZero():
-				// The user-chain load was skipped (LoadMemberNames); the name
+				// The user-chain load was skipped (MemberLoadNames); the name
 				// was captured from the cache at skip time.
 				names = append(names, lst.cached.name)
 			default:
@@ -536,10 +536,10 @@ func (r *rosterPackage) Export() lcl.TeamRosterMember {
 		ret.Mem.Host = r.tw.hostname
 		ret.NumMembers = int64(len(r.tw.prot.Members))
 	case !r.cached.IsZero():
-		// LoadMemberNames hit the username cache and skipped the chain load, so
+		// MemberLoadNames hit the username cache and skipped the chain load, so
 		// there's no UserWrapper to read from. Both name and host were captured
 		// at skip time. NumMembers (a device count) needs the chain and stays
-		// zero -- callers wanting it must ask for LoadMembers.
+		// zero -- callers wanting it must ask for MemberLoadFull.
 		ret.Mem.Name = r.cached.name
 		ret.Mem.Host = r.cached.host
 	}
@@ -1018,7 +1018,7 @@ func (l *TeamLoader) loadTeamFromServer(m MetaContext) error {
 			S: l.existing.Name.S + 1,
 		}
 	}
-	if (l.Arg.LoadMembersFull || l.Arg.LoadMemberNames) && (l.existing == nil || len(l.existing.RemoteViewTokens) == 0) {
+	if l.Arg.MemberLoad >= MemberLoadNames && (l.existing == nil || len(l.existing.RemoteViewTokens) == 0) {
 		arg.LoadRemoteViewTokens = true
 	}
 	res, err := l.rpcLoader.LoadTeamChain(m.Ctx(), arg)
@@ -1509,12 +1509,12 @@ func (p *rosterPackage) load(m MetaContext, l *TeamLoader) error {
 			arg.TeamVOBearerToken = tok
 		}
 
-		// If we only need this member's username (LoadMemberNames without
-		// LoadMembersFull), go through the UsernameLoader: a cache hit skips
+		// If we only need this member's username (MemberLoadNames), go
+		// through the UsernameLoader: a cache hit skips
 		// the user-chain load, concurrent loads of the same user are
 		// single-flighted, and if this call did perform the load we keep the
 		// wrapper anyway.
-		if !l.Arg.LoadMembersFull && !p.isRemote {
+		if l.Arg.MemberLoad < MemberLoadFull && !p.isRemote {
 			fqu := proto.FQUser{Uid: *uid, HostID: p.fqp.Host}
 			nm, uw, err := m.G().UsernameLoader().Load(m, fqu, arg)
 			if err != nil {
@@ -1542,7 +1542,7 @@ func (p *rosterPackage) load(m MetaContext, l *TeamLoader) error {
 		p.uw = uw
 
 		// Memoize the loaded username so later explores can skip this load
-		// (see LoadMemberNames) and RT sender-name resolution can avoid its
+		// (see MemberLoadNames) and RT sender-name resolution can avoid its
 		// own user-chain load. Cache-write failure is not a load failure.
 		err = m.G().UsernameLoader().Set(m,
 			proto.FQUser{Uid: *uid, HostID: p.fqp.Host}, uw.Name())
@@ -1633,7 +1633,7 @@ func (l *TeamLoader) destRoleForLoader(m MetaContext) (*core.RoleKey, error) {
 func (l *TeamLoader) loadTokensAndMembers(
 	m MetaContext,
 ) error {
-	if !l.Arg.LoadMembersFull && !l.Arg.LoadMemberNames {
+	if l.Arg.MemberLoad < MemberLoadNames {
 		return nil
 	}
 	if l.Arg.Keys == nil {
@@ -2003,7 +2003,7 @@ func (l *TeamLoader) saveState(m MetaContext) error {
 	res.Sctlsc = *l.sctlsc
 
 	switch {
-	case l.Arg.LoadMembersFull || l.Arg.LoadMemberNames:
+	case l.Arg.MemberLoad >= MemberLoadNames:
 		lst := make([]proto.TeamRemoteMemberViewTokenInner, 0, len(l.rosterDetails))
 		for _, v := range l.rosterDetails {
 			// Just save the first remote view token for all srcRoles.
@@ -2218,13 +2218,10 @@ type LoadTeamArg struct {
 	Keys               SharedKeySequence
 	Tok                *proto.PermissionToken
 	LocalParentTeamTok *rem.TeamVOBearerToken
-	LoadMembersFull    bool
-	// LoadMemberNames loads the members' usernames (e.g., to name an ad-hoc
-	// team by its participant list) without requiring full member loads: a
-	// member whose name is already in the global UsernameLoader cache is skipped;
-	// misses are loaded (and cached). LoadMembers subsumes this -- it always
-	// loads every member, which yields the names too.
-	LoadMemberNames  bool
+	// MemberLoad is how much detail to load per roster member; see
+	// MemberLoadLevel. Levels are ordered: a loader that ran at some level
+	// has everything any lower level would have produced.
+	MemberLoad       MemberLoadLevel
 	TestSkipArgCheck bool
 	TestTokenVariant *rem.TokenVariant
 

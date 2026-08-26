@@ -275,11 +275,11 @@ func TestMixedRoleCLKR(t *testing.T) {
 	require.Equal(t, 1, len(clkr.Rekeys()))
 
 	twr, err := libclient.LoadTeam(mv, libclient.LoadTeamArg{
-		Team:            A.FQTeam(t),
-		As:              v.FQUser().FQParty(),
-		SrcRole:         proto.OwnerRole,
-		Keys:            v.KeySeq(t, proto.OwnerRole),
-		LoadMembersFull: true,
+		Team:       A.FQTeam(t),
+		As:         v.FQUser().FQParty(),
+		SrcRole:    proto.OwnerRole,
+		Keys:       v.KeySeq(t, proto.OwnerRole),
+		MemberLoad: libclient.MemberLoadFull,
 	})
 	require.NoError(t, err)
 	x, err := twr.ExportToRoster()
@@ -353,11 +353,11 @@ func TestAdminCLKRSkipsStaleHigherRoleMember(t *testing.T) {
 	require.Equal(t, 1, len(clkr.Rekeys()))
 
 	twr, err := libclient.LoadTeam(mw, libclient.LoadTeamArg{
-		Team:            A.FQTeam(t),
-		As:              w.FQUser().FQParty(),
-		SrcRole:         proto.OwnerRole,
-		Keys:            w.KeySeq(t, proto.OwnerRole),
-		LoadMembersFull: true,
+		Team:       A.FQTeam(t),
+		As:         w.FQUser().FQParty(),
+		SrcRole:    proto.OwnerRole,
+		Keys:       w.KeySeq(t, proto.OwnerRole),
+		MemberLoad: libclient.MemberLoadFull,
 	})
 	require.NoError(t, err)
 	x, err := twr.ExportToRoster()

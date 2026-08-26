@@ -276,7 +276,7 @@ func (c *CLKROneTeam) refreshTeam(m MetaContext) error {
 }
 
 func (c *CLKROneTeam) loadTeam(m MetaContext) error {
-	tr, err := c.parent.tm.LoadTeamWithFQTeam(m, c.fqt, LoadTeamOpts{Refresh: true, LoadMembers: true})
+	tr, err := c.parent.tm.LoadTeamWithFQTeam(m, c.fqt, LoadTeamOpts{Refresh: true, Members: MemberLoadFull})
 	if err != nil {
 		return err
 	}
