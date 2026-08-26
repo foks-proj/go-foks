@@ -2,6 +2,15 @@ project: foks
 maintaner: Maxwell Krohn <max@ne43.com>
 
 changelog:
+  - version: 0.1.10
+    urgency: low
+    stable: false
+    date: TBD
+    changes:
+      - desc: speed up team roster listing; serve member names from the username cache instead of full per-member chain loads
+        closes: ["#332"]
+      - desc: internal; replace team member-load flag pair with one ordered MemberLoadLevel
+        closes: ["#333"]
   - version: 0.1.9
     urgency: medium
     stable: true
@@ -10,23 +19,25 @@ changelog:
       - desc: add 'foks git delete' (aliases rm/remove) to delete a git repository
         closes: ["#279"]
       - desc: normalize all server DB timestamps to UTC
-        closes: []
+        closes: ["#271"]
       - desc: work in progress on realtime chat (channels, send/read, ad-hoc teams); not yet ready for use
-        closes: []
+        closes: ["#272"]
       - desc: speed up username display with a global client-side cache
         closes: ["#296"]
       - desc: fixes for iOS embedding (shared-home crash guard, standalone config setters)
-        closes: []
+        closes: ["#289", "#290"]
       - desc: fix propagation of passphrase lock state to the background user loader
-        closes: []
+        closes: ["#287"]
       - desc: show FOKS name and icon for the macOS agent in Login Items & Extensions
         closes: ["#312"]
       - desc: allow former members to rejoin a team via invite after removal
         closes: ["#314"]
       - desc: fix background team rekey (CLKR) bug that changed member roles during rekeying
-        closes: []
+        closes: ["#317"]
       - desc: block admitting an existing member and any change leaving a team without an owner
         closes: ["#309"]
+      - desc: foks-tool write-public-zone support for refreshing vhost zones
+        closes: ["#321"]
   - version: 0.1.8
     urgency: low
     stable: true
@@ -67,9 +78,9 @@ changelog:
       - desc: Improve log rotation on `standup` 
         closes: ["#228"]
       - desc: MCP interface for KV
-        closes : []
+        closes : ["#237"]
       - desc: Claude security audit; 2 highs, and 1 medium; all server-side
-        closes : []
+        closes : ["#235"]
       - desc: MCP interface for teams
         closes : ["#238"]
   - version: 0.1.5
@@ -143,7 +154,7 @@ changelog:
     date: 2025-07-02 13:00:00 -0400
     changes:
       - desc: cli - log rotation for agent logs (not for error, just for output)
-        closes: []
+        closes: ["#121"]
       - desc: logsend feature for debugging problems
         closes: ["#119"]
       - desc: invite codes are optional for some hosts
@@ -181,7 +192,7 @@ changelog:
       - desc: Remove old version clash warning
         closes: ["#48"]
       - desc: Retire TypeScript-based snowpack compiler; move over to Go-based compiler
-        closes : []
+        closes : ["#50"]
       - desc: Fix panic in `team add` from failing to load a user by username a second time
         closes: ["#52"]
       - desc: Fix bug in kv-store big objects as a team
@@ -194,7 +205,7 @@ changelog:
     date: 2025-05-12 13:44:00 -0400
     changes:
       - desc: On macOS, change plist name from "pub.ne43.foks.agent" to "com.ne43.foks.agent"
-        closes: []
+        closes: ["#42"]
       - desc: Don't spam-create connection loops for merkleQuery
         closes: [ "#41" ]
       - desc: Assert snowpack structures are canonical when performing sigs, verify, hmac and hash upon them
@@ -208,6 +219,7 @@ changelog:
       - desc: Add `team change-roles` CLI command
         closes: [ "#33" ]
       - desc: Fix online documentation for `team add` command
+        closes: ["#39"]
   - version: 0.0.18
     urgency: low
     stable: false
@@ -216,9 +228,9 @@ changelog:
       - desc: Better CLI output if no keys or users.
         closes: [ "#21" ]
       - desc: Upgrade x/net to v0.0.39 via upgraded go-snowpack-rpc
-        closes: []
+        closes: ["#23"]
       - desc: bump github.com/gohugoio/hugo from 0.134.3 to 0.139.4; closing med security vuln
-        closes: []
+        closes: ["#24"]
       - desc: Fix `team add` so that it can handle teams being added to other teams.
         closes: [ "#13" ]
   - version: 0.0.17
