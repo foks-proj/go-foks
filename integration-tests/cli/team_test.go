@@ -174,6 +174,7 @@ func TestCreateInviteSequence(t *testing.T) {
 		proto.NewRoleWithMember(-1),
 		roster.Members[2].DstRole,
 	)
+
 }
 
 func TestCreateAdmitLoad(t *testing.T) {
@@ -240,13 +241,24 @@ func TestCreateAdmitLoad(t *testing.T) {
 	merklePoke(t)
 	hostId, err := team.Fqp.Host.StringErr()
 	require.NoError(t, err)
-	z.runCmdToJSON(t, &ros, "team", "ls", teamName+"@"+hostId)
-	require.Equal(t, 3, len(ros.Members))
 
-	require.Equal(t, xUser.Fqu.ToFQParty(), ros.Members[0].Mem.Fqp)
-	require.Equal(t, yUser.Fqu.ToFQParty(), ros.Members[1].Mem.Fqp)
-	require.Equal(t, zUser.Fqu.ToFQParty(), ros.Members[2].Mem.Fqp)
+	// Cross-host roster listing: z (vhost 1, admitted at m/0 -- at the member
+	// load floor) lists the team on vhost 0. z's own row takes the
+	// username-cache path (z is local to z's loader but on a different host
+	// than the team), which used to stamp the row with the team's hostname
+	// instead of z's. List twice so the second pass renders from a warm
+	// username cache.
+	for i := range 2 {
+		z.runCmdToJSON(t, &ros, "team", "ls", teamName+"@"+hostId)
+		require.Equal(t, 3, len(ros.Members), "iteration %d", i)
 
+		require.Equal(t, xUser.Fqu.ToFQParty(), ros.Members[0].Mem.Fqp)
+		require.Equal(t, yUser.Fqu.ToFQParty(), ros.Members[1].Mem.Fqp)
+		require.Equal(t, zUser.Fqu.ToFQParty(), ros.Members[2].Mem.Fqp)
+
+		require.Equal(t, zUser.State.Username.B.NameUtf8, ros.Members[2].Mem.Name, "iteration %d", i)
+		require.Equal(t, zUser.Hostname, ros.Members[2].Mem.Host, "iteration %d", i)
+	}
 }
 
 // We start with:
