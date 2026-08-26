@@ -77,7 +77,7 @@ func (t *teamAdder) loadTeam(m MetaContext, tm lib.FQTeamParsed, srcRole core.Ro
 	return t.tm.withLoadedTeam(
 		m,
 		tm,
-		LoadTeamOpts{LoadMembers: false, Refresh: true},
+		LoadTeamOpts{Refresh: true},
 		func(m MetaContext, tr *TeamRecord) error {
 			id := tr.FQT().ToFQEntity().AtHost(t.hostID())
 			tmk, hepk, err := tr.tw.TeamMemberKeys(srcRole)
@@ -202,7 +202,7 @@ func (t *TeamMinder) Add(m MetaContext, arg lcl.TeamAddArg) error {
 	return t.withLoadedTeamAndAdminToken(
 		m,
 		arg.Team,
-		LoadTeamOpts{LoadMembers: false, Refresh: true},
+		LoadTeamOpts{Refresh: true},
 		func(m MetaContext, tr *TeamRecord, tok *rem.TeamBearerToken) error {
 			adder := newTeamAdder(t, tr, tok, arg)
 			return adder.run(m)

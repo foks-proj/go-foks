@@ -263,16 +263,45 @@ func (t *TeamRecord) Member() CryptoPartier {
 	return t.member
 }
 
+// MemberLoadLevel is how much detail a team load fetches per roster member.
+// Levels are strictly ordered -- each includes everything below it -- so
+// "does this loader satisfy that request?" is just >=.
+type MemberLoadLevel int
+
+const (
+	// MemberLoadNone loads the roster only: uids, roles, no names.
+	MemberLoadNone MemberLoadLevel = iota
+	// MemberLoadNames adds display names, served from the global
+	// UsernameLoader cache; misses load the user chain once and fill it.
+	MemberLoadNames
+	// MemberLoadFull loads every member's full user chain from the server,
+	// bypassing the username cache and its singleflight. Only ask for this
+	// if you need per-member chain data (device counts, keys).
+	MemberLoadFull
+)
+
 type LoadTeamOpts struct {
-	// LoadMembers loads every member in full -- each one's user chain is
-	// fetched from the server, bypassing the UsernameLoader cache and its
-	// singleflight. Only ask for this if you need per-member chain data
-	// (device counts, keys); for a roster of names and roles, use
-	// LoadMemberNames, which is cheap and deduplicated.
-	LoadMembers     bool
-	LoadMemberNames bool
-	Refresh         bool
-	NoUpdates       bool
+	// Members is the per-member detail level for this load; see
+	// MemberLoadLevel. The zero value loads no member detail.
+	Members   MemberLoadLevel
+	Refresh   bool
+	NoUpdates bool
+}
+
+// nextMemberLoad decides the level a reloading TeamRecord's loader runs at,
+// given what it ran at before and what this caller asked for. Full is
+// expensive and must be requested per-load -- if it stuck, one CLKR sweep
+// (which loads Full) would silently put every team it visited back on the
+// N-chain-fetches-per-listing plan. Names, once requested or implied by an
+// ad-hoc team (which is *named* by its member list), persists as a floor:
+// it's username-cache-cheap, and consumers may later render names off the
+// shared record, so a lesser load must not blank them.
+func nextMemberLoad(prev, req MemberLoadLevel, adhoc bool) MemberLoadLevel {
+	ret := req
+	if ret < MemberLoadNames && (prev >= MemberLoadNames || adhoc) {
+		ret = MemberLoadNames
+	}
+	return ret
 }
 
 func (t *TeamMinder) GetTeam(fqt proto.FQTeam) *TeamRecord {
@@ -391,27 +420,15 @@ func (t *TeamMinder) LoadTeamWithFQTeam(
 
 	tr.Lock()
 	defer tr.Unlock()
-	if !opts.Refresh &&
-		(!opts.LoadMembers || tr.ldr.Arg.LoadMembersFull) &&
-		(!opts.LoadMemberNames || tr.ldr.Arg.LoadMemberNames || tr.ldr.Arg.LoadMembersFull) {
+	if !opts.Refresh && tr.ldr.Arg.MemberLoad >= opts.Members {
 		return tr, nil
 	}
 
-	tr.ldr.Arg.LoadMembersFull = opts.LoadMembers
-	// Sticky, unlike LoadMembersFull: a later full-member load also yields the
-	// names, so once a caller has asked for names we keep supplying them rather
-	// than silently dropping back to a roster with blank usernames.
-	if opts.LoadMemberNames {
-		tr.ldr.Arg.LoadMemberNames = true
-	}
-
-	// An ad-hoc team is named by its member list, so have the loader capture
-	// member usernames (cheap: username-cache hits skip the user-chain loads),
-	// as the explore path already does. The teamname-cache fill below needs
-	// them.
-	if fqt.Team.IsAdHocTeam() {
-		tr.ldr.Arg.LoadMemberNames = true
-	}
+	// Ad-hoc teams always carry at least Names: such a team is *named* by its
+	// member list (the explore path relies on this), and the teamname-cache
+	// fill below needs the names.
+	tr.ldr.Arg.MemberLoad = nextMemberLoad(
+		tr.ldr.Arg.MemberLoad, opts.Members, fqt.Team.IsAdHocTeam())
 
 	tw, err := tr.ldr.Run(m)
 	if err != nil {
@@ -765,7 +782,7 @@ func (tm *TeamMinder) loadTeamArg(
 	// participant list; members already in the global UsernameLoader cache are named
 	// from the cache without a user-chain load.
 	if exnode.Fqt.Team.IsAdHocTeam() {
-		arg.LoadMemberNames = true
+		arg.MemberLoad = MemberLoadNames
 	}
 
 	return cp, &arg, nil
@@ -1453,11 +1470,11 @@ func (t *TeamMinder) ListTeamRoster(
 		m,
 		arg,
 		// Names, not full member loads: the roster shows usernames and roles,
-		// none of which needs a member's user chain. LoadMembers used to be set
-		// here, which re-fetched every member's chain from the server on every
-		// call -- with Refresh defeating the memo, a roster of N members cost N
-		// chain loads each time the screen asked for it.
-		LoadTeamOpts{LoadMemberNames: true, Refresh: true},
+		// none of which needs a member's user chain. MemberLoadFull used to be
+		// requested here, which re-fetched every member's chain from the server
+		// on every call -- with Refresh defeating the memo, a roster of N
+		// members cost N chain loads each time the screen asked for it.
+		LoadTeamOpts{Members: MemberLoadNames, Refresh: true},
 		func(m MetaContext, tm *TeamRecord) error {
 			tmp, err := tm.Tw().ExportToRoster()
 			if err != nil {

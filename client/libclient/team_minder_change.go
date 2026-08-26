@@ -91,7 +91,7 @@ func (t *TeamMinder) TeamChangeRoles(
 	err := t.withLoadedTeamAndAdminToken(
 		m,
 		arg.Team,
-		LoadTeamOpts{LoadMembers: true, Refresh: true},
+		LoadTeamOpts{Members: MemberLoadFull, Refresh: true},
 		func(m MetaContext, tr *TeamRecord, tok *rem.TeamBearerToken) error {
 			cli, err := t.au.TeamAdminClient(m)
 			if err != nil {
