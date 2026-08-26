@@ -325,6 +325,26 @@ func (s *messageSender) fanoutInboxVersions(
 		s.sender.ExportToDB(),
 		seq.Int64(),
 	)
+	if err != nil {
+		return err
+	}
+
+	// SECO rt-spike (THROWAWAY, spike branch only): queue one content-free
+	// push row per recipient (not the sender) in the same send transaction.
+	// The Stage-2a schema exists but nothing upstream writes it yet; the
+	// spike's scratch relay drains status='queued' rows. kind='msg',
+	// data=NULL — a pure wake, no message content leaves the E2EE boundary.
+	_, err = s.tx.Exec(
+		m.Ctx(),
+		`INSERT INTO push_outbox (short_host_id, uid, channel_id, kind, seq, status, ctime, mtime)
+		 SELECT uc.short_host_id, uc.uid, uc.channel_id, 'msg', $3, 'queued', NOW(), NOW()
+		   FROM user_channels uc
+		  WHERE uc.short_host_id=$1 AND uc.channel_id=$2 AND uc.uid <> $4`,
+		m.ShortHostID(),
+		s.channelID(),
+		seq.Int64(),
+		s.sender.ExportToDB(),
+	)
 	return err
 }
 
