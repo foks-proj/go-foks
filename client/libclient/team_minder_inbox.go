@@ -1308,10 +1308,12 @@ func (t *TeamMinder) TeamAdmit(
 }
 
 // TeamCancelRequest posts a Removed-state TML link for the given team invite,
-// resetting the caller's "Requested" membership state. Accepts the raw FOKS
-// invite code (not the SECO_INVITE:: wrapped form) so we can resolve the
-// actual TeamID via the cert — ResolveAndReindex only indexes Approved teams
-// and would fail for Requested-state entries.
+// resetting the caller's "Requested" membership state.
+//
+// It takes the invite code itself, as produced by team.ExportTeamInvite,
+// rather than a team name: the TeamID is resolved from the cert, because
+// ResolveAndReindex only indexes Approved teams and would fail for a
+// Requested-state entry.
 func (t *TeamMinder) TeamCancelRequest(m MetaContext, inviteCode string) error {
 	invite, err := team.ImportTeamInvite(inviteCode)
 	if err != nil {
