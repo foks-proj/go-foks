@@ -841,7 +841,9 @@ func (t *TeamMinder) explore(
 		}
 	}
 
-	tmlt, err := NewTMLTeam(m, *arg, dstRole)
+	// Reuse the load just done rather than repeating it -- see
+	// NewTMLTeamFromLoaded.
+	tmlt, err := NewTMLTeamFromLoaded(m, ldr, tw, dstRole)
 	if err != nil {
 		return nil, err
 	}
