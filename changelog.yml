@@ -11,6 +11,14 @@ changelog:
         closes: ["#332"]
       - desc: internal; replace team member-load flag pair with one ordered MemberLoadLevel
         closes: ["#333"]
+      - desc: stop loading every team twice during team explore
+        closes: ["#325"]
+      - desc: fix RPC log options to resolve via flag, then env, then config file
+        closes: ["#329"]
+      - desc: foks-tool write-public-zone; fail on an unknown --vhost instead of rewriting the primary zone
+        closes: ["#327"]
+      - desc: add 'foks-tool patch-db --yes' for unattended deploys
+        closes: ["#328"]
   - version: 0.1.9
     urgency: medium
     stable: true
