@@ -11,6 +11,8 @@ changelog:
         closes: ["#332"]
       - desc: internal; replace team member-load flag pair with one ordered MemberLoadLevel
         closes: ["#333"]
+      - desc: TeamMinder API to cancel your own pending join request and to reject a pending request as admin
+        closes: ["#330"]
   - version: 0.1.9
     urgency: medium
     stable: true
