@@ -216,3 +216,52 @@ func TestTeamRejectThenAdmitFails(t *testing.T) {
 	})
 	require.Error(t, err)
 }
+
+// The full withdraw-and-return arc: the joiner cancels their request, the
+// admin retires the stale row, and the joiner asks again.
+//
+// Two behaviors pinned along the way:
+//
+//   - Cancel does not retire the server-side joinreq (issue #336): the row is
+//     still in the owner's inbox after the joiner has withdrawn, and it takes
+//     an explicit admin reject to clear it. When #336 is fixed, the
+//     post-cancel assertion should flip to require.Empty, and the reject leg
+//     can go away entirely.
+//
+//   - Re-accepting after rejection works: RejectJoinReq moves the joinreq to
+//     state='rejected', and the local_joinreq_joiner_idx partial unique index
+//     (#314) only constrains pending rows, so a fresh RSVP is not blocked by
+//     the retired one.
+func TestTeamCancelRejectThenReaccept(t *testing.T) {
+	f := newInboxFixture(t)
+
+	state, found := f.membershipState(t)
+	require.True(t, found)
+	require.Equal(t, proto.TeamMembershipLinkState_Requested, state)
+
+	err := f.tmj.TeamCancelRequest(f.mj, f.inviteStr)
+	require.NoError(t, err)
+	f.tew.DirectDoubleMerklePokeInTest(t)
+
+	state, found = f.membershipState(t)
+	require.True(t, found)
+	require.Equal(t, proto.TeamMembershipLinkState_Removed, state)
+
+	// Issue #336: the withdrawn request still sits in the owner's inbox.
+	rows := f.inboxRows(t)
+	require.Len(t, rows, 1)
+
+	err = f.tmo.TeamReject(f.mo, f.fqtp, rows[0].Tok)
+	require.NoError(t, err)
+	require.Empty(t, f.inboxRows(t))
+
+	// The joiner changes their mind and asks again.
+	_, err = f.tmj.AcceptInvite(f.mj, lcl.TeamAcceptInviteArg{I: f.invite})
+	require.NoError(t, err)
+	f.tew.DirectDoubleMerklePokeInTest(t)
+
+	state, found = f.membershipState(t)
+	require.True(t, found)
+	require.Equal(t, proto.TeamMembershipLinkState_Requested, state)
+	require.Len(t, f.inboxRows(t), 1)
+}

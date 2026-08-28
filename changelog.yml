@@ -19,6 +19,8 @@ changelog:
         closes: ["#327"]
       - desc: add 'foks-tool patch-db --yes' for unattended deploys
         closes: ["#328"]
+      - desc: TeamMinder API to cancel your own pending join request and to reject a pending request as admin
+        closes: ["#330"]
   - version: 0.1.9
     urgency: medium
     stable: true
