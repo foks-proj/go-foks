@@ -1065,6 +1065,17 @@ func (t *TeamMinder) cacheInbox(tm proto.FQTeam, rows []lcl.TeamInboxRow) {
 	}
 }
 
+// uncacheInboxRow drops one RSVP from the inbox cache. The cache is held
+// indefinitely so that a later admit can find the row without a round trip
+// (see getOrLoadInboxRow), which means a row the server has moved out of
+// 'pending' stays admittable from cache until the process restarts. Anything
+// that retires an RSVP must evict it.
+func (t *TeamMinder) uncacheInboxRow(tok proto.TeamRSVP) {
+	t.inboxMu.Lock()
+	defer t.inboxMu.Unlock()
+	delete(t.inbox, tok)
+}
+
 func (t *TeamMinder) TeamInbox(
 	m MetaContext,
 	fqtp proto.FQTeamParsed,
@@ -1161,23 +1172,33 @@ func (t *TeamMinder) getOrLoadInboxRow(
 	*inboxCacheRow,
 	error,
 ) {
-	t.inboxMu.Lock()
-	defer t.inboxMu.Unlock()
-	if t.inbox != nil {
-		row, found := t.inbox[tok]
-		if found {
-			return &row, nil
-		}
+	row, found := t.lookupInboxRow(tok)
+	if found {
+		return row, nil
 	}
+	// Deliberately not under inboxMu: loadTeamInboxWithFQTeam ends in
+	// cacheInbox, which takes that same non-reentrant mutex. Holding it across
+	// the reload self-deadlocks -- reachable now that a retired RSVP is evicted
+	// rather than left in the cache forever.
 	_, err := t.loadTeamInboxWithFQTeam(m, fqt)
 	if err != nil {
 		return nil, err
 	}
-	row, found := t.inbox[tok]
+	row, found = t.lookupInboxRow(tok)
 	if found {
-		return &row, nil
+		return row, nil
 	}
 	return nil, core.NotFoundError("inbox row")
+}
+
+func (t *TeamMinder) lookupInboxRow(tok proto.TeamRSVP) (*inboxCacheRow, bool) {
+	t.inboxMu.Lock()
+	defer t.inboxMu.Unlock()
+	row, found := t.inbox[tok]
+	if !found {
+		return nil, false
+	}
+	return &row, true
 }
 
 // checkAdmitteesNotAlreadyMembers refuses RSVPs for parties already in the
@@ -1284,4 +1305,89 @@ func (t *TeamMinder) TeamAdmit(
 	}
 
 	return editor.Run(m)
+}
+
+// TeamCancelRequest posts a Removed-state TML link for the given team invite,
+// resetting the caller's "Requested" membership state.
+//
+// It takes the invite code itself, as produced by team.ExportTeamInvite,
+// rather than a team name: the TeamID is resolved from the cert, because
+// ResolveAndReindex only indexes Approved teams and would fail for a
+// Requested-state entry.
+func (t *TeamMinder) TeamCancelRequest(m MetaContext, inviteCode string) error {
+	invite, err := team.ImportTeamInvite(inviteCode)
+	if err != nil {
+		return err
+	}
+
+	i1, err := openInvite(*invite)
+	if err != nil {
+		return err
+	}
+
+	cli, closer, _, err := t.remoteGuestCli(m, i1.Host)
+	if err != nil {
+		return err
+	}
+	defer closer()
+
+	cert, err := t.lookupAndOpenCert(m, cli, *invite)
+	if err != nil {
+		return err
+	}
+
+	fqt := cert.cert.Team
+	glp := proto.NewGenericLinkPayloadWithTeammembership(
+		proto.TeamMembershipLink{
+			Team:    fqt,
+			SrcRole: team.UserSrcRole,
+			State:   proto.NewTeamMembershipDetailsDefault(proto.TeamMembershipLinkState_Removed),
+		},
+	)
+	arg, err := t.makeMembershipChainLink(m, nil, glp, nil)
+	if err != nil {
+		return err
+	}
+	ucli, err := t.au.UserClient(m)
+	if err != nil {
+		return err
+	}
+	return ucli.PostGenericLink(m.Ctx(), *arg)
+}
+
+// TeamReject retires a single pending join request via the server's
+// RejectJoinReq RPC, which moves the row to state='rejected'. The inbox lists
+// only pending rows, so a rejected request does not reappear on subsequent
+// TeamInbox / TeamListPending calls.
+//
+// The server does not filter its UPDATE on the current state, so rejecting an
+// already-rejected request succeeds -- which makes this safe to retry when the
+// caller cannot tell whether the first attempt landed.
+//
+// fqtp is the parsed team name (from core.ParseFQTeam); tok is the
+// proto.TeamRSVP returned from the inbox row.
+func (t *TeamMinder) TeamReject(m MetaContext, fqtp proto.FQTeamParsed, tok proto.TeamRSVP) error {
+	fqt, err := t.ResolveAndReindex(m, team.WrapNamed(fqtp), nil)
+	if err != nil {
+		return err
+	}
+	if fqt == nil {
+		return core.TeamNotFoundError{}
+	}
+	adminTok, cli, _, err := t.adminTokenAndClient(m, *fqt, LoadTeamOpts{})
+	if err != nil {
+		return err
+	}
+	err = cli.RejectJoinReq(m.Ctx(), rem.RejectJoinReqArg{
+		Tok: *adminTok,
+		Req: tok,
+	})
+	if err != nil {
+		return err
+	}
+	// Without this the row survives in the inbox cache, and a later
+	// TeamAdmit in the same process would happily admit the party the
+	// admin just refused.
+	t.uncacheInboxRow(tok)
+	return nil
 }
