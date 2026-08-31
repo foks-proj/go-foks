@@ -325,6 +325,26 @@ func (s *messageSender) fanoutInboxVersions(
 		s.sender.ExportToDB(),
 		seq.Int64(),
 	)
+	if err != nil {
+		return err
+	}
+
+	// Queue one content-free push row per recipient (not the sender) in
+	// the same transaction as the send, so a row exists iff the message
+	// does. push_outbox is already in the schema; this is the writer.
+	// kind='msg', data=NULL — a pure wake: no message content, sender or
+	// channel name leaves the E2EE boundary for a push provider.
+	_, err = s.tx.Exec(
+		m.Ctx(),
+		`INSERT INTO push_outbox (short_host_id, uid, channel_id, kind, seq, status, ctime, mtime)
+		 SELECT uc.short_host_id, uc.uid, uc.channel_id, 'msg', $3, 'queued', NOW(), NOW()
+		   FROM user_channels uc
+		  WHERE uc.short_host_id=$1 AND uc.channel_id=$2 AND uc.uid <> $4`,
+		m.ShortHostID(),
+		s.channelID(),
+		seq.Int64(),
+		s.sender.ExportToDB(),
+	)
 	return err
 }
 

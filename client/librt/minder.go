@@ -2148,3 +2148,35 @@ func extractAllSeqIDPairsFromRTThreadPage(p *rem.RTThreadPage) []seqIDPair {
 	ret = append(ret, tmp...)
 	return ret
 }
+
+// SetPushToken registers or refreshes this device's push token with the
+// user's home realtime server, so a push server can wake this device for
+// new messages. enabled=false is the opt-out; the row is kept so the
+// server can distinguish "opted out" from "never registered".
+//
+// The device verify-key id namespaces this user's rows across their
+// devices. It is a hint only — the row is always scoped to the
+// authenticated uid, never to a caller-supplied identity.
+func (d *Minder) SetPushToken(m MetaContext, platform string, token []byte, enabled bool) error {
+	// UserContext.Devkey lazy-loads (a passphrase-backed user may not have
+	// the key materialized yet); the raw PrivKeys getter would return a
+	// spurious KeyNotFoundError in that state.
+	dk, err := d.au.Devkey(m.Ctx())
+	if err != nil {
+		return err
+	}
+	eid, err := dk.RollingEntityID()
+	if err != nil {
+		return err
+	}
+	_, cli, err := d.clientLocal(m.Base(), d.au)
+	if err != nil {
+		return err
+	}
+	return cli.RtSetPushToken(m.Ctx(), rem.RtSetPushTokenArg{
+		Platform:  platform,
+		Token:     token,
+		DeviceKey: eid,
+		Enabled:   enabled,
+	})
+}

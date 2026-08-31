@@ -213,4 +213,15 @@ protocol RealTime
         lim @2 : Uint
     ) -> RTMsgList;
 
+    // Register/refresh this device's push token
+    // for the AUTHENTICATED user. deviceKey is the caller's device
+    // verify-key id, a namespacing hint only (rows are always scoped to
+    // the authenticated uid); enabled=false disables delivery (opt-out).
+    rtSetPushToken @11 (
+        platform @0 : Text,
+        token @1 : Blob,
+        deviceKey @2 : Blob,
+        enabled @3 : Bool
+    );
+
 }
