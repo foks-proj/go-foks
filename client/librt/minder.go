@@ -771,6 +771,8 @@ func (d *Minder) sealMessage(
 	readRole proto.Role,
 	noncer *proto.RTMsgNoncer,
 	body []byte,
+	typ proto.RTMsgType,
+	replyTo *proto.RTMsgID,
 ) (
 	*proto.RTMsgBox,
 	error,
@@ -788,9 +790,36 @@ func (d *Minder) sealMessage(
 	if err != nil {
 		return nil, err
 	}
-	msgbody := proto.NewRTMsgBodyWithBasic(
-		proto.RTMsgPlaintextBasic(body),
-	)
+	// Build the body arm for the requested type. Reply /
+	// Reactji / Edit ride the pegged arm the wire format already declares;
+	// Delete has no arm yet and is expressed at the app layer as Edit with
+	// an empty body until upstream adds one.
+	var msgbody proto.RTMsgBody
+	switch typ {
+	case proto.RTMsgType_Basic:
+		msgbody = proto.NewRTMsgBodyWithBasic(proto.RTMsgPlaintextBasic(body))
+	case proto.RTMsgType_Reply, proto.RTMsgType_Reactji, proto.RTMsgType_Edit:
+		// A pegged type without a target would seal a zero msg id, which
+		// no fold can resolve — fail the send instead of sending garbage.
+		// A non-nil zero id is the same garbage in a different wrapper.
+		if replyTo == nil || replyTo.IsZero() {
+			return nil, core.BadArgsError("pegged message type requires a replyTo target")
+		}
+		pegged := proto.RTMsgPlaintextPegged{
+			Basic:   proto.RTMsgPlaintextBasic(body),
+			ReplyTo: *replyTo,
+		}
+		switch typ {
+		case proto.RTMsgType_Reply:
+			msgbody = proto.NewRTMsgBodyWithReply(pegged)
+		case proto.RTMsgType_Reactji:
+			msgbody = proto.NewRTMsgBodyWithReactji(pegged)
+		default:
+			msgbody = proto.NewRTMsgBodyWithEdit(pegged)
+		}
+	default:
+		return nil, core.VersionNotSupportedError("unsupported message type for send")
+	}
 	return keyMgr.SealMsgWithNonce(&msgbody, nn)
 }
 
@@ -947,6 +976,39 @@ func (d *Minder) SendWithTestHooks(
 	*rem.RTSendRes,
 	error,
 ) {
+	return d.sendTyped(m, team, appID, channel, body, proto.RTMsgType_Basic, nil, test)
+}
+
+// SendTyped sends a non-Basic message type: Reply / Reactji /
+// Edit ride the pegged wire arm, with replyTo pointing at the target message.
+func (d *Minder) SendTyped(
+	m MetaContext,
+	team lcl.ConfigTeam,
+	appID proto.RTAppID,
+	channel lcl.RTChannelSpecifier,
+	body []byte,
+	typ proto.RTMsgType,
+	replyTo *proto.RTMsgID,
+) (
+	*rem.RTSendRes,
+	error,
+) {
+	return d.sendTyped(m, team, appID, channel, body, typ, replyTo, nil)
+}
+
+func (d *Minder) sendTyped(
+	m MetaContext,
+	team lcl.ConfigTeam,
+	appID proto.RTAppID,
+	channel lcl.RTChannelSpecifier,
+	body []byte,
+	typ proto.RTMsgType,
+	replyTo *proto.RTMsgID,
+	test *SendTestHooks,
+) (
+	*rem.RTSendRes,
+	error,
+) {
 	err := assertTeam(team)
 	if err != nil {
 		return nil, err
@@ -963,8 +1025,6 @@ func (d *Minder) SendWithTestHooks(
 	if test != nil && test.EncryptRoleOverride != nil {
 		encryptRole = *test.EncryptRoleOverride
 	}
-	typ := proto.RTMsgType_Basic
-
 	// TODO !! Fill in prev's
 	md := proto.RTMsgMetadata{
 		SendTime: proto.ExportTime(m.G().Now()),
@@ -995,7 +1055,7 @@ func (d *Minder) SendWithTestHooks(
 		Chid:   ch.Id,
 	}
 
-	box, err := d.sealMessage(m, rtp, appID, encryptRole, &noncer, body)
+	box, err := d.sealMessage(m, rtp, appID, encryptRole, &noncer, body, typ, replyTo)
 	if err != nil {
 		return nil, err
 	}
@@ -1135,16 +1195,39 @@ func (d *Minder) openMessage(
 	if err != nil {
 		return nil, nil, err
 	}
-	if pt != proto.RTMsgType_Basic {
-		return nil, nil, core.VersionNotSupportedError("only basic messages are supported")
+	// The server stores md.Typ as unvalidated plaintext, and consumers
+	// (folds) branch on it — a sender could claim one type while sealing
+	// another arm, desyncing Typ from Body for every reader. Reject the
+	// mismatch here, where the decrypted truth is first known.
+	if pt != md.Typ {
+		return nil, nil, core.ValidationError(
+			fmt.Sprintf("message type mismatch: metadata says %d, body is %d", md.Typ, pt))
 	}
-	basic := body.Basic()
 	cm := proto.RTMsgCached{
 		Md:  noncer,
 		Mw:  mw,
 		Sit: serverInsertTime,
 	}
-	return basic.Bytes(), &cm, nil
+	// Accept the pegged arm (Reply/Reactji/Edit) alongside
+	// Basic. The pegged replyTo is not yet surfaced through ThreadMessage —
+	// the app carries the target in its body envelope for now.
+	switch pt {
+	case proto.RTMsgType_Basic:
+		basic := body.Basic()
+		return basic.Bytes(), &cm, nil
+	case proto.RTMsgType_Reply:
+		pg := body.Reply()
+		return pg.Basic.Bytes(), &cm, nil
+	case proto.RTMsgType_Reactji:
+		pg := body.Reactji()
+		return pg.Basic.Bytes(), &cm, nil
+	case proto.RTMsgType_Edit:
+		pg := body.Edit()
+		return pg.Basic.Bytes(), &cm, nil
+	default:
+		return nil, nil, core.VersionNotSupportedError(
+			fmt.Sprintf("unsupported message type %d", pt))
+	}
 }
 
 func merge(
