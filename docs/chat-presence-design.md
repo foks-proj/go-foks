@@ -57,7 +57,18 @@ struct RTPresenceEntry {
     expiresIn @1 : DurationMilli;   // remaining, at send time
     kindBox   @2 : RTBoxRG;
 }
+
+struct RTChannelPresence {
+    chid    @0 : RTChannelIDShort;
+    entries @1 : List(RTPresenceEntry);
+}
 ```
+
+Presence is returned grouped by channel, never as a flat list. A caller may
+watch more than one channel, and the grouping is what tells it which
+conversation an entry belongs to. It is also required for correctness rather
+than only display: `kindBox` is sealed at its own channel's read role, so a
+receiver needs the channel to select the key that opens it.
 
 `kindBox` is a PTK box at the channel read role, the same construction as
 `name_box` and `desc_box`. Its plaintext is a client-defined variant (typing,
@@ -92,7 +103,7 @@ Two existing structs gain a field:
 
 - `RTPollInboxArg` — `presenceInterest : List(lib.RTChannelIDShort)`, the
   channels the caller wants presence for. Empty disables presence for that call.
-- `RTInboxPollRes` — `presence : List(RTPresenceEntry)`.
+- `RTInboxPollRes` — `presence : List(RTChannelPresence)`.
 
 ```
 struct RTSetPresenceInterestArg {
@@ -292,9 +303,14 @@ The poll fields are additive: an older server ignores `presenceInterest` and
 returns no `presence`, which a client reads as "nobody is present". `rtSetPresence`
 is not additive — on an older server it fails as an unknown method.
 
-Clients should not have to learn this by probing. Presence belongs in the
-realtime service's advertised capability set, alongside the check `rtAvailable`
-already performs, so a client can decide whether to publish before it tries.
+There is no mechanism today that lets a client tell the difference in advance.
+The signed public zone (`PublicServices.realtime`) says only that a host runs a
+realtime service, not which features it has, and the realtime service advertises
+no capability set of its own. So either this design introduces one, or clients
+are left probing by error and reading unknown-method as "presence unsupported".
+
+A version or feature-bit field on an existing realtime response would be enough.
+The choice is left open here because it affects more than presence.
 
 ## Scaling
 
