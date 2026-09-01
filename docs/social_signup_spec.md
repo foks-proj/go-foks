@@ -69,29 +69,28 @@ assumes otherwise.
 ## Protocol
 
 1. Alice picks `s`, derives `id`, `ek` and `wk`, and takes an unused invite code
-   from her basket. The code goes inside M_1. She calls `socialInviteCreate`
-   with `id`, the team, `Enc(ek, M_1)`, `Enc(PUK_A[g], s)` naming the
-   generation `g` it sealed to, `SHA256(wk)`, and the
-   code. The row lands in state `open`.
+   from her basket. The code goes inside M_1. She calls `SocialInvite.create`
+   with `id`, the team, `Enc(ek, M_1)`, `Enc(PUK_A[g], s)` naming the generation
+   `g` it sealed to, `SHA256(wk)`, and the code. The row lands in state `open`.
 
 2. Alice sends `s` plus the hostname to Bob out of band.
 
-3. Bob derives `id` and `ek` from `s` and calls `socialInviteFetch(id)` on the
-   reg server. He gets back the state and the transcript so far, which at this
-   point is the single message `Enc(ek, M_1)` at seq 1. He decrypts it and reads
-   it.
+3. Bob derives `id` and `ek` from `s` and calls `SocialInviteGuest.fetch(id)`
+   on the reg server. He gets back the state and the transcript so far, which at
+   this point is the single message `Enc(ek, M_1)` at seq 1. He decrypts it and
+   reads it.
 
 4. Bob signs up with the invite code he found inside M_1, exactly as signup
    works today. If he already has an account he skips this and no code is
    consumed.
 
-5. Bob grants team T viewership of his user, then calls `socialInviteReply`
+5. Bob grants team T viewership of his user, then calls `SocialInvite.reply`
    with `wk`, `Enc(ek, {M_2, U_B, P_B})`, and the seq of the message he is
    answering. It appends at seq 2 and the row moves to `replied`. On an
    open-viewership host the grant isn't needed and he can skip it; on a closed
    host it is what lets Alice load him (see "Closed hosts").
 
-6. Alice calls `socialInviteList`. Each row carries `Enc(PUK_A[g], s)` and the
+6. Alice calls `SocialInvite.list`. Each row carries `Enc(PUK_A[g], s)` and the
    generation `g`, so she opens it with that generation of her PUK, rederives
    `ek`, and decrypts the exchange. She holds no local state to lose. If she has
    rotated since — a device revoke, say — `g` is older than her current
@@ -99,8 +98,8 @@ assumes otherwise.
    open invitation.
 
 7. If M_2 satisfies her, she adds U_B to T through the existing team machinery
-   and calls `socialInviteClose(accepted)`. If it doesn't, she either declines,
-   or calls `socialInviteAskAgain`, which moves the row to `ask_again`,
+   and calls `SocialInvite.close(accepted)`. If it doesn't, she either declines,
+   or calls `SocialInvite.askAgain`, which moves the row to `ask_again`,
    appending her next message at seq 3. The seed is unchanged, so Bob's original
    link still works and his next fetch shows both the new state and what she
    asked. He answers at seq 4, and so on: the exchange is append-only and has no
@@ -114,10 +113,9 @@ counts.
 Every message is an opaque blob. FOKS defines three conventions — the invite
 code and, on closed hosts, the FQTeam travel in the opening message; U_B and P_B
 travel in the invitee's first reply — and parses nothing else, so an application
-can carry whatever its flow
-needs: display names, an agreement the invitee accepted, a code for its own
-systems. Anything placed there is readable only by a holder of the seed, never
-by the host.
+can carry whatever its flow needs: display names, an agreement the invitee
+accepted, a code for its own systems. Anything placed there is readable only by
+a holder of the seed, never by the host.
 
 The scope is one host. Alice and Bob end up on the same host, whether Bob signs
 up fresh or already lives there. Inviting a user from another host into T is the
@@ -203,11 +201,21 @@ is never stored here.
 
 ## RPCs
 
-On `TeamGuest` (reg server, unauthenticated), because Bob has no account yet:
+Two protocols of its own rather than arms bolted onto existing ones, since the
+flow spans both servers and neither half belongs to teams.
 
-    socialInviteFetch @2 (
-        id @0 : lib.SocialInviteID
-    ) -> SocialInviteGuestView;
+`SocialInviteGuest`, served on reg, unauthenticated because Bob has no account
+yet:
+
+    protocol SocialInviteGuest
+        errors lib.Status
+        argHeader lib.Header
+        resHeader lib.Header @0xc6f4b985 {
+
+        fetch @0 (
+            id @0 : lib.SocialInviteID
+        ) -> SocialInviteGuestView;
+    }
 
     struct SocialInviteMsg {
         seq @0 : Uint;
@@ -228,41 +236,51 @@ can't burn it. This differs from the original sketch, where `tok` was fetched
 in the clear; nothing needed it there, since Bob decrypts M_1 before he signs
 up anyway.
 
-On `User` (user server, authenticated). Create, list, ask-again and close
-authorize on `inviter = m.UID()`:
+`SocialInvite`, served on user, authenticated. `create`, `list`, `askAgain` and
+`close` authorize on `inviter = m.UID()`:
 
-    socialInviteCreate @N (
-        id @0 : lib.SocialInviteID,
-        team @1 : lib.TeamID,
-        seedBox @2 : lib.SharedKeyBox,
-        msg @3 : lib.SecretBox,        /* the opening message, seq 1 */
-        wkCommit @4 : lib.SocialInviteWriteKeyCommitment,
-        inviteCode @5 : Option(InviteCode),
-        etime @6 : lib.Time
-    );
+    protocol SocialInvite
+        errors lib.Status
+        argHeader lib.Header
+        resHeader lib.Header @0xee2c9d1c {
 
-    socialInviteList @N () -> List(SocialInviteRow);
+        create @0 (
+            id @0 : lib.SocialInviteID,
+            team @1 : lib.TeamID,
+            seedBox @2 : lib.SharedKeyBox,
+            msg @3 : lib.SecretBox,        /* the opening message, seq 1 */
+            wkCommit @4 : lib.SocialInviteWriteKeyCommitment,
+            inviteCode @5 : Option(InviteCode),
+            etime @6 : lib.Time
+        );
 
-    socialInviteReply @N (
-        id @0 : lib.SocialInviteID,
-        wk @1 : lib.SocialInviteWriteKey,
-        inReplyTo @2 : Uint,           /* seq of the turn being answered */
-        msg @3 : lib.SecretBox
-    );
+        list @1 () -> List(SocialInviteRow);
 
-    socialInviteAskAgain @N (
-        id @0 : lib.SocialInviteID,
-        msg @1 : lib.SecretBox
-    );
+        reply @2 (
+            id @0 : lib.SocialInviteID,
+            wk @1 : lib.SocialInviteWriteKey,
+            inReplyTo @2 : Uint,           /* seq of the turn being answered */
+            msg @3 : lib.SecretBox
+        );
 
-    socialInviteClose @N (
-        id @0 : lib.SocialInviteID,
-        st @1 : lib.SocialInviteState   /* accepted, declined or canceled */
-    );
+        askAgain @3 (
+            id @0 : lib.SocialInviteID,
+            msg @1 : lib.SecretBox
+        );
 
-    newInviteCode @N () -> InviteCode;
+        close @4 (
+            id @0 : lib.SocialInviteID,
+            st @1 : lib.SocialInviteState  /* accepted, declined or canceled */
+        );
+    }
 
-`socialInviteReply` is authenticated, which differs from the original sketch.
+`reply` is the one call here made by the invitee rather than the inviter, which
+is why it carries `wk` and the others don't.
+
+Minting an invite code stays on `User` as `newInviteCode`. It's about the code
+basket, which exists independently of this flow.
+
+`reply` is authenticated, which differs from the original sketch.
 It costs nothing, since Bob has an account by step 5 either way, and it lets the
 server record who replied and notify Alice. The only thing anonymity would buy
 is hiding the invitee from the host until acceptance, and on a closed host that
@@ -280,7 +298,7 @@ check already proved it's the same writer. A reply to an `accepted` or
 the invitee anyway (see "Abuse") — while canceled and expired rows answer
 `SocialInviteNotFound`, indistinguishable from rows that never existed.
 
-`socialInviteClose(accepted)` is bookkeeping, not the membership change. Alice
+`SocialInvite.close(accepted)` is bookkeeping, not the membership change. Alice
 adds Bob to T through the existing team RPCs; the team chain remains the source
 of truth. The two are not atomic, so a crash between them leaves a row in
 `replied` for a member who is already in the team. Alice's client should treat a
@@ -293,7 +311,7 @@ RPC changed to remove a failure mode that is benign and recoverable. Not worth
 it now; `social_invites` sits in `foks_users` next to the team tables, so the
 atomic variant stays available without cross-database work if it ever is.
 
-`socialInviteList` takes no pagination argument. A user's open invitations are
+`SocialInvite.list` takes no pagination argument. A user's open invitations are
 few, and terminal rows are pruned. If that stops being true it can take the same
 pagination the team inbox uses.
 
@@ -303,18 +321,18 @@ New status codes: `SocialInviteNotFound`, `SocialInviteWrongState`,
 ## States
 
     open       created; invitee has not replied
-               -> replied    (socialInviteReply)
-               -> canceled   (socialInviteClose)
+               -> replied    (SocialInvite.reply)
+               -> canceled   (SocialInvite.close)
 
     replied    invitee answered; waiting on the inviter
-               -> replied    (socialInviteReply, same turn; replaces)
-               -> accepted   (socialInviteClose, after the team edit)
-               -> declined   (socialInviteClose)
-               -> ask_again  (socialInviteAskAgain, appends an inviter turn)
+               -> replied    (SocialInvite.reply, same turn; replaces)
+               -> accepted   (SocialInvite.close, after the team edit)
+               -> declined   (SocialInvite.close)
+               -> ask_again  (SocialInvite.askAgain, appends an inviter turn)
 
     ask_again  inviter wants a different answer; accepts a reply like open
-               -> replied    (socialInviteReply)
-               -> canceled   (socialInviteClose)
+               -> replied    (SocialInvite.reply)
+               -> canceled   (SocialInvite.close)
 
 `accepted`, `declined` and `canceled` are terminal.
 
@@ -351,7 +369,7 @@ this case.
 
 Order matters in step 5: the grant must land before the reply, because Alice
 may act on `replied` immediately, and her `editTeam` add of Bob is what first
-exercises the permission. `socialInviteReply` doesn't verify the grant — the
+exercises the permission. `SocialInvite.reply` doesn't verify the grant — the
 server can't know which grants the application's flow needs — so a client that
 skips it produces an invitation Alice can see but not act on.
 
@@ -366,7 +384,7 @@ puts in M_1 itself. Bob's client can pre-validate with the existing
 `checkInviteCode` before attempting signup, and should, since a burned code is
 better discovered before the flow than inside it.
 
-`socialInviteCreate` does not require a code even on a required-regime host.
+`SocialInvite.create` does not require a code even on a required-regime host.
 The server can't know whether the invitee already has an account, and requiring
 one would spend a code on every invitation to an existing user. The cost of
 getting it wrong lands where it can be fixed: Bob hits `checkInviteCode`, fails,
@@ -381,13 +399,13 @@ infrastructure the host has. Carrying the exchange on the host is what makes
 this possible: a broker that only ever sees two anonymous parties and their
 ciphertext has nobody to notify.
 
-Nothing above depends on it. A client that only polls `socialInviteList` and
-`socialInviteFetch` works correctly, just less promptly.
+Nothing above depends on it. A client that only polls `SocialInvite.list` and
+`SocialInviteGuest.fetch` works correctly, just less promptly.
 
 ## Expiry and cleanup
 
 `etime` is set at creation and capped by host config. A row past `etime` is
-treated as absent by every reader, including `socialInviteList`, so no sweeper
+treated as absent by every reader, including `SocialInvite.list`, so no sweeper
 is needed for correctness. A background job deletes expired and terminal rows
 after a grace period. The grace period is not just tidiness: it is the window
 in which the invitee's poll can still read `accepted` or `declined`, so it
@@ -412,7 +430,7 @@ alone — it was consumed at signup, and the consumed row is the audit trail.
 ## Abuse
 
 `id` is 32 bytes derived by HMAC, so it can't be guessed and the unauthenticated
-fetch needs no other gate. `socialInviteFetch` returns `SocialInviteNotFound`
+fetch needs no other gate. `SocialInviteGuest.fetch` returns `SocialInviteNotFound`
 for unknown, expired and canceled rows alike, so it doesn't tell a scanner
 which ids exist. `accepted` and `declined` stay fetchable until the sweeper
 takes them: the invitee is waiting on that answer, and a fetch that can't
