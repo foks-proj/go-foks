@@ -45,10 +45,14 @@ Alice sends `s` and the hostname to Bob over Signal, WhatsApp, or iMessage. The
 server never sees `s`, so it can read neither M_1 nor M_2. Anyone holding `s`
 can read both, which is why it has to travel over a channel that's already E2EE.
 
-`wk` is the one addition to the original derivations. `id` travels on the wire
-in every fetch, so anyone who watches the network, reads a log, or runs the host
-learns it. Without a separate write secret they could post a reply of their own
-and occupy the slot, and Alice would see garbage where Bob's answer should be.
+`wk` is the one addition to the original derivations, and it is mostly
+anti-griefing. `id` travels on the wire in every fetch, so anyone who watches
+the network, reads a log, or runs the host learns it. Without a separate write
+secret they could occupy the reply slot, and Alice would find garbage where
+Bob's answer should be. The one effect beyond availability: the host cannot
+otherwise tell the real invitee from anyone who saw the `id`, so the recorded
+replier — and any notification keyed off it — would name whoever wrote last.
+
 Alice publishes `SHA256(wk)` at create time and the reply presents `wk`, checked
 in constant time. Only someone holding `s` can produce it.
 
