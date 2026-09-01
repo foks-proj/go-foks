@@ -19,8 +19,12 @@ Unchanged from `social_signup.md`. Alice invites Bob into team T.
     id              the server's handle
     ek              symmetric, encrypts M_1 and M_2
     wk              proves the right to reply
-    M_1             Alice's message to Bob
+    M_1             Alice's opening message to Bob
     M_2             Bob's reply
+
+M_1 and M_2 are the first two turns of an exchange that can run longer. Alice
+may ask again, so the messages are a transcript, not a fixed pair; the schema
+stores them as one.
 
 All three keys come off `s` through the standard derivation, so the labels are
 enum arms rather than strings and the variant's own type ID separates this
@@ -73,18 +77,19 @@ assumes otherwise.
 2. Alice sends `s` plus the hostname to Bob out of band.
 
 3. Bob derives `id` and `ek` from `s` and calls `socialInviteFetch(id)` on the
-   reg server. He gets back the state, the round, and `Enc(ek, M_1)`. He
-   decrypts M_1 and reads it.
+   reg server. He gets back the state and the transcript so far, which at this
+   point is the single message `Enc(ek, M_1)` at seq 1. He decrypts it and reads
+   it.
 
 4. Bob signs up with the invite code he found inside M_1, exactly as signup
    works today. If he already has an account he skips this and no code is
    consumed.
 
 5. Bob grants team T viewership of his user, then calls `socialInviteReply`
-   with `wk`, `Enc(ek, {M_2, U_B, P_B})`, and the round he answered. The row
-   moves to `replied`. On an open-viewership host the grant isn't needed and he
-   can skip it; on a closed host it is what lets Alice load him (see "Closed
-   hosts").
+   with `wk`, `Enc(ek, {M_2, U_B, P_B})`, and the seq of the message he is
+   answering. It appends at seq 2 and the row moves to `replied`. On an
+   open-viewership host the grant isn't needed and he can skip it; on a closed
+   host it is what lets Alice load him (see "Closed hosts").
 
 6. Alice calls `socialInviteList`. Each row carries `Enc(PUK_A[g], s)` and the
    generation `g`, so she opens it with that generation of her PUK, rederives
@@ -96,19 +101,20 @@ assumes otherwise.
 7. If M_2 satisfies her, she adds U_B to T through the existing team machinery
    and calls `socialInviteClose(accepted)`. If it doesn't, she either declines,
    or calls `socialInviteAskAgain`, which moves the row to `ask_again`,
-   increments the round and clears `m2_box`. The seed is unchanged, so Bob's
-   original link still works and he sees on his next fetch that he's being asked
-   again. Alice may attach a fresh `Enc(ek, M_1')` if she wants to change the
-   question; leaving it off keeps the original M_1. There's no round limit.
+   appending her next message at seq 3. The seed is unchanged, so Bob's original
+   link still works and his next fetch shows both the new state and what she
+   asked. He answers at seq 4, and so on: the exchange is append-only and has no
+   turn limit.
 
 Alice takes U_B and P_B from inside the box, never from the row's `invitee`
 column. The server fills that column from the replying session for its own
 bookkeeping and can lie about it. The ciphertext is the only assertion that
 counts.
 
-M_1 and M_2 are opaque blobs. FOKS defines three conventions inside them — the
-invite code and, on closed hosts, the FQTeam travel in M_1; U_B and P_B travel
-in M_2 — and parses nothing else, so an application can carry whatever its flow
+Every message is an opaque blob. FOKS defines three conventions — the invite
+code and, on closed hosts, the FQTeam travel in the opening message; U_B and P_B
+travel in the invitee's first reply — and parses nothing else, so an application
+can carry whatever its flow
 needs: display names, an agreement the invitee accepted, a code for its own
 systems. Anything placed there is readable only by a holder of the seed, never
 by the host.
@@ -130,13 +136,11 @@ One table in `foks_users`, delivered as a patch.
         inviter BYTEA NOT NULL,
         team_id BYTEA NOT NULL,
         state social_invite_state NOT NULL,
-        round SMALLINT NOT NULL DEFAULT 1,
+        last_seq INTEGER NOT NULL,   /* highest seq in social_invite_msgs */
         invite_code BYTEA,           /* standard single-use code, if one is attached */
         wk_commit BYTEA NOT NULL,    /* SHA256(wk); gates the reply */
         seed_box BYTEA NOT NULL,     /* Enc(PUK_inviter, s) */
         seed_box_gen INTEGER NOT NULL, /* PUK generation the box was sealed to */
-        m1_box BYTEA NOT NULL,       /* Enc(ek, M_1); replaced on ask-again */
-        m2_box BYTEA,                /* Enc(ek, {M_2, U_B, P_B}); NULL until reply */
         invitee BYTEA,               /* from the replying session; a hint, not proof */
         ctime TIMESTAMP NOT NULL,
         mtime TIMESTAMP NOT NULL,
@@ -150,6 +154,33 @@ One table in `foks_users`, delivered as a patch.
 
     CREATE INDEX social_invites_inviter_idx
         ON social_invites(short_host_id, inviter, state, ctime);
+
+The exchange itself is a child table, one row per turn, append-only.
+
+    CREATE TYPE social_invite_party AS ENUM('inviter', 'invitee');
+
+    CREATE TABLE social_invite_msgs (
+        short_host_id SMALLINT NOT NULL,
+        id BYTEA NOT NULL,
+        seq INTEGER NOT NULL,        /* 1-based; 1 is the opening message */
+        sender social_invite_party NOT NULL,
+        box BYTEA NOT NULL,          /* Enc(ek, M) */
+        ctime TIMESTAMP NOT NULL,
+        PRIMARY KEY(short_host_id, id, seq),
+        FOREIGN KEY(short_host_id, id)
+            REFERENCES social_invites(short_host_id, id) ON DELETE CASCADE
+    );
+
+A single pair of columns on the invitation row can't hold this: an ask-again
+would overwrite the previous turn, destroying the exchange a client needs to
+render. With the child table an inviter's client can show the whole thread, and
+a client that only wants the latest answer reads the highest `seq`. Whether old
+turns are displayed or pruned is a client and host policy, not something the
+schema decides.
+
+`last_seq` on the parent is denormalized from the children so a listing can
+order and detect staleness without joining. `ON DELETE CASCADE` means the
+expiry sweeper still only has to delete the parent.
 
 `seed_box_gen` mirrors the generation the seed was sealed to. `SharedKeyBox`
 carries a `gen` of its own, so this column is denormalized from the box rather
@@ -178,10 +209,15 @@ On `TeamGuest` (reg server, unauthenticated), because Bob has no account yet:
         id @0 : lib.SocialInviteID
     ) -> SocialInviteGuestView;
 
+    struct SocialInviteMsg {
+        seq @0 : Uint;
+        sender @1 : lib.SocialInviteParty;
+        box @2 : lib.SecretBox;
+    }
+
     struct SocialInviteGuestView {
         state @0 : lib.SocialInviteState;
-        round @1 : Uint;
-        m1Box @2 : lib.SecretBox;
+        msgs @1 : List(SocialInviteMsg);
     }
 
 The guest view carries ciphertext and state, nothing else. The host knows the
@@ -199,7 +235,7 @@ authorize on `inviter = m.UID()`:
         id @0 : lib.SocialInviteID,
         team @1 : lib.TeamID,
         seedBox @2 : lib.SharedKeyBox,
-        m1Box @3 : lib.SecretBox,
+        msg @3 : lib.SecretBox,        /* the opening message, seq 1 */
         wkCommit @4 : lib.SocialInviteWriteKeyCommitment,
         inviteCode @5 : Option(InviteCode),
         etime @6 : lib.Time
@@ -210,13 +246,13 @@ authorize on `inviter = m.UID()`:
     socialInviteReply @N (
         id @0 : lib.SocialInviteID,
         wk @1 : lib.SocialInviteWriteKey,
-        round @2 : Uint,
-        m2Box @3 : lib.SecretBox
+        inReplyTo @2 : Uint,           /* seq of the turn being answered */
+        msg @3 : lib.SecretBox
     );
 
     socialInviteAskAgain @N (
         id @0 : lib.SocialInviteID,
-        m1Box @1 : Option(lib.SecretBox)
+        msg @1 : lib.SecretBox
     );
 
     socialInviteClose @N (
@@ -231,29 +267,26 @@ It costs nothing, since Bob has an account by step 5 either way, and it lets the
 server record who replied and notify Alice. The only thing anonymity would buy
 is hiding the invitee from the host until acceptance, and on a closed host that
 is already gone: Bob's viewership grant names him before he replies.
-Authentication is not what protects the slot: `wk` is. The `round` argument
-stops a client that fetched before an ask-again from answering the previous
-question.
+Authentication is not what protects the slot: `wk` is. `inReplyTo` stops a
+client that fetched before an ask-again from answering a turn that is no longer
+the current one.
 
-The reply is idempotent within a round. A reply to a row already in `replied`
-at the same round overwrites `m2_box` and succeeds — the `wk` check already
-proved the caller holds the seed, so it's the same writer retrying after a lost
-ack, or revising an answer the inviter hasn't acted on. A mismatched round
-fails with `SocialInviteStaleRound`. A reply to an `accepted` or `declined` row
-fails with `SocialInviteWrongState` — those states are visible to the invitee
-anyway (see "Abuse") — while canceled and expired rows answer
+`inReplyTo` must name the invitation's `last_seq`, and that seq must be an
+inviter turn; anything else fails with `SocialInviteStaleTurn`. Replying twice
+to the same turn is a lost-ack retry rather than a new turn: the second call
+replaces the invitee's message at that seq instead of appending, since the `wk`
+check already proved it's the same writer. A reply to an `accepted` or
+`declined` row fails with `SocialInviteWrongState` — those states are visible to
+the invitee anyway (see "Abuse") — while canceled and expired rows answer
 `SocialInviteNotFound`, indistinguishable from rows that never existed.
-
-`socialInviteAskAgain` clears `m2_box` rather than keeping a history. The
-inviter asked for a different answer, so the old one shouldn't linger on the
-host after it stops being the one under review.
 
 `socialInviteClose(accepted)` is bookkeeping, not the membership change. Alice
 adds Bob to T through the existing team RPCs; the team chain remains the source
 of truth. The two are not atomic, so a crash between them leaves a row in
 `replied` for a member who is already in the team. Alice's client should treat a
-`replied` row as closeable when the U_B it decrypts from `m2_box` is already a
-member — decrypted, not the `invitee` column, which the host controls and could
+`replied` row as closeable when the U_B it decrypts from the invitee's latest
+message is already a member — decrypted, not the `invitee` column, which the
+host controls and could
 stamp with a member's UID to make a live reply look finished. Making the close
 ride the team edit instead would mean adding an argument to `editTeam` — a core
 RPC changed to remove a failure mode that is benign and recoverable. Not worth
@@ -265,7 +298,7 @@ few, and terminal rows are pruned. If that stops being true it can take the same
 pagination the team inbox uses.
 
 New status codes: `SocialInviteNotFound`, `SocialInviteWrongState`,
-`SocialInviteStaleRound`.
+`SocialInviteStaleTurn`.
 
 ## States
 
@@ -274,10 +307,10 @@ New status codes: `SocialInviteNotFound`, `SocialInviteWrongState`,
                -> canceled   (socialInviteClose)
 
     replied    invitee answered; waiting on the inviter
-               -> replied    (socialInviteReply, same round; overwrite)
+               -> replied    (socialInviteReply, same turn; replaces)
                -> accepted   (socialInviteClose, after the team edit)
                -> declined   (socialInviteClose)
-               -> ask_again  (socialInviteAskAgain, round += 1, m2_box cleared)
+               -> ask_again  (socialInviteAskAgain, appends an inviter turn)
 
     ask_again  inviter wants a different answer; accepts a reply like open
                -> replied    (socialInviteReply)
@@ -285,10 +318,10 @@ New status codes: `SocialInviteNotFound`, `SocialInviteWrongState`,
 
 `accepted`, `declined` and `canceled` are terminal.
 
-`ask_again` behaves exactly like `open` for writes. It exists so the invitee
-learns from the server alone that he's been asked again, without having to
-remember which round he last answered. A client that reinstalled between the
-reply and the ask-again has no local state to compare against.
+`ask_again` behaves exactly like `open` for writes. It's derivable from the
+transcript — the last turn is the inviter's and it isn't seq 1 — but it's stored
+rather than computed so a listing can filter on it, and so the invitee's client
+learns from the state alone that it's his turn without reasoning about senders.
 
 ## Closed hosts
 
