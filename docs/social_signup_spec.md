@@ -66,7 +66,8 @@ assumes otherwise.
 
 1. Alice picks `s`, derives `id`, `ek` and `wk`, and takes an unused invite code
    from her basket. The code goes inside M_1. She calls `socialInviteCreate`
-   with `id`, the team, `Enc(ek, M_1)`, `Enc(PUK_A, s)`, `SHA256(wk)`, and the
+   with `id`, the team, `Enc(ek, M_1)`, `Enc(PUK_A[g], s)` naming the
+   generation `g` it sealed to, `SHA256(wk)`, and the
    code. The row lands in state `open`.
 
 2. Alice sends `s` plus the hostname to Bob out of band.
@@ -85,9 +86,12 @@ assumes otherwise.
    can skip it; on a closed host it is what lets Alice load him (see "Closed
    hosts").
 
-6. Alice calls `socialInviteList`. Each row carries `Enc(PUK_A, s)`, so she
-   recovers `s` with her PUK, rederives `ek`, and decrypts both messages. She
-   holds no local state to lose.
+6. Alice calls `socialInviteList`. Each row carries `Enc(PUK_A[g], s)` and the
+   generation `g`, so she opens it with that generation of her PUK, rederives
+   `ek`, and decrypts the exchange. She holds no local state to lose. If she has
+   rotated since — a device revoke, say — `g` is older than her current
+   generation and the seed chain gives it to her, so a rotation never strands an
+   open invitation.
 
 7. If M_2 satisfies her, she adds U_B to T through the existing team machinery
    and calls `socialInviteClose(accepted)`. If it doesn't, she either declines,
@@ -147,10 +151,12 @@ One table in `foks_users`, delivered as a patch.
     CREATE INDEX social_invites_inviter_idx
         ON social_invites(short_host_id, inviter, state, ctime);
 
-`seed_box_gen` records which PUK generation sealed the seed. Device revokes
-rotate the PUK, and the seed chain hands the older generations to the holder of
-the current key, so an invitation created before a revoke stays readable after
-it.
+`seed_box_gen` mirrors the generation the seed was sealed to. `SharedKeyBox`
+carries a `gen` of its own, so this column is denormalized from the box rather
+than a second source of truth; it's here so a reader can tell which generation a
+row needs without opening it. Device revokes rotate the PUK, and the seed chain
+hands the older generations to the holder of the current key, so an invitation
+created before a revoke stays readable after it.
 
 The invite code basket already exists. `invite_codes` is keyed by creator with
 `used_by` and `used_on`, `GenerateStandardInviteCode` mints one, and
