@@ -373,8 +373,10 @@ exercises the permission. `SocialInvite.reply` doesn't verify the grant — the
 server can't know which grants the application's flow needs — so a client that
 skips it produces an invitation Alice can see but not act on.
 
-Ad-hoc teams are refused on closed hosts (`TeamAdhocOpenViewershipError`),
-which costs this flow nothing: it only ever targets a named team.
+Ad-hoc teams are currently refused on closed hosts
+(`TeamAdhocOpenViewershipError`). Nothing here leans on that either way: the
+flow always targets a named team, so it behaves the same if the restriction is
+lifted later.
 
 **Required invite codes.** With `invite_code_regime = required`, signup rejects
 an empty code (`BadInviteCodeError` unless the regime is `optional`). Either
