@@ -25,6 +25,20 @@ type MerkleBatcherVHostState struct {
 type MerkleBatcherServer struct {
 	MerklePipelineBaseServer
 	vhosts map[core.ShortHostID]*MerkleBatcherVHostState
+
+	// testPostCommitHook, when set, runs after commitBatch's transaction has
+	// committed and its result replaces commitBatch's nil error. It simulates
+	// an ambiguous commit -- the commit landed server-side but the client
+	// observed a failure (context cancellation racing tx.Commit, a dropped
+	// connection eating the ack) -- to test that the batcher recovers instead
+	// of wedging on its now-behind in-memory batch counter. Production code
+	// never sets this.
+	testPostCommitHook func() error
+}
+
+// SetTestPostCommitHook arms testPostCommitHook; see its comment. Tests only.
+func (s *MerkleBatcherServer) SetTestPostCommitHook(f func() error) {
+	s.testPostCommitHook = f
 }
 
 func NewMerkleBatcherServer() *MerkleBatcherServer {
@@ -406,6 +420,18 @@ func (s *MerkleBatcherServer) commitBatch(m shared.MetaContext, batch *proto.Mer
 		if err == nil && tmp != nil {
 			err = tmp
 		}
+		if err != nil {
+			// The commit may have landed server-side even though we observed
+			// an error (a context cancellation racing tx.Commit, a dropped
+			// connection eating the ack). Our memoized batch counter would
+			// then be behind the database, and every later round would
+			// rebuild the same batch number and die on the raft_kv_store
+			// primary key -- forever, and while still holding the loop's
+			// lock, so no other instance could take over either. Drop the
+			// cached state so the next round re-reads committed truth, which
+			// self-heals both outcomes of the ambiguity.
+			delete(s.vhosts, vh.shid)
+		}
 	}()
 
 	batchRaw, err := core.EncodeToBytes(batch)
@@ -446,6 +472,12 @@ func (s *MerkleBatcherServer) commitBatch(m shared.MetaContext, batch *proto.Mer
 	err = tx.Commit(m.Ctx())
 	if err != nil {
 		return err
+	}
+
+	if s.testPostCommitHook != nil {
+		if herr := s.testPostCommitHook(); herr != nil {
+			return herr
+		}
 	}
 
 	m.Debugw("commitBatch",
