@@ -768,6 +768,15 @@ func (t TeamBearerTokenStaleError) Error() string {
 	return "team bearer token is stale: " + t.Which
 }
 
+// TeamVOBearerTokenNotFoundError means the server has no record of the
+// presented view-only team bearer token (e.g. it was GC'd). Like
+// TeamBearerTokenStaleError, it is cured by minting a fresh token.
+type TeamVOBearerTokenNotFoundError struct{}
+
+func (t TeamVOBearerTokenNotFoundError) Error() string {
+	return "team view-only bearer token not found"
+}
+
 type TeamNotFoundError struct{}
 
 func (t TeamNotFoundError) Error() string {
@@ -1633,6 +1642,8 @@ func ErrorToStatus(e error) proto.Status {
 		return proto.NewStatusWithTeamRaceError(string(te))
 	case TeamBearerTokenStaleError:
 		return proto.NewStatusWithTeamBearerTokenStaleError(te.Which)
+	case TeamVOBearerTokenNotFoundError:
+		return proto.NewStatusWithTeamVoBearerTokenNotFoundError()
 	case TeamNotFoundError:
 		return proto.NewStatusWithTeamNotFoundError()
 	case TeamCertError:
@@ -1960,6 +1971,8 @@ func StatusToError(s proto.Status) error {
 		return TeamRaceError(s.TeamRaceError())
 	case proto.StatusCode_TEAM_BEARER_TOKEN_STALE_ERROR:
 		return TeamBearerTokenStaleError{Which: s.TeamBearerTokenStaleError()}
+	case proto.StatusCode_TEAM_VO_BEARER_TOKEN_NOT_FOUND_ERROR:
+		return TeamVOBearerTokenNotFoundError{}
 	case proto.StatusCode_TEAM_NOT_FOUND_ERROR:
 		return TeamNotFoundError{}
 	case proto.StatusCode_TEAM_CERT_ERROR:

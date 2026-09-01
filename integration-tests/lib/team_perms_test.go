@@ -107,7 +107,7 @@ func TestTeamLoaderPermissions(t *testing.T) {
 	}
 	_, err = libclient.LoadTeam(muffinMc, larg)
 	require.Error(t, err)
-	require.Equal(t, core.NotFoundError("team vo bearer token"), err)
+	require.Equal(t, core.TeamVOBearerTokenNotFoundError{}, err)
 
 	// do a successful load for bluey, so we can mutate the token and make sure it fails
 	larg = libclient.LoadTeamArg{
@@ -132,7 +132,7 @@ func TestTeamLoaderPermissions(t *testing.T) {
 	}
 	_, err = libclient.LoadTeam(blueyMc, larg)
 	require.Error(t, err)
-	require.Equal(t, core.NotFoundError("team vo bearer token"), err)
+	require.Equal(t, core.TeamVOBearerTokenNotFoundError{}, err)
 
 	// winton gets a legit token to view bluey's team
 	m := tew.MetaContext()
@@ -234,7 +234,7 @@ func TestTeamLoaderPermissions(t *testing.T) {
 		LocalParentTeamTok: &badTok,
 	})
 	require.Error(t, err)
-	require.Equal(t, core.NotFoundError("team vo bearer token"), err)
+	require.Equal(t, core.TeamVOBearerTokenNotFoundError{}, err)
 
 	// Add boto to tm0 as a member/-3. We're going to test that
 	// he can't load tm1 with tm0's view-only token, since his role

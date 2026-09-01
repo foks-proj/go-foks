@@ -21,7 +21,12 @@ func TestIsStaleTeamTokenError(t *testing.T) {
 		{"aged out", core.TeamBearerTokenStaleError{Which: "age"}, true},
 		{"wrapped", fmt.Errorf("kv put: %w",
 			core.TeamBearerTokenStaleError{Which: "stale member"}), true},
-		{"token row gone", core.NotFoundError("team vo bearer token"), true},
+		{"token row gone", core.TeamVOBearerTokenNotFoundError{}, true},
+		{"token row gone, wrapped", fmt.Errorf("kv usage: %w",
+			core.TeamVOBearerTokenNotFoundError{}), true},
+		// The typed error replaced a string-match on this exact message; a
+		// generic not-found must no longer classify as stale.
+		{"generic not-found with old message", core.NotFoundError("team vo bearer token"), false},
 		{"unrelated not-found", core.NotFoundError("dirent"), false},
 		{"permission", core.PermissionError("nope"), false},
 		{"stale cache", core.KVStaleCacheError{}, false},

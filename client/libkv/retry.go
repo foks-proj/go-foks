@@ -118,11 +118,8 @@ func isStaleTeamTokenError(err error) bool {
 	if errors.As(err, &stale) {
 		return true
 	}
-	var nf core.NotFoundError
-	if errors.As(err, &nf) && nf == core.NotFoundError("team vo bearer token") {
-		return true
-	}
-	return false
+	var nf core.TeamVOBearerTokenNotFoundError
+	return errors.As(err, &nf)
 }
 
 // withFreshToken runs f, and if the server rejected the party's cached VO bearer
