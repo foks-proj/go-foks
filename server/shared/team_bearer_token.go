@@ -389,7 +389,7 @@ func CheckTeamVOBearerToken(
 	).Scan(&rawTeam, &active, &tm, &dstRoleType, &dstVizLevel, &g, &rawMember, &rawMemberHost,
 		&srcRoleType, &srcVizLevel)
 	if errors.Is(err, pgx.ErrNoRows) {
-		return nil, core.NotFoundError("team vo bearer token")
+		return nil, core.TeamVOBearerTokenNotFoundError{}
 	}
 	if err != nil {
 		return nil, err

@@ -101,17 +101,19 @@ func (g *gitRefDirExplorer) loadDir(m MetaContext) error {
 	})
 }
 
+// client memoizes the RPC connection but never the auth token: the token can be
+// re-minted underneath us (see withFreshToken), and a memoized copy would keep
+// presenting the rejected one for the rest of the explore.
 func (g *gitRefDirExplorer) client(m MetaContext) (*rem.KVAuth, *rem.KVStoreClient, error) {
-	if g.cli != nil {
-		return g.auth, g.cli, nil
-	}
 	auth, cli, err := g.minder.client(m, g.kvp)
 	if err != nil {
 		return nil, nil, err
 	}
-	g.cli = cli
+	if g.cli == nil {
+		g.cli = cli
+	}
 	g.auth = auth
-	return auth, cli, nil
+	return auth, g.cli, nil
 }
 
 func (g *gitRefDirExplorer) loadCache(m MetaContext) error {
@@ -136,19 +138,22 @@ func (g *gitRefDirExplorer) loadCache(m MetaContext) error {
 }
 
 func (g *gitRefDirExplorer) getNextPage(m MetaContext) error {
-	auth, cli, err := g.client(m)
-	if err != nil {
+	var res rem.KVListRes
+	err := g.minder.withFreshToken(m, g.kvp, func(m MetaContext) error {
+		auth, cli, err := g.client(m)
+		if err != nil {
+			return err
+		}
+		res, err = cli.KvList(m.Ctx(), rem.KvListArg{
+			Auth: *auth,
+			Dir:  *g.did,
+			Opts: rem.KVListOpts{
+				Start:          g.start,
+				Num:            uint64(g.opts.PageSize),
+				LoadSmallFiles: true,
+			},
+		})
 		return err
-	}
-
-	res, err := cli.KvList(m.Ctx(), rem.KvListArg{
-		Auth: *auth,
-		Dir:  *g.did,
-		Opts: rem.KVListOpts{
-			Start:          g.start,
-			Num:            uint64(g.opts.PageSize),
-			LoadSmallFiles: true,
-		},
 	})
 	if err != nil {
 		return err

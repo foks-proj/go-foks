@@ -447,19 +447,21 @@ func (k *Minder) PutFileChunk(
 	us.sz = sz
 	us.off += proto.Offset(len(data))
 
-	auth, client, err := k.client(m, kvp)
-	if err != nil {
-		return err
-	}
-
-	arg := rem.KvFileUploadChunkArg{
-		Auth:   *auth,
-		FileID: id,
-		Chunk:  *ulc,
-	}
-
+	// Only the RPC is replayed on a stale token, not the chunk bookkeeping above
+	// -- us.off has already advanced, and a rejected upload never reached the
+	// server's chunk state.
 	start := time.Now()
-	err = client.KvFileUploadChunk(m.Ctx(), arg)
+	err = k.withFreshToken(m, kvp, func(m MetaContext) error {
+		auth, client, err := k.client(m, kvp)
+		if err != nil {
+			return err
+		}
+		return client.KvFileUploadChunk(m.Ctx(), rem.KvFileUploadChunkArg{
+			Auth:   *auth,
+			FileID: id,
+			Chunk:  *ulc,
+		})
+	})
 	if err != nil {
 		return err
 	}
