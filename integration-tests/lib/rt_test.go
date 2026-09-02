@@ -1551,3 +1551,90 @@ func TestRTChannelDisambiguation(t *testing.T) {
 	require.Len(t, bottomMsgs, 1)
 	require.Equal(t, "bottom msg", string(bottomMsgs[0].Body))
 }
+
+// TestRTSendIdempotentReplay exercises the server's idempotent-replay path on
+// rtSend: a duplicate msg_id from the same sender into the same channel is a
+// replay (the original seq and insert time come back, and no second row is
+// written), while a duplicate from a different sender or into a different
+// channel is refused with a payload-free mismatch error. The point is that a
+// client retrying a send whose ack it lost gets the original result back
+// rather than an error it cannot interpret.
+func TestRTSendIdempotentReplay(t *testing.T) {
+	tew := testEnvBeta(t)
+	bluey := tew.NewTestUser(t) // team owner
+	coco := tew.NewTestUser(t)  // ordinary member
+	tew.DirectDoubleMerklePokeInTest(t)
+	tm := tew.makeTeamForOwner(t, bluey)
+	m := tew.MetaContext()
+	tm.makeChanges(
+		t, m, bluey,
+		[]proto.MemberRole{
+			coco.toMemberRole(t, proto.DefaultRole, tm.hepks),
+		}, nil,
+	)
+
+	mb := librt.NewMetaContext(tew.NewClientMetaContextWithEracer(t, bluey))
+	minderBluey := librt.NewMinder(mb.G().ActiveUser())
+	mc := librt.NewMetaContext(tew.NewClientMetaContextWithEracer(t, coco))
+	minderCoco := librt.NewMinder(mc.G().ActiveUser())
+	fqt := tm.ToFQTeamParsed(t)
+
+	memberRW := proto.RolePairOpt{Read: &proto.DefaultRole, Write: &proto.DefaultRole}
+	_, err := minderBluey.MakeChannel(mb, team.WrapNamedPtr(fqt),
+		proto.RTAppID_Chat, "foo", "the foo channel", memberRW)
+	require.NoError(t, err)
+	_, err = minderBluey.MakeChannel(mb, team.WrapNamedPtr(fqt),
+		proto.RTAppID_Chat, "bar", "the bar channel", memberRW)
+	require.NoError(t, err)
+
+	var msgID proto.RTMsgID
+	err = core.RandomFill(msgID[:])
+	require.NoError(t, err)
+	hooks := &librt.SendTestHooks{MsgIDOverride: &msgID}
+
+	// First send lands normally.
+	res1, err := minderBluey.SendWithTestHooks(mb, team.WrapNamedPtr(fqt),
+		proto.RTAppID_Chat, makeChannelSpecifierWithString("foo"),
+		[]byte("original"), hooks)
+	require.NoError(t, err)
+
+	// Same msg_id, same sender, same channel: a replay. The original result
+	// comes back even though the body differs (idempotency keys on msgID
+	// alone), and no second row is written.
+	res2, err := minderBluey.SendWithTestHooks(mb, team.WrapNamedPtr(fqt),
+		proto.RTAppID_Chat, makeChannelSpecifierWithString("foo"),
+		[]byte("retry with different body"), hooks)
+	require.NoError(t, err)
+	require.Equal(t, res1.Seq, res2.Seq)
+	require.Equal(t, res1.InsertTime, res2.InsertTime)
+
+	// Same msg_id into a different channel: mismatch, refused.
+	_, err = minderBluey.SendWithTestHooks(mb, team.WrapNamedPtr(fqt),
+		proto.RTAppID_Chat, makeChannelSpecifierWithString("bar"),
+		[]byte("wrong channel"), hooks)
+	require.Equal(t, core.RTMsgReplayMismatchError{}, err)
+
+	// Same msg_id from a different sender into the same channel: mismatch.
+	_, err = minderCoco.SendWithTestHooks(mc, team.WrapNamedPtr(fqt),
+		proto.RTAppID_Chat, makeChannelSpecifierWithString("foo"),
+		[]byte("someone else's id"), hooks)
+	require.Equal(t, core.RTMsgReplayMismatchError{}, err)
+
+	// Exactly one row exists for this msg_id, and the channel's thread has
+	// exactly one message: the replay and the mismatches inserted nothing.
+	rtdb, err := m.Db(shared.DbTypeRealTime)
+	require.NoError(t, err)
+	defer rtdb.Release()
+	var n int
+	err = rtdb.QueryRow(m.Ctx(),
+		`SELECT COUNT(*) FROM messages_enc WHERE msg_id=$1`,
+		msgID.Bytes()).Scan(&n)
+	require.NoError(t, err)
+	require.Equal(t, 1, n)
+
+	msgs, err := minderBluey.GetThreadRecentMsgs(mb, team.WrapNamedPtr(fqt),
+		proto.RTAppID_Chat, makeChannelSpecifierWithString("foo"), 0)
+	require.NoError(t, err)
+	require.Len(t, msgs, 1)
+	require.Equal(t, "original", string(msgs[0].Body))
+}
