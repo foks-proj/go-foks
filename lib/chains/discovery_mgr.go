@@ -183,7 +183,7 @@ func (d *DiscoveryMgr) Probe(m MetaContext, arg ProbeArg) (*Probe, error) {
 
 	// If we failed to connect, then we can still return the dead
 	// probe, and we can try to rejeuvenate it later.
-	if core.IsConnectError(err) {
+	if core.IsTransportError(err) {
 		return pr, err
 	}
 
