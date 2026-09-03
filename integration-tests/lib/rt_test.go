@@ -1597,14 +1597,16 @@ func TestRTSendIdempotentReplay(t *testing.T) {
 		proto.RTAppID_Chat, makeChannelSpecifierWithString("foo"),
 		[]byte("original"), hooks)
 	require.NoError(t, err)
+	require.False(t, res1.WasReplay)
 
 	// Same msg_id, same sender, same channel: a replay. The original result
 	// comes back even though the body differs (idempotency keys on msgID
-	// alone), and no second row is written.
+	// alone), the response says so, and no second row is written.
 	res2, err := minderBluey.SendWithTestHooks(mb, team.WrapNamedPtr(fqt),
 		proto.RTAppID_Chat, makeChannelSpecifierWithString("foo"),
 		[]byte("retry with different body"), hooks)
 	require.NoError(t, err)
+	require.True(t, res2.WasReplay)
 	require.Equal(t, res1.Seq, res2.Seq)
 	require.Equal(t, res1.InsertTime, res2.InsertTime)
 

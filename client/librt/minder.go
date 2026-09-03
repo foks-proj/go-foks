@@ -968,7 +968,6 @@ func (d *Minder) SendWithTestHooks(
 	}
 	typ := proto.RTMsgType_Basic
 
-	// TODO !! Fill in prev's
 	md := proto.RTMsgMetadata{
 		SendTime: proto.ExportTime(m.G().Now()),
 		Typ:      typ,
@@ -1051,8 +1050,9 @@ func (d *Minder) SendWithTestHooks(
 		// at that seq settles which:
 		// our own msgID there means replay, anything else is a real violation.
 		cached, lookupErr := dbGetMsgs(m, d.au, ch.Id, res.Seq, res.Seq)
-		isReplay := lookupErr == nil && len(cached) == 1 &&
-			cached[0].Cm.Md.Md.MsgID == md.MsgID
+		isReplay := res.WasReplay ||
+			(lookupErr == nil && len(cached) == 1 &&
+				cached[0].Cm.Md.Md.MsgID == md.MsgID)
 		if !isReplay {
 			return nil, core.RTMsgOrderError(
 				fmt.Sprintf(

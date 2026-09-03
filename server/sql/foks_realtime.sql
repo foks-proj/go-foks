@@ -135,10 +135,11 @@ CREATE TABLE messages_enc (
     PRIMARY KEY(short_host_id, channel_id, seq),
     FOREIGN KEY(short_host_id, channel_id) REFERENCES channels(short_host_id, channel_id),
     FOREIGN KEY(short_host_id, channel_id, sender_no) REFERENCES channel_parties(short_host_id, channel_id, party_no),
-    /* Named explicitly because the name is load-bearing: rtSend's idempotent
-     * replay path matches it to detect a duplicate msg_id (see
-     * server/realtime/messages.go). It equals the name Postgres auto-generates
-     * for UNIQUE(msg_id), so existing deployments already carry it. */
+    /* Named explicitly because rtSend's idempotent replay path matches on
+     * this exact name to detect a duplicate msg_id (see
+     * server/realtime/messages.go); renaming it would silently disable that
+     * path. It equals the name Postgres auto-generates for UNIQUE(msg_id), so
+     * existing deployments already carry it. */
     CONSTRAINT messages_enc_msg_id_key UNIQUE(msg_id)
 );
 

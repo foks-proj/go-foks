@@ -496,6 +496,7 @@ func loadReplay(
 	return &rem.RTSendRes{
 		Seq:        proto.RTMsgSeq(seq),
 		InsertTime: proto.ExportTime(insertTime),
+		WasReplay:  true,
 	}, nil
 }
 
