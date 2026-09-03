@@ -117,7 +117,7 @@ func (p *Probe) setLastFail(e error) {
 }
 
 func (p *Probe) handleConnectError(e error) bool {
-	if !core.IsConnectError(e) {
+	if !core.IsTransportError(e) {
 		return false
 	}
 	p.setLastFail(e)

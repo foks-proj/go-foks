@@ -204,7 +204,7 @@ func fillHostInfo(m MetaContext, u *proto.UserInfo) error {
 	}
 
 	m.Warnw("fillHostInfo", "hostid", u.Fqu.HostID, "cachedAddr", probe.Addr, "err", err)
-	if core.IsConnectError(err) && !nf {
+	if core.IsTransportError(err) && !nf {
 		u.HostAddr = probe.Addr
 		m.Infow("fillHostInfo", "hostid", u.Fqu.HostID, "cachedAddr", probe.Addr,
 			"outcome", "overriding failure; using cached address")

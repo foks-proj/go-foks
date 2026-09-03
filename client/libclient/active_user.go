@@ -87,7 +87,7 @@ func (a *ActiveUserLoader) probe(m MetaContext) error {
 		to = m.G().Cfg().ProbeTimeout()
 	}
 	pr, err := m.G().Probe(m.Ctx(), a.uinfo.Fqu.HostID, to)
-	if pr != nil && (err == nil || core.IsConnectError(err)) {
+	if pr != nil && (err == nil || core.IsTransportError(err)) {
 		a.uc.SetHomeServer(pr)
 	}
 	if err != nil {
@@ -134,7 +134,7 @@ func (a *ActiveUserLoader) Run(m MetaContext) error {
 			// (initial commit of FOKS, 20ed077);
 			a.lockState = a.uc.lockState
 		}
-	case core.IsConnectError(err):
+	case core.IsTransportError(err):
 		m.Warnw("ActiveUserLoader::Run", "stage", "probe", "err", err)
 		err = nil
 	}
