@@ -1,6 +1,7 @@
 package realtime
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
@@ -220,6 +221,12 @@ func (s *messageSender) insertMessage(
 		// Shouldn't happen: we hold the channels row lock, so seq is ours.
 		return zed, core.RTRaceError{Which: "messages"}
 	}
+	if shared.IsDuplicateKeyError(err, "messages_enc_msg_id_key") {
+		// This msg_id was already delivered -- a client retrying a send whose
+		// ack it lost. The violation aborts the transaction, so the caller
+		// (SendMessage) resolves the replay with a fresh read after rollback.
+		return zed, errMsgIDReplay
+	}
 	if err != nil {
 		return zed, err
 	}
@@ -338,11 +345,28 @@ func (s *messageSender) run(m shared.MetaContext) (*rem.RTSendRes, error) {
 		return nil, err
 	}
 	seq := s.prevSeq + 1
-	// Optional optimistic-concurrency check from the client.
+	// Optional optimistic-concurrency check from the client. A failed CAS
+	// must still honor the idempotent-replay contract (docs/rt_offline.md,
+	// D1): if this msg_id already landed, the caller's own committed insert
+	// is what advanced prevSeq, and every retry would otherwise loop on
+	// RTRaceError -- exactly the lost-ack ambiguity replay exists to remove.
 	if s.arg.ExpectedPrevSeq.IsValid() &&
 		s.arg.ExpectedPrevSeq != s.prevSeq {
+		var exists bool
+		err := s.tx.QueryRow(
+			m.Ctx(),
+			`SELECT EXISTS(SELECT 1 FROM messages_enc WHERE msg_id=$1)`,
+			s.arg.Md.MsgID.Bytes(),
+		).Scan(&exists)
+		if err != nil {
+			return nil, err
+		}
+		if exists {
+			return nil, errMsgIDReplay
+		}
 		return nil, core.RTRaceError{Which: "messages"}
 	}
+
 	senderNo, err := s.internSender(m)
 	if err != nil {
 		return nil, err
@@ -404,10 +428,76 @@ func SendMessage(
 			}, nil
 		},
 	)
+	if err == errMsgIDReplay {
+		// The msg_id unique violation aborted the insert transaction; resolve
+		// the replay with a fresh read. rtSend is idempotent on msgID: a
+		// retry of a send whose ack was lost gets the original result back.
+		return loadReplay(m, rtdb, arg)
+	}
 	if err != nil {
 		return nil, err
 	}
 	return res, nil
+}
+
+// errMsgIDReplay is an internal sentinel: the messages_enc insert hit the
+// msg_id unique constraint. Never returned to a client.
+var errMsgIDReplay = errors.New("realtime: duplicate msg_id")
+
+// loadReplay resolves an rtSend whose msg_id already exists. If the existing
+// row was sent by this caller, into this channel, on this host, the send is a
+// replay -- return the original seq and insert time, making rtSend idempotent
+// on msgID. Any mismatch (or a message ID collision, vanishingly unlikely in
+// a random 16-byte space) is refused with a payload-free error: the existing
+// row's location must not leak to a caller who doesn't already know it.
+//
+// Runs outside the (aborted) insert transaction; that is safe without a lock
+// because messages_enc rows are immutable once committed.
+func loadReplay(
+	m shared.MetaContext,
+	rtdb *pgxpool.Conn,
+	arg rem.RTSendArg,
+) (
+	*rem.RTSendRes,
+	error,
+) {
+	var shid int
+	var chid, seq int64
+	var insertTime time.Time
+	var partyRaw []byte
+	err := rtdb.QueryRow(
+		m.Ctx(),
+		`SELECT me.short_host_id, me.channel_id, me.seq, me.insert_time, cp.party_id
+		 FROM messages_enc AS me
+		 JOIN channel_parties AS cp
+		   ON (cp.short_host_id=me.short_host_id
+		       AND cp.channel_id=me.channel_id
+		       AND cp.party_no=me.sender_no)
+		 WHERE me.msg_id=$1`,
+		arg.Md.MsgID.Bytes(),
+	).Scan(&shid, &chid, &seq, &insertTime, &partyRaw)
+	if err == pgx.ErrNoRows {
+		// The row that made the insert collide is gone. Nothing deletes
+		// messages, so treat as an internal race and let the client retry.
+		return nil, core.RTRaceError{Which: "messages"}
+	}
+	if err != nil {
+		return nil, err
+	}
+	var party proto.PartyID
+	err = party.ImportFromDB(partyRaw)
+	if err != nil {
+		return nil, err
+	}
+	if shid != int(m.ShortHostID()) ||
+		chid != int64(arg.Chid) ||
+		!party.Eq(m.UID().ToPartyID()) {
+		return nil, core.RTMsgReplayMismatchError{}
+	}
+	return &rem.RTSendRes{
+		Seq:        proto.RTMsgSeq(seq),
+		InsertTime: proto.ExportTime(insertTime),
+	}, nil
 }
 
 // wakeInboxPollers wakes the given users' parked rtPollInbox calls. Call only

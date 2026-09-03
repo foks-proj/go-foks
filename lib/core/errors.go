@@ -1372,6 +1372,16 @@ func (a AgentConnectError) Error() string {
 	return fmt.Sprintf("failed to connect to agent at path %s", a.Path.String())
 }
 
+// RTMsgReplayMismatchError is returned by rtSend when the message ID was
+// already delivered, but to a different host, channel, or sender than the
+// caller's. Deliberately payload-free: the existing row's location must not
+// leak to a caller who doesn't already know it.
+type RTMsgReplayMismatchError struct{}
+
+func (r RTMsgReplayMismatchError) Error() string {
+	return "message ID already delivered elsewhere"
+}
+
 type RTGenericError string
 
 func (r RTGenericError) Error() string {
@@ -1614,6 +1624,8 @@ func ErrorToStatus(e error) proto.Status {
 		return proto.NewStatusWithSigningKeyNotFullyProvisionedError()
 	case AgentConnectError:
 		return proto.NewStatusWithAgentConnectError(te.Path.String())
+	case RTMsgReplayMismatchError:
+		return proto.NewStatusWithRtMsgReplayMismatch()
 	case RTGenericError:
 		return proto.NewStatusWithRtGenericError(string(te))
 	case RTChannelExistsError:
@@ -2087,6 +2099,8 @@ func StatusToError(s proto.Status) error {
 		return errors.New(s.InternalError())
 	case proto.StatusCode_RT_CHANNEL_EXISTS_ERROR:
 		return RTChannelExistsError{}
+	case proto.StatusCode_RT_MSG_REPLAY_MISMATCH:
+		return RTMsgReplayMismatchError{}
 	case proto.StatusCode_RT_GENERIC_ERROR:
 		return RTGenericError(s.RtGenericError())
 	case proto.StatusCode_RT_RACE:

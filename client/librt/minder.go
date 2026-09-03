@@ -799,6 +799,9 @@ type SendTestHooks struct {
 	// EncryptRoleOverride encrypts the body at this role instead of the
 	// channel's read role, to test the server's encryption-role check.
 	EncryptRoleOverride *proto.Role
+	// MsgIDOverride pins the message ID instead of drawing a random one, to
+	// test the server's idempotent-replay path on duplicate msg_ids.
+	MsgIDOverride *proto.RTMsgID
 }
 
 // Send encrypts and sends a basic message into the named channel of a team.
@@ -971,9 +974,13 @@ func (d *Minder) SendWithTestHooks(
 		Typ:      typ,
 	}
 
-	err = core.RandomFill(md.MsgID[:])
-	if err != nil {
-		return nil, err
+	if test != nil && test.MsgIDOverride != nil {
+		md.MsgID = *test.MsgIDOverride
+	} else {
+		err = core.RandomFill(md.MsgID[:])
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	lastMsg, err := dbGetLastMsg(m, d.au, ch.Id)
@@ -1036,13 +1043,32 @@ func (d *Minder) SendWithTestHooks(
 		Seq: res.Seq,
 	}
 
+	// A replay is not a misordering. rtSend is idempotent on msgID, so a
+	// retry of a send whose ack was lost legitimately comes back with the
+	// original -- and therefore older -- sequence. Distinguish the two by
+	// asking what already occupies that seq locally: our own msgID there
+	// means the server handed back our earlier delivery, which is the
+	// contract working, not the server misbehaving.
+	isReplay := false
 	if prevSeq.IsValid() && res.Seq <= prevSeq {
-		return nil, core.RTMsgOrderError(
-			fmt.Sprintf(
-				"sent message has sequence (%d) <= last seen (%d)",
-				res.Seq.Int(), prevSeq.Int(),
-			),
-		)
+		held, herr := dbGetMsgs(m, d.au, ch.Id, res.Seq, res.Seq)
+		if herr != nil {
+			return nil, herr
+		}
+		isReplay = len(held) == 1 && held[0].Cm.Md.Md.MsgID == md.MsgID
+		if !isReplay {
+			return nil, core.RTMsgOrderError(
+				fmt.Sprintf(
+					"sent message has sequence (%d) <= last seen (%d)",
+					res.Seq.Int(), prevSeq.Int(),
+				),
+			)
+		}
+	}
+	if isReplay {
+		// The delivered original is already cached and was validated on
+		// ingest; keep it rather than overwriting with this attempt's copy.
+		return &res, nil
 	}
 
 	err = d.dbPutMsgs(m, []proto.RTMsgCachedWithSeq{msgCachedSeq})
