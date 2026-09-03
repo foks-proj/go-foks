@@ -34,18 +34,7 @@ type inboxFixture struct {
 }
 
 func (f *inboxFixture) minderFor(t *testing.T, u *TestUser) (libclient.MetaContext, *libclient.TeamMinder) {
-	m := f.tew.NewClientMetaContext(t, u)
-	tmm, err := m.G().TeamMinder()
-	require.NoError(t, err)
-	// Chain posts need the merkle tree to advance before the next read, which
-	// in production happens on the server's own schedule.
-	tmm.TestHooks = &libclient.TeamMinderTestHooks{
-		PostChainHook: func() error {
-			f.tew.DirectDoubleMerklePokeInTest(t)
-			return nil
-		},
-	}
-	return m, tmm
+	return f.tew.teamMinderFor(t, u)
 }
 
 func newInboxFixture(t *testing.T) *inboxFixture {

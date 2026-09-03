@@ -36,6 +36,25 @@ type teamObj struct {
 	tir            *core.RationalRange
 }
 
+// teamMinderFor builds a TeamMinder for u. Chain posts need the merkle tree to
+// advance before the next read, which in production happens on the server's own
+// schedule, so the hook pokes it here.
+func (te *TestEnvWrapper) teamMinderFor(
+	t *testing.T,
+	u *TestUser,
+) (libclient.MetaContext, *libclient.TeamMinder) {
+	m := te.NewClientMetaContext(t, u)
+	tmm, err := m.G().TeamMinder()
+	require.NoError(t, err)
+	tmm.TestHooks = &libclient.TeamMinderTestHooks{
+		PostChainHook: func() error {
+			te.DirectDoubleMerklePokeInTest(t)
+			return nil
+		},
+	}
+	return m, tmm
+}
+
 func (tm *teamObj) absorb(x *core.HEPKSet) {
 	tm.hepks = tm.hepks.Merge(x)
 }

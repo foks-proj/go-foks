@@ -461,38 +461,17 @@ func (t *TeamMinder) lookupCert(
 	return &cert, nil
 }
 
+// openCert verifies a team cert and additionally checks that it was issued for
+// the host we expect. The verify itself lives in exactly one place on purpose:
+// this used to carry its own copy, which had drifted to the wrong
+// stacked-signature order and so rejected every cert from a rekeyed team.
 func openCert(c *rem.TeamCert, hostID proto.HostID) (*rem.TeamCertV1Payload, error) {
-	v, err := c.GetV()
-	if err != nil {
-		return nil, err
-	}
-	if v != rem.TeamCertVersion_V1 {
-		return nil, core.VersionNotSupportedError("team cert != v1")
-	}
-	signed := c.V1()
-	ret, err := signed.Payload.AllocAndDecode(core.DecoderFactory{})
+	ret, err := team.OpenTeamCert(*c)
 	if err != nil {
 		return nil, err
 	}
 	if !ret.Team.Host.Eq(hostID) {
 		return nil, core.HostMismatchError{}
-	}
-	var verifiers []core.Verifier
-	ep, err := core.ImportEntityPublic(ret.Team.Team.EntityID())
-	if err != nil {
-		return nil, err
-	}
-	verifiers = append(verifiers, ep)
-	if !ret.Ptk.Gen.IsFirst() {
-		ep, err := core.ImportEntityPublic(ret.Ptk.VerifyKey)
-		if err != nil {
-			return nil, err
-		}
-		verifiers = append(verifiers, ep)
-	}
-	err = core.VerifyStackedSignature(&signed, verifiers)
-	if err != nil {
-		return nil, err
 	}
 	return ret, nil
 }
