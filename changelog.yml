@@ -25,6 +25,8 @@ changelog:
         closes: ["#324"]
       - desc: server; merkle pipeline loops survive transient DB interruptions instead of stopping until restart
         closes: ["#323"]
+      - desc: rt; make message send idempotent on message ID, so a retry after a lost ack returns the original result
+        closes: ["#345"]
   - version: 0.1.9
     urgency: medium
     stable: true

@@ -1418,6 +1418,16 @@ func (r RTMsgOrderError) Error() string {
 	return "bad message ordering: " + string(r)
 }
 
+// RTMsgReplayMismatchError is returned by rtSend when the message ID was
+// already delivered, but to a different host, channel, or sender than the
+// caller's. Deliberately payload-free: the existing row's location must not
+// leak to a caller who doesn't already know it.
+type RTMsgReplayMismatchError struct{}
+
+func (r RTMsgReplayMismatchError) Error() string {
+	return "message ID already delivered elsewhere"
+}
+
 func ErrorToStatus(e error) proto.Status {
 
 	switch {
@@ -1626,6 +1636,8 @@ func ErrorToStatus(e error) proto.Status {
 		return proto.NewStatusWithRtNotFoundError(string(te))
 	case RTMsgOrderError:
 		return proto.NewStatusWithRtMsgOrderError(string(te))
+	case RTMsgReplayMismatchError:
+		return proto.NewStatusWithRtMsgReplayMismatch()
 	case RPCEOFError:
 		return proto.NewStatusWithRpcEof()
 	case OverQuotaError:
@@ -2097,6 +2109,8 @@ func StatusToError(s proto.Status) error {
 		return RTNotFoundError(string(s.RtNotFoundError()))
 	case proto.StatusCode_RT_MSG_ORDER_ERROR:
 		return RTMsgOrderError(string(s.RtMsgOrderError()))
+	case proto.StatusCode_RT_MSG_REPLAY_MISMATCH:
+		return RTMsgReplayMismatchError{}
 	default:
 		return errors.New(s.Default())
 	}
