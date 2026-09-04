@@ -120,11 +120,13 @@ func (r *RTSendArg) Bytes() []byte { return nil }
 type RTSendRes struct {
 	Seq        lib.RTMsgSeq
 	InsertTime lib.Time
+	WasReplay  bool
 }
 type RTSendResInternal__ struct {
 	_struct    struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Seq        *lib.RTMsgSeqInternal__
 	InsertTime *lib.TimeInternal__
+	WasReplay  *bool
 }
 
 func (r RTSendResInternal__) Import() RTSendRes {
@@ -141,12 +143,19 @@ func (r RTSendResInternal__) Import() RTSendRes {
 			}
 			return x.Import()
 		})(r.InsertTime),
+		WasReplay: (func(x *bool) (ret bool) {
+			if x == nil {
+				return ret
+			}
+			return *x
+		})(r.WasReplay),
 	}
 }
 func (r RTSendRes) Export() *RTSendResInternal__ {
 	return &RTSendResInternal__{
 		Seq:        r.Seq.Export(),
 		InsertTime: r.InsertTime.Export(),
+		WasReplay:  &r.WasReplay,
 	}
 }
 func (r *RTSendRes) Encode(enc rpc.Encoder) error {

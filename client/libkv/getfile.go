@@ -417,11 +417,19 @@ func (k *Minder) GetFileChunk(
 	if err != nil {
 		return nil, err
 	}
-	_, seed, err := k.getFileMetadata(m, kvp, id)
+	var res *lcl.GetFileChunkRes
+	err = k.withFreshToken(m, kvp, func(m MetaContext) error {
+		_, seed, err := k.getFileMetadata(m, kvp, id)
+		if err != nil {
+			return err
+		}
+		res, err = k.getLargeFileChunkAtOffsetWithSeed(m, kvp, id, offset, seed)
+		return err
+	})
 	if err != nil {
 		return nil, err
 	}
-	return k.getLargeFileChunkAtOffsetWithSeed(m, kvp, id, offset, seed)
+	return res, nil
 }
 
 func GetFile(

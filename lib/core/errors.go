@@ -768,6 +768,15 @@ func (t TeamBearerTokenStaleError) Error() string {
 	return "team bearer token is stale: " + t.Which
 }
 
+// TeamVOBearerTokenNotFoundError means the server has no record of the
+// presented view-only team bearer token (e.g. it was GC'd). Like
+// TeamBearerTokenStaleError, it is cured by minting a fresh token.
+type TeamVOBearerTokenNotFoundError struct{}
+
+func (t TeamVOBearerTokenNotFoundError) Error() string {
+	return "team view-only bearer token not found"
+}
+
 type TeamNotFoundError struct{}
 
 func (t TeamNotFoundError) Error() string {
@@ -1409,6 +1418,16 @@ func (r RTMsgOrderError) Error() string {
 	return "bad message ordering: " + string(r)
 }
 
+// RTMsgReplayMismatchError is returned by rtSend when the message ID was
+// already delivered, but to a different host, channel, or sender than the
+// caller's. Deliberately payload-free: the existing row's location must not
+// leak to a caller who doesn't already know it.
+type RTMsgReplayMismatchError struct{}
+
+func (r RTMsgReplayMismatchError) Error() string {
+	return "message ID already delivered elsewhere"
+}
+
 func ErrorToStatus(e error) proto.Status {
 
 	switch {
@@ -1617,6 +1636,8 @@ func ErrorToStatus(e error) proto.Status {
 		return proto.NewStatusWithRtNotFoundError(string(te))
 	case RTMsgOrderError:
 		return proto.NewStatusWithRtMsgOrderError(string(te))
+	case RTMsgReplayMismatchError:
+		return proto.NewStatusWithRtMsgReplayMismatch()
 	case RPCEOFError:
 		return proto.NewStatusWithRpcEof()
 	case OverQuotaError:
@@ -1633,6 +1654,8 @@ func ErrorToStatus(e error) proto.Status {
 		return proto.NewStatusWithTeamRaceError(string(te))
 	case TeamBearerTokenStaleError:
 		return proto.NewStatusWithTeamBearerTokenStaleError(te.Which)
+	case TeamVOBearerTokenNotFoundError:
+		return proto.NewStatusWithTeamVoBearerTokenNotFoundError()
 	case TeamNotFoundError:
 		return proto.NewStatusWithTeamNotFoundError()
 	case TeamCertError:
@@ -1960,6 +1983,8 @@ func StatusToError(s proto.Status) error {
 		return TeamRaceError(s.TeamRaceError())
 	case proto.StatusCode_TEAM_BEARER_TOKEN_STALE_ERROR:
 		return TeamBearerTokenStaleError{Which: s.TeamBearerTokenStaleError()}
+	case proto.StatusCode_TEAM_VO_BEARER_TOKEN_NOT_FOUND_ERROR:
+		return TeamVOBearerTokenNotFoundError{}
 	case proto.StatusCode_TEAM_NOT_FOUND_ERROR:
 		return TeamNotFoundError{}
 	case proto.StatusCode_TEAM_CERT_ERROR:
@@ -2084,6 +2109,8 @@ func StatusToError(s proto.Status) error {
 		return RTNotFoundError(string(s.RtNotFoundError()))
 	case proto.StatusCode_RT_MSG_ORDER_ERROR:
 		return RTMsgOrderError(string(s.RtMsgOrderError()))
+	case proto.StatusCode_RT_MSG_REPLAY_MISMATCH:
+		return RTMsgReplayMismatchError{}
 	default:
 		return errors.New(s.Default())
 	}
