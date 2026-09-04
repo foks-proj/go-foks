@@ -27,6 +27,8 @@ changelog:
         closes: ["#323"]
       - desc: rt; make message send idempotent on message ID, so a retry after a lost ack returns the original result
         closes: ["#345"]
+      - desc: rt; write content-free push_outbox rows in the send transaction, and add rtSetPushToken so devices can register for wakes
+        closes: ["#342"]
   - version: 0.1.9
     urgency: medium
     stable: true
