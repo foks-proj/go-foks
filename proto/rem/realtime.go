@@ -1702,6 +1702,72 @@ func (r *RtGetThreadRecentsArg) Decode(dec rpc.Decoder) error {
 
 func (r *RtGetThreadRecentsArg) Bytes() []byte { return nil }
 
+type RtSetPushTokenArg struct {
+	Platform  string
+	Token     []byte
+	DeviceKey []byte
+	Enabled   bool
+}
+type RtSetPushTokenArgInternal__ struct {
+	_struct   struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
+	Platform  *string
+	Token     *[]byte
+	DeviceKey *[]byte
+	Enabled   *bool
+}
+
+func (r RtSetPushTokenArgInternal__) Import() RtSetPushTokenArg {
+	return RtSetPushTokenArg{
+		Platform: (func(x *string) (ret string) {
+			if x == nil {
+				return ret
+			}
+			return *x
+		})(r.Platform),
+		Token: (func(x *[]byte) (ret []byte) {
+			if x == nil {
+				return ret
+			}
+			return *x
+		})(r.Token),
+		DeviceKey: (func(x *[]byte) (ret []byte) {
+			if x == nil {
+				return ret
+			}
+			return *x
+		})(r.DeviceKey),
+		Enabled: (func(x *bool) (ret bool) {
+			if x == nil {
+				return ret
+			}
+			return *x
+		})(r.Enabled),
+	}
+}
+func (r RtSetPushTokenArg) Export() *RtSetPushTokenArgInternal__ {
+	return &RtSetPushTokenArgInternal__{
+		Platform:  &r.Platform,
+		Token:     &r.Token,
+		DeviceKey: &r.DeviceKey,
+		Enabled:   &r.Enabled,
+	}
+}
+func (r *RtSetPushTokenArg) Encode(enc rpc.Encoder) error {
+	return enc.Encode(r.Export())
+}
+
+func (r *RtSetPushTokenArg) Decode(dec rpc.Decoder) error {
+	var tmp RtSetPushTokenArgInternal__
+	err := dec.Decode(&tmp)
+	if err != nil {
+		return err
+	}
+	*r = tmp.Import()
+	return nil
+}
+
+func (r *RtSetPushTokenArg) Bytes() []byte { return nil }
+
 type RealTimeInterface interface {
 	RtNewChannel(context.Context, RtNewChannelArg) error
 	RtGetChannel(context.Context, lib.RTChannelID) (RTChannelMetadata, error)
@@ -1714,6 +1780,7 @@ type RealTimeInterface interface {
 	RtPollInbox(context.Context, RTPollInboxArg) (lib.RTInboxPollRes, error)
 	RtSelectVHost(context.Context, lib.HostID) error
 	RtGetThreadRecents(context.Context, RtGetThreadRecentsArg) (RTMsgList, error)
+	RtSetPushToken(context.Context, RtSetPushTokenArg) error
 	ErrorWrapper() func(error) lib.Status
 	CheckArgHeader(ctx context.Context, h lib.Header) error
 	MakeResHeader() lib.Header
@@ -2009,6 +2076,26 @@ func (c RealTimeClient) RtGetThreadRecents(ctx context.Context, arg RtGetThreadR
 		}
 	}
 	res = tmp.Data.Import()
+	return
+}
+func (c RealTimeClient) RtSetPushToken(ctx context.Context, arg RtSetPushTokenArg) (err error) {
+	warg := &rpc.DataWrap[lib.Header, *RtSetPushTokenArgInternal__]{
+		Data: arg.Export(),
+	}
+	if c.MakeArgHeader != nil {
+		warg.Header = c.MakeArgHeader()
+	}
+	var tmp rpc.DataWrap[lib.Header, interface{}]
+	err = c.Cli.Call2(ctx, rpc.NewMethodV2(RealTimeProtocolID, 11, "RealTime.rtSetPushToken"), warg, &tmp, 0*time.Millisecond, realTimeErrorUnwrapperAdapter{h: c.ErrorUnwrapper})
+	if err != nil {
+		return
+	}
+	if c.CheckResHeader != nil {
+		err = c.CheckResHeader(ctx, tmp.Header)
+		if err != nil {
+			return
+		}
+	}
 	return
 }
 func RealTimeProtocol(i RealTimeInterface) rpc.ProtocolV2 {
@@ -2331,6 +2418,34 @@ func RealTimeProtocol(i RealTimeInterface) rpc.ProtocolV2 {
 					},
 				},
 				Name: "rtGetThreadRecents",
+			},
+			11: {
+				ServeHandlerDescription: rpc.ServeHandlerDescription{
+					MakeArg: func() interface{} {
+						var ret rpc.DataWrap[lib.Header, *RtSetPushTokenArgInternal__]
+						return &ret
+					},
+					Handler: func(ctx context.Context, args interface{}) (interface{}, error) {
+						typedWrappedArg, ok := args.(*rpc.DataWrap[lib.Header, *RtSetPushTokenArgInternal__])
+						if !ok {
+							err := rpc.NewTypeError((*rpc.DataWrap[lib.Header, *RtSetPushTokenArgInternal__])(nil), args)
+							return nil, err
+						}
+						if err := i.CheckArgHeader(ctx, typedWrappedArg.Header); err != nil {
+							return nil, err
+						}
+						typedArg := typedWrappedArg.Data
+						err := i.RtSetPushToken(ctx, (typedArg.Import()))
+						if err != nil {
+							return nil, err
+						}
+						ret := rpc.DataWrap[lib.Header, interface{}]{
+							Header: i.MakeResHeader(),
+						}
+						return &ret, nil
+					},
+				},
+				Name: "rtSetPushToken",
 			},
 		},
 		WrapError: RealTimeMakeGenericErrorWrapper(i.ErrorWrapper()),
