@@ -27,6 +27,8 @@ changelog:
         closes: ["#323"]
       - desc: rt; make message send idempotent on message ID, so a retry after a lost ack returns the original result
         closes: ["#345"]
+      - desc: rt; send and open typed (pegged) messages — Reply, Reactji and Edit — so reactions, edits, replies and deletes have a wire representation
+        closes: ["#341"]
   - version: 0.1.9
     urgency: medium
     stable: true
