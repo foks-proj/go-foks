@@ -1,0 +1,3 @@
+# Require maintainer review on everything: branch protection on main requires
+# a code-owner approval before merge, and this file defines who that is.
+* @maxtaco

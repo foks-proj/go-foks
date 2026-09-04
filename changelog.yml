@@ -21,6 +21,12 @@ changelog:
         closes: ["#328"]
       - desc: TeamMinder API to cancel your own pending join request and to reject a pending request as admin
         closes: ["#330"]
+      - desc: fix KV operations failing with "team bearer token is stale" after admission or a role change; re-mint the token and retry
+        closes: ["#324"]
+      - desc: server; merkle pipeline loops survive transient DB interruptions instead of stopping until restart
+        closes: ["#323"]
+      - desc: rt; make message send idempotent on message ID, so a retry after a lost ack returns the original result
+        closes: ["#345"]
   - version: 0.1.9
     urgency: medium
     stable: true

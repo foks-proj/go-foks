@@ -209,6 +209,17 @@ func (l *Lock) getHeartbeatFailure() bool {
 	return l.heartbeatFailed
 }
 
+// LostLock reports whether the most recent Heartbeat found the lock had been
+// taken over by another process — the lock row no longer matches our pid +
+// lock_id, so the UPDATE affected zero rows. This is deliberately distinct from
+// a transient DB/connection error returned by Heartbeat (e.g. "connection
+// refused" or a timeout): after a transient error the caller still owns the
+// lock and should retry, whereas after a genuine takeover it must stand down.
+// Set once by Heartbeat and never cleared.
+func (l *Lock) LostLock() bool {
+	return l.getHeartbeatFailure()
+}
+
 func (l *Lock) setHeartbeatFailure() {
 	l.Lock()
 	defer l.Unlock()

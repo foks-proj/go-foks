@@ -5,6 +5,8 @@ package lib
 
 import (
 	"bytes"
+	"errors"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -336,4 +338,70 @@ func TestSimpleBatch(t *testing.T) {
 	pokepoke()
 	epnoPost := check(alice4.key, true, 2)
 	require.Equal(t, epno+1, epnoPost)
+}
+
+// An "ambiguous commit": commitBatch's transaction lands server-side, but the
+// batcher observes an error (in production: a context cancellation racing
+// tx.Commit, or a dropped connection eating the ack). The batcher's memoized
+// batch counter is then behind the database, and without dropping its cached
+// state it would rebuild the same batch number every round and die on the
+// raft_kv_store primary key forever -- while still holding the loop's lock, so
+// no other instance could take over. The recovery contract: the very next
+// round re-reads committed state and proceeds.
+func TestMerkleBatcherAmbiguousCommitRecovery(t *testing.T) {
+	env := globalTestEnv.Fork(t, common.SetupOpts{
+		MerklePollWait: time.Hour,
+	})
+	defer func() {
+		_ = env.ShutdownFn()
+	}()
+	m := env.MetaContext()
+
+	shortHostID := m.G().HostChain().HostID().Short
+	alice := core.RandomUID().EntityID()
+	aliceDev := core.RandomDeviceID()
+
+	insertBatch(t, m, []*workQueueItem{
+		randomWorkQueueItem(t, shortHostID, alice, aliceDev, proto.ChainType_User, 1),
+	})
+
+	var calls int32
+	env.MerkleBatcherSrv().SetTestPostCommitHook(func() error {
+		if atomic.AddInt32(&calls, 1) == 1 {
+			return errors.New("synthetic ambiguous commit")
+		}
+		return nil
+	})
+
+	cli, closeFn := common.TestMerkleBatcherCli(t, m)
+	defer func() {
+		err := closeFn()
+		require.NoError(t, err)
+	}()
+
+	// Round 1: the batch commits, but the poke reports the synthetic failure.
+	err := cli.Poke(m.Ctx())
+	require.Error(t, err)
+
+	state, batch, err := selectCurrentBatch(t, m)
+	require.NoError(t, err)
+	require.Equal(t, proto.MerkleBatchNo(2), state.Next)
+	require.Equal(t, proto.MerkleBatchNo(1), batch.Batchno)
+
+	// Round 2: new work on an independent chain (a second user, since the
+	// batcher won't batch alice's seqno 2 while her seqno 1 is still
+	// in-flight). The batcher must pick up at batch 2, not rebuild batch 1
+	// against the primary key.
+	bob := core.RandomUID().EntityID()
+	bobDev := core.RandomDeviceID()
+	insertBatch(t, m, []*workQueueItem{
+		randomWorkQueueItem(t, shortHostID, bob, bobDev, proto.ChainType_User, 1),
+	})
+	err = cli.Poke(m.Ctx())
+	require.NoError(t, err)
+
+	state, batch, err = selectCurrentBatch(t, m)
+	require.NoError(t, err)
+	require.Equal(t, proto.MerkleBatchNo(3), state.Next)
+	require.Equal(t, proto.MerkleBatchNo(2), batch.Batchno)
 }

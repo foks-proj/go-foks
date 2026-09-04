@@ -27,6 +27,10 @@ struct RTSendArg {
 struct RTSendRes {
     seq @0 : lib.RTMsgSeq;
     insertTime @1 : lib.Time;
+    // True when this send was an idempotent replay: the msgID had already
+    // been delivered, and seq/insertTime are the original delivery's, not a
+    // new row's. Old servers omit the field, which decodes as false.
+    wasReplay @2 : Bool;
 }
 
 // Inbox sync. Client sends its highest known inbox_version; server returns
