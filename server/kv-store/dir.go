@@ -110,38 +110,14 @@ func putDir(
 	}
 	spid := pid.Shorten()
 
-	// A replay of an identical mkdir is a no-op. Dir IDs are chosen by the
-	// client, so a retry after an ambiguous failure -- the write reached the
-	// server, the acknowledgement did not -- carries the same sealed seed
-	// bytes. A same-ID row holding a different box is a client bug or a
-	// stray collision in a 16-byte random space; refuse it rather than
-	// silently keeping one copy or the other.
-	var existingBox []byte
-	err = tx.QueryRow(m.Ctx(),
-		`SELECT seed_box FROM dir
-		 WHERE short_host_id=$1 AND short_party_id=$2 AND dir_id=$3 AND version=$4`,
-		int(m.HostID().Short),
-		spid.ExportToDB(),
-		dir.Id.ExportToDB(),
-		int(dir.Version),
-	).Scan(&existingBox)
-	if err == nil {
-		if bytes.Equal(existingBox, box) {
-			return nil
-		}
-		return core.KVRaceError("dir id replayed with different contents")
-	}
-	if err != pgx.ErrNoRows {
-		return err
-	}
-
 	tag, err := tx.Exec(m.Ctx(),
 		`INSERT INTO dir(
 			short_host_id, short_party_id, dir_id, version, ptk_gen,
 			read_role_type, read_role_viz_level,
 			write_role_type, write_role_viz_level,
 			seed_box, status, ctime, mtime
-		) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,NOW(),NOW())`,
+		) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,NOW(),NOW())
+		 ON CONFLICT DO NOTHING`,
 		int(m.HostID().Short),
 		spid.ExportToDB(),
 		dir.Id.ExportToDB(),
@@ -157,6 +133,45 @@ func putDir(
 	}
 	if err != nil {
 		return err
+	}
+
+	if tag.RowsAffected() == 0 {
+		// The directory ID is already taken. Directory IDs are chosen by the
+		// client and the seed is sealed before the call, so a retry after an
+		// ambiguous failure carries exactly the same row; succeeding is what
+		// lets the client go on and link the directory. Inserting first and
+		// comparing here, rather than checking beforehand, keeps the two
+		// steps atomic: a pre-check would leave a window where the original
+		// commits in between and the retry fails on the primary key.
+		//
+		// Every persisted field is compared, not just the seed: a reused ID
+		// carrying the same seed under a different generation or role is not
+		// the same directory, and silently keeping the stored metadata would
+		// hide the difference.
+		var seed []byte
+		var gen, rt, rl, wt, wl int
+		err = tx.QueryRow(m.Ctx(),
+			`SELECT seed_box, ptk_gen,
+			        read_role_type, read_role_viz_level,
+			        write_role_type, write_role_viz_level
+			 FROM dir
+			 WHERE short_host_id=$1 AND short_party_id=$2 AND dir_id=$3 AND version=$4`,
+			int(m.HostID().Short),
+			spid.ExportToDB(),
+			dir.Id.ExportToDB(),
+			int(dir.Version),
+		).Scan(&seed, &gen, &rt, &rl, &wt, &wl)
+		if err != nil {
+			return err
+		}
+		if bytes.Equal(seed, box) &&
+			gen == int(dir.Box.Rg.Gen) &&
+			rt == rtyp && rl == rlev &&
+			wt == wtyp && wl == wlev {
+			// An identical replay; the refcount row is already there too.
+			return nil
+		}
+		return core.KVRaceError("dir id reused with different contents")
 	}
 	if tag.RowsAffected() != 1 {
 		return core.InsertError("dir")
