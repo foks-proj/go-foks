@@ -4,6 +4,8 @@
 package kvStore
 
 import (
+	"bytes"
+
 	"github.com/foks-proj/go-foks/lib/core"
 	proto "github.com/foks-proj/go-foks/proto/lib"
 	"github.com/foks-proj/go-foks/server/shared"
@@ -107,6 +109,32 @@ func putDir(
 		return core.BadArgsError("dir version must be 1 for mkdir")
 	}
 	spid := pid.Shorten()
+
+	// A replay of an identical mkdir is a no-op. Dir IDs are chosen by the
+	// client, so a retry after an ambiguous failure -- the write reached the
+	// server, the acknowledgement did not -- carries the same sealed seed
+	// bytes. A same-ID row holding a different box is a client bug or a
+	// stray collision in a 16-byte random space; refuse it rather than
+	// silently keeping one copy or the other.
+	var existingBox []byte
+	err = tx.QueryRow(m.Ctx(),
+		`SELECT seed_box FROM dir
+		 WHERE short_host_id=$1 AND short_party_id=$2 AND dir_id=$3 AND version=$4`,
+		int(m.HostID().Short),
+		spid.ExportToDB(),
+		dir.Id.ExportToDB(),
+		int(dir.Version),
+	).Scan(&existingBox)
+	if err == nil {
+		if bytes.Equal(existingBox, box) {
+			return nil
+		}
+		return core.KVRaceError("dir id replayed with different contents")
+	}
+	if err != pgx.ErrNoRows {
+		return err
+	}
+
 	tag, err := tx.Exec(m.Ctx(),
 		`INSERT INTO dir(
 			short_host_id, short_party_id, dir_id, version, ptk_gen,
