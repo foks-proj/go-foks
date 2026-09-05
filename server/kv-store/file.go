@@ -100,33 +100,6 @@ func putSmallFileOrSymlink(
 		return err
 	}
 
-	// A replay of an identical node is a no-op. Node IDs are client-chosen,
-	// and a small file's encryption nonce derives from its node ID, so a
-	// client retrying after an ambiguous failure -- the write landed, the
-	// ack did not -- sends byte-identical bytes. Checked before
-	// usageCheckAndInc so a retry is not charged twice. A same-ID row
-	// carrying different bytes is a client bug or a stray collision in a
-	// 16-byte random space; refuse it rather than silently keeping one copy
-	// or the other.
-	var existing []byte
-	err = tx.QueryRow(
-		m.Ctx(),
-		`SELECT box FROM small_file_or_symlink
-		 WHERE short_host_id=$1 AND short_party_id=$2 AND node_id=$3`,
-		int(m.HostID().Short),
-		pid.Shorten().ExportToDB(),
-		arg.Id.ExportToDB(),
-	).Scan(&existing)
-	if err == nil {
-		if bytes.Equal(existing, arg.Sfb.DataBox) {
-			return nil
-		}
-		return core.KVRaceError("small-file node id replayed with different content")
-	}
-	if err != pgx.ErrNoRows {
-		return err
-	}
-
 	// Max length of small file is 2k + size of Poly1305
 	lim := kv.SmallFileSize + secretbox.Overhead
 	if len(arg.Sfb.DataBox) > lim {
@@ -137,24 +110,18 @@ func putSmallFileOrSymlink(
 		}
 	}
 
-	err = usageCheckAndInc(
-		m,
-		tx,
-		pid,
-		proto.KVNodeType_SmallFile,
-		len(arg.Sfb.DataBox),
-		true,
-	)
-	if err != nil {
-		return err
-	}
-
+	// Insert first, tolerating a conflict, so recognising a replay and
+	// claiming the row are one atomic step. A pre-check would leave a window
+	// where the original write commits between check and insert, and the
+	// retry would then fail on the primary key -- the exact case this makes
+	// safe.
 	tag, err := tx.Exec(
 		m.Ctx(),
 		`INSERT INTO small_file_or_symlink(short_host_id, short_party_id, node_id, 
 			ptk_gen, read_role_type, read_role_viz_level,
 			size, box, ctime, mtime, refcount 
-		) VALUES($1, $2, $3, $4, $5, $6, $7, $8, NOW(), NOW(), 0)`,
+		) VALUES($1, $2, $3, $4, $5, $6, $7, $8, NOW(), NOW(), 0)
+		 ON CONFLICT DO NOTHING`,
 		int(m.HostID().Short),
 		pid.Shorten().ExportToDB(),
 		arg.Id.ExportToDB(),
@@ -167,8 +134,53 @@ func putSmallFileOrSymlink(
 	if err != nil {
 		return err
 	}
+
+	if tag.RowsAffected() == 0 {
+		// The node ID is already taken. A client retrying after an ambiguous
+		// failure sends byte-identical bytes -- node IDs are client-chosen
+		// and a small file's nonce derives from its node ID -- so an
+		// identical row is that retry, and succeeding is what lets the
+		// client carry on. Anything else reusing the ID is a bug or a stray
+		// collision in a 16-byte random space, and must not silently keep
+		// one copy or the other.
+		var box []byte
+		var gen, rt, vl int
+		err = tx.QueryRow(
+			m.Ctx(),
+			`SELECT box, ptk_gen, read_role_type, read_role_viz_level
+			 FROM small_file_or_symlink
+			 WHERE short_host_id=$1 AND short_party_id=$2 AND node_id=$3`,
+			int(m.HostID().Short),
+			pid.Shorten().ExportToDB(),
+			arg.Id.ExportToDB(),
+		).Scan(&box, &gen, &rt, &vl)
+		if err != nil {
+			return err
+		}
+		if bytes.Equal(box, arg.Sfb.DataBox) &&
+			gen == int(arg.Sfb.Rg.Gen) &&
+			rt == int(rk.Typ) &&
+			vl == int(rk.Lev) {
+			// An identical replay. No second usage charge.
+			return nil
+		}
+		return core.KVRaceError("small-file node id reused with different contents")
+	}
 	if tag.RowsAffected() != 1 {
-		return core.InsertError("large_file")
+		return core.InsertError("small_file_or_symlink")
+	}
+
+	// Only a genuinely new row is charged against usage.
+	err = usageCheckAndInc(
+		m,
+		tx,
+		pid,
+		proto.KVNodeType_SmallFile,
+		len(arg.Sfb.DataBox),
+		true,
+	)
+	if err != nil {
+		return err
 	}
 	return nil
 }
@@ -324,6 +336,7 @@ func (f *fileUploader) insLargeFile(m shared.MetaContext) error {
 	if err != nil {
 		return err
 	}
+
 	if tag.RowsAffected() != 1 {
 		return core.InsertError("large_file")
 	}
