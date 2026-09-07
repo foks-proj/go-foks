@@ -39,6 +39,16 @@ enum RTAppID {
     Notif @3;
 }
 
+// Push-notification transport. Mirrors the foks_realtime.push_platform
+// postgres enum.
+enum RTPushPlatform {
+    None @0;
+    Apns @1;
+    Fcm @2;
+}
+
+typedef RTPushToken = Blob; // opaque APNs/FCM device token
+
 // Server inspects msg_type for routing (push, badging) but cannot decrypt the
 // body. Mirrors foks_realtime.msg_type.
 enum RTMsgType {

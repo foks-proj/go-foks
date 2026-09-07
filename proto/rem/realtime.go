@@ -1703,38 +1703,38 @@ func (r *RtGetThreadRecentsArg) Decode(dec rpc.Decoder) error {
 func (r *RtGetThreadRecentsArg) Bytes() []byte { return nil }
 
 type RtSetPushTokenArg struct {
-	Platform  string
-	Token     []byte
-	DeviceKey []byte
+	Platform  lib.RTPushPlatform
+	Token     lib.RTPushToken
+	DeviceKey lib.EntityID
 	Enabled   bool
 }
 type RtSetPushTokenArgInternal__ struct {
 	_struct   struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
-	Platform  *string
-	Token     *[]byte
-	DeviceKey *[]byte
+	Platform  *lib.RTPushPlatformInternal__
+	Token     *lib.RTPushTokenInternal__
+	DeviceKey *lib.EntityIDInternal__
 	Enabled   *bool
 }
 
 func (r RtSetPushTokenArgInternal__) Import() RtSetPushTokenArg {
 	return RtSetPushTokenArg{
-		Platform: (func(x *string) (ret string) {
+		Platform: (func(x *lib.RTPushPlatformInternal__) (ret lib.RTPushPlatform) {
 			if x == nil {
 				return ret
 			}
-			return *x
+			return x.Import()
 		})(r.Platform),
-		Token: (func(x *[]byte) (ret []byte) {
+		Token: (func(x *lib.RTPushTokenInternal__) (ret lib.RTPushToken) {
 			if x == nil {
 				return ret
 			}
-			return *x
+			return x.Import()
 		})(r.Token),
-		DeviceKey: (func(x *[]byte) (ret []byte) {
+		DeviceKey: (func(x *lib.EntityIDInternal__) (ret lib.EntityID) {
 			if x == nil {
 				return ret
 			}
-			return *x
+			return x.Import()
 		})(r.DeviceKey),
 		Enabled: (func(x *bool) (ret bool) {
 			if x == nil {
@@ -1746,9 +1746,9 @@ func (r RtSetPushTokenArgInternal__) Import() RtSetPushTokenArg {
 }
 func (r RtSetPushTokenArg) Export() *RtSetPushTokenArgInternal__ {
 	return &RtSetPushTokenArgInternal__{
-		Platform:  &r.Platform,
-		Token:     &r.Token,
-		DeviceKey: &r.DeviceKey,
+		Platform:  r.Platform.Export(),
+		Token:     r.Token.Export(),
+		DeviceKey: r.DeviceKey.Export(),
 		Enabled:   &r.Enabled,
 	}
 }

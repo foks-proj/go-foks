@@ -380,6 +380,69 @@ func (r RTAppID) Export() *RTAppIDInternal__ {
 	return ((*RTAppIDInternal__)(&r))
 }
 
+type RTPushPlatform int
+
+const (
+	RTPushPlatform_None RTPushPlatform = 0
+	RTPushPlatform_Apns RTPushPlatform = 1
+	RTPushPlatform_Fcm  RTPushPlatform = 2
+)
+
+var RTPushPlatformMap = map[string]RTPushPlatform{
+	"None": 0,
+	"Apns": 1,
+	"Fcm":  2,
+}
+var RTPushPlatformRevMap = map[RTPushPlatform]string{
+	0: "None",
+	1: "Apns",
+	2: "Fcm",
+}
+
+type RTPushPlatformInternal__ RTPushPlatform
+
+func (r RTPushPlatformInternal__) Import() RTPushPlatform {
+	return RTPushPlatform(r)
+}
+func (r RTPushPlatform) Export() *RTPushPlatformInternal__ {
+	return ((*RTPushPlatformInternal__)(&r))
+}
+
+type RTPushToken []byte
+type RTPushTokenInternal__ []byte
+
+func (r RTPushToken) Export() *RTPushTokenInternal__ {
+	tmp := (([]byte)(r))
+	return ((*RTPushTokenInternal__)(&tmp))
+}
+func (r RTPushTokenInternal__) Import() RTPushToken {
+	tmp := ([]byte)(r)
+	return RTPushToken((func(x *[]byte) (ret []byte) {
+		if x == nil {
+			return ret
+		}
+		return *x
+	})(&tmp))
+}
+
+func (r *RTPushToken) Encode(enc rpc.Encoder) error {
+	return enc.Encode(r.Export())
+}
+
+func (r *RTPushToken) Decode(dec rpc.Decoder) error {
+	var tmp RTPushTokenInternal__
+	err := dec.Decode(&tmp)
+	if err != nil {
+		return err
+	}
+	*r = tmp.Import()
+	return nil
+}
+
+func (r RTPushToken) Bytes() []byte {
+	return (r)[:]
+}
+
 type RTMsgType int
 
 const (

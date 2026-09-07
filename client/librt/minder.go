@@ -2262,7 +2262,12 @@ func extractAllSeqIDPairsFromRTThreadPage(p *rem.RTThreadPage) []seqIDPair {
 // The device verify-key id namespaces this user's rows across their
 // devices. It is a hint only — the row is always scoped to the
 // authenticated uid, never to a caller-supplied identity.
-func (d *Minder) SetPushToken(m MetaContext, platform string, token []byte, enabled bool) error {
+func (d *Minder) SetPushToken(
+	m MetaContext,
+	platform proto.RTPushPlatform,
+	token proto.RTPushToken,
+	enabled bool,
+) error {
 	// UserContext.Devkey lazy-loads (a passphrase-backed user may not have
 	// the key materialized yet); the raw PrivKeys getter would return a
 	// spurious KeyNotFoundError in that state.
@@ -2270,7 +2275,7 @@ func (d *Minder) SetPushToken(m MetaContext, platform string, token []byte, enab
 	if err != nil {
 		return err
 	}
-	eid, err := dk.RollingEntityID()
+	eid, err := dk.EntityID()
 	if err != nil {
 		return err
 	}

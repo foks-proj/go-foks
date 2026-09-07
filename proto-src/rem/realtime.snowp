@@ -219,12 +219,12 @@ protocol RealTime
 
     // Register/refresh this device's push token
     // for the AUTHENTICATED user. deviceKey is the caller's device
-    // verify-key id, a namespacing hint only (rows are always scoped to
-    // the authenticated uid); enabled=false disables delivery (opt-out).
+    // verify-key EntityID, a namespacing hint only (rows are always scoped
+    // to the authenticated uid); enabled=false disables delivery (opt-out).
     rtSetPushToken @11 (
-        platform @0 : Text,
-        token @1 : Blob,
-        deviceKey @2 : Blob,
+        platform @0 : lib.RTPushPlatform,
+        token @1 : lib.RTPushToken,
+        deviceKey @2 : lib.EntityID,
         enabled @3 : Bool
     );
 

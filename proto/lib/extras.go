@@ -5286,6 +5286,31 @@ func (v RTAppID) ExportToDB() (string, error) {
 	return "", DataError(fmt.Sprintf("bad RTAppID (%d) for DB", v))
 }
 
+// ExportToDB returns the SQL `push_platform` enum label; RTPushPlatform_None
+// (and any unknown value) has no DB representation and errors.
+func (v RTPushPlatform) ExportToDB() (string, error) {
+	switch v {
+	case RTPushPlatform_Apns:
+		return "apns", nil
+	case RTPushPlatform_Fcm:
+		return "fcm", nil
+	}
+	return "", DataError(fmt.Sprintf("bad RTPushPlatform (%d) for DB", v))
+}
+
+// ImportFromDB is the inverse of RTPushPlatform.ExportToDB.
+func (v *RTPushPlatform) ImportFromDB(s string) error {
+	switch s {
+	case "apns":
+		*v = RTPushPlatform_Apns
+	case "fcm":
+		*v = RTPushPlatform_Fcm
+	default:
+		return DataError(fmt.Sprintf("bad push_platform (%q) from DB", s))
+	}
+	return nil
+}
+
 // ImportFromDB is the inverse of RTAppID.ExportToDB.
 func (v *RTAppID) ImportFromDB(s string) error {
 	switch s {

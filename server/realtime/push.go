@@ -11,23 +11,25 @@ import (
 
 const (
 	maxPushTokenLen = 256 // APNs tokens are 32 bytes; FCM ~140 chars
-	maxDeviceKeyLen = 64
 )
 
 // SetPushToken upserts the caller's push token. The row is keyed by the
-// AUTHENTICATED uid + the caller-supplied device verify-key id (a
+// AUTHENTICATED uid + the caller-supplied device verify-key EntityID (a
 // namespacing hint, never trusted for anything beyond splitting a user's
-// own rows). enabled=false is the opt-out: the relay only targets
-// enabled tokens.
+// own rows -- but it must at least parse as a device key). enabled=false
+// is the opt-out: the relay only targets enabled tokens.
 func SetPushToken(m shared.MetaContext, arg rem.RtSetPushTokenArg) error {
-	if arg.Platform != "apns" && arg.Platform != "fcm" {
-		return core.BadArgsError("platform must be apns or fcm")
+	platform, err := arg.Platform.ExportToDB()
+	if err != nil {
+		return core.BadArgsError("bad platform")
 	}
 	if len(arg.Token) == 0 || len(arg.Token) > maxPushTokenLen {
 		return core.BadArgsError("bad token length")
 	}
-	if len(arg.DeviceKey) == 0 || len(arg.DeviceKey) > maxDeviceKeyLen {
-		return core.BadArgsError("bad deviceKey length")
+	// The EntityID's leading byte and length must say "device verify key";
+	// anything else is a malformed registration, not a namespacing hint.
+	if _, err := arg.DeviceKey.ToDeviceID(); err != nil {
+		return core.BadArgsError("deviceKey must be a device verify-key EntityID")
 	}
 	rtdb, err := m.Db(shared.DbTypeRealTime)
 	if err != nil {
@@ -43,8 +45,8 @@ func SetPushToken(m shared.MetaContext, arg rem.RtSetPushTokenArg) error {
 		 DO UPDATE SET platform=$4, token=$5, enabled=$6, mtime=NOW()`,
 		m.ShortHostID(),
 		m.UID().ExportToDB(),
-		arg.DeviceKey,
-		string(arg.Platform),
+		arg.DeviceKey.ExportToDB(),
+		platform,
 		[]byte(arg.Token),
 		arg.Enabled,
 	)

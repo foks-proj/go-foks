@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/foks-proj/go-foks/client/librt"
+	proto "github.com/foks-proj/go-foks/proto/lib"
 	"github.com/foks-proj/go-foks/server/shared"
 	"github.com/stretchr/testify/require"
 )
@@ -21,7 +22,7 @@ func TestRTSetPushToken(t *testing.T) {
 	minder := librt.NewMinder(mb.G().ActiveUser())
 
 	token := []byte{0xaa, 0xbb, 0xcc, 0xdd}
-	require.NoError(t, minder.SetPushToken(mb, "apns", token, true))
+	require.NoError(t, minder.SetPushToken(mb, proto.RTPushPlatform_Apns, token, true))
 
 	m := tew.MetaContext()
 	rtdb, err := m.Db(shared.DbTypeRealTime)
@@ -39,9 +40,9 @@ func TestRTSetPushToken(t *testing.T) {
 
 	// Refresh with a new token value (same device → same row).
 	token2 := []byte{0x11, 0x22}
-	require.NoError(t, minder.SetPushToken(mb, "apns", token2, true))
+	require.NoError(t, minder.SetPushToken(mb, proto.RTPushPlatform_Apns, token2, true))
 	// Opt out.
-	require.NoError(t, minder.SetPushToken(mb, "apns", token2, false))
+	require.NoError(t, minder.SetPushToken(mb, proto.RTPushPlatform_Apns, token2, false))
 
 	var count int
 	require.NoError(t, rtdb.QueryRow(m.Ctx(),
@@ -57,5 +58,5 @@ func TestRTSetPushToken(t *testing.T) {
 	require.Equal(t, token2, stored)
 
 	// Bad platform is rejected.
-	require.Error(t, minder.SetPushToken(mb, "carrier-pigeon", token, true))
+	require.Error(t, minder.SetPushToken(mb, proto.RTPushPlatform(9), token, true))
 }
