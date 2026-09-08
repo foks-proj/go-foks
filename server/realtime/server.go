@@ -106,6 +106,10 @@ func (c *ClientConn) RtReadThrough(ctx context.Context, arg rem.RTReadThroughArg
 	m := shared.NewMetaContextConn(ctx, c)
 	return MarkReadThrough(m, arg)
 }
+func (c *ClientConn) RtSetPushToken(ctx context.Context, arg rem.RtSetPushTokenArg) error {
+	m := shared.NewMetaContextConn(ctx, c)
+	return SetPushToken(m, arg)
+}
 func (c *ClientConn) RtPollInbox(ctx context.Context, arg rem.RTPollInboxArg) (res proto.RTInboxPollRes, err error) {
 	m := shared.NewMetaContextConn(ctx, c)
 	ret, err := PollInbox(m, arg)
