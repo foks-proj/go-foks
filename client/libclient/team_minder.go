@@ -694,8 +694,8 @@ type TeamUpdate struct {
 }
 
 type ExploreState struct {
-	// mu guards every map below during the exploration, which loads the teams
-	// in a wave concurrently. Callers reading the state after Explore returns
+	// mu guards every map below during the exploration, which loads teams
+	// concurrently. Callers reading the state after Explore returns
 	// (reindex, the warning and update fix-ups) run single-threaded and may
 	// read the maps directly. puks and StartNodes are written once before any
 	// worker starts and only read afterwards.
@@ -709,9 +709,9 @@ type ExploreState struct {
 	StartNodes []proto.FQTeam
 }
 
-// team returns the record for an already-explored team. Its member team is
-// always loaded in an earlier wave than the node that names it, so by the time
-// a worker asks, the answer is present or the graph is malformed.
+// team returns the record for an already-explored team. A node's member team
+// is always fully loaded before the node is discovered, so by the time a
+// worker asks, the answer is present or the graph is malformed.
 func (e *ExploreState) team(fqt proto.FQTeam) *TeamRecord {
 	e.mu.Lock()
 	defer e.mu.Unlock()
@@ -747,8 +747,8 @@ func (e *ExploreState) putUpdate(fqt proto.FQTeam, u *TeamUpdate) {
 // (TestTeamMembershipMinderExplore covers exactly this).
 //
 // Claiming at discovery rather than at dequeue additionally collapses the case
-// of one team discovered from two members in the same wave -- redundant when
-// sequential, concurrent writes of the same map entry now.
+// of one team discovered from two members while it sits in the queue: it is
+// enqueued, and so loaded, exactly once.
 func (e *ExploreState) claimUnvisited(fqt proto.FQTeam) bool {
 	e.mu.Lock()
 	defer e.mu.Unlock()
@@ -959,17 +959,13 @@ func (t *TeamMembershipLoaderAndWrapper) explore(
 	return queue, nil
 }
 
-// exploreConcurrency bounds how many teams are loaded at once within a wave.
+// exploreConcurrency bounds how many team loads are in flight at once.
 //
-// The bound is global to the wave, not per host: a federated graph whose wave
-// spans several hosts shares these slots, so a slow host does hold slots that
-// nodes on other hosts could have used. That is deliberate for now -- the cap
-// exists to bound what the client opens at once, and making it per host would
-// let total concurrency grow with the number of hosts. Note also that fixing
-// the head-of-line blocking needs more than a host-keyed semaphore, because
-// the dispatch loop below acquires before it spawns: a full semaphore stalls
-// the loop itself, so the queue would have to be grouped by host with a
-// goroutine per group, under a second global cap.
+// The bound is global, not per host: a federated graph spanning several hosts
+// shares these slots, so a slow host can hold slots that loads on other hosts
+// could have used. That is deliberate for now -- the cap exists to bound what
+// the client opens at once, and making it per host would let total concurrency
+// grow with the number of hosts.
 //
 // Each load is a handful of sequential round trips that spend nearly all their
 // time waiting on the server -- a device profile put 97% of ListMemberships'
@@ -978,82 +974,84 @@ func (t *TeamMembershipLoaderAndWrapper) explore(
 // burst of connections against one host.
 const exploreConcurrency = 8
 
-// exploreWaves walks the membership graph breadth-first, loading each wave
-// concurrently. A node's member team is what supplies the keys to load it
-// (loadTeamArg), and a node is only ever discovered from its member's
-// membership chain -- so every node in a wave has its member fully loaded by
-// the previous wave, and the wave boundary is the only ordering the walk
-// needs. Within a wave the nodes are independent.
+// explorePool walks the membership graph with a pool of concurrent team loads.
+// A node's member team is what supplies the keys to load it (loadTeamArg), and
+// a node is only ever discovered from its member's membership chain, after the
+// member's TeamRecord is stored -- so any node in the queue is immediately
+// loadable, and discovery-before-load is the only ordering the walk needs.
+//
+// The loop below is the sole owner of the queue: it keeps up to
+// exploreConcurrency loads outstanding, popping the front of the queue to
+// launch each one and pushing a finished load's newly discovered children onto
+// the back. A slow team therefore delays only its own children; every other
+// branch of the graph keeps flowing past it.
 //
 // The walk was strictly sequential, which made its cost the sum of every
-// team's round trips rather than the depth of the graph. Most accounts are one
-// wave: teams whose members are users, not other teams.
-func (t *TeamMinder) exploreWaves(
+// team's round trips rather than the depth of the graph.
+func (t *TeamMinder) explorePool(
 	m MetaContext,
 	state *ExploreState,
 	queue []ExploreNode,
 ) error {
 	// Every seed is explored, even two naming the same team under different
 	// src roles: the sequential walk only ever skipped nodes whose team it had
-	// already dequeued, and direct memberships all arrive in this first wave.
+	// already dequeued, and the seeds all predate any dequeue.
 	for _, n := range queue {
 		state.claimUnvisited(n.Fqt)
 	}
 
-	for len(queue) > 0 {
-		var (
-			wg       sync.WaitGroup
-			mu       sync.Mutex // guards next and firstErr
-			next     []ExploreNode
-			firstErr error
-			sem      = make(chan struct{}, exploreConcurrency)
-		)
+	type exploreResult struct {
+		node  ExploreNode
+		found []ExploreNode
+		err   error
+	}
 
-		for _, node := range queue {
-			// Acquire before spawning, so a wide wave holds one goroutine per
-			// running load rather than one per team in the graph.
-			sem <- struct{}{}
-			wg.Add(1)
+	var (
+		results     = make(chan exploreResult)
+		outstanding = 0
+		firstErr    error
+	)
+
+	for outstanding > 0 || (firstErr == nil && len(queue) > 0) {
+		for firstErr == nil && outstanding < exploreConcurrency && len(queue) > 0 {
+			node := queue[0]
+			queue = queue[1:]
+			outstanding++
 			go func(node ExploreNode) {
-				defer wg.Done()
-				defer func() { <-sem }()
-
 				found, err := t.explore(m, state, node)
-
-				mu.Lock()
-				defer mu.Unlock()
-				if err != nil {
-					if firstErr == nil {
-						firstErr = err
-					}
-					return
-				}
-				// Record the node even with no outgoing edges, so the
-				// topological sort sees every vertex.
-				edges := make([]proto.FQTeam, 0, len(found))
-				for _, f := range found {
-					// The edge graph is the inverse of team membership: an
-					// edge A->B means A is a member of B, so a CLKR rotates A
-					// first and lets that force B's rotation.
-					edges = append(edges, f.Fqt)
-					if state.claimUnvisited(f.Fqt) {
-						next = append(next, f)
-					}
-				}
-				state.setEdges(node.Fqt, edges)
+				results <- exploreResult{node: node, found: found, err: err}
 			}(node)
 		}
 
-		wg.Wait()
-
-		// A failed wave leaves the state partial, same as the sequential walk
-		// abandoning its queue mid-way; the caller discards it either way.
-		if firstErr != nil {
-			return firstErr
+		// At least one load is outstanding here: either we entered the
+		// iteration with one, or the dispatch loop above just launched one.
+		res := <-results
+		outstanding--
+		if res.err != nil {
+			// Stop dispatching and drain the in-flight loads. A failed walk
+			// leaves the state partial, same as the sequential walk abandoning
+			// its queue mid-way; the caller discards it either way.
+			if firstErr == nil {
+				firstErr = res.err
+			}
+			continue
 		}
-		queue = next
+
+		// Record the node even with no outgoing edges, so the topological
+		// sort sees every vertex.
+		edges := make([]proto.FQTeam, 0, len(res.found))
+		for _, f := range res.found {
+			// The edge graph is the inverse of team membership: an edge A->B
+			// means A is a member of B, so a CLKR rotates A first and lets
+			// that force B's rotation.
+			edges = append(edges, f.Fqt)
+			if state.claimUnvisited(f.Fqt) {
+				queue = append(queue, f)
+			}
+		}
+		state.setEdges(res.node.Fqt, edges)
 	}
-	return nil
+	return firstErr
 }
 
 func (t *TeamMinder) Explore(
@@ -1094,7 +1092,7 @@ func (t *TeamMinder) Explore(
 		state.StartNodes = append(state.StartNodes, tm.Fqt)
 	}
 
-	err = t.exploreWaves(m, state, queue)
+	err = t.explorePool(m, state, queue)
 	if err != nil {
 		return nil, err
 	}
