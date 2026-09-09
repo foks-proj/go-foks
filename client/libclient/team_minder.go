@@ -959,7 +959,9 @@ func (t *TeamMembershipLoaderAndWrapper) explore(
 	return queue, nil
 }
 
-// exploreConcurrency bounds how many team loads are in flight at once.
+// defTeamExploreConcurrency is the default bound on how many team loads are in
+// flight at once; tune it via Config.TeamExploreConcurrency (flag, env, or
+// config file).
 //
 // The bound is global, not per host: a federated graph spanning several hosts
 // shares these slots, so a slow host can hold slots that loads on other hosts
@@ -972,7 +974,7 @@ func (t *TeamMembershipLoaderAndWrapper) explore(
 // wall time inside RPCs -- so the useful width here is set by the server and
 // the link, not by local CPU. Kept modest so a large team graph doesn't open a
 // burst of connections against one host.
-const exploreConcurrency = 8
+const defTeamExploreConcurrency = 8
 
 // explorePool walks the membership graph with a pool of concurrent team loads.
 // A node's member team is what supplies the keys to load it (loadTeamArg), and
@@ -981,7 +983,7 @@ const exploreConcurrency = 8
 // loadable, and discovery-before-load is the only ordering the walk needs.
 //
 // The loop below is the sole owner of the queue: it keeps up to
-// exploreConcurrency loads outstanding, popping the front of the queue to
+// TeamExploreConcurrency loads outstanding, popping the front of the queue to
 // launch each one and pushing a finished load's newly discovered children onto
 // the back. A slow team therefore delays only its own children; every other
 // branch of the graph keeps flowing past it.
@@ -1010,10 +1012,11 @@ func (t *TeamMinder) explorePool(
 		results     = make(chan exploreResult)
 		outstanding = 0
 		firstErr    error
+		concurrency = int(m.G().Cfg().TeamExploreConcurrency())
 	)
 
 	for outstanding > 0 || (firstErr == nil && len(queue) > 0) {
-		for firstErr == nil && outstanding < exploreConcurrency && len(queue) > 0 {
+		for firstErr == nil && outstanding < concurrency && len(queue) > 0 {
 			node := queue[0]
 			queue = queue[1:]
 			outstanding++
