@@ -124,22 +124,99 @@ func (c *AgentConn) ClientRTInboxView(
 	error,
 ) {
 	var zed lcl.RTInboxView
-	m := librt.NewMetaContext(c.MetaContext(ctx))
-	minder, err := librt.InitUserReq(m)
+	m, minder, err := c.outboxInit(ctx)
 	if err != nil {
 		return zed, err
 	}
-	if !arg.LocalOnly {
-		_, err = minder.SyncInbox(m, arg.AppID)
-		if err != nil {
-			return zed, err
-		}
-	}
-	view, err := minder.LocalInbox(m, arg.AppID)
+	view, err := minder.InboxView(m, arg.AppID, arg.LocalOnly)
 	if err != nil {
 		return zed, err
 	}
 	return *view, nil
+}
+
+func (c *AgentConn) outboxInit(ctx context.Context) (librt.MetaContext, *librt.Minder, error) {
+	m := librt.NewMetaContext(c.MetaContext(ctx))
+	minder, err := librt.InitUserReq(m)
+	if err != nil {
+		return m, nil, err
+	}
+	return m, minder, nil
+}
+
+func (c *AgentConn) ClientRTOutboxList(
+	ctx context.Context,
+) (
+	lcl.RTOutboxView,
+	error,
+) {
+	var zed lcl.RTOutboxView
+	m, minder, err := c.outboxInit(ctx)
+	if err != nil {
+		return zed, err
+	}
+	rows, err := minder.ListOutbox(m)
+	if err != nil {
+		return zed, err
+	}
+	zed.Rows = rows
+	return zed, nil
+}
+
+func drainResToView(res *librt.DrainResult) lcl.RTOutboxDrainRes {
+	return lcl.RTOutboxDrainRes{
+		NumAcked:  uint64(len(res.Acked)),
+		NumFailed: uint64(len(res.Failed)),
+		Offline:   res.TransportErr != nil,
+	}
+}
+
+func (c *AgentConn) ClientRTOutboxDrain(
+	ctx context.Context,
+) (
+	lcl.RTOutboxDrainRes,
+	error,
+) {
+	var zed lcl.RTOutboxDrainRes
+	m, minder, err := c.outboxInit(ctx)
+	if err != nil {
+		return zed, err
+	}
+	res, err := minder.Drain(m)
+	if err != nil {
+		return zed, err
+	}
+	return drainResToView(res), nil
+}
+
+func (c *AgentConn) ClientRTOutboxRetry(
+	ctx context.Context,
+	msgID proto.RTMsgID,
+) (
+	lcl.RTOutboxDrainRes,
+	error,
+) {
+	var zed lcl.RTOutboxDrainRes
+	m, minder, err := c.outboxInit(ctx)
+	if err != nil {
+		return zed, err
+	}
+	res, err := minder.RetryOutbox(m, msgID)
+	if err != nil {
+		return zed, err
+	}
+	return drainResToView(res), nil
+}
+
+func (c *AgentConn) ClientRTOutboxDiscard(
+	ctx context.Context,
+	msgID proto.RTMsgID,
+) error {
+	m, minder, err := c.outboxInit(ctx)
+	if err != nil {
+		return err
+	}
+	return minder.DiscardOutbox(m, msgID)
 }
 
 var _ lcl.RealTimeInterface = (*AgentConn)(nil)

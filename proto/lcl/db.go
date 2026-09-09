@@ -80,6 +80,12 @@ const (
 	DataType_RTChannelSet         DataType = 99
 	DataType_RTInboxSyncState     DataType = 100
 	DataType_RTInboxChannel       DataType = 101
+	DataType_RTOutboxEntry        DataType = 102
+	DataType_RTOutboxIndex        DataType = 103
+	DataType_RTReadThroughPending DataType = 104
+	DataType_HostPublicZone       DataType = 105
+	DataType_UserCertChain        DataType = 106
+	DataType_TeamNameLookup       DataType = 107
 )
 
 var DataTypeMap = map[string]DataType{
@@ -114,6 +120,12 @@ var DataTypeMap = map[string]DataType{
 	"RTChannelSet":         99,
 	"RTInboxSyncState":     100,
 	"RTInboxChannel":       101,
+	"RTOutboxEntry":        102,
+	"RTOutboxIndex":        103,
+	"RTReadThroughPending": 104,
+	"HostPublicZone":       105,
+	"UserCertChain":        106,
+	"TeamNameLookup":       107,
 }
 var DataTypeRevMap = map[DataType]string{
 	0:   "None",
@@ -147,6 +159,12 @@ var DataTypeRevMap = map[DataType]string{
 	99:  "RTChannelSet",
 	100: "RTInboxSyncState",
 	101: "RTInboxChannel",
+	102: "RTOutboxEntry",
+	103: "RTOutboxIndex",
+	104: "RTReadThroughPending",
+	105: "HostPublicZone",
+	106: "UserCertChain",
+	107: "TeamNameLookup",
 }
 
 type DataTypeInternal__ DataType
@@ -157,6 +175,61 @@ func (d DataTypeInternal__) Import() DataType {
 func (d DataType) Export() *DataTypeInternal__ {
 	return ((*DataTypeInternal__)(&d))
 }
+
+type UserCertChain struct {
+	Certs [][]byte
+}
+type UserCertChainInternal__ struct {
+	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
+	Certs   *[]([]byte)
+}
+
+func (u UserCertChainInternal__) Import() UserCertChain {
+	return UserCertChain{
+		Certs: (func(x *[]([]byte)) (ret [][]byte) {
+			if x == nil || len(*x) == 0 {
+				return nil
+			}
+			ret = make([][]byte, len(*x))
+			for k, v := range *x {
+				ret[k] = (func(x *[]byte) (ret []byte) {
+					if x == nil {
+						return ret
+					}
+					return *x
+				})(&v)
+			}
+			return ret
+		})(u.Certs),
+	}
+}
+func (u UserCertChain) Export() *UserCertChainInternal__ {
+	return &UserCertChainInternal__{
+		Certs: (func(x [][]byte) *[]([]byte) {
+			if len(x) == 0 {
+				return nil
+			}
+			ret := make([]([]byte), len(x))
+			copy(ret, x)
+			return &ret
+		})(u.Certs),
+	}
+}
+func (u *UserCertChain) Encode(enc rpc.Encoder) error {
+	return enc.Encode(u.Export())
+}
+
+func (u *UserCertChain) Decode(dec rpc.Decoder) error {
+	var tmp UserCertChainInternal__
+	err := dec.Decode(&tmp)
+	if err != nil {
+		return err
+	}
+	*u = tmp.Import()
+	return nil
+}
+
+func (u *UserCertChain) Bytes() []byte { return nil }
 
 type ScopeLabel []byte
 type ScopeLabelInternal__ []byte
