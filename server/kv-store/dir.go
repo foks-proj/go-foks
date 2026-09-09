@@ -4,6 +4,8 @@
 package kvStore
 
 import (
+	"bytes"
+
 	"github.com/foks-proj/go-foks/lib/core"
 	proto "github.com/foks-proj/go-foks/proto/lib"
 	"github.com/foks-proj/go-foks/server/shared"
@@ -76,44 +78,49 @@ func loadDir(
 	return &ret, nil
 }
 
+// putDir creates the directory row and its refcount row. The returned bool
+// reports an idempotent replay: the directory already existed with exactly
+// these contents, and nothing was written.
 func putDir(
 	m shared.MetaContext,
 	tx pgx.Tx,
 	pid proto.PartyID,
 	role proto.Role,
 	dir *proto.KVDir,
-) error {
+) (bool, error) {
 	err := assertAtOrAbove(role, dir.Box.Rg.Role, proto.KVOp_Write, proto.KVNodeType_Dir)
 	if err != nil {
-		return err
+		return false, err
 	}
 	err = assertAtOrAbove(role, dir.WriteRole, proto.KVOp_Write, proto.KVNodeType_Dir)
 	if err != nil {
-		return err
+		return false, err
 	}
 	rtyp, rlev, err := dir.Box.Rg.Role.ExportToDB()
 	if err != nil {
-		return err
+		return false, err
 	}
 	wtyp, wlev, err := dir.WriteRole.ExportToDB()
 	if err != nil {
-		return err
+		return false, err
 	}
 	box, err := core.EncodeToBytes(&dir.Box.Ctext)
 	if err != nil {
-		return err
+		return false, err
 	}
 	if dir.Version != proto.KVVersion(1) {
-		return core.BadArgsError("dir version must be 1 for mkdir")
+		return false, core.BadArgsError("dir version must be 1 for mkdir")
 	}
 	spid := pid.Shorten()
+
 	tag, err := tx.Exec(m.Ctx(),
 		`INSERT INTO dir(
 			short_host_id, short_party_id, dir_id, version, ptk_gen,
 			read_role_type, read_role_viz_level,
 			write_role_type, write_role_viz_level,
 			seed_box, status, ctime, mtime
-		) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,NOW(),NOW())`,
+		) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,NOW(),NOW())
+		 ON CONFLICT DO NOTHING`,
 		int(m.HostID().Short),
 		spid.ExportToDB(),
 		dir.Id.ExportToDB(),
@@ -124,14 +131,54 @@ func putDir(
 		box,
 		string(proto.KVDirStatusStringActive),
 	)
-	if shared.IsDuplicateKeyError(err, "dir_pkey") {
-		return core.DuplicateError("dir")
-	}
 	if err != nil {
-		return err
+		return false, err
+	}
+
+	if tag.RowsAffected() == 0 {
+		// The directory ID is already taken. Directory IDs are chosen by the
+		// client and the seed is sealed before the call, so a retry after an
+		// ambiguous failure carries exactly the same row; succeeding is what
+		// lets the client go on and link the directory. Inserting first and
+		// comparing here, rather than checking beforehand, keeps the two
+		// steps atomic: a pre-check would leave a window where the original
+		// commits in between and the retry fails on the primary key.
+		//
+		// Every persisted field is compared, not just the seed: a reused ID
+		// carrying the same seed under a different generation or role is not
+		// the same directory, and silently keeping the stored metadata would
+		// hide the difference. The stored row must also still be active: a
+		// replay that matches a dead directory did not create anything the
+		// client can go on to use.
+		var seed []byte
+		var gen, rt, rl, wt, wl int
+		var status string
+		err = tx.QueryRow(m.Ctx(),
+			`SELECT seed_box, ptk_gen,
+			        read_role_type, read_role_viz_level,
+			        write_role_type, write_role_viz_level, status
+			 FROM dir
+			 WHERE short_host_id=$1 AND short_party_id=$2 AND dir_id=$3 AND version=$4`,
+			int(m.HostID().Short),
+			spid.ExportToDB(),
+			dir.Id.ExportToDB(),
+			int(dir.Version),
+		).Scan(&seed, &gen, &rt, &rl, &wt, &wl, &status)
+		if err != nil {
+			return false, err
+		}
+		if status == string(proto.KVDirStatusStringActive) &&
+			bytes.Equal(seed, box) &&
+			gen == int(dir.Box.Rg.Gen) &&
+			rt == rtyp && rl == rlev &&
+			wt == wtyp && wl == wlev {
+			// An identical replay; the refcount row is already there too.
+			return true, nil
+		}
+		return false, core.KVRaceError("dir id reused with different contents")
 	}
 	if tag.RowsAffected() != 1 {
-		return core.InsertError("dir")
+		return false, core.InsertError("dir")
 	}
 	tag, err = tx.Exec(m.Ctx(),
 		`INSERT INTO dir_refcount(
@@ -142,12 +189,12 @@ func putDir(
 		dir.Id.ExportToDB(),
 	)
 	if err != nil {
-		return err
+		return false, err
 	}
 	if tag.RowsAffected() != 1 {
-		return core.InsertError("dir_refcount")
+		return false, core.InsertError("dir_refcount")
 	}
-	return nil
+	return false, nil
 }
 
 func dirRef(

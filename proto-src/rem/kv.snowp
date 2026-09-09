@@ -70,6 +70,13 @@ struct KVListRes {
 
 typedef LockID = Blob(16);
 
+struct KVMkdirRes {
+    // True when this creation was an idempotent replay: a directory with the
+    // same ID and the same contents already existed, and nothing was written.
+    // Old servers omit the result, which decodes as false.
+    wasReplay @0 : Bool;
+}
+
 struct KVLock {
     idp @0 : lib.KVDirentIDPair;
     lockID @1 : LockID;
@@ -83,7 +90,7 @@ protocol KVStore
     kvMkdir @0 (
         hdr @0 : KVReqHeader,
         dir @1 : lib.KVDir
-    );
+    ) -> KVMkdirRes;
 
     kvPut @1 (
         hdr @0 : KVReqHeader,

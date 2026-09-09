@@ -219,14 +219,24 @@ func assertAdmin(role proto.Role, what string) error {
 	return nil
 }
 
-func (c *ClientConn) KvMkdir(ctx context.Context, arg rem.KvMkdirArg) error {
-	return c.preamble(ctx, arg.Hdr,
+func (c *ClientConn) KvMkdir(ctx context.Context, arg rem.KvMkdirArg) (rem.KVMkdirRes, error) {
+	var res rem.KVMkdirRes
+	err := c.preamble(ctx, arg.Hdr,
 		func(m shared.MetaContext, db *pgxpool.Conn, pid proto.PartyID, role proto.Role) error {
 			return shared.RetryTx(m, db, "kvMkdir",
 				func(m shared.MetaContext, tx pgx.Tx) error {
-					return putDir(m, tx, pid, role, &arg.Dir)
+					wasReplay, err := putDir(m, tx, pid, role, &arg.Dir)
+					if err != nil {
+						return err
+					}
+					res.WasReplay = wasReplay
+					return nil
 				})
 		})
+	if err != nil {
+		return rem.KVMkdirRes{}, err
+	}
+	return res, nil
 }
 
 func (c *ClientConn) KvPut(ctx context.Context, arg rem.KvPutArg) error {
