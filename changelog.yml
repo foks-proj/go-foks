@@ -7,6 +7,8 @@ changelog:
     stable: false
     date: TBD
     changes:
+      - desc: rt; durable client send outbox, degraded reads and offline read-marks, so sends queue and drain on reconnect and cached threads still render without the network
+        closes: ["#359"]
       - desc: speed up team roster listing; serve member names from the username cache instead of full per-member chain loads
         closes: ["#332"]
       - desc: internal; replace team member-load flag pair with one ordered MemberLoadLevel
