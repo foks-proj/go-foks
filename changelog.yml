@@ -37,6 +37,8 @@ changelog:
         closes: ["#350"]
       - desc: treat timeouts, DNS, TLS and mid-stream failures like connection errors when deciding whether to tolerate an unreachable server
         closes: ["#347"]
+      - desc: kv-store; make directory creation idempotent on replay, and report the replay in the kvMkdir result
+        closes: ["#353"]
   - version: 0.1.9
     urgency: medium
     stable: true

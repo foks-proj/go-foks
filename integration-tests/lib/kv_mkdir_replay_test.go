@@ -48,14 +48,19 @@ func TestKVMkdirReplay(t *testing.T) {
 		}
 	}
 
-	// First creation lands.
-	require.NoError(t, cli.KvMkdir(m.Ctx(), mk("sealed seed")))
+	// First creation lands, and is not a replay.
+	res, err := cli.KvMkdir(m.Ctx(), mk("sealed seed"))
+	require.NoError(t, err)
+	require.False(t, res.WasReplay)
 
-	// The same creation again is the retry case: a no-op, not an error.
-	require.NoError(t, cli.KvMkdir(m.Ctx(), mk("sealed seed")))
+	// The same creation again is the retry case: a no-op that reports itself
+	// as a replay, not an error.
+	res, err = cli.KvMkdir(m.Ctx(), mk("sealed seed"))
+	require.NoError(t, err)
+	require.True(t, res.WasReplay)
 
 	// The same ID carrying a different seed box is refused.
-	err = cli.KvMkdir(m.Ctx(), mk("a different sealed seed"))
+	_, err = cli.KvMkdir(m.Ctx(), mk("a different sealed seed"))
 	require.Error(t, err)
 	var race core.KVRaceError
 	require.ErrorAs(t, err, &race)

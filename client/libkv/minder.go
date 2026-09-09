@@ -694,7 +694,9 @@ func (k *Minder) makeEmptyDir(
 	if err != nil {
 		return nil, nil, err
 	}
-	err = cli.KvMkdir(m.Ctx(), rem.KvMkdirArg{
+	// The replay flag in the result is uninteresting here: a fresh directory
+	// ID is minted per call, so this client never replays a mkdir.
+	_, err = cli.KvMkdir(m.Ctx(), rem.KvMkdirArg{
 		Hdr: *hdr,
 		Dir: kvd,
 	})

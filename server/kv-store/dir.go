@@ -78,35 +78,38 @@ func loadDir(
 	return &ret, nil
 }
 
+// putDir creates the directory row and its refcount row. The returned bool
+// reports an idempotent replay: the directory already existed with exactly
+// these contents, and nothing was written.
 func putDir(
 	m shared.MetaContext,
 	tx pgx.Tx,
 	pid proto.PartyID,
 	role proto.Role,
 	dir *proto.KVDir,
-) error {
+) (bool, error) {
 	err := assertAtOrAbove(role, dir.Box.Rg.Role, proto.KVOp_Write, proto.KVNodeType_Dir)
 	if err != nil {
-		return err
+		return false, err
 	}
 	err = assertAtOrAbove(role, dir.WriteRole, proto.KVOp_Write, proto.KVNodeType_Dir)
 	if err != nil {
-		return err
+		return false, err
 	}
 	rtyp, rlev, err := dir.Box.Rg.Role.ExportToDB()
 	if err != nil {
-		return err
+		return false, err
 	}
 	wtyp, wlev, err := dir.WriteRole.ExportToDB()
 	if err != nil {
-		return err
+		return false, err
 	}
 	box, err := core.EncodeToBytes(&dir.Box.Ctext)
 	if err != nil {
-		return err
+		return false, err
 	}
 	if dir.Version != proto.KVVersion(1) {
-		return core.BadArgsError("dir version must be 1 for mkdir")
+		return false, core.BadArgsError("dir version must be 1 for mkdir")
 	}
 	spid := pid.Shorten()
 
@@ -129,7 +132,7 @@ func putDir(
 		string(proto.KVDirStatusStringActive),
 	)
 	if err != nil {
-		return err
+		return false, err
 	}
 
 	if tag.RowsAffected() == 0 {
@@ -162,7 +165,7 @@ func putDir(
 			int(dir.Version),
 		).Scan(&seed, &gen, &rt, &rl, &wt, &wl, &status)
 		if err != nil {
-			return err
+			return false, err
 		}
 		if status == string(proto.KVDirStatusStringActive) &&
 			bytes.Equal(seed, box) &&
@@ -170,12 +173,12 @@ func putDir(
 			rt == rtyp && rl == rlev &&
 			wt == wtyp && wl == wlev {
 			// An identical replay; the refcount row is already there too.
-			return nil
+			return true, nil
 		}
-		return core.KVRaceError("dir id reused with different contents")
+		return false, core.KVRaceError("dir id reused with different contents")
 	}
 	if tag.RowsAffected() != 1 {
-		return core.InsertError("dir")
+		return false, core.InsertError("dir")
 	}
 	tag, err = tx.Exec(m.Ctx(),
 		`INSERT INTO dir_refcount(
@@ -186,12 +189,12 @@ func putDir(
 		dir.Id.ExportToDB(),
 	)
 	if err != nil {
-		return err
+		return false, err
 	}
 	if tag.RowsAffected() != 1 {
-		return core.InsertError("dir_refcount")
+		return false, core.InsertError("dir_refcount")
 	}
-	return nil
+	return false, nil
 }
 
 func dirRef(
