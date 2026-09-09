@@ -146,13 +146,20 @@ func putSmallFileOrSymlink(
 		// client carry on. Anything else reusing the ID is a bug or a stray
 		// collision in a 16-byte random space, and must not silently keep
 		// one copy or the other.
+		//
+		// FOR UPDATE anchors the replay decision until this transaction
+		// commits: the comparison runs in a later statement (and snapshot)
+		// than the conflicting insert, so without the lock a future GC could
+		// delete the row in between, leaving the reported success describing
+		// a row that no longer exists.
 		var box []byte
 		var gen, rt, vl int
 		err = tx.QueryRow(
 			m.Ctx(),
 			`SELECT box, ptk_gen, read_role_type, read_role_viz_level
 			 FROM small_file_or_symlink
-			 WHERE short_host_id=$1 AND short_party_id=$2 AND node_id=$3`,
+			 WHERE short_host_id=$1 AND short_party_id=$2 AND node_id=$3
+			 FOR UPDATE`,
 			int(m.HostID().Short),
 			pid.Shorten().ExportToDB(),
 			arg.Id.ExportToDB(),
