@@ -5,6 +5,7 @@ package libclient
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -300,6 +301,14 @@ func (c *CLKROneTeam) loadTeam(m MetaContext) error {
 	c.member = tr.member
 	c.actorRole = actorRole
 	c.roster = ldr.rosterPost
+	if c.roster == nil {
+		// The record's loader never completed an online run (its wrapper came
+		// from the offline snapshot fallback). A rotation planned against a
+		// nil roster would box keys for nobody; require a fresh server load.
+		return core.NewConnectError(
+			"team rotation needs a fresh server load; team state came from an offline snapshot",
+			errors.New("server unreachable"))
+	}
 	c.tw = tw
 	c.ldr = ldr
 	return nil

@@ -72,6 +72,10 @@ struct UserSigchainState {
     merkleLeaves @8 : List(lib.MerkleLeaf); // Verified leaf in tree for each link
     hepks @9 : lib.HEPKSet;
     stalePUKs @10 : List(lib.Role); // PUKs that need to be rotated but weren't due to a self-revoke
+    // When this state was last verified against the server. Stamped only by
+    // the code path that does the verification, and never by a load from
+    // cache. Zero on rows written before this field existed.
+    verifiedAt @11 : lib.Time;
 }
 
 struct UserMetadataAndSigchainState {
@@ -139,5 +143,9 @@ struct TeamChainState {
     tir @12 : lib.RationalRange; // TeamIndexRange
     historicalSenders @13 : List(lib.SenderPair); // Senders we have used for unboxing in the past
     memberLoadFloor @14 : Option(lib.Role); // Defaults to m/0 if not set.
+    // When this state was last verified against the server. Stamped by the
+    // write that verified the chain, not the read. Zero on rows written
+    // before this field existed.
+    verifiedAt @15 : lib.Time;
 }
 

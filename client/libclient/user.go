@@ -660,19 +660,18 @@ func (c *UserContext) clientCertLocked(m MetaContext) (*tls.Certificate, error) 
 		return nil, err
 	}
 
-	if c.homeServer == nil || c.homeServer.PublicZone() == nil {
+	if c.homeServer == nil {
 		return nil, core.NoDefaultHostError{}
 	}
-
-	cli, err := c.regClientLocked(m)
-	if err != nil {
-		return nil, err
+	if c.homeServer.PublicZone() == nil {
+		// A home server is configured but discovery never completed -- a
+		// connectivity condition, not a configuration one; report it as such
+		// so offline-tolerant callers can classify it.
+		return nil, core.NewConnectError("host public zone unavailable",
+			core.NoDefaultHostError{})
 	}
 
-	certChain, err := cli.GetClientCertChain(m.Ctx(), rem.GetClientCertChainArg{
-		Uid: c.Info.Fqu.Uid,
-		Key: eid,
-	})
+	certChain, fromCache, err := c.fetchClientCertChain(m, eid)
 	if err != nil {
 		return nil, err
 	}
@@ -682,8 +681,73 @@ func (c *UserContext) clientCertLocked(m MetaContext) (*tls.Certificate, error) 
 		Certificate: certChain,
 	}
 
-	c.PrivKeys.SetCert(cert)
+	// Memoize only a freshly issued chain. A cache-served chain may have
+	// expired or rotated during the outage; pinning it in memory would keep
+	// presenting it after connectivity returns (every handshake failing,
+	// reading as "still offline") with no path to the refetch that heals it.
+	// Rebuilding from the cached row per use while offline is cheap.
+	if !fromCache {
+		c.PrivKeys.SetCert(cert)
+	}
 	return cert, nil
+}
+
+// fetchClientCertChain gets the cert chain the reg server issued for the
+// given key, caching it in the hard DB. Offline, the cached chain (public
+// certificate material only; the private key stays in the local keyring) is
+// served instead, so a cold start can still present mTLS credentials -- an
+// expired chain simply fails the TLS handshake, which reads as offline.
+func (c *UserContext) fetchClientCertChain(
+	m MetaContext,
+	eid proto.EntityID,
+) (
+	chain [][]byte,
+	fromCache bool,
+	err error,
+) {
+	// Callers hold c's lock (clientCertLocked); touch fields directly rather
+	// than via locking accessors.
+	uid := c.Info.Fqu.Uid
+	loadCached := func() [][]byte {
+		var cached lcl.UserCertChain
+		_, derr := m.DbGet(&cached, DbTypeHard, &uid,
+			lcl.DataType_UserCertChain, eid)
+		if derr != nil || len(cached.Certs) == 0 {
+			return nil
+		}
+		return cached.Certs
+	}
+
+	cli, err := c.regClientLocked(m)
+	if err == nil {
+		var certChain [][]byte
+		certChain, err = cli.GetClientCertChain(m.Ctx(), rem.GetClientCertChainArg{
+			Uid: c.Info.Fqu.Uid,
+			Key: eid,
+		})
+		if err == nil {
+			store := lcl.UserCertChain{Certs: certChain}
+			serr := m.DbPut(DbTypeHard, PutArg{
+				Scope: &uid,
+				Typ:   lcl.DataType_UserCertChain,
+				Key:   eid,
+				Val:   &store,
+			})
+			if serr != nil {
+				m.Warnw("fetchClientCertChain", "stage", "store", "err", serr)
+			}
+			return certChain, false, nil
+		}
+	}
+	if !core.IsTransportError(err) {
+		return nil, false, err
+	}
+	if cached := loadCached(); cached != nil {
+		m.Warnw("fetchClientCertChain", "err", err,
+			"note", "server unreachable; using cached cert chain")
+		return cached, true, nil
+	}
+	return nil, false, err
 }
 
 func (c *UserContext) UserGCli(m MetaContext) (*core.RpcClient, error) {
@@ -834,6 +898,23 @@ func (u *UserContext) GetSharedKeyManager(m MetaContext) (SharedKeyManager, erro
 func (u *UserContext) PopulateWithDevkey(m MetaContext) error {
 	user, err := LoadMe(m, u)
 
+	if err != nil && core.IsTransportError(err) {
+		// Cold start with no network: fall back to the last verified
+		// sigchain snapshot, so a device that has completed an online load
+		// before can unlock and work offline (cached reads, durably queued
+		// writes). A device with no snapshot keeps the original error --
+		// there is nothing verified to serve. See LoadMeFromCache for the
+		// trust reasoning and docs/rt_offline.md ("cold-start bootstrap").
+		cached, cerr := LoadMeFromCache(m, u)
+		if cerr != nil {
+			m.Warnw("PopulateWithDevkey", "stage", "cacheFallback", "err", cerr)
+			return err
+		}
+		m.Warnw("PopulateWithDevkey", "stage", "offline",
+			"note", "using cached sigchain snapshot; server unreachable", "err", err)
+		user = cached
+		err = nil
+	}
 	if err != nil {
 		return err
 	}

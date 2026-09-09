@@ -312,6 +312,7 @@ type UserSigchainState struct {
 	MerkleLeaves []lib.MerkleLeaf
 	Hepks        lib.HEPKSet
 	StalePUKs    []lib.Role
+	VerifiedAt   lib.Time
 }
 type UserSigchainStateInternal__ struct {
 	_struct      struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
@@ -326,6 +327,7 @@ type UserSigchainStateInternal__ struct {
 	MerkleLeaves *[](*lib.MerkleLeafInternal__)
 	Hepks        *lib.HEPKSetInternal__
 	StalePUKs    *[](*lib.RoleInternal__)
+	VerifiedAt   *lib.TimeInternal__
 }
 
 func (u UserSigchainStateInternal__) Import() UserSigchainState {
@@ -450,6 +452,12 @@ func (u UserSigchainStateInternal__) Import() UserSigchainState {
 			}
 			return ret
 		})(u.StalePUKs),
+		VerifiedAt: (func(x *lib.TimeInternal__) (ret lib.Time) {
+			if x == nil {
+				return ret
+			}
+			return x.Import()
+		})(u.VerifiedAt),
 	}
 }
 func (u UserSigchainState) Export() *UserSigchainStateInternal__ {
@@ -509,6 +517,7 @@ func (u UserSigchainState) Export() *UserSigchainStateInternal__ {
 			}
 			return &ret
 		})(u.StalePUKs),
+		VerifiedAt: u.VerifiedAt.Export(),
 	}
 }
 func (u *UserSigchainState) Encode(enc rpc.Encoder) error {
@@ -1135,6 +1144,7 @@ type TeamChainState struct {
 	Tir               lib.RationalRange
 	HistoricalSenders []lib.SenderPair
 	MemberLoadFloor   *lib.Role
+	VerifiedAt        lib.Time
 }
 type TeamChainStateInternal__ struct {
 	_struct           struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
@@ -1153,6 +1163,7 @@ type TeamChainStateInternal__ struct {
 	Tir               *lib.RationalRangeInternal__
 	HistoricalSenders *[](*lib.SenderPairInternal__)
 	MemberLoadFloor   *lib.RoleInternal__
+	VerifiedAt        *lib.TimeInternal__
 }
 
 func (t TeamChainStateInternal__) Import() TeamChainState {
@@ -1331,6 +1342,12 @@ func (t TeamChainStateInternal__) Import() TeamChainState {
 			})(x)
 			return &tmp
 		})(t.MemberLoadFloor),
+		VerifiedAt: (func(x *lib.TimeInternal__) (ret lib.Time) {
+			if x == nil {
+				return ret
+			}
+			return x.Import()
+		})(t.VerifiedAt),
 	}
 }
 func (t TeamChainState) Export() *TeamChainStateInternal__ {
@@ -1414,6 +1431,7 @@ func (t TeamChainState) Export() *TeamChainStateInternal__ {
 			}
 			return (*x).Export()
 		})(t.MemberLoadFloor),
+		VerifiedAt: t.VerifiedAt.Export(),
 	}
 }
 func (t *TeamChainState) Encode(enc rpc.Encoder) error {
