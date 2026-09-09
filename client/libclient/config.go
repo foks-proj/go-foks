@@ -1028,11 +1028,7 @@ func (c *Config) makeConfigDir(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	err = os.MkdirAll(configDir, MkdirAllMode)
-	if err != nil {
-		return err
-	}
-	return nil
+	return mkdirPrivate(configDir)
 }
 
 func (c *Config) makeLogDir(ctx context.Context) error {
@@ -1040,9 +1036,29 @@ func (c *Config) makeLogDir(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	err = os.MkdirAll(logDir, MkdirAllMode)
+	return mkdirPrivate(logDir)
+}
+
+// mkdirPrivate creates a FOKS-owned state directory and asserts MkdirAllMode on
+// it. The chmod matters for two cases MkdirAll alone doesn't cover: a dir an
+// older release created as 0755, and a dir created by a caller that went
+// through the generic core.Path.MakeParentDirs. These paths are always
+// FOKS-specific leaves (~/Library/Application Support/foks,
+// $XDG_CONFIG_HOME/foks, ...), never a shared parent like /tmp.
+func mkdirPrivate(dir string) error {
+	err := os.MkdirAll(dir, MkdirAllMode)
 	if err != nil {
 		return err
+	}
+	fi, err := os.Stat(dir)
+	if err != nil {
+		return err
+	}
+	if fi.Mode().Perm() != MkdirAllMode.Perm() {
+		err = os.Chmod(dir, MkdirAllMode)
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }

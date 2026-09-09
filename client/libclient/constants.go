@@ -20,7 +20,10 @@ const AppBundleID = "com.ne43.foks"
 
 const DefProbeAddr = proto.TCPAddr("foks.app")
 
-var MkdirAllMode = fs.FileMode(0o750)
+// MkdirAllMode is the mode for directories holding FOKS client state -- the
+// config dir, the log dir, and the dir holding the sqlite DBs. Nothing here is
+// meant to be read by another user or by the owner's group.
+var MkdirAllMode = fs.FileMode(0o700)
 
 func MacOSServiceName(isTest bool) string {
 	return KeychainServiceName(isTest)
