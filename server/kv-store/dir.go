@@ -128,9 +128,6 @@ func putDir(
 		box,
 		string(proto.KVDirStatusStringActive),
 	)
-	if shared.IsDuplicateKeyError(err, "dir_pkey") {
-		return core.DuplicateError("dir")
-	}
 	if err != nil {
 		return err
 	}
@@ -147,24 +144,28 @@ func putDir(
 		// Every persisted field is compared, not just the seed: a reused ID
 		// carrying the same seed under a different generation or role is not
 		// the same directory, and silently keeping the stored metadata would
-		// hide the difference.
+		// hide the difference. The stored row must also still be active: a
+		// replay that matches a dead directory did not create anything the
+		// client can go on to use.
 		var seed []byte
 		var gen, rt, rl, wt, wl int
+		var status string
 		err = tx.QueryRow(m.Ctx(),
 			`SELECT seed_box, ptk_gen,
 			        read_role_type, read_role_viz_level,
-			        write_role_type, write_role_viz_level
+			        write_role_type, write_role_viz_level, status
 			 FROM dir
 			 WHERE short_host_id=$1 AND short_party_id=$2 AND dir_id=$3 AND version=$4`,
 			int(m.HostID().Short),
 			spid.ExportToDB(),
 			dir.Id.ExportToDB(),
 			int(dir.Version),
-		).Scan(&seed, &gen, &rt, &rl, &wt, &wl)
+		).Scan(&seed, &gen, &rt, &rl, &wt, &wl, &status)
 		if err != nil {
 			return err
 		}
-		if bytes.Equal(seed, box) &&
+		if status == string(proto.KVDirStatusStringActive) &&
+			bytes.Equal(seed, box) &&
 			gen == int(dir.Box.Rg.Gen) &&
 			rt == rtyp && rl == rlev &&
 			wt == wtyp && wl == wlev {
