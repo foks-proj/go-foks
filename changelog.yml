@@ -31,6 +31,8 @@ changelog:
         closes: ["#341"]
       - desc: rt; write content-free push_outbox rows in the send transaction, and add rtSetPushToken so devices can register for wakes
         closes: ["#342"]
+      - desc: load the team graph concurrently during team explore (up to 8 teams at once, tunable), instead of one team at a time
+        closes: ["#346"]
   - version: 0.1.9
     urgency: medium
     stable: true
