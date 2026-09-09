@@ -51,20 +51,24 @@ func TestKVPutSmallFileReplay(t *testing.T) {
 		}
 	}
 
-	// First write lands.
-	require.NoError(t, cli.KvPutSmallFileOrSymlink(m.Ctx(), mk("ciphertext")))
+	// First write lands, and is not a replay.
+	res, err := cli.KvPutSmallFileOrSymlink(m.Ctx(), mk("ciphertext"))
+	require.NoError(t, err)
+	require.False(t, res.WasReplay)
 
-	// The same write again is the retry case: a no-op, not an error, and not
-	// a second charge against usage.
+	// The same write again is the retry case: a no-op that reports itself as
+	// a replay, not an error, and not a second charge against usage.
 	before, err := cli.KvUsage(m.Ctx(), rem.KVAuth{})
 	require.NoError(t, err)
-	require.NoError(t, cli.KvPutSmallFileOrSymlink(m.Ctx(), mk("ciphertext")))
+	res, err = cli.KvPutSmallFileOrSymlink(m.Ctx(), mk("ciphertext"))
+	require.NoError(t, err)
+	require.True(t, res.WasReplay)
 	after, err := cli.KvUsage(m.Ctx(), rem.KVAuth{})
 	require.NoError(t, err)
 	require.Equal(t, before.Small, after.Small, "a replay must not be charged twice")
 
 	// The same ID carrying different bytes is refused.
-	err = cli.KvPutSmallFileOrSymlink(m.Ctx(), mk("different ciphertext"))
+	_, err = cli.KvPutSmallFileOrSymlink(m.Ctx(), mk("different ciphertext"))
 	require.Error(t, err)
 	var race core.KVRaceError
 	require.ErrorAs(t, err, &race)

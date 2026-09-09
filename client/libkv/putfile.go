@@ -56,7 +56,9 @@ func (k *Minder) prepSmallFile(
 		DataBox: ctext,
 	}
 
-	err = cli.KvPutSmallFileOrSymlink(m.Ctx(), rem.KvPutSmallFileOrSymlinkArg{
+	// The replay flag in the result is uninteresting here: a fresh node ID is
+	// minted per call, so this client never replays a write.
+	_, err = cli.KvPutSmallFileOrSymlink(m.Ctx(), rem.KvPutSmallFileOrSymlinkArg{
 		Auth: *auth,
 		Id:   *nid,
 		Sfb:  sfb,
@@ -111,7 +113,8 @@ func (k *Minder) prepSymlink(
 		DataBox: ctext,
 	}
 
-	err = cli.KvPutSmallFileOrSymlink(m.Ctx(), rem.KvPutSmallFileOrSymlinkArg{
+	// As above, a fresh node ID per call means this is never a replay.
+	_, err = cli.KvPutSmallFileOrSymlink(m.Ctx(), rem.KvPutSmallFileOrSymlinkArg{
 		Auth: *auth,
 		Id:   *nid,
 		Sfb:  sfb,

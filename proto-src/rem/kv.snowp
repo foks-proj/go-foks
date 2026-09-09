@@ -77,6 +77,13 @@ struct KVMkdirRes {
     wasReplay @0 : Bool;
 }
 
+struct KVPutSmallFileOrSymlinkRes {
+    // True when this write was an idempotent replay: the node already existed
+    // with exactly these bytes, and nothing was written or charged against
+    // usage. Old servers omit the result, which decodes as false.
+    wasReplay @0 : Bool;
+}
+
 struct KVLock {
     idp @0 : lib.KVDirentIDPair;
     lockID @1 : LockID;
@@ -119,7 +126,7 @@ protocol KVStore
         auth @0 : KVAuth,
         id @1 : lib.KVNodeID, // can work for either a small file OR a symlink
         sfb @2 : lib.SmallFileBox
-    );
+    ) -> KVPutSmallFileOrSymlinkRes;
 
     kvGetRoot @8 (
         auth @0 : KVAuth

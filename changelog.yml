@@ -39,6 +39,8 @@ changelog:
         closes: ["#347"]
       - desc: kv-store; make directory creation idempotent on replay, and report the replay in the kvMkdir result
         closes: ["#353"]
+      - desc: kv-store; make small-file and symlink writes idempotent on replay, and report the replay in the RPC result
+        closes: ["#352"]
   - version: 0.1.9
     urgency: medium
     stable: true
