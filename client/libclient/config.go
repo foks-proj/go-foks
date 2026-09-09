@@ -121,6 +121,9 @@ type Flags struct {
 		refreshInterval core.Duration
 		requestTimeout  core.Duration
 	}
+	team struct {
+		exploreConcurrency int64
+	}
 }
 
 type JSONStringKVPair struct {
@@ -211,6 +214,9 @@ type JSONConfigData struct {
 		DelaySlot           core.Duration `json:"delay_slot"`
 		RandomJitterPercent *uint16       `json:"random_jitter_percent"`
 	} `json:"clkr"`
+	Team struct {
+		ExploreConcurrency *uint64 `json:"explore_concurrency"`
+	} `json:"team"`
 	Testing bool
 }
 
@@ -294,6 +300,7 @@ func (c *Config) setupGlobalFlags(cmd *cobra.Command) {
 	pf.Var(&c.fl.bg.clkr.pause, "bg-clkr-pause-duration", "delay slot between each team explored")
 	pf.Int32Var(&c.fl.bg.clkr.jitter, "bg-clkr-random-jitter-percent", -1, "what %age of the duration to randomly jitter")
 	pf.Int32Var(&c.fl.bg.user.jitter, "bg-user-random-jitter-percent", -1, "what %age of the duration to randomly jitter")
+	pf.Int64Var(&c.fl.team.exploreConcurrency, "team-explore-concurrency", -1, "number of concurrent team loads when exploring the team graph")
 	pf.StringVar(&c.fl.agent.stopperFile, "agent-stopper-file", "", "file to check for to stop the agent")
 	pf.BoolVar(&c.fl.agent.checkStopper, "agent-check-stopper", false, "check for the stopper file to stop the agent")
 }
@@ -820,6 +827,18 @@ func (c *Config) KVListPageSize() uint64 {
 	c.Lock()
 	defer c.Unlock()
 	return c.getUint(c.fl.kv.listPageSize, prefixed("KV_LIST_PAGE_SIZE"), c.file.Data.Kv.ListPageSize, 100)
+}
+
+func (c *Config) TeamExploreConcurrency() uint64 {
+	c.Lock()
+	defer c.Unlock()
+	ret := c.getUint(
+		c.fl.team.exploreConcurrency,
+		prefixed("TEAM_EXPLORE_CONCURRENCY"),
+		c.file.Data.Team.ExploreConcurrency,
+		defTeamExploreConcurrency,
+	)
+	return max(ret, 1)
 }
 
 func (c *Config) ProfilerPort() int {
