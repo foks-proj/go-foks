@@ -88,12 +88,16 @@ struct RTInboxRowView {
     snippet @9 : Option(Text);            // first line of the last message, decrypted at render;
                                           // nil if the message isn't in the local cache
     lastSender @10 : lib.NameUtf8;        // last message's sender; empty if unresolved
+    numPending @11 : Uint;                // viewer's own outbox messages queued here
+    numFailed @12 : Uint;                 // viewer's own rejected (Failed) outbox messages here
 }
 
 // The viewer's inbox, rendered entirely from local storage.
 struct RTInboxView {
     rows @0 : List(RTInboxRowView);       // newest bump first
     vers @1 : lib.RTInboxVersion;         // local sync cursor
+    stale @2 : Bool;                      // the pre-render sync failed on transport;
+                                          // this is the last locally-applied snapshot
 }
 
 // What a SyncInbox pass did.
@@ -116,9 +120,20 @@ struct RTMsgView {
     senderName @9 : Option(lib.NameUtf8); // resolved by agent via user load; nil if unresolvable
 }
 
+// One of the viewer's own undelivered outbox messages, overlaid on the head
+// page of a thread view (seq 0 = unassigned). state distinguishes a message
+// awaiting delivery from one the server rejected (Failed), which will not be
+// retried without an explicit outbox retry.
+struct RTPendingMsgView {
+    msg @0 : RTMsgView;
+    state @1 : RTOutboxState;
+}
+
 struct RTThreadView {
     msgs @0 : List(RTMsgView);
     atBeginning @1 : Bool; // page reached the start of the thread; no older messages
+    stale @2 : Bool;       // served (partly) from local cache; the server was unreachable
+    pending @3 : List(RTPendingMsgView); // viewer's own undelivered messages; head page only
 }
 
 protocol RealTime
@@ -151,6 +166,87 @@ protocol RealTime
         localOnly @1 : Bool     /* skip the network sync; render from disk only */
     ) -> RTInboxView;
 
+    clientRTOutboxList @5 () -> RTOutboxView;
+
+    clientRTOutboxDrain @6 () -> RTOutboxDrainRes;
+
+    clientRTOutboxRetry @7 (
+        msgID @0 : lib.RTMsgID
+    ) -> RTOutboxDrainRes;
+
+    clientRTOutboxDiscard @8 (
+        msgID @0 : lib.RTMsgID
+    );
+
+}
+
+// One outbox entry as presented to the CLI / app layer.
+struct RTOutboxRowView {
+    msgID @0 : lib.RTMsgID;
+    chid @1 : lib.RTChannelID;
+    ord @2 : Uint;
+    state @3 : RTOutboxState;
+    attempts @4 : Uint;
+    lastError @5 : Text;
+    sendTime @6 : lib.Time;
+}
+
+struct RTOutboxView {
+    rows @0 : List(RTOutboxRowView); // queue order
+}
+
+// What a drain pass did.
+struct RTOutboxDrainRes {
+    numAcked @0 : Uint;
+    numFailed @1 : Uint;   // rows marked Failed by a semantic rejection this pass
+    offline @2 : Bool;     // a transport error ended the pass; the rest stays queued
+}
+
+// Singleton row (per RTInboxScope-like party scope): read-marks that couldn't
+// reach the server, one entry per channel holding the highest locally-read
+// seq (intermediate marks are subsumed; the server pointer is monotonic and
+// ignores stale marks). Replayed by the outbox drain.
+struct RTReadThroughPendingEntry {
+    chid @0 : lib.RTChannelID;
+    seq @1 : lib.RTMsgSeq;
+}
+
+struct RTReadThroughPendingSet {
+    entries @0 : List(RTReadThroughPendingEntry);
+}
+
+enum RTOutboxState {
+    Queued @0;
+    Failed @1;
+}
+
+// One queued (or failed) outgoing message, stored in the local soft DB keyed
+// by its msgID. The message is stored sealed, exactly as it will be sent --
+// plaintext never hits the local DB. ord is the per-device FIFO position,
+// allocated by RTOutboxIndex.nextOrd.
+struct RTOutboxEntry {
+    msg @0 : lib.RTMsgCached;
+    state @1 : RTOutboxState;
+    attempts @2 : Uint;
+    lastError @3 : Text;      // last attempt's error; empty until one fails
+    ord @4 : Uint;
+}
+
+struct RTOutboxIndexEntry {
+    msgID @0 : lib.RTMsgID;
+    chid @1 : lib.RTChannelID;
+    ord @2 : Uint;
+    state @3 : RTOutboxState; // mirrors the entry row, for cheap per-channel counts
+}
+
+// Singleton row (per party scope) indexing the outbox entries, since the KV
+// layer can't enumerate keys within a scope (the RTInboxSyncState pattern).
+// Updated atomically with entry-row puts; an index entry whose row is missing
+// (a crash between an ack's row delete and this index update) is dropped on
+// the next drain.
+struct RTOutboxIndex {
+    entries @0 : List(RTOutboxIndexEntry);
+    nextOrd @1 : Uint;
 }
 
 struct RTChannelSetHashInput @0xc6985a2917572061 {

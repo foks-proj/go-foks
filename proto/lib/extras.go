@@ -5589,3 +5589,42 @@ func (a AdHocTeamString) String() string {
 func (a FQAdHocTeamString) String() string {
 	return string(a)
 }
+
+func (c RTMsgID) MarshalJSON() ([]byte, error) { return marsh(c) }
+
+func (r *RTMsgID) UnmarshalJSON(data []byte) error {
+	var tmp RTMsgID
+	err := unmarshViaImport(data, &tmp)
+	if err != nil {
+		return err
+	}
+	*r = tmp
+	return nil
+}
+
+func (r *RTMsgID) ImportFromString(s string) error {
+	var tmp RTID
+	err := tmp.ImportFromString(s)
+	if err != nil {
+		return err
+	}
+	msgID := tmp.RTMsgID()
+	if msgID == nil {
+		return DataError("cannot convert RTID to RTMsgID")
+	}
+	*r = *msgID
+	return nil
+}
+
+func (r RTID) RTMsgID() *RTMsgID {
+	if r[0] != byte(RTIDType_Msg) {
+		return nil
+	}
+	var ret RTMsgID
+	copy(ret[:], r[1:])
+	return &ret
+}
+
+func (i RTMsgID) StringErr() (string, error) {
+	return i.RTID().StringErr()
+}

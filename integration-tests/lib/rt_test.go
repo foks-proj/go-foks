@@ -1,7 +1,10 @@
 package lib
 
 import (
+	"context"
+	"errors"
 	"fmt"
+	"io"
 	"slices"
 	"testing"
 	"time"
@@ -16,6 +19,39 @@ import (
 	"github.com/foks-proj/go-foks/server/shared"
 	"github.com/stretchr/testify/require"
 )
+
+// bookended and recents are test shims that unpack the ThreadReadResult shape
+// into the positional form these tests were written against.
+func bookended(
+	m librt.MetaContext,
+	d *librt.Minder,
+	cfg lcl.ConfigTeam,
+	appID proto.RTAppID,
+	ch lcl.RTChannelSpecifier,
+	start proto.RTMsgSeq,
+	end proto.RTMsgSeq,
+) ([]librt.ThreadMessage, bool, error) {
+	res, err := d.GetThreadBookended(m, cfg, appID, ch, start, end)
+	if err != nil {
+		return nil, false, err
+	}
+	return res.Msgs, res.Final, nil
+}
+
+func recents(
+	m librt.MetaContext,
+	d *librt.Minder,
+	cfg lcl.ConfigTeam,
+	appID proto.RTAppID,
+	ch lcl.RTChannelSpecifier,
+	num uint,
+) ([]librt.ThreadMessage, error) {
+	res, err := d.GetThreadRecentMsgs(m, cfg, appID, ch, num)
+	if err != nil {
+		return nil, err
+	}
+	return res.Msgs, nil
+}
 
 func TestRTMinderMakeChannelSimple(t *testing.T) {
 	tew := testEnvBeta(t)
@@ -369,7 +405,7 @@ func TestRTMinderSendAndGetThread(t *testing.T) {
 
 	// Read them all back; they should decrypt and come in seq order. We reached
 	// the far edge (end == lastSeq) exactly, so this is not a "final" short read.
-	msgs, final, err := minder.GetThreadBookended(mb, team.WrapNamedPtr(fqt), proto.RTAppID_Chat,
+	msgs, final, err := bookended(mb, minder, team.WrapNamedPtr(fqt), proto.RTAppID_Chat,
 		makeChannelSpecifierWithString("foo"), 1, lastSeq)
 	require.NoError(t, err)
 	require.False(t, final)
@@ -384,7 +420,7 @@ func TestRTMinderSendAndGetThread(t *testing.T) {
 
 	// Reading a later sub-range should yield only the tail (served from cache,
 	// since the read above populated it).
-	msgs, final, err = minder.GetThreadBookended(mb, team.WrapNamedPtr(fqt),
+	msgs, final, err = bookended(mb, minder, team.WrapNamedPtr(fqt),
 		proto.RTAppID_Chat,
 		makeChannelSpecifierWithString("foo"), 2, lastSeq)
 	require.NoError(t, err)
@@ -520,7 +556,7 @@ func TestRTMinderGetThreadBookendedHoleFilling(t *testing.T) {
 
 		// coco's cache holds {3,5}. The server must supply leading [1,2], trailing
 		// [6,7], and the hole at 4; all of it merges into one ascending run.
-		msgs, final, err := receiver.GetThreadBookended(mc, team.WrapNamedPtr(fqt),
+		msgs, final, err := bookended(mc, receiver, team.WrapNamedPtr(fqt),
 			proto.RTAppID_Chat,
 			makeChannelSpecifierWithString("asc"), 1, n)
 		require.NoError(t, err)
@@ -529,7 +565,7 @@ func TestRTMinderGetThreadBookendedHoleFilling(t *testing.T) {
 
 		// The read above cached everything, so the second read is a pure cache
 		// hit (no holes, no bookends).
-		msgs, _, err = receiver.GetThreadBookended(mc, team.WrapNamedPtr(fqt),
+		msgs, _, err = bookended(mc, receiver, team.WrapNamedPtr(fqt),
 			proto.RTAppID_Chat,
 			makeChannelSpecifierWithString("asc"),
 			1, n)
@@ -542,7 +578,7 @@ func TestRTMinderGetThreadBookendedHoleFilling(t *testing.T) {
 
 		// Same sparse cache {3,5}, but walk 7..1: leading bookend [7,6], trailing
 		// [2,1], hole 4, merged newest-first.
-		msgs, final, err := receiver.GetThreadBookended(mc, team.WrapNamedPtr(fqt),
+		msgs, final, err := bookended(mc, receiver, team.WrapNamedPtr(fqt),
 			proto.RTAppID_Chat,
 			makeChannelSpecifierWithString("desc"),
 			n, 1)
@@ -581,7 +617,7 @@ func TestRTMinderSenderReadsAreCacheHits(t *testing.T) {
 
 	// Reading back the full range it just sent is a pure cache hit.
 	before := minder.Metrics()
-	msgs, final, err := minder.GetThreadBookended(mb, team.WrapNamedPtr(fqt), proto.RTAppID_Chat,
+	msgs, final, err := bookended(mb, minder, team.WrapNamedPtr(fqt), proto.RTAppID_Chat,
 		makeChannelSpecifierWithString("foo"), 1, n)
 	require.NoError(t, err)
 	require.False(t, final)
@@ -596,7 +632,7 @@ func TestRTMinderSenderReadsAreCacheHits(t *testing.T) {
 	// Contrast: asking past the cached range forces a (trailing) server fetch, so
 	// the counter must advance by exactly one -- proving it tracks round-trips.
 	before = minder.Metrics()
-	_, _, err = minder.GetThreadBookended(mb, team.WrapNamedPtr(fqt), proto.RTAppID_Chat,
+	_, _, err = bookended(mb, minder, team.WrapNamedPtr(fqt), proto.RTAppID_Chat,
 		makeChannelSpecifierWithString("foo"), 1, n+1)
 	require.NoError(t, err)
 	require.Equal(t, before.ServerThreadReads+1, minder.Metrics().ServerThreadReads,
@@ -659,13 +695,13 @@ func TestRTMinderPrevPointers(t *testing.T) {
 
 	// Receiver fetches from the server (cold cache) and must see the chain the
 	// sender stamped on each message.
-	got, _, err := receiver.GetThreadBookended(mc, team.WrapNamedPtr(fqt), proto.RTAppID_Chat,
+	got, _, err := bookended(mc, receiver, team.WrapNamedPtr(fqt), proto.RTAppID_Chat,
 		makeChannelSpecifierWithString("foo"), 1, n)
 	require.NoError(t, err)
 	assertChain(t, "receiver", got)
 
 	// The sender's own read (served from its on-send cache) agrees.
-	got, _, err = sender.GetThreadBookended(mb, team.WrapNamedPtr(fqt), proto.RTAppID_Chat,
+	got, _, err = bookended(mb, sender, team.WrapNamedPtr(fqt), proto.RTAppID_Chat,
 		makeChannelSpecifierWithString("foo"), 1, n)
 	require.NoError(t, err)
 	assertChain(t, "sender", got)
@@ -826,7 +862,7 @@ func TestRTMinderEvilServerRecentsHoleFill(t *testing.T) {
 			},
 			MutateReadRes: fillerMut,
 		})
-		return recv.GetThreadRecentMsgs(mc, team.WrapNamedPtr(fqt), proto.RTAppID_Chat,
+		return recents(mc, recv, team.WrapNamedPtr(fqt), proto.RTAppID_Chat,
 			makeChannelSpecifier(ch), 0)
 	}
 
@@ -871,7 +907,7 @@ func TestRTMinderEvilServerRecentsHoleFill(t *testing.T) {
 				}
 			},
 		})
-		_, err := recv.GetThreadRecentMsgs(mc, team.WrapNamedPtr(fqt), proto.RTAppID_Chat,
+		_, err := recents(mc, recv, team.WrapNamedPtr(fqt), proto.RTAppID_Chat,
 			makeChannelSpecifier("bar"), 0)
 		requireOrderErr(t, err)
 	})
@@ -941,7 +977,7 @@ func TestRTSendReadPermissions(t *testing.T) {
 	// --- read permission ---
 
 	// coco CAN read the admin-writable (but member-readable) channel.
-	msgs, err := minderCoco.GetThreadRecentMsgs(mc, team.WrapNamedPtr(fqt),
+	msgs, err := recents(mc, minderCoco, team.WrapNamedPtr(fqt),
 		proto.RTAppID_Chat,
 		makeChannelSpecifierWithString("announce"), 0)
 	require.NoError(t, err)
@@ -956,7 +992,7 @@ func TestRTSendReadPermissions(t *testing.T) {
 	}
 
 	// ...and reading its thread fails: she can't resolve a channel she can't see.
-	_, err = minderCoco.GetThreadRecentMsgs(mc, team.WrapNamedPtr(fqt), proto.RTAppID_Chat,
+	_, err = recents(mc, minderCoco, team.WrapNamedPtr(fqt), proto.RTAppID_Chat,
 		makeChannelSpecifierWithString("brass"), 0)
 	require.Equal(t, core.RTNotFoundError("channel 'brass'"), err)
 
@@ -1491,7 +1527,7 @@ func TestRTSendEncryptionRole(t *testing.T) {
 	require.Equal(t, core.BadArgsError("message must be encrypted at the channel's read role"), err)
 
 	// The rejected message was not persisted: only the one good message remains.
-	msgs, err := minder.GetThreadRecentMsgs(mb, team.WrapNamedPtr(fqt), proto.RTAppID_Chat,
+	msgs, err := recents(mb, minder, team.WrapNamedPtr(fqt), proto.RTAppID_Chat,
 		makeChannelSpecifierWithString(""),
 		0)
 	require.NoError(t, err)
@@ -1527,7 +1563,7 @@ func TestRTChannelDisambiguation(t *testing.T) {
 	_, err = minder.Send(mb, team.WrapNamedPtr(fqt), proto.RTAppID_Chat,
 		makeChannelSpecifierWithString(""), []byte("hi"))
 	require.Equal(t, core.RTAmbiguousChannelError{Name: ""}, err)
-	_, err = minder.GetThreadRecentMsgs(mb, team.WrapNamedPtr(fqt), proto.RTAppID_Chat,
+	_, err = recents(mb, minder, team.WrapNamedPtr(fqt), proto.RTAppID_Chat,
 		makeChannelSpecifierWithString(""), 0)
 	require.Equal(t, core.RTAmbiguousChannelError{Name: ""}, err)
 
@@ -1541,12 +1577,12 @@ func TestRTChannelDisambiguation(t *testing.T) {
 		[]byte("bottom msg"))
 	require.NoError(t, err)
 
-	adminMsgs, err := minder.GetThreadRecentMsgs(mb, team.WrapNamedPtr(fqt), proto.RTAppID_Chat, makeChannelSpecifierWithTier("", admin), 0)
+	adminMsgs, err := recents(mb, minder, team.WrapNamedPtr(fqt), proto.RTAppID_Chat, makeChannelSpecifierWithTier("", admin), 0)
 	require.NoError(t, err)
 	require.Len(t, adminMsgs, 1)
 	require.Equal(t, "admin msg", string(adminMsgs[0].Body))
 
-	bottomMsgs, err := minder.GetThreadRecentMsgs(mb, team.WrapNamedPtr(fqt), proto.RTAppID_Chat, makeChannelSpecifierWithTier("", bottom), 0)
+	bottomMsgs, err := recents(mb, minder, team.WrapNamedPtr(fqt), proto.RTAppID_Chat, makeChannelSpecifierWithTier("", bottom), 0)
 	require.NoError(t, err)
 	require.Len(t, bottomMsgs, 1)
 	require.Equal(t, "bottom msg", string(bottomMsgs[0].Body))
@@ -1556,9 +1592,8 @@ func TestRTChannelDisambiguation(t *testing.T) {
 // rtSend: a duplicate msg_id from the same sender into the same channel is a
 // replay (the original seq and insert time come back, and no second row is
 // written), while a duplicate from a different sender or into a different
-// channel is refused with a payload-free mismatch error. The point is that a
-// client retrying a send whose ack it lost gets the original result back
-// rather than an error it cannot interpret.
+// channel is refused with a payload-free mismatch error. See
+// docs/rt_offline.md, D1.
 func TestRTSendIdempotentReplay(t *testing.T) {
 	tew := testEnvBeta(t)
 	bluey := tew.NewTestUser(t) // team owner
@@ -1597,16 +1632,14 @@ func TestRTSendIdempotentReplay(t *testing.T) {
 		proto.RTAppID_Chat, makeChannelSpecifierWithString("foo"),
 		[]byte("original"), hooks)
 	require.NoError(t, err)
-	require.False(t, res1.WasReplay)
 
 	// Same msg_id, same sender, same channel: a replay. The original result
 	// comes back even though the body differs (idempotency keys on msgID
-	// alone), the response says so, and no second row is written.
+	// alone), and no second row is written.
 	res2, err := minderBluey.SendWithTestHooks(mb, team.WrapNamedPtr(fqt),
 		proto.RTAppID_Chat, makeChannelSpecifierWithString("foo"),
 		[]byte("retry with different body"), hooks)
 	require.NoError(t, err)
-	require.True(t, res2.WasReplay)
 	require.Equal(t, res1.Seq, res2.Seq)
 	require.Equal(t, res1.InsertTime, res2.InsertTime)
 
@@ -1634,9 +1667,642 @@ func TestRTSendIdempotentReplay(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, 1, n)
 
-	msgs, err := minderBluey.GetThreadRecentMsgs(mb, team.WrapNamedPtr(fqt),
+	msgs, err := recents(mb, minderBluey, team.WrapNamedPtr(fqt),
 		proto.RTAppID_Chat, makeChannelSpecifierWithString("foo"), 0)
 	require.NoError(t, err)
 	require.Len(t, msgs, 1)
 	require.Equal(t, "original", string(msgs[0].Body))
+}
+
+// rtOutboxTestRig is the shared setup for outbox tests: one user, one team,
+// one member-writable channel, plus a Minder wired for hook installation.
+type rtOutboxTestRig struct {
+	tew    *TestEnvWrapper
+	mb     librt.MetaContext
+	minder *librt.Minder
+	fqt    *proto.FQTeamParsed
+}
+
+func makeRTOutboxTestRig(t *testing.T) *rtOutboxTestRig {
+	tew := testEnvBeta(t)
+	bluey := tew.NewTestUser(t)
+	tew.DirectDoubleMerklePokeInTest(t)
+	tm := tew.makeTeamForOwner(t, bluey)
+	mb := librt.NewMetaContext(tew.NewClientMetaContextWithEracer(t, bluey))
+	minder := librt.NewMinder(mb.G().ActiveUser())
+	fqt := tm.ToFQTeamParsed(t)
+	_, err := minder.MakeChannel(mb, team.WrapNamedPtr(fqt),
+		proto.RTAppID_Chat, "foo", "the foo channel", proto.RolePairOpt{})
+	require.NoError(t, err)
+	return &rtOutboxTestRig{tew: tew, mb: mb, minder: minder, fqt: fqt}
+}
+
+func (r *rtOutboxTestRig) send(t *testing.T, body string) (*rem.RTSendRes, error) {
+	return r.minder.Send(r.mb, team.WrapNamedPtr(r.fqt), proto.RTAppID_Chat,
+		makeChannelSpecifierWithString("foo"), []byte(body))
+}
+
+// sendExpectQueued sends while the transport is (simulated) down and returns
+// the queued message's ID.
+func (r *rtOutboxTestRig) sendExpectQueued(t *testing.T, body string) proto.RTMsgID {
+	_, err := r.send(t, body)
+	var qerr core.RTMsgQueuedError
+	require.True(t, errors.As(err, &qerr), "expected RTMsgQueuedError, got %v", err)
+	return qerr.MsgID
+}
+
+func (r *rtOutboxTestRig) thread(t *testing.T, start, end int) []librt.ThreadMessage {
+	msgs, _, err := bookended(r.mb, r.minder, team.WrapNamedPtr(r.fqt),
+		proto.RTAppID_Chat, makeChannelSpecifierWithString("foo"),
+		proto.RTMsgSeq(start), proto.RTMsgSeq(end))
+	require.NoError(t, err)
+	return msgs
+}
+
+func simTransportErr() error {
+	return core.NewConnectError("simulated outage", io.EOF)
+}
+
+// TestRTOutboxQueueAndDrain: sends attempted while the transport is down are
+// queued durably (in FIFO order, msgID-keyed so rapid sends never collide)
+// and a later drain delivers all of them in order. docs/rt_offline.md, D2.
+func TestRTOutboxQueueAndDrain(t *testing.T) {
+	r := makeRTOutboxTestRig(t)
+
+	r.minder.SetTestHooks(&librt.MinderTestHooks{
+		SendRPC: func(librt.MetaContext, rem.RTSendArg) (*rem.RTSendRes, error) {
+			return nil, simTransportErr()
+		},
+	})
+	id1 := r.sendExpectQueued(t, "first while offline")
+	id2 := r.sendExpectQueued(t, "second while offline")
+	require.NotEqual(t, id1, id2)
+
+	rows, err := r.minder.ListOutbox(r.mb)
+	require.NoError(t, err)
+	require.Len(t, rows, 2)
+	require.Equal(t, id1, rows[0].MsgID)
+	require.Equal(t, id2, rows[1].MsgID)
+	require.Equal(t, lcl.RTOutboxState_Queued, rows[0].State)
+	require.Equal(t, lcl.RTOutboxState_Queued, rows[1].State)
+
+	// Reconnect and drain: both deliver, in queue order.
+	r.minder.SetTestHooks(nil)
+	dres, err := r.minder.Drain(r.mb)
+	require.NoError(t, err)
+	require.NoError(t, dres.TransportErr)
+	require.Len(t, dres.Acked, 2)
+	require.Equal(t, proto.RTMsgSeq(1), dres.Acked[id1].Seq)
+	require.Equal(t, proto.RTMsgSeq(2), dres.Acked[id2].Seq)
+
+	rows, err = r.minder.ListOutbox(r.mb)
+	require.NoError(t, err)
+	require.Len(t, rows, 0)
+
+	msgs := r.thread(t, 1, 2)
+	require.Len(t, msgs, 2)
+	require.Equal(t, "first while offline", string(msgs[0].Body))
+	require.Equal(t, "second while offline", string(msgs[1].Body))
+}
+
+// TestRTOutboxLostAck: the send reaches the server but the ack is lost. The
+// row stays queued; the drain's retry resolves as an idempotent replay (D1):
+// same seq, exactly one copy in the thread, outbox emptied.
+func TestRTOutboxLostAck(t *testing.T) {
+	r := makeRTOutboxTestRig(t)
+
+	r.minder.SetTestHooks(&librt.MinderTestHooks{
+		MutateSendOutcome: func(res *rem.RTSendRes, err error) (*rem.RTSendRes, error) {
+			if err != nil {
+				return nil, err
+			}
+			return nil, simTransportErr() // the ack vanishes on the wire
+		},
+	})
+	id := r.sendExpectQueued(t, "landed but unacked")
+
+	r.minder.SetTestHooks(nil)
+	dres, err := r.minder.Drain(r.mb)
+	require.NoError(t, err)
+	require.NoError(t, dres.TransportErr)
+	require.Len(t, dres.Acked, 1)
+	require.Equal(t, proto.RTMsgSeq(1), dres.Acked[id].Seq)
+
+	rows, err := r.minder.ListOutbox(r.mb)
+	require.NoError(t, err)
+	require.Len(t, rows, 0)
+
+	msgs := r.thread(t, 1, 1)
+	require.Len(t, msgs, 1)
+	require.Equal(t, "landed but unacked", string(msgs[0].Body))
+}
+
+// TestRTOutboxNoQueueJumping: a fresh Send into a channel with queued rows
+// must not race past them (D2). With connectivity restored, the synchronous
+// send flushes the whole channel in order and returns its own ack.
+func TestRTOutboxNoQueueJumping(t *testing.T) {
+	r := makeRTOutboxTestRig(t)
+
+	r.minder.SetTestHooks(&librt.MinderTestHooks{
+		SendRPC: func(librt.MetaContext, rem.RTSendArg) (*rem.RTSendRes, error) {
+			return nil, simTransportErr()
+		},
+	})
+	r.sendExpectQueued(t, "one")
+	r.sendExpectQueued(t, "two")
+
+	r.minder.SetTestHooks(nil)
+	res, err := r.send(t, "three")
+	require.NoError(t, err)
+	require.Equal(t, proto.RTMsgSeq(3), res.Seq)
+
+	rows, err := r.minder.ListOutbox(r.mb)
+	require.NoError(t, err)
+	require.Len(t, rows, 0)
+
+	msgs := r.thread(t, 1, 3)
+	require.Len(t, msgs, 3)
+	require.Equal(t, "one", string(msgs[0].Body))
+	require.Equal(t, "two", string(msgs[1].Body))
+	require.Equal(t, "three", string(msgs[2].Body))
+}
+
+// TestRTOutboxFailedRowStepsAside: a semantically-rejected row is marked
+// Failed and doesn't hold its channel hostage; an explicit retry (the manual
+// escape hatch) delivers it later, knowingly out of order.
+func TestRTOutboxFailedRowStepsAside(t *testing.T) {
+	r := makeRTOutboxTestRig(t)
+
+	r.minder.SetTestHooks(&librt.MinderTestHooks{
+		SendRPC: func(librt.MetaContext, rem.RTSendArg) (*rem.RTSendRes, error) {
+			return nil, simTransportErr()
+		},
+	})
+	id1 := r.sendExpectQueued(t, "will be rejected")
+	id2 := r.sendExpectQueued(t, "will deliver")
+
+	// Reject only the first row semantically; the transport stays down for
+	// everything else, so the second row survives this drain queued.
+	r.minder.SetTestHooks(&librt.MinderTestHooks{
+		SendRPC: func(_ librt.MetaContext, arg rem.RTSendArg) (*rem.RTSendRes, error) {
+			if arg.Md.MsgID == id1 {
+				return nil, core.BadArgsError("simulated semantic rejection")
+			}
+			return nil, simTransportErr()
+		},
+	})
+	dres, err := r.minder.Drain(r.mb)
+	require.NoError(t, err)
+	require.Len(t, dres.Failed, 1)
+	require.Equal(t, id1, dres.Failed[0])
+
+	rows, err := r.minder.ListOutbox(r.mb)
+	require.NoError(t, err)
+	require.Len(t, rows, 2)
+	require.Equal(t, lcl.RTOutboxState_Failed, rows[0].State)
+	require.Equal(t, "bad arguments: simulated semantic rejection", rows[0].LastError)
+	require.Equal(t, lcl.RTOutboxState_Queued, rows[1].State)
+
+	// Reconnect: the drain delivers the queued row and skips the failed one.
+	r.minder.SetTestHooks(nil)
+	dres, err = r.minder.Drain(r.mb)
+	require.NoError(t, err)
+	require.Len(t, dres.Acked, 1)
+	require.Equal(t, proto.RTMsgSeq(1), dres.Acked[id2].Seq)
+
+	rows, err = r.minder.ListOutbox(r.mb)
+	require.NoError(t, err)
+	require.Len(t, rows, 1)
+	require.Equal(t, id1, rows[0].MsgID)
+
+	// Manual retry of the failed row delivers it after the younger message.
+	dres, err = r.minder.RetryOutbox(r.mb, id1)
+	require.NoError(t, err)
+	require.Equal(t, proto.RTMsgSeq(2), dres.Acked[id1].Seq)
+
+	msgs := r.thread(t, 1, 2)
+	require.Len(t, msgs, 2)
+	require.Equal(t, "will deliver", string(msgs[0].Body))
+	require.Equal(t, "will be rejected", string(msgs[1].Body))
+}
+
+// TestRTOutboxDiscard: a queued row can be dropped without sending.
+func TestRTOutboxDiscard(t *testing.T) {
+	r := makeRTOutboxTestRig(t)
+
+	r.minder.SetTestHooks(&librt.MinderTestHooks{
+		SendRPC: func(librt.MetaContext, rem.RTSendArg) (*rem.RTSendRes, error) {
+			return nil, simTransportErr()
+		},
+	})
+	id := r.sendExpectQueued(t, "never mind")
+
+	r.minder.SetTestHooks(nil)
+	err := r.minder.DiscardOutbox(r.mb, id)
+	require.NoError(t, err)
+
+	rows, err := r.minder.ListOutbox(r.mb)
+	require.NoError(t, err)
+	require.Len(t, rows, 0)
+
+	dres, err := r.minder.Drain(r.mb)
+	require.NoError(t, err)
+	require.Len(t, dres.Acked, 0)
+	msgs := r.thread(t, 1, 1)
+	require.Len(t, msgs, 0)
+}
+
+// TestRTDegradedReads: with the server unreachable, thread reads serve the
+// locally-cached subset flagged stale instead of erroring; a fully-cached
+// range still comes back fresh (zero RPCs); an empty cache still errors.
+// docs/rt_offline.md, D4.
+func TestRTDegradedReads(t *testing.T) {
+	r := makeRTOutboxTestRig(t)
+
+	for _, b := range []string{"one", "two", "three"} {
+		_, err := r.send(t, b)
+		require.NoError(t, err)
+	}
+	// Prime the thread cache with the full range.
+	msgs := r.thread(t, 1, 3)
+	require.Len(t, msgs, 3)
+
+	r.minder.SetTestHooks(&librt.MinderTestHooks{ReadsFail: simTransportErr()})
+
+	// A fully-cached range is served without the server at all: not stale.
+	res, err := r.minder.GetThreadBookended(r.mb, team.WrapNamedPtr(r.fqt),
+		proto.RTAppID_Chat, makeChannelSpecifierWithString("foo"), 1, 3)
+	require.NoError(t, err)
+	require.False(t, res.Stale)
+	require.Len(t, res.Msgs, 3)
+
+	// A range needing the server degrades to the cached subset, stale.
+	res, err = r.minder.GetThreadBookended(r.mb, team.WrapNamedPtr(r.fqt),
+		proto.RTAppID_Chat, makeChannelSpecifierWithString("foo"), 1, 5)
+	require.NoError(t, err)
+	require.True(t, res.Stale)
+	require.Error(t, res.TransportErr)
+	require.Len(t, res.Msgs, 3)
+
+	// Recents likewise serve the cached tail, stale.
+	res, err = r.minder.GetThreadRecentMsgs(r.mb, team.WrapNamedPtr(r.fqt),
+		proto.RTAppID_Chat, makeChannelSpecifierWithString("foo"), 0)
+	require.NoError(t, err)
+	require.True(t, res.Stale)
+	require.Len(t, res.Msgs, 3)
+	require.Equal(t, "three", string(res.Msgs[0].Body))
+
+	// An empty cache plus an unreachable server is an error, never an empty
+	// render masquerading as truth.
+	_, err = r.minder.MakeChannel(r.mb, team.WrapNamedPtr(r.fqt),
+		proto.RTAppID_Chat, "empty", "never read", proto.RolePairOpt{})
+	require.NoError(t, err)
+	_, err = r.minder.GetThreadRecentMsgs(r.mb, team.WrapNamedPtr(r.fqt),
+		proto.RTAppID_Chat, makeChannelSpecifierWithString("empty"), 0)
+	require.Error(t, err)
+}
+
+// TestRTReadMarksOfflineQueueAndReplay: a read-through that can't reach the
+// server persists locally (so this device's unread counts move immediately)
+// and replays on the next drain, after which the server agrees. A sender's
+// own sends already advance their pointer server-side, so the unread backlog
+// comes from a second user. docs/rt_offline.md, D5.
+func TestRTReadMarksOfflineQueueAndReplay(t *testing.T) {
+	tew := testEnvBeta(t)
+	bluey := tew.NewTestUser(t) // team owner; the viewer whose marks we queue
+	coco := tew.NewTestUser(t)  // the sender producing unread messages
+	tew.DirectDoubleMerklePokeInTest(t)
+	tm := tew.makeTeamForOwner(t, bluey)
+	m := tew.MetaContext()
+	tm.makeChanges(
+		t, m, bluey,
+		[]proto.MemberRole{
+			coco.toMemberRole(t, proto.DefaultRole, tm.hepks),
+		}, nil,
+	)
+
+	mb := librt.NewMetaContext(tew.NewClientMetaContextWithEracer(t, bluey))
+	minderBluey := librt.NewMinder(mb.G().ActiveUser())
+	mc := librt.NewMetaContext(tew.NewClientMetaContextWithEracer(t, coco))
+	minderCoco := librt.NewMinder(mc.G().ActiveUser())
+	fqt := tm.ToFQTeamParsed(t)
+
+	memberRW := proto.RolePairOpt{Read: &proto.DefaultRole, Write: &proto.DefaultRole}
+	_, err := minderBluey.MakeChannel(mb, team.WrapNamedPtr(fqt),
+		proto.RTAppID_Chat, "foo", "the foo channel", memberRW)
+	require.NoError(t, err)
+
+	for _, b := range []string{"one", "two", "three"} {
+		_, err := minderCoco.Send(mc, team.WrapNamedPtr(fqt), proto.RTAppID_Chat,
+			makeChannelSpecifierWithString("foo"), []byte(b))
+		require.NoError(t, err)
+	}
+	_, err = minderBluey.SyncInbox(mb, proto.RTAppID_Chat)
+	require.NoError(t, err)
+
+	rowFor := func() lcl.RTInboxRowView {
+		view, err := minderBluey.LocalInbox(mb, proto.RTAppID_Chat)
+		require.NoError(t, err)
+		require.Len(t, view.Rows, 1)
+		return view.Rows[0]
+	}
+
+	row := rowFor()
+	require.Equal(t, proto.RTMsgSeq(0), row.ReadThrough)
+	require.Equal(t, uint64(3), row.NumUnread)
+
+	// Mark read-through while the server is unreachable: fire-and-forget nil,
+	// and this device's inbox reflects it immediately.
+	minderBluey.SetTestHooks(&librt.MinderTestHooks{
+		ReadThroughRPC: func(librt.MetaContext, rem.RTReadThroughArg) error {
+			return simTransportErr()
+		},
+	})
+	err = minderBluey.ReadThrough(mb, team.WrapNamedPtr(fqt), proto.RTAppID_Chat,
+		makeChannelSpecifierWithString("foo"), 2)
+	require.NoError(t, err)
+	row = rowFor()
+	require.Equal(t, proto.RTMsgSeq(2), row.ReadThrough)
+	require.Equal(t, uint64(1), row.NumUnread)
+
+	// Reconnect and drain: the mark replays, and the SERVER's read pointer --
+	// checked directly in its database, so the local pending-mark overlay
+	// can't fake the pass -- now agrees.
+	minderBluey.SetTestHooks(nil)
+	dres, err := minderBluey.Drain(mb)
+	require.NoError(t, err)
+	require.NoError(t, dres.TransportErr)
+
+	rtdb, err := m.Db(shared.DbTypeRealTime)
+	require.NoError(t, err)
+	defer rtdb.Release()
+	var srvReadThrough int64
+	err = rtdb.QueryRow(m.Ctx(),
+		`SELECT read_through FROM user_channels
+		 WHERE short_host_id=$1 AND uid=$2 AND app_id='chat'`,
+		m.ShortHostID(), bluey.uid.ExportToDB()).Scan(&srvReadThrough)
+	require.NoError(t, err)
+	require.Equal(t, int64(2), srvReadThrough)
+
+	_, err = minderBluey.SyncInbox(mb, proto.RTAppID_Chat)
+	require.NoError(t, err)
+	row = rowFor()
+	require.Equal(t, proto.RTMsgSeq(2), row.ReadThrough)
+	require.Equal(t, uint64(1), row.NumUnread)
+}
+
+// TestRTInboxPendingCount: channels with queued outbox messages carry a
+// pending count in the local inbox view for badging.
+func TestRTInboxPendingCount(t *testing.T) {
+	r := makeRTOutboxTestRig(t)
+
+	_, err := r.send(t, "delivered")
+	require.NoError(t, err)
+	_, err = r.minder.SyncInbox(r.mb, proto.RTAppID_Chat)
+	require.NoError(t, err)
+
+	r.minder.SetTestHooks(&librt.MinderTestHooks{
+		SendRPC: func(librt.MetaContext, rem.RTSendArg) (*rem.RTSendRes, error) {
+			return nil, simTransportErr()
+		},
+	})
+	r.sendExpectQueued(t, "stuck one")
+	r.sendExpectQueued(t, "stuck two")
+
+	view, err := r.minder.LocalInbox(r.mb, proto.RTAppID_Chat)
+	require.NoError(t, err)
+	require.Len(t, view.Rows, 1)
+	require.Equal(t, uint64(2), view.Rows[0].NumPending)
+
+	// The sender sees their own queued messages overlaid on the thread view.
+	tv, err := r.minder.GetThreadView(r.mb, team.WrapNamedPtr(r.fqt),
+		proto.RTAppID_Chat, makeChannelSpecifierWithString("foo"), 0, 0)
+	require.NoError(t, err)
+	require.Len(t, tv.Pending, 2)
+	require.Equal(t, "stuck one", string(tv.Pending[0].Msg.Body))
+	require.Equal(t, "stuck two", string(tv.Pending[1].Msg.Body))
+	require.Equal(t, proto.RTMsgSeq(0), tv.Pending[0].Msg.Seq)
+	require.Equal(t, lcl.RTOutboxState_Queued, tv.Pending[0].State)
+
+	r.minder.SetTestHooks(nil)
+	dres, err := r.minder.Drain(r.mb)
+	require.NoError(t, err)
+	require.Len(t, dres.Acked, 2)
+	view, err = r.minder.LocalInbox(r.mb, proto.RTAppID_Chat)
+	require.NoError(t, err)
+	require.Equal(t, uint64(0), view.Rows[0].NumPending)
+}
+
+// TestRTOfflineChannelResolution: with the channel-list RPC unreachable,
+// resolution falls back to the cached channel set, so the offline write path
+// actually engages in real disconnected use -- the failure mode where every
+// offline feature died at resolution, before its degraded branch could run.
+func TestRTOfflineChannelResolution(t *testing.T) {
+	r := makeRTOutboxTestRig(t)
+
+	// Warm the channel-set cache with one online send.
+	_, err := r.send(t, "warmup")
+	require.NoError(t, err)
+
+	// Fully offline: list RPC and send RPC both fail on transport. The send
+	// must still resolve the channel (from cache), seal, and queue.
+	r.minder.SetTestHooks(&librt.MinderTestHooks{
+		ListFail: simTransportErr(),
+		SendRPC: func(librt.MetaContext, rem.RTSendArg) (*rem.RTSendRes, error) {
+			return nil, simTransportErr()
+		},
+	})
+	id := r.sendExpectQueued(t, "sent from airplane mode")
+
+	// Half-restored: the list RPC still fails, but sends go through; the
+	// cached resolution plus the drain deliver the queued message.
+	r.minder.SetTestHooks(&librt.MinderTestHooks{ListFail: simTransportErr()})
+	dres, err := r.minder.Drain(r.mb)
+	require.NoError(t, err)
+	require.NoError(t, dres.TransportErr)
+	require.Equal(t, proto.RTMsgSeq(2), dres.Acked[id].Seq)
+
+	r.minder.SetTestHooks(nil)
+	msgs := r.thread(t, 1, 2)
+	require.Len(t, msgs, 2)
+	require.Equal(t, "sent from airplane mode", string(msgs[1].Body))
+}
+
+// TestRTSendCanceledStaysQueued: a canceled context mid-send is an
+// ambiguous-delivery event, not a refusal -- the row must stay queued (and
+// deliverable), never be deleted or marked Failed.
+func TestRTSendCanceledStaysQueued(t *testing.T) {
+	r := makeRTOutboxTestRig(t)
+
+	r.minder.SetTestHooks(&librt.MinderTestHooks{
+		SendRPC: func(librt.MetaContext, rem.RTSendArg) (*rem.RTSendRes, error) {
+			return nil, context.Canceled
+		},
+	})
+	id := r.sendExpectQueued(t, "interrupted")
+
+	rows, err := r.minder.ListOutbox(r.mb)
+	require.NoError(t, err)
+	require.Len(t, rows, 1)
+	require.Equal(t, lcl.RTOutboxState_Queued, rows[0].State)
+
+	r.minder.SetTestHooks(nil)
+	dres, err := r.minder.Drain(r.mb)
+	require.NoError(t, err)
+	require.Equal(t, proto.RTMsgSeq(1), dres.Acked[id].Seq)
+}
+
+// TestRTSemanticRejectionSurfacedBehindQueue: when a fresh Send flushes a
+// channel with queued rows and the server rejects the fresh message itself,
+// the caller gets the real error -- not a "queued for delivery" promise for a
+// message that will never auto-deliver.
+func TestRTSemanticRejectionSurfacedBehindQueue(t *testing.T) {
+	r := makeRTOutboxTestRig(t)
+
+	r.minder.SetTestHooks(&librt.MinderTestHooks{
+		SendRPC: func(librt.MetaContext, rem.RTSendArg) (*rem.RTSendRes, error) {
+			return nil, simTransportErr()
+		},
+	})
+	id1 := r.sendExpectQueued(t, "first, queued offline")
+
+	// Server now reachable but rejecting everything semantically.
+	r.minder.SetTestHooks(&librt.MinderTestHooks{
+		SendRPC: func(librt.MetaContext, rem.RTSendArg) (*rem.RTSendRes, error) {
+			return nil, core.BadArgsError("rejected")
+		},
+	})
+	_, err := r.send(t, "second, rejected live")
+	require.Equal(t, core.BadArgsError("rejected"), err)
+
+	// The rejected fresh message is gone (surfaced, like the direct path);
+	// the earlier row was marked Failed by the same flush and steps aside.
+	rows, err := r.minder.ListOutbox(r.mb)
+	require.NoError(t, err)
+	require.Len(t, rows, 1)
+	require.Equal(t, id1, rows[0].MsgID)
+	require.Equal(t, lcl.RTOutboxState_Failed, rows[0].State)
+}
+
+// TestRTOutboxDiscardUnknownID: discarding a msgID that names no entry is an
+// error, so a typo never reports success.
+func TestRTOutboxDiscardUnknownID(t *testing.T) {
+	r := makeRTOutboxTestRig(t)
+	var bogus proto.RTMsgID
+	err := core.RandomFill(bogus[:])
+	require.NoError(t, err)
+	err = r.minder.DiscardOutbox(r.mb, bogus)
+	require.Equal(t, core.RowNotFoundError{}, err)
+}
+
+// TestRTOfflineNoHooks is the end-to-end offline validation with NO test
+// hooks anywhere: the client's real network layer is put into catastrophic
+// conditions, so every connection attempt fails the way it does in airplane
+// mode -- at connect, upstream of every RPC. That is the layer the
+// hook-based tests cannot reach (they inject failures downstream of channel
+// resolution, which is why a resolution that hard-failed offline went
+// unnoticed). A fresh Minder is used for the offline leg so the connection is
+// genuinely re-established rather than reusing a warm socket, modelling an
+// app that restarts or reconnects while offline.
+func TestRTOfflineNoHooks(t *testing.T) {
+	tew := testEnvBeta(t)
+	bluey := tew.NewTestUser(t)
+	tew.DirectDoubleMerklePokeInTest(t)
+	tm := tew.makeTeamForOwner(t, bluey)
+
+	mb := librt.NewMetaContext(tew.NewClientMetaContextWithEracer(t, bluey))
+	online := librt.NewMinder(mb.G().ActiveUser())
+	fqt := tm.ToFQTeamParsed(t)
+	memberRW := proto.RolePairOpt{Read: &proto.DefaultRole, Write: &proto.DefaultRole}
+	_, err := online.MakeChannel(mb, team.WrapNamedPtr(fqt),
+		proto.RTAppID_Chat, "foo", "the foo channel", memberRW)
+	require.NoError(t, err)
+
+	spec := makeChannelSpecifierWithString("foo")
+	send := func(d *librt.Minder, body string) (*rem.RTSendRes, error) {
+		return d.Send(mb, team.WrapNamedPtr(fqt), proto.RTAppID_Chat, spec, []byte(body))
+	}
+
+	// --- online: warm the caches the offline leg must rely on ---
+	_, err = send(online, "delivered while online")
+	require.NoError(t, err)
+	res, err := online.GetThreadRecentMsgs(mb, team.WrapNamedPtr(fqt),
+		proto.RTAppID_Chat, spec, 0)
+	require.NoError(t, err)
+	require.Len(t, res.Msgs, 1)
+	require.False(t, res.Stale)
+	_, err = online.SyncInbox(mb, proto.RTAppID_Chat)
+	require.NoError(t, err)
+
+	// --- airplane mode: real connect failures, zero hooks ---
+	mb.G().SetNetworkConditioner(core.CatastrophicNetworkConditions{On: true})
+	offline := librt.NewMinder(mb.G().ActiveUser())
+
+	// A send resolves the channel from cache, seals, and queues durably.
+	_, err = send(offline, "written in airplane mode")
+	var qerr core.RTMsgQueuedError
+	require.True(t, errors.As(err, &qerr), "expected queued, got %v", err)
+
+	rows, err := offline.ListOutbox(mb)
+	require.NoError(t, err)
+	require.Len(t, rows, 1)
+	require.Equal(t, lcl.RTOutboxState_Queued, rows[0].State)
+
+	// A thread read serves the cache, flagged stale, and overlays the queued
+	// message so the sender still sees what they wrote.
+	view, err := offline.GetThreadView(mb, team.WrapNamedPtr(fqt),
+		proto.RTAppID_Chat, spec, 0, 0)
+	require.NoError(t, err)
+	require.True(t, view.Stale)
+	require.Len(t, view.Msgs, 1)
+	require.Equal(t, "delivered while online", string(view.Msgs[0].Body))
+	require.Len(t, view.Pending, 1)
+	require.Equal(t, "written in airplane mode", string(view.Pending[0].Msg.Body))
+	require.Equal(t, lcl.RTOutboxState_Queued, view.Pending[0].State)
+
+	// A read-mark advances locally and queues for replay.
+	err = offline.ReadThrough(mb, team.WrapNamedPtr(fqt), proto.RTAppID_Chat, spec, 1)
+	require.NoError(t, err)
+
+	// The inbox renders the last synced snapshot, flagged stale, badging the
+	// queued message.
+	inbox, err := offline.InboxView(mb, proto.RTAppID_Chat, false)
+	require.NoError(t, err)
+	require.True(t, inbox.Stale)
+	require.Len(t, inbox.Rows, 1)
+	require.Equal(t, uint64(1), inbox.Rows[0].NumPending)
+
+	// --- reconnect: a successful inbox sync is itself a drain trigger ---
+	mb.G().SetNetworkConditioner(nil)
+	reconnected := librt.NewMinder(mb.G().ActiveUser())
+	inbox, err = reconnected.InboxView(mb, proto.RTAppID_Chat, false)
+	require.NoError(t, err)
+	require.False(t, inbox.Stale)
+	require.Equal(t, uint64(0), inbox.Rows[0].NumPending)
+
+	rows, err = reconnected.ListOutbox(mb)
+	require.NoError(t, err)
+	require.Len(t, rows, 0)
+
+	// The message really landed on the server: read it back fresh, and
+	// confirm the replayed read-mark reached the server's own row.
+	fresh := librt.NewMinder(mb.G().ActiveUser())
+	res, err = fresh.GetThreadRecentMsgs(mb, team.WrapNamedPtr(fqt),
+		proto.RTAppID_Chat, spec, 0)
+	require.NoError(t, err)
+	require.False(t, res.Stale)
+	require.Len(t, res.Msgs, 2)
+	require.Equal(t, "written in airplane mode", string(res.Msgs[0].Body))
+
+	m := tew.MetaContext()
+	rtdb, err := m.Db(shared.DbTypeRealTime)
+	require.NoError(t, err)
+	defer rtdb.Release()
+	var srvReadThrough int64
+	err = rtdb.QueryRow(m.Ctx(),
+		`SELECT read_through FROM user_channels
+		 WHERE short_host_id=$1 AND uid=$2 AND app_id='chat'`,
+		m.ShortHostID(), bluey.uid.ExportToDB()).Scan(&srvReadThrough)
+	require.NoError(t, err)
+	require.GreaterOrEqual(t, srvReadThrough, int64(1))
 }
