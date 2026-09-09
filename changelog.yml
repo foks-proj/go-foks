@@ -33,6 +33,10 @@ changelog:
         closes: ["#342"]
       - desc: load the team graph concurrently during team explore (up to 8 teams at once, tunable), instead of one team at a time
         closes: ["#346"]
+      - desc: fix accepting an invite to a team that has rotated its keys; the stored team cert was verified with its signatures in the wrong order
+        closes: ["#350"]
+      - desc: treat timeouts, DNS, TLS and mid-stream failures like connection errors when deciding whether to tolerate an unreachable server
+        closes: ["#347"]
   - version: 0.1.9
     urgency: medium
     stable: true
