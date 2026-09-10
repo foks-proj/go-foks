@@ -154,6 +154,15 @@ func (d *DBs) Get(ctx context.Context, which DbType, file string, opts string) (
 	if err != nil {
 		return nil, err
 	}
+	// sqlite3 creates the DB as 0666&^umask, which typically leaves it
+	// world-readable. It holds boxed key material, team membership and cached
+	// KV data, so clamp it. SQLite copies the main DB's mode onto the
+	// journal/WAL sidecars, and initDB has just created the file, so doing
+	// this here covers those too.
+	err = os.Chmod(file, DbFileMode)
+	if err != nil {
+		return nil, err
+	}
 	ret := &DB{db: db, scopeMap: make(map[scopeMapKey]lcl.ScopeID), which: which}
 	d.dbs[which] = ret
 	return ret, err
