@@ -379,15 +379,22 @@ func (u *UserContext) InfoCopy() proto.UserInfo {
 }
 
 func (g *GlobalContext) AgentStatus(ctx context.Context) (*lcl.AgentStatus, error) {
-	file, err := g.Cfg().SocketFile()
-	if err != nil {
-		return nil, err
-	}
 	pid := os.Getpid()
 
 	var ret lcl.AgentStatus
 	ret.Pid = int64(pid)
-	ret.Socket = file.String()
+
+	// In standalone mode the agent runs in-process over an rpc loopback
+	// listener and never binds a socket, so the configured socket path names a
+	// file that doesn't exist. Report it empty rather than pointing the caller
+	// at something it can't connect to.
+	if !g.Cfg().Standalone() {
+		file, err := g.Cfg().SocketFile()
+		if err != nil {
+			return nil, err
+		}
+		ret.Socket = file.String()
+	}
 
 	g.userMu.RLock()
 	defer g.userMu.RUnlock()
