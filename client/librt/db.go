@@ -43,32 +43,6 @@ func dbPutMsgs(
 	return nil
 }
 
-func dbPutMsgToOutbox(
-	m MetaContext,
-	au *libclient.UserContext,
-	row proto.RTMsgCached,
-) error {
-	if au == nil {
-		return core.NoActiveUserError{}
-	}
-	scope := au.FQParty()
-	sentAt := row.Md.Md.SendTime.ToInt64()
-	err := m.DbPut(
-		libclient.DbTypeSoft,
-		libclient.PutArg{
-			Scope: &scope,
-			Typ:   lcl.DataType_RTOutboxMsg,
-			Key:   row.Md.Chid,
-			Val:   &row,
-			Idx:   &sentAt,
-		},
-	)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
 func dbGetMsgsHelper(
 	m MetaContext,
 	au *libclient.UserContext,

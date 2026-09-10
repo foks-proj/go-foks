@@ -4,6 +4,7 @@
 package libclient
 
 import (
+	"errors"
 	"slices"
 	"strings"
 	"sync"
@@ -69,6 +70,9 @@ type TeamMinder struct {
 	// Various indices to drive lookups based on different query combinations. They point
 	// back into the loadedTeams map.
 	teamIndex map[proto.FQTeamString]proto.FQTeam
+	// persistedNames memoizes what persistTeamNameLookups already wrote, so
+	// re-explorations don't rewrite identical rows. Guarded by indexMu.
+	persistedNames map[proto.FQTeamString]proto.FQTeam
 	// When the last indexing happened
 	lastIndex time.Time
 	// map of mashed adhoc teamIDs to their
@@ -229,6 +233,18 @@ type TeamRecord struct {
 	ldr    *TeamLoader
 	mldr   *TeamMembershipLoader
 	member CryptoPartier // The group or user that is controlling this team as admin
+
+	// offlineAt, when set, marks a stopgap record built while the server was
+	// unreachable (directLoadTeam over the verified snapshot): tw and ldr are
+	// live, but Tmw, mldr, and member are absent. Such a record is replaced
+	// by a full exploration at the next refresh once connectivity returns.
+	//
+	// INVARIANT: every read and write of this field uses m.G().Now(), never
+	// time.Now(). The freshness window compares the two, so a wall-clock stamp
+	// against an injectable comparison clock computes a nonsense (often
+	// negative) age under SetClock and pins the stopgap forever. Both stamp
+	// sites and the comparison must stay on the one injectable clock.
+	offlineAt time.Time
 }
 
 func (t *TeamRecord) Tw() *TeamWrapper {
@@ -336,6 +352,14 @@ func (t *TeamMinder) loadTeamMembership(
 	if err != nil {
 		return nil, err
 	}
+	// A stopgap record built offline has no membership machinery; membership
+	// needs a server round trip, so report the outage as such rather than
+	// nil-dereferencing (Refresh) or silently returning a nil wrapper.
+	if tr.mldr == nil || (!opts.Refresh && tr.Tmw == nil) {
+		return nil, core.NewConnectError(
+			"team membership needs the server; team was loaded from an offline snapshot",
+			errors.New("server unreachable"))
+	}
 	if !opts.Refresh {
 		return tr.Tmw, nil
 	}
@@ -359,12 +383,44 @@ func (t *TeamMinder) getTeamWithRefresh(
 ) {
 	get := func() *TeamRecord { return t.getTeam(fqt) }
 	tr := get()
-	if tr == nil && opts != nil && opts.Refresh {
+	// An offline-born record is a stopgap (no membership loader, no member
+	// CryptoPartier); a requested refresh must try to replace it with a full
+	// exploration, so a transient outage cannot poison the team past
+	// reconnect. It survives only while the server stays unreachable.
+	if (tr == nil || !tr.offlineAt.IsZero()) && opts != nil && opts.Refresh {
 		err := t.ExploreAndIndex(m, opts)
-		if err != nil {
+		switch {
+		case err == nil:
+			// reindex rebuilt loadedTeams with fully populated records.
+			tr = get()
+		case !core.IsTransportError(err):
 			return nil, err
+		case tr != nil:
+			// Still offline; keep serving the existing stopgap record.
+			m.Warnw("getTeamWithRefresh", "err", err,
+				"note", "server still unreachable; keeping snapshot team record")
+		default:
+			// Offline with no record: a directly addressed team can still
+			// come up from its verified local snapshot (the loader run under
+			// directLoadTeam falls back to it). A team with no snapshot
+			// keeps the original error.
+			tr2, cerr := t.directLoadTeam(m, fqt)
+			if cerr != nil {
+				m.Warnw("getTeamWithRefresh", "stage", "offlineDirect",
+					"err", cerr)
+				return nil, err
+			}
+			m.Warnw("getTeamWithRefresh", "err", err,
+				"note", "server unreachable; team served from verified snapshot")
+			tr2.offlineAt = m.G().Now()
+			t.indexMu.Lock()
+			if t.loadedTeams == nil {
+				t.loadedTeams = make(map[proto.FQTeam]*TeamRecord)
+			}
+			t.loadedTeams[fqt] = tr2
+			t.indexMu.Unlock()
+			tr = tr2
 		}
-		tr = get()
 	}
 	if tr == nil {
 		return nil, core.TeamNotFoundError{}
@@ -420,6 +476,19 @@ func (t *TeamMinder) LoadTeamWithFQTeam(
 
 	tr.Lock()
 	defer tr.Unlock()
+	// A just-built offline record already holds the freshest state the
+	// snapshot can provide; re-running its loader would only repeat the dead
+	// network attempt (and its connect backoff) per call. Serve it within the
+	// team-cache freshness window; past that, the run below retries the
+	// network and lands back on the snapshot if still offline.
+	if !tr.offlineAt.IsZero() {
+		dur, terr := m.G().Cfg().TeamCacheTimeout()
+		if terr == nil && m.G().Now().Sub(tr.offlineAt) < dur {
+			return tr, nil
+		}
+		tr.offlineAt = m.G().Now()
+	}
+
 	if !opts.Refresh && tr.ldr.Arg.MemberLoad >= opts.Members {
 		return tr, nil
 	}
@@ -437,6 +506,19 @@ func (t *TeamMinder) LoadTeamWithFQTeam(
 	tr.tw = tw
 
 	_ = t.fillTeamnameCache(m, tw, fqt)
+
+	// Keep the persisted name index current for teams loaded outside a full
+	// exploration (a team just created, or one addressed directly), so their
+	// names also resolve on a cold offline start.
+	if fqt.Team.IsNamedTeam() {
+		if names, err := tw.AllFQStrings(); err == nil {
+			snap := make(map[proto.FQTeamString]proto.FQTeam, len(names))
+			for _, n := range names {
+				snap[n] = fqt
+			}
+			t.persistTeamNameLookups(m, snap)
+		}
+	}
 
 	return tr, nil
 }
@@ -1273,7 +1355,21 @@ func (t *TeamMinder) ExploreAndIndex(m MetaContext, opts *LoadTeamOpts) error {
 	if err != nil {
 		return err
 	}
+	t.persistTeamIndex(m)
 	return nil
+}
+
+// persistTeamIndex mirrors the freshly rebuilt in-memory name index into the
+// soft DB (best-effort), so every name it can resolve today keeps resolving
+// on a cold start with no network.
+func (t *TeamMinder) persistTeamIndex(m MetaContext) {
+	t.indexMu.RLock()
+	snap := make(map[proto.FQTeamString]proto.FQTeam, len(t.teamIndex))
+	for i, fqt := range t.teamIndex {
+		snap[i] = fqt
+	}
+	t.indexMu.RUnlock()
+	t.persistTeamNameLookups(m, snap)
 }
 
 func (t *TeamMinder) PopulateTeamName(p *lcl.NamedFQParty) error {
@@ -1295,7 +1391,7 @@ func (t *TeamMinder) PopulateTeamName(p *lcl.NamedFQParty) error {
 	return nil
 }
 
-func (t *TeamMinder) resolveTeam(arg lcl.ConfigTeam) (*proto.FQTeam, error) {
+func (t *TeamMinder) resolveTeam(m MetaContext, arg lcl.ConfigTeam) (*proto.FQTeam, error) {
 
 	typ, err := arg.GetT()
 	if err != nil {
@@ -1305,12 +1401,154 @@ func (t *TeamMinder) resolveTeam(arg lcl.ConfigTeam) (*proto.FQTeam, error) {
 	case lcl.ConfigTeamType_None:
 		return nil, core.InternalError("no team to resolve by in TeamMinder.resolveTeam")
 	case lcl.ConfigTeamType_Named:
-		return t.resolveTeamNamed(arg.Named())
+		return t.resolveTeamNamed(m, arg.Named())
 	case lcl.ConfigTeamType_AdHoc:
-		return t.resolveTeamAdHoc(arg.Adhoc())
+		return t.resolveTeamAdHoc(m, arg.Adhoc())
 	default:
 		return nil, core.InternalError("unexpected team type in TeamMinder.resolveTeam")
 	}
+}
+
+// teamNameLookupKey is the persisted-index key for one of a team's fully
+// qualified name strings. The "n:" prefix keeps named-team keys disjoint from
+// any future ad-hoc persistence under the same DataType.
+func teamNameLookupKey(i proto.FQTeamString) string {
+	return "n:" + string(i)
+}
+
+// persistTeamNameLookups writes name -> FQTeam rows to the soft DB in one
+// transaction, so previously resolved team names keep resolving on a cold
+// start with no network. Derived, self-healing state: every online
+// resolution rewrites it. An in-memory memo skips rows already persisted
+// with the same value this process, since explorations re-derive the same
+// names run after run.
+func (t *TeamMinder) persistTeamNameLookups(
+	m MetaContext,
+	names map[proto.FQTeamString]proto.FQTeam,
+) {
+	scope := t.au.FQU()
+	var args []PutArg
+	wrote := make(map[proto.FQTeamString]proto.FQTeam, len(names))
+	t.indexMu.RLock()
+	for i, fqt := range names {
+		if prev, ok := t.persistedNames[i]; ok && prev.Eq(fqt) {
+			continue
+		}
+		wrote[i] = fqt
+		val := fqt
+		args = append(args, PutArg{
+			Scope: &scope,
+			Typ:   lcl.DataType_TeamNameLookup,
+			Key:   teamNameLookupKey(i),
+			Val:   &val,
+		})
+	}
+	t.indexMu.RUnlock()
+	if len(args) == 0 {
+		return
+	}
+	err := m.DbPutTx(DbTypeSoft, args)
+	if err != nil {
+		// Leave the memo alone: recording these as persisted before the write
+		// lands would make one transient failure permanent, since every later
+		// call would skip exactly the rows that never made it to disk, and
+		// offline name resolution would quietly stop working for them.
+		m.Warnw("persistTeamNameLookups", "err", err)
+		return
+	}
+	t.indexMu.Lock()
+	if t.persistedNames == nil {
+		t.persistedNames = make(map[proto.FQTeamString]proto.FQTeam, len(wrote))
+	}
+	for i, fqt := range wrote {
+		t.persistedNames[i] = fqt
+	}
+	t.indexMu.Unlock()
+}
+
+func (t *TeamMinder) lookupTeamNameFromDB(
+	m MetaContext,
+	i proto.FQTeamString,
+) *proto.FQTeam {
+	var ret proto.FQTeam
+	scope := t.au.FQU()
+	_, err := m.DbGet(&ret, DbTypeSoft, &scope,
+		lcl.DataType_TeamNameLookup, teamNameLookupKey(i))
+	if err != nil {
+		// A missing row is the ordinary answer: this name was never resolved
+		// on this device. Anything else is a local fault, and saying nothing
+		// about it would let a broken database read to the user as "the
+		// server is unreachable", which is the wrong thing to go and fix.
+		if !errors.Is(err, core.RowNotFoundError{}) {
+			m.Warnw("lookupTeamNameFromDB", "err", err, "name", i)
+		}
+		return nil
+	}
+	return &ret
+}
+
+// cachedTeamClaimsName reports whether fqt's cached chain snapshot -- the same
+// verified snapshot the offline loader is about to serve from -- still records
+// the name that resolved to it.
+//
+// The persisted index is written through but never deleted, so a row outlives
+// whatever made it. Today that is harmless: teams cannot be renamed, and
+// server/shared/name.go refuses to reuse a dead name ("for now we are not
+// allowing the reuse of dead names"), so a name binds to one team for good.
+// Both of those are documented as changeable -- names carry a reuse_id and a
+// death time precisely so reuse can be switched on later -- and on the day it
+// is, every stale row here becomes a name that resolves to the team that used
+// to hold it. Offline that is not merely stale: the caller goes on to seal a
+// message with the resolved team's cached PTKs, so a message meant for one
+// audience would be encrypted for another. Checking the snapshot keeps
+// resolution and sealing consistent no matter which way that policy goes.
+//
+// Only a positive mismatch rejects. When the snapshot cannot be read the
+// resolution stands: there are no cached PTKs to seal with either, so the
+// downstream load fails on its own, and a missing snapshot must not turn into a
+// silent name-resolution failure.
+func (t *TeamMinder) cachedTeamClaimsName(
+	m MetaContext,
+	fqt proto.FQTeam,
+	want proto.FQTeamString,
+) bool {
+	// Load the team exactly the way the offline path is about to, rather than
+	// reading the snapshot under a reconstructed key: the loader arg is hashed
+	// into that key, so any drift here would silently fail open.
+	//
+	// This does cost a second snapshot decode and unbox -- directLoadTeam
+	// deliberately bypasses the minder's record cache, so the caller's own
+	// load repeats the work. That is the price of checking against the very
+	// thing the caller will use rather than against a key we rebuilt, and it
+	// is paid only on the offline path, only for name-addressed teams.
+	//
+	// Failing open is safe -- with no loadable snapshot there are no cached
+	// PTKs to seal with, so the load the caller is about to attempt fails on
+	// its own -- but it is not free: a guard that has quietly stopped guarding
+	// (a key-shape drift, a snapshot that never lands) looks exactly like one
+	// with nothing to complain about. Say so, so the two can be told apart.
+	tr, err := t.directLoadTeam(m, fqt)
+	if err != nil || tr == nil {
+		m.Warnw("cachedTeamClaimsName", "stage", "load",
+			"note", "cannot corroborate name against a snapshot; allowing",
+			"name", want, "err", err)
+		return true
+	}
+	names, err := tr.Tw().AllFQStrings()
+	if err != nil {
+		m.Warnw("cachedTeamClaimsName", "stage", "names",
+			"note", "cannot corroborate name against a snapshot; allowing",
+			"name", want, "err", err)
+		return true
+	}
+	// AllFQStrings is what wrote the index keys, so comparing whole strings
+	// covers both the hostname and host-ID spellings without restating either.
+	for _, n := range names {
+		if n == want {
+			return true
+		}
+	}
+	return false
 }
 
 func (t *TeamMinder) fromParsedHostname(
@@ -1360,7 +1598,7 @@ func (t *TeamMinder) uidsToAdhHocCanonicalString(
 	return team.UIDsToAdhHocCanonicalString(uids, t.au.Info.Fqu.Uid)
 }
 
-func (t *TeamMinder) resolveTeamAdHoc(arg proto.FQAdHocTeamParsed) (*proto.FQTeam, error) {
+func (t *TeamMinder) resolveTeamAdHoc(m MetaContext, arg proto.FQAdHocTeamParsed) (*proto.FQTeam, error) {
 	var p1 string
 	var p0 proto.AdHocTeamString
 
@@ -1381,6 +1619,7 @@ func (t *TeamMinder) resolveTeamAdHoc(arg proto.FQAdHocTeamParsed) (*proto.FQTea
 			// Handle this case as we would a named team; everything else is through
 			// different data structures
 			return t.resolveTeamNamed(
+				m,
 				proto.FQTeamParsed{
 					Team: proto.NewParsedTeamWithFalse(aht),
 					Host: arg.Host,
@@ -1443,7 +1682,7 @@ func (t *TeamMinder) resolveTeamAdHoc(arg proto.FQAdHocTeamParsed) (*proto.FQTea
 	return &fqt, nil
 }
 
-func (t *TeamMinder) resolveTeamNamed(arg proto.FQTeamParsed) (*proto.FQTeam, error) {
+func (t *TeamMinder) resolveTeamNamed(m MetaContext, arg proto.FQTeamParsed) (*proto.FQTeam, error) {
 
 	hostID, _, err := t.fromParsedHostname(arg.Host)
 	if err != nil {
@@ -1502,8 +1741,73 @@ func (t *TeamMinder) resolveTeamNamed(arg proto.FQTeamParsed) (*proto.FQTeam, er
 	return &fqt, nil
 }
 
+// resolveTeamNamedFromDB answers a name lookup from the persisted index, for
+// use ONLY when exploration is impossible (server unreachable): consulting it
+// while online would short-circuit the exploration that gives the
+// authoritative answer, serving stale rows (they are written through but
+// never deleted) and leaving loadedTeams unpopulated for non-refresh callers.
+// Offline, a stale answer carries the same verified-but-possibly-behind
+// semantics as every other snapshot.
+func (t *TeamMinder) resolveTeamNamedFromDB(
+	m MetaContext,
+	arg lcl.ConfigTeam,
+) *proto.FQTeam {
+	typ, err := arg.GetT()
+	if err != nil || typ != lcl.ConfigTeamType_Named {
+		return nil
+	}
+	named := arg.Named()
+	hostID, _, err := t.fromParsedHostname(named.Host)
+	if err != nil {
+		return nil
+	}
+	isTeamName, err := named.Team.GetS()
+	if err != nil {
+		return nil
+	}
+	if !isTeamName {
+		tmp := named.Team.False()
+		if hostID == nil {
+			return nil
+		}
+		return &proto.FQTeam{Host: *hostID, Team: tmp}
+	}
+	var h string
+	switch {
+	case hostID != nil:
+		h, err = hostID.StringErr()
+	case named.Host != nil:
+		h, err = named.Host.StringErr()
+	default:
+		return nil
+	}
+	if err != nil {
+		return nil
+	}
+	tm, err := named.Team.StringErr()
+	if err != nil {
+		return nil
+	}
+	ntm, err := core.NormalizeName(proto.NameUtf8(tm))
+	if err != nil {
+		return nil
+	}
+	want := proto.FQTeamString(ntm.String() + "@" + h)
+	fqt := t.lookupTeamNameFromDB(m, want)
+	if fqt == nil {
+		return nil
+	}
+	if !t.cachedTeamClaimsName(m, *fqt, want) {
+		m.Warnw("resolveTeamNamedFromDB",
+			"note", "persisted name row contradicts the team's cached snapshot; refusing to resolve",
+			"name", ntm.String())
+		return nil
+	}
+	return fqt
+}
+
 func (t *TeamMinder) Resolve(m MetaContext, arg proto.FQTeamParsed) (*proto.FQTeam, error) {
-	return t.resolveTeam(team.WrapNamed(arg))
+	return t.resolveTeam(m, team.WrapNamed(arg))
 }
 
 func (t *TeamMinder) ResolveAndReindex(
@@ -1514,7 +1818,7 @@ func (t *TeamMinder) ResolveAndReindex(
 	*proto.FQTeam,
 	error,
 ) {
-	fqt, err := t.resolveTeam(arg)
+	fqt, err := t.resolveTeam(m, arg)
 	if err != nil {
 		return nil, err
 	}
@@ -1523,9 +1827,19 @@ func (t *TeamMinder) ResolveAndReindex(
 	}
 	err = t.ExploreAndIndex(m, opts)
 	if err != nil {
+		// Offline: exploration needs the server, but a previously resolved
+		// name can still resolve from the persisted index; the team itself
+		// then comes up from its verified snapshot downstream.
+		if core.IsTransportError(err) {
+			if hit := t.resolveTeamNamedFromDB(m, arg); hit != nil {
+				m.Warnw("ResolveAndReindex", "err", err,
+					"note", "server unreachable; name resolved from persisted index")
+				return hit, nil
+			}
+		}
 		return nil, err
 	}
-	fqt, err = t.resolveTeam(arg)
+	fqt, err = t.resolveTeam(m, arg)
 	if err != nil {
 		return nil, err
 	}
