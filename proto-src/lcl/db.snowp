@@ -37,10 +37,25 @@ enum DataType {
     KVGitRefSet @73;
 
     RTThreadMsgData @97;
-    RTOutboxMsg @98;
+    RTOutboxMsg @98;       // legacy pre-drain outbox rows; unreachable dead soft state, never written or read
     RTChannelSet @99;
     RTInboxSyncState @100; // cursor + channelID index; see librt inbox syncer
     RTInboxChannel @101;   // one rem.RTInboxChannel row per channel
+    RTOutboxEntry @102;    // one queued/failed outgoing message, keyed by msgID
+    RTOutboxIndex @103;    // singleton index of outbox entries; see librt outbox
+    RTReadThroughPending @104; // singleton set of read-marks queued while offline
+    HostPublicZone @105;   // verified public zone cached per host, for offline starts
+    UserCertChain @106;    // issued client-cert chain cached per (user, key), for offline starts
+    TeamNameLookup @107;   // FQTeamString -> FQTeam; offline name resolution (see TeamMinder)
+}
+
+// The client-cert chain the reg server issued for one of the user's keys
+// (public certificate material only; the private key never leaves the local
+// keyring). Cached so a cold start can present mTLS credentials without the
+// reg server; an expired chain just fails the TLS handshake, which reads as
+// offline.
+struct UserCertChain {
+    certs @0 : List(Blob);
 }
 
 typedef ScopeLabel = Blob;
