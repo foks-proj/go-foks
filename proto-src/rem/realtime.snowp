@@ -77,6 +77,11 @@ struct RTChannelMetadata @0xddf6b26b2ace1535 {
     tier @11 : lib.RTChannelTier;
     unreadable @12 : Bool; // caller's role is below the read role: name is shown
                            // (for collision detection) but desc/lastMsg withheld
+    // Set at creation: this channel is excluded from the push_outbox fan-out
+    // on send. Inbox-version delivery is unaffected, so parked long-polls
+    // still wake; only the phone notification is suppressed. For channels
+    // carrying app control traffic rather than conversation.
+    noPush @13 : Bool;
 }
 
 struct RTChannelSet {
