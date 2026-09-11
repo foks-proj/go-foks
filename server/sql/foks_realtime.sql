@@ -80,6 +80,12 @@ CREATE TABLE channels (
     ctime TIMESTAMPTZ NOT NULL,
     mtime TIMESTAMPTZ NOT NULL,
     updated_at_set_vers INTEGER NOT NULL, /* corresponds to channel_sets at time of update */
+    /* Sends into this channel queue no push_outbox rows; inbox-version
+     * delivery is unaffected. Set at creation. Declared last to match the
+     * column order ADD COLUMN gives a database migrated by
+     * patches/foks_realtime/p5.sql, so a fresh and a migrated DB dump the
+     * same. */
+    no_push BOOLEAN NOT NULL DEFAULT false,
     PRIMARY KEY(short_host_id, channel_id)
 );
 /* no FK to teams (cross-DB); enforced at app layer */
