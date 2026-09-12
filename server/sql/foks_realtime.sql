@@ -282,3 +282,4 @@ INSERT INTO schema_patches (id, ctime) VALUES (1, NOW());
 INSERT INTO schema_patches (id, ctime) VALUES (2, NOW());
 INSERT INTO schema_patches (id, ctime) VALUES (3, NOW());
 INSERT INTO schema_patches (id, ctime) VALUES (4, NOW());
+INSERT INTO schema_patches (id, ctime) VALUES (5, NOW());
