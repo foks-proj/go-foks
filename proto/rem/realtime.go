@@ -447,6 +447,7 @@ type RTChannelMetadata struct {
 	UpdatedAt  lib.RTChannelSetVersion
 	Tier       lib.RTChannelTier
 	Unreadable bool
+	NoPush     bool
 }
 type RTChannelMetadataInternal__ struct {
 	_struct    struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
@@ -463,6 +464,7 @@ type RTChannelMetadataInternal__ struct {
 	UpdatedAt  *lib.RTChannelSetVersionInternal__
 	Tier       *lib.RTChannelTierInternal__
 	Unreadable *bool
+	NoPush     *bool
 }
 
 func (r RTChannelMetadataInternal__) Import() RTChannelMetadata {
@@ -557,6 +559,12 @@ func (r RTChannelMetadataInternal__) Import() RTChannelMetadata {
 			}
 			return *x
 		})(r.Unreadable),
+		NoPush: (func(x *bool) (ret bool) {
+			if x == nil {
+				return ret
+			}
+			return *x
+		})(r.NoPush),
 	}
 }
 func (r RTChannelMetadata) Export() *RTChannelMetadataInternal__ {
@@ -584,6 +592,7 @@ func (r RTChannelMetadata) Export() *RTChannelMetadataInternal__ {
 		UpdatedAt:  r.UpdatedAt.Export(),
 		Tier:       r.Tier.Export(),
 		Unreadable: &r.Unreadable,
+		NoPush:     &r.NoPush,
 	}
 }
 func (r *RTChannelMetadata) Encode(enc rpc.Encoder) error {

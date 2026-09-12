@@ -159,6 +159,16 @@ func (d *Minder) MakeChannel(
 	return d.MakeChannelWithTestHooks(m, team, appId, nm, desc, roles, nil)
 }
 
+// MakeChannelOpts carries the optional knobs of channel creation, so adding
+// one later does not change MakeChannel's signature again.
+type MakeChannelOpts struct {
+	// NoPush excludes the channel from the push_outbox fan-out on send:
+	// members' parked long-polls still wake, but no phone notification is
+	// queued. For channels carrying app control traffic rather than
+	// conversation. Creation-time only.
+	NoPush bool
+}
+
 func (d *Minder) MakeChannelWithTestHooks(
 	m MetaContext,
 	team lcl.ConfigTeam,
@@ -171,13 +181,36 @@ func (d *Minder) MakeChannelWithTestHooks(
 	*proto.RTChannelID,
 	error,
 ) {
+	return d.MakeChannelWithOpts(m, team, appId, nm, desc, roles, MakeChannelOpts{}, test)
+}
+
+func (d *Minder) MakeChannelWithOpts(
+	m MetaContext,
+	team lcl.ConfigTeam,
+	appId proto.RTAppID,
+	nm proto.RTChannelName,
+	desc proto.RTChannelDesc,
+	roles proto.RolePairOpt,
+	opts MakeChannelOpts,
+	test *MakeChannelTestHooks,
+) (
+	*proto.RTChannelID,
+	error,
+) {
 	if nm.Eq(proto.RTGeneralChannel) {
 		return nil, core.RTGenericError("cannot make channel named #general")
+	}
+	// The default channel may not be created no-push. Names are encrypted, so
+	// the server cannot tell which channel is the default one; and the flag is
+	// creation-time only, so a team whose default channel was created this way
+	// would silently stop notifying for every message in it, with no way back.
+	if nm.IsEmpty() && opts.NoPush {
+		return nil, core.RTGenericError("cannot make the default channel no-push")
 	}
 	sleepDur := time.Millisecond
 	numTries := 5
 	for i := range numTries {
-		ret, err := d.makeChannelOneAttempt(m, team, appId, nm, desc, roles, test)
+		ret, err := d.makeChannelOneAttempt(m, team, appId, nm, desc, roles, opts, test)
 		if err == nil {
 			return ret, nil
 		}
@@ -216,6 +249,7 @@ func (d *Minder) makeChannelOneAttempt(
 	nm proto.RTChannelName,
 	desc proto.RTChannelDesc,
 	roles proto.RolePairOpt,
+	opts MakeChannelOpts,
 	test *MakeChannelTestHooks,
 ) (
 	*proto.RTChannelID,
@@ -349,6 +383,7 @@ func (d *Minder) makeChannelOneAttempt(
 	}
 	update.UpdatedAt = chlst.Vers + 1
 	update.Tier = newChTier
+	update.NoPush = opts.NoPush
 
 	arg := rem.RtNewChannelArg{
 		Md:      update,
@@ -534,6 +569,7 @@ func (k *Minder) decryptChannelMetadata(
 	ret.Tier = chmdenc.Tier
 	ret.UpdatedAt = chmdenc.UpdatedAt
 	ret.Unreadable = chmdenc.Unreadable
+	ret.NoPush = chmdenc.NoPush
 
 	return &ret, nil
 }
