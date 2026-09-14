@@ -35,6 +35,11 @@ type Probe struct {
 	lastFailMu sync.Mutex
 	lastFail   error
 
+	// certFails counts consecutive certificate-validation failures against
+	// this host. In memory on purpose: the offline path writes nothing to
+	// local state, and a counter is not worth being the exception.
+	certFails int
+
 	merkleAgentMu sync.Mutex
 	ma            *merkle.Agent
 
@@ -116,6 +121,36 @@ func (p *Probe) setLastFail(e error) {
 	p.lastFail = e
 }
 
+// noteCertOutcome records the outcome of one probe and reports whether this
+// failure should be called a certificate problem rather than an outage. A
+// success clears the count.
+//
+// It takes two consecutive certificate failures to say so. One is what a
+// captive portal produces every time somebody opens a laptop in an airport,
+// and a warning that fires there teaches people to dismiss it -- which costs
+// exactly the attention the warning exists to buy. Two in a row against a host
+// this device has already verified is the shape of an interception.
+//
+// Note what this does not do: it never suppresses the cached identity. If a
+// bad certificate could stop the client serving what it already holds, anyone
+// able to present one could switch the app off from the outside.
+func (p *Probe) noteCertOutcome(e error) bool {
+	p.lastFailMu.Lock()
+	defer p.lastFailMu.Unlock()
+	if !core.IsCertVerifyError(e) {
+		p.certFails = 0
+		return false
+	}
+	p.certFails++
+	return p.certFails >= 2
+}
+
+func (p *Probe) certFailCount() int {
+	p.lastFailMu.Lock()
+	defer p.lastFailMu.Unlock()
+	return p.certFails
+}
+
 func (p *Probe) handleConnectError(e error) bool {
 	if !core.IsTransportError(e) {
 		return false
@@ -177,6 +212,7 @@ func (p *Probe) probe(m MetaContext) error {
 	}
 
 	p.setLastFail(nil)
+	p.noteCertOutcome(nil)
 
 	if p.TestDoneProbeCh != nil {
 		ch := p.TestDoneProbeCh
@@ -342,7 +378,50 @@ func (p *Probe) saveHostchain(m MetaContext) error {
 	if err != nil {
 		return err
 	}
+	// The zone was verified by checkZoneSig earlier in this run; cache it so
+	// a later cold start can hydrate offline (see hydrateFromCache).
+	err = p.di.StorePublicZoneToDB(m, p.chain.HostID(), p.pz)
+	if err != nil {
+		return err
+	}
 	return nil
+}
+
+// hydrateFromCache rebuilds the probe's identity -- hostchain and public
+// zone -- from the local DB after a network probe failed on transport. Both
+// artifacts were fully verified before they were stored, so nothing is
+// re-verified here; the last verified identity is simply rehydrated, exactly
+// like the client's other verified-on-ingest caches. Worst case it is stale
+// (a key rotation or address move the offline device cannot learn about),
+// in which case connections fail and read as offline until a real probe
+// succeeds again.
+//
+// Returns true when the probe is usable afterwards.
+func (p *Probe) hydrateFromCache(m MetaContext) bool {
+	// Hydrate ONLY from rows a fully verified prior run persisted --
+	// saveHostchain writes them after every check (prior chains, signatures,
+	// merkle inclusion, hostname pin, hostname match) has passed. In-memory
+	// state from the CURRENT, failed run must never satisfy this: playChain
+	// and checkZoneSig populate p.chain/p.pz from server-supplied data before
+	// the merkle and pin checks run, so a transport failure mid-run can leave
+	// a self-consistent but never-fully-verified identity in memory -- an
+	// attacker on a taken-over hostname could serve exactly that and then
+	// drop the merkle query. The DB rows are the verified-on-write source;
+	// they also replace any partial in-memory state here.
+	if p.hostID == nil {
+		return false
+	}
+	ch, err := loadPrevChain(m, p.di, *p.hostID)
+	if err != nil || ch == nil {
+		return false
+	}
+	pz, err := p.di.LoadPublicZoneFromDB(m, *p.hostID)
+	if err != nil || pz == nil {
+		return false
+	}
+	p.chain = ch
+	p.pz = pz
+	return true
 }
 
 func (p *Probe) clean() {
@@ -367,6 +446,28 @@ func (p *Probe) Run(m MetaContext) error {
 
 	if err != nil {
 		m.Errorw("probe", "err", err)
+	}
+
+	// A transport failure with a locally cached, previously verified identity
+	// is survivable: hydrate and proceed offline. The failure is remembered
+	// (lastFail), so the next refresh re-probes.
+	if err != nil && core.IsTransportError(err) && p.hydrateFromCache(m) {
+		// Reaching here means this device has verified this host before --
+		// hydrateFromCache only succeeds on a chain and zone an earlier probe
+		// accepted. That is exactly the condition under which a certificate
+		// failure is worth reporting as such, and a captive portal is not:
+		// portals intercept on first contact with a network, not repeatedly
+		// against a host already known good.
+		if p.noteCertOutcome(err) {
+			m.Warnw("probe", "err", err,
+				"note", "cannot verify server identity; serving cached identity",
+				"certFails", p.certFailCount())
+		} else {
+			m.Warnw("probe", "err", err,
+				"note", "network unreachable; hydrated verified identity from cache")
+		}
+		p.setLastFail(err)
+		return nil
 	}
 
 	return err

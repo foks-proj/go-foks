@@ -19,6 +19,14 @@ func PartingConsoleMessage(
 ) error {
 	err := DoUnifiedNags(m)
 	if err != nil {
+		// The parting nag is a courtesy, not part of the command: with the
+		// server unreachable, failing here would sink a command whose real
+		// work (possibly served offline) already succeeded.
+		if core.IsTransportError(err) {
+			m.Infow("PartingConsoleMessage", "err", err,
+				"note", "server unreachable; skipping nags")
+			return nil
+		}
 		return err
 	}
 	return nil

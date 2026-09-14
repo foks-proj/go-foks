@@ -309,6 +309,17 @@ func (g *GlobalContext) Log() *zap.Logger {
 	return g.log
 }
 
+// SetLog replaces the process logger. Tests use it to install an observer
+// core, since some requirements live only in what gets logged -- a fallback
+// that declines a check, say -- and a claim that something "is logged" that no
+// test can see is a claim that rots. Follows the same harness-injection
+// pattern as SetNetworkConditioner and SetMerkleEracer.
+func (g *GlobalContext) SetLog(l *zap.Logger) {
+	g.logMu.Lock()
+	defer g.logMu.Unlock()
+	g.log = l
+}
+
 func NewGlobalContext() *GlobalContext {
 	cfg := zap.NewProductionConfig()
 	if isatty.IsTerminal(os.Stdout.Fd()) {
