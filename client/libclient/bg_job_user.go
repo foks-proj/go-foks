@@ -33,6 +33,14 @@ func (b *BgUserRefresh) refresh(m MetaContext, uc *UserContext) error {
 
 	fqus, _ := uc.FQU().StringErr()
 
+	// If the agent started while offline, this user's keys were never
+	// unlocked; Reconnect does that once the home server is reachable again.
+	err := uc.Reconnect(m)
+	if err != nil {
+		m.Warnw("BgUserRefresh.refresh", "stage", "reconnect", "fqu", fqus, "err", err)
+		return err
+	}
+
 	uw, err := LoadMe(m, uc)
 	if err != nil {
 		m.Warnw("BgUserRefresh.refresh", "stage", "loadme", "fqu", fqus, "err", err)

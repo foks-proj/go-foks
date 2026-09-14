@@ -7,6 +7,8 @@ changelog:
     stable: false
     date: TBD
     changes:
+      - desc: fix git operations (and background key jobs) failing with "key not found" until restart when the agent started while offline, e.g. at boot before the network was up; reconnect and unlock keys on demand
+        closes: ["#366"]
       - desc: speed up team roster listing; serve member names from the username cache instead of full per-member chain loads
         closes: ["#332"]
       - desc: internal; replace team member-load flag pair with one ordered MemberLoadLevel

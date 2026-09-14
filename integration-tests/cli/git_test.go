@@ -219,6 +219,27 @@ func TestGitSimplePushFetch(t *testing.T) {
 	sr.Git(t, "fetch", "origin", "b1")
 	sr.Git(t, "reset", "--hard", "origin/b1")
 	sr.ReadFile(t, "a/b/1", "b1 3")
+
+	// Restart the agent with the network killed, so its startup probe of the
+	// home server fails (as it does when the agent starts at boot, before
+	// the network is up). The agent keeps running with the user loaded but
+	// its keys not yet unlocked. Once the network is back, the first git
+	// operation must reconnect and unlock rather than fail with "key not
+	// found" for the rest of the agent's life.
+	au.agent.stop(t)
+	au.agent.opts.killNetwork = true
+	au.agent.setFlags(t)
+	au.agent.runAgent(t)
+	au.agent.runCmd(t, nil, "test", "set-network-conditions", "clear")
+
+	sr2.Git(t, "fetch", "origin", "b1")
+	sr2.WriteFile(t, "a/b/1", "b1 4")
+	sr2.Git(t, "add", ".")
+	sr2.Git(t, "commit", "-m", "b1 4")
+	sr2.Git(t, "push", "origin", "b1")
+	sr.Git(t, "fetch", "origin", "b1")
+	sr.Git(t, "reset", "--hard", "origin/b1")
+	sr.ReadFile(t, "a/b/1", "b1 4")
 }
 
 func TestGitTeamSimplePushFetch(t *testing.T) {
