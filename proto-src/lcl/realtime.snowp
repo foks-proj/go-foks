@@ -49,6 +49,7 @@ struct RTChannelMetadataPlaintext {
     updatedAt @7 : lib.RTChannelSetVersion;
     unreadable @8 : Bool; // caller can't read this channel (role below read role);
                           // kept for name-collision detection, hidden from the inbox
+    noPush @9 : Bool;     // sends here queue no push notifications (see rem)
 }
 
 struct RTChannelSetForTeam {

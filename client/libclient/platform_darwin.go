@@ -179,7 +179,10 @@ func addItem(
 	item.SetAccount(mac.Account)
 	item.SetLabel("")
 	item.SetSynchronizable(keychain.SynchronizableNo)
-	item.SetAccessible(keychain.AccessibleWhenUnlocked)
+	// Platform-dependent: WhenUnlocked on macOS, ThisDeviceOnly on iOS, where
+	// the difference decides whether this wrapping key ends up in device
+	// backups. See keychain_accessible_{ios,macos}.go.
+	item.SetAccessible(secretKeyAccessible)
 	item.SetAccessGroup("")
 	item.SetData([]byte(skey))
 

@@ -540,6 +540,26 @@ func (m MetaContext) ActiveConnectedUser(
 	if au == nil {
 		return nil, core.NoActiveUserError{}
 	}
+	return m.ConnectUser(au, opts)
+}
+
+// ConnectUser makes sure the given user is connected to its home server and
+// then applies the lock checks requested in opts. If the user was loaded while
+// the home server was unreachable (for instance, the agent started at boot
+// before the network came up), its keys were never unlocked; reconnecting
+// runs that unlock now. Callers that pick a user by name (rather than using
+// the active user) should go through here rather than using the UserContext
+// directly, or they'll see "key not found" for as long as the agent runs.
+func (m MetaContext) ConnectUser(
+	au *UserContext,
+	opts *ACUOpts,
+) (
+	*UserContext,
+	error,
+) {
+	if au == nil {
+		return nil, core.UserNotFoundError{}
+	}
 	err := au.Reconnect(m)
 	if err != nil {
 		// Offline tolerance: losing the server must not disable work that
@@ -553,7 +573,7 @@ func (m MetaContext) ActiveConnectedUser(
 		if !core.IsTransportError(err) || au.AssertUnlocked(m.Ctx()) != nil {
 			return nil, err
 		}
-		m.Warnw("ActiveConnectedUser", "stage", "reconnect",
+		m.Warnw("ConnectUser", "stage", "reconnect",
 			"err", err, "note", "proceeding offline with an unlocked user")
 	}
 	if opts == nil || (!opts.AssertUnlocked && !opts.ProbeUnlocked) {

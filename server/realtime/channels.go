@@ -184,6 +184,7 @@ type channelMetadataRaw struct {
 	ctime, mtime                  time.Time
 	updatedAtSetVers              int
 	tierRaw                       string
+	noPush                        bool
 }
 
 // channelMetadataCols is the column list matching channelMetadataRaw.scanDests,
@@ -194,7 +195,7 @@ const channelMetadataCols = `c.channel_id_full, c.seqno, c.name_box, c.desc_box,
 	        c.write_role_type, c.write_role_viz_level,
 	        c.last_msg_type, c.last_msg_seq, c.last_send_time,
 	        cp.party_id, cp.uid,
-	        c.ctime, c.mtime, c.updated_at_set_vers, c.tier`
+	        c.ctime, c.mtime, c.updated_at_set_vers, c.tier, c.no_push`
 
 // lastSenderJoin attributes the channel's denormalized last message to its
 // sender; LEFT so channels with no messages still row.
@@ -210,7 +211,7 @@ func (r *channelMetadataRaw) scanDests() []any {
 		&r.lastMsgType, &r.lastMsgSeq, &r.lastSendTime,
 		&r.partyIDRaw, &r.uidRaw,
 		&r.ctime, &r.mtime, &r.updatedAtSetVers,
-		&r.tierRaw,
+		&r.tierRaw, &r.noPush,
 	}
 }
 
@@ -266,6 +267,7 @@ func (r *channelMetadataRaw) export(
 	if err != nil {
 		return nil, err
 	}
+	md.NoPush = r.noPush
 	return &md, nil
 }
 
@@ -506,11 +508,11 @@ func (c *channelMaker) insertChannel(m shared.MetaContext) error {
 			(short_host_id, channel_id, parent_team_id, app_id, channel_id_full,
 			 seqno, name_box, name_box_ptk_gen, tier, desc_box, desc_box_ptk_gen,
 			 read_role_type, read_role_viz_level, write_role_type, write_role_viz_level,
-			 ctime, mtime, updated_at_set_vers)
+			 ctime, mtime, updated_at_set_vers, no_push)
 		VALUES($1, $2, $3, $4, $5,
 		       $6, $7, $8, $9, $10, $11,
 		       $12, $13, $14, $15,
-		       NOW(), NOW(), $16)`,
+		       NOW(), NOW(), $16, $17)`,
 		m.ShortHostID(),
 		int64(c.md.Id.Short()),
 		c.md.ParentTeam.ExportToDB(),
@@ -527,6 +529,7 @@ func (c *channelMaker) insertChannel(m shared.MetaContext) error {
 		writeType,
 		writeViz,
 		c.vers.ExportToDB(),
+		c.md.NoPush,
 	)
 	if shared.IsDuplicateKeyError(err, "channels_pkey") {
 		return core.RTRaceError{Which: "channels"}
