@@ -98,6 +98,13 @@ func (a *Agent) initStorage(
 	}
 	var auOverride *libclient.UserContext
 	var au *libclient.UserContext
+	// Whichever user we pick, go through the connect-and-unlock path rather
+	// than using the UserContext as is. If the agent started while its home
+	// server was unreachable (e.g., at boot, before the network came up),
+	// the user's keys haven't been unlocked yet, and every git operation
+	// would fail with "key not found" until the agent restarted.
+	acuOpts := &libclient.ACUOpts{AssertUnlocked: true}
+
 	user, team, err := a.url.Fqp.Select()
 	switch {
 	case err != nil:
@@ -110,12 +117,16 @@ func (a *Agent) initStorage(
 		if uc == nil {
 			return core.InternalError("expected user!=nil if err==nil from FindUser")
 		}
+		uc, err = mctx.ConnectUser(uc, acuOpts)
+		if err != nil {
+			return err
+		}
 		auOverride = uc
 		au = uc
 	case team != nil:
-		au = mctx.G().ActiveUser()
-		if au == nil {
-			return core.NoActiveUserError{}
+		au, err = mctx.ActiveConnectedUser(acuOpts)
+		if err != nil {
+			return err
 		}
 	default:
 		return core.InternalError("no user or team in parsed Git URL")

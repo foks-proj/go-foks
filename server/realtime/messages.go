@@ -34,6 +34,7 @@ type messageSender struct {
 	readRole   proto.Role
 	prevSeq    proto.RTMsgSeq
 	appID      proto.RTAppID
+	noPush     bool
 
 	// members whose inbox versions the fanout bumped; the caller wakes their
 	// parked long-pollers after the transaction commits.
@@ -53,13 +54,14 @@ func (s *messageSender) lockChannel(m shared.MetaContext) error {
 	err := s.tx.QueryRow(
 		m.Ctx(),
 		`SELECT parent_team_id, write_role_type, write_role_viz_level,
-		        read_role_type, read_role_viz_level, last_msg_seq, app_id
+		        read_role_type, read_role_viz_level, last_msg_seq, app_id,
+		        no_push
 		 FROM channels
 		 WHERE short_host_id=$1 AND channel_id=$2
 		 FOR UPDATE`,
 		m.ShortHostID(),
 		s.channelID(),
-	).Scan(&teamRaw, &wrt, &wvl, &rrt, &rvl, &prevSeqRaw, &appRaw)
+	).Scan(&teamRaw, &wrt, &wvl, &rrt, &rvl, &prevSeqRaw, &appRaw, &s.noPush)
 	if err == pgx.ErrNoRows {
 		return core.RowNotFoundError{}
 	}
@@ -341,6 +343,14 @@ func (s *messageSender) fanoutInboxVersions(
 	// does. push_outbox is already in the schema; this is the writer.
 	// kind='msg', data=NULL — a pure wake: no message content, sender or
 	// channel name leaves the E2EE boundary for a push provider.
+	//
+	// A no-push channel skips this fan-out and nothing else: the
+	// inbox-version bump above has already been made, so members' parked
+	// long-polls still wake and online delivery is unchanged. Only the
+	// phone notification is suppressed.
+	if s.noPush {
+		return nil
+	}
 	_, err = s.tx.Exec(
 		m.Ctx(),
 		`INSERT INTO push_outbox (short_host_id, uid, channel_id, kind, seq, status, ctime, mtime)

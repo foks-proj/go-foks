@@ -259,14 +259,24 @@ func (c *ClientConn) KvPutRoot(ctx context.Context, arg rem.KvPutRootArg) error 
 		})
 }
 
-func (c *ClientConn) KvPutSmallFileOrSymlink(ctx context.Context, arg rem.KvPutSmallFileOrSymlinkArg) error {
-	return c.auth(ctx, arg.Auth,
+func (c *ClientConn) KvPutSmallFileOrSymlink(ctx context.Context, arg rem.KvPutSmallFileOrSymlinkArg) (rem.KVPutSmallFileOrSymlinkRes, error) {
+	var res rem.KVPutSmallFileOrSymlinkRes
+	err := c.auth(ctx, arg.Auth,
 		func(m shared.MetaContext, db *pgxpool.Conn, pid proto.PartyID, role proto.Role) error {
 			return shared.RetryTx(m, db, "kvPutFile",
 				func(m shared.MetaContext, tx pgx.Tx) error {
-					return putSmallFileOrSymlink(m, tx, pid, role, arg)
+					wasReplay, err := putSmallFileOrSymlink(m, tx, pid, role, arg)
+					if err != nil {
+						return err
+					}
+					res.WasReplay = wasReplay
+					return nil
 				})
 		})
+	if err != nil {
+		return rem.KVPutSmallFileOrSymlinkRes{}, err
+	}
+	return res, nil
 }
 
 func (c *ClientConn) KvGetRoot(ctx context.Context, auth rem.KVAuth) (proto.KVRoot, error) {

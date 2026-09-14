@@ -4,6 +4,8 @@
 package kvStore
 
 import (
+	"bytes"
+
 	"github.com/foks-proj/go-foks/lib/core"
 	"github.com/foks-proj/go-foks/lib/kv"
 	proto "github.com/foks-proj/go-foks/proto/lib"
@@ -81,51 +83,48 @@ func (s *SimpleLargeFileStream) Len() int {
 	return len(s.data)
 }
 
+// putSmallFileOrSymlink writes the small-file (or symlink) row. The returned
+// bool reports an idempotent replay: the node already existed with exactly
+// these bytes, and nothing was written or charged against usage.
 func putSmallFileOrSymlink(
 	m shared.MetaContext,
 	tx pgx.Tx,
 	pid proto.PartyID,
 	role proto.Role,
 	arg rem.KvPutSmallFileOrSymlinkArg,
-) error {
+) (bool, error) {
 	err := assertAtOrAbove(role, arg.Sfb.Rg.Role, proto.KVOp_Read, proto.KVNodeType_Symlink)
 	if err != nil {
-		return err
+		return false, err
 	}
 
 	rk, err := core.ImportRole(arg.Sfb.Rg.Role)
 	if err != nil {
-		return err
+		return false, err
 	}
 
 	// Max length of small file is 2k + size of Poly1305
 	lim := kv.SmallFileSize + secretbox.Overhead
 	if len(arg.Sfb.DataBox) > lim {
-		return core.TooBigError{
+		return false, core.TooBigError{
 			Actual: len(arg.Sfb.DataBox),
 			Limit:  lim,
 			Desc:   "small file",
 		}
 	}
 
-	err = usageCheckAndInc(
-		m,
-		tx,
-		pid,
-		proto.KVNodeType_SmallFile,
-		len(arg.Sfb.DataBox),
-		true,
-	)
-	if err != nil {
-		return err
-	}
-
+	// Insert first, tolerating a conflict, so recognising a replay and
+	// claiming the row are one atomic step. A pre-check would leave a window
+	// where the original write commits between check and insert, and the
+	// retry would then fail on the primary key -- the exact case this makes
+	// safe.
 	tag, err := tx.Exec(
 		m.Ctx(),
 		`INSERT INTO small_file_or_symlink(short_host_id, short_party_id, node_id, 
 			ptk_gen, read_role_type, read_role_viz_level,
 			size, box, ctime, mtime, refcount 
-		) VALUES($1, $2, $3, $4, $5, $6, $7, $8, NOW(), NOW(), 0)`,
+		) VALUES($1, $2, $3, $4, $5, $6, $7, $8, NOW(), NOW(), 0)
+		 ON CONFLICT DO NOTHING`,
 		int(m.HostID().Short),
 		pid.Shorten().ExportToDB(),
 		arg.Id.ExportToDB(),
@@ -136,12 +135,64 @@ func putSmallFileOrSymlink(
 		arg.Sfb.DataBox.ExportToDB(),
 	)
 	if err != nil {
-		return err
+		return false, err
+	}
+
+	if tag.RowsAffected() == 0 {
+		// The node ID is already taken. A client retrying after an ambiguous
+		// failure sends byte-identical bytes -- node IDs are client-chosen
+		// and a small file's nonce derives from its node ID -- so an
+		// identical row is that retry, and succeeding is what lets the
+		// client carry on. Anything else reusing the ID is a bug or a stray
+		// collision in a 16-byte random space, and must not silently keep
+		// one copy or the other.
+		//
+		// FOR UPDATE anchors the replay decision until this transaction
+		// commits: the comparison runs in a later statement (and snapshot)
+		// than the conflicting insert, so without the lock a future GC could
+		// delete the row in between, leaving the reported success describing
+		// a row that no longer exists.
+		var box []byte
+		var gen, rt, vl int
+		err = tx.QueryRow(
+			m.Ctx(),
+			`SELECT box, ptk_gen, read_role_type, read_role_viz_level
+			 FROM small_file_or_symlink
+			 WHERE short_host_id=$1 AND short_party_id=$2 AND node_id=$3
+			 FOR UPDATE`,
+			int(m.HostID().Short),
+			pid.Shorten().ExportToDB(),
+			arg.Id.ExportToDB(),
+		).Scan(&box, &gen, &rt, &vl)
+		if err != nil {
+			return false, err
+		}
+		if bytes.Equal(box, arg.Sfb.DataBox) &&
+			gen == int(arg.Sfb.Rg.Gen) &&
+			rt == int(rk.Typ) &&
+			vl == int(rk.Lev) {
+			// An identical replay. No second usage charge.
+			return true, nil
+		}
+		return false, core.KVRaceError("small-file node id reused with different contents")
 	}
 	if tag.RowsAffected() != 1 {
-		return core.InsertError("large_file")
+		return false, core.InsertError("small_file_or_symlink")
 	}
-	return nil
+
+	// Only a genuinely new row is charged against usage.
+	err = usageCheckAndInc(
+		m,
+		tx,
+		pid,
+		proto.KVNodeType_SmallFile,
+		len(arg.Sfb.DataBox),
+		true,
+	)
+	if err != nil {
+		return false, err
+	}
+	return false, nil
 }
 
 type LargeFileStatus int
@@ -295,6 +346,7 @@ func (f *fileUploader) insLargeFile(m shared.MetaContext) error {
 	if err != nil {
 		return err
 	}
+
 	if tag.RowsAffected() != 1 {
 		return core.InsertError("large_file")
 	}

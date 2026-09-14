@@ -150,6 +150,12 @@ func putDir(
 		// hide the difference. The stored row must also still be active: a
 		// replay that matches a dead directory did not create anything the
 		// client can go on to use.
+		//
+		// FOR UPDATE anchors the replay decision until this transaction
+		// commits: the comparison runs in a later statement (and snapshot)
+		// than the conflicting insert, so without the lock a future GC could
+		// delete or kill the row in between, leaving the reported success
+		// describing a row that no longer exists.
 		var seed []byte
 		var gen, rt, rl, wt, wl int
 		var status string
@@ -158,7 +164,8 @@ func putDir(
 			        read_role_type, read_role_viz_level,
 			        write_role_type, write_role_viz_level, status
 			 FROM dir
-			 WHERE short_host_id=$1 AND short_party_id=$2 AND dir_id=$3 AND version=$4`,
+			 WHERE short_host_id=$1 AND short_party_id=$2 AND dir_id=$3 AND version=$4
+			 FOR UPDATE`,
 			int(m.HostID().Short),
 			spid.ExportToDB(),
 			dir.Id.ExportToDB(),

@@ -24,6 +24,12 @@ func (b *BgCLKR) Priority() BgPriority      { return 2 }
 func (b *BgCLKR) Reschedule() time.Duration { return b.cfg.Sleep() }
 
 func (b *BgCLKR) Perform(m MetaContext) error {
+	// Reconnect (and unlock keys) if the agent started while offline;
+	// otherwise the rotation below fails with "key not found" until restart.
+	_, err := m.ActiveConnectedUser(nil)
+	if err != nil {
+		return err
+	}
 	tm, err := m.G().TeamMinder()
 	if err != nil {
 		return err
