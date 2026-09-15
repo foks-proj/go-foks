@@ -28,6 +28,11 @@ var MkdirAllMode = fs.FileMode(0o700)
 // DbFileMode is the mode forced onto the client sqlite DBs after creation.
 var DbFileMode = fs.FileMode(0o600)
 
+// SocketFileMode is the mode forced onto the agent's unix socket after it is
+// bound. The agent does no peer-credential check, and connect() needs write
+// permission on the socket, so this mode is the whole access control.
+var SocketFileMode = fs.FileMode(0o600)
+
 func MacOSServiceName(isTest bool) string {
 	return KeychainServiceName(isTest)
 }

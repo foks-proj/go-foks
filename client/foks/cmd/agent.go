@@ -91,6 +91,15 @@ func (a *AgentCmd) doListen(m libclient.MetaContext, f core.Path, full core.Path
 	if err != nil {
 		return err
 	}
+	// Listen creates the socket as 0777&^umask, and on darwin its directory
+	// (~/Library/Caches/foks) is 0755, so under a lenient umask any local user
+	// could connect and drive the agent. Clamp it rather than trust the umask.
+	// Best-effort: the listener is up either way, and refusing to run would
+	// not make it any safer.
+	err = f.Chmod(libclient.SocketFileMode)
+	if err != nil {
+		m.Warnw("doListen", "path", full, "action", "chmod", "err", err)
+	}
 	a.sock = sock
 	return nil
 }
