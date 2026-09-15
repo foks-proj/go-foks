@@ -1003,7 +1003,11 @@ func (k *Minder) lookupDirent(
 	}
 	switch typ {
 	case proto.KVNodeType_None:
-		return nil, core.KVNoentError{}
+		// A tombstone: absent to a read, but a put overwrites it, as it does when
+		// the dirent-cache hit above returns one.
+		if !opts.forPut {
+			return nil, core.KVNoentError{}
+		}
 	case proto.KVNodeType_Dir:
 		raw := res.Data.Dir()
 		dir := NewDirPair(kvp.Id(), raw, nil)
