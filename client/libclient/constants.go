@@ -25,6 +25,9 @@ const DefProbeAddr = proto.TCPAddr("foks.app")
 // meant to be read by another user or by the owner's group.
 var MkdirAllMode = fs.FileMode(0o700)
 
+// DbFileMode is the mode forced onto the client sqlite DBs after creation.
+var DbFileMode = fs.FileMode(0o600)
+
 func MacOSServiceName(isTest bool) string {
 	return KeychainServiceName(isTest)
 }
