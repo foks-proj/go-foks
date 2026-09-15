@@ -103,6 +103,18 @@ type PLCOpts struct {
 	ForceRefresh bool
 }
 
+// getLockedNode returns the node for fqp, creating it if needed, locked.
+//
+// p is never held while waiting on another lock. loadTeam holds a node's lock
+// across a network reload and then takes p, so waiting on the node under p
+// deadlocks. fqptLocks does not serialize the two: it is keyed by how the team
+// was named, and a team named two ways (e.g. by name and by ID) is two keys but
+// one node. p.au.FQU() is called outside p for the same reason: it takes the
+// user lock, which is held across I/O.
+//
+// A new node is visible in p.parties before its creator locks it. That is
+// fine: nothing reads a node without locking it, and an empty node is filled
+// in by whoever locks it first (loadUser: skm == nil; loadTeam: !isFresh).
 func (p *PartyLoaderCache) getLockedNode(
 	fqp proto.FQParty,
 ) (
@@ -113,20 +125,29 @@ func (p *PartyLoaderCache) getLockedNode(
 	if err != nil {
 		return nil, err
 	}
-	p.Lock()
-	defer p.Unlock()
-	ret := p.parties[*fqef]
-	if ret != nil {
-		ret.Lock()
-		return ret, nil
-	}
-	ret = &PLCNode{
-		id: fqp,
-		au: p.au.FQU(),
+	ret := p.lookupNode(*fqef, nil)
+	if ret == nil {
+		ret = p.lookupNode(*fqef, &PLCNode{
+			id: fqp,
+			au: p.au.FQU(),
+		})
 	}
 	ret.Lock()
-	p.parties[*fqef] = ret
 	return ret, nil
+}
+
+// lookupNode returns the node for fqef. If there is none and fresh is non-nil,
+// fresh is inserted and returned. Holds p only for the map access.
+func (p *PartyLoaderCache) lookupNode(fqef proto.FQEntityFixed, fresh *PLCNode) *PLCNode {
+	p.Lock()
+	defer p.Unlock()
+	if ret := p.parties[fqef]; ret != nil {
+		return ret
+	}
+	if fresh != nil {
+		p.parties[fqef] = fresh
+	}
+	return fresh
 }
 
 func (p *PartyLoaderCache) loadUser(m MetaContext, opts *PLCOpts) (*PLCNode, error) {
