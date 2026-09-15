@@ -133,3 +133,27 @@ func TestKVStaleCacheAfterFreshServerLookup(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, "v2", got)
 }
+
+// B removes a file that A has cached, A reads the removal (and caches the
+// tombstone), then B writes the file again. A's next read must see the new
+// file: a "no such file" answered from a cached tombstone has to be checked
+// with the server like any other cache-derived result.
+func TestKVStaleCacheTombstoneThenRecreate(t *testing.T) {
+	s := setupKVStaleCacheTeamTest(t)
+	p := "/docs/note.txt"
+
+	s.put(t, s.aMc, s.aKvm, p, "v1")
+	got, err := s.get(s.aMc, s.aKvm, p)
+	require.NoError(t, err)
+	require.Equal(t, "v1", got)
+
+	err = s.bKvm.Unlink(s.bMc, s.readCfg, s.path(p))
+	require.NoError(t, err)
+	_, err = s.get(s.aMc, s.aKvm, p)
+	require.True(t, core.IsKVNoentError(err), "want noent, got %v", err)
+
+	s.put(t, s.bMc, s.bKvm, p, "v2")
+	got, err = s.get(s.aMc, s.aKvm, p)
+	require.NoError(t, err)
+	require.Equal(t, "v2", got)
+}
