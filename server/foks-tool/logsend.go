@@ -53,8 +53,10 @@ func (l *LogSendCommand) Run(m shared.MetaContext) error {
 		return err
 	}
 
+	// These are another user's logs, extracted onto an operator's machine;
+	// keep them to the operator.
 	dir := l.Dir.Join(core.Path(fmt.Sprintf("logsend-%s", l.Id.String())))
-	if err := dir.Mkdir(0755); err != nil {
+	if err := dir.Mkdir(0o700); err != nil {
 		return fmt.Errorf("failed to create directory %s: %w", dir, err)
 	}
 	if err := dir.Chdir(); err != nil {
@@ -76,7 +78,7 @@ func (l *LogSendCommand) Run(m shared.MetaContext) error {
 	if err != nil {
 		return err
 	}
-	err = dir.Join(core.Path("metadata.json")).WriteFile(out, 0644)
+	err = dir.Join(core.Path("metadata.json")).WriteFile(out, 0o600)
 	if err != nil {
 		return err
 	}
@@ -88,14 +90,14 @@ func (l *LogSendCommand) Run(m shared.MetaContext) error {
 			return fmt.Errorf("invalid file name %q in logsend %s", file.Name, l.Id.String())
 		}
 		fpath := dir.Join(core.Path(file.Name))
-		err = fpath.WriteFile(file.RawData, 0644)
+		err = fpath.WriteFile(file.RawData, 0o600)
 		if err != nil {
 			return err
 		}
 		isGzip, basename := fn.StripSuffix(".gz")
 		if len(file.ExpandedData) > 0 && isGzip {
 			fpath = dir.Join(core.Path(basename))
-			err = fpath.WriteFile(file.ExpandedData, 0644)
+			err = fpath.WriteFile(file.ExpandedData, 0o600)
 			if err != nil {
 				return err
 			}

@@ -99,7 +99,7 @@ func (g *GlobalContext) Db(ctx context.Context, which DbType) (*DB, error) {
 	if err != nil {
 		return nil, err
 	}
-	return dbs.Get(ctx, which, file, opts)
+	return dbs.Get(ctx, which, file, opts, g.ThinLog(ctx))
 }
 
 func (g *GlobalContext) DbNuke(ctx context.Context, which DbType) error {
@@ -130,7 +130,7 @@ func (d *DBs) Nuke(context context.Context, which DbType, file string) error {
 	return os.Remove(file)
 }
 
-func (d *DBs) Get(ctx context.Context, which DbType, file string, opts string) (*DB, error) {
+func (d *DBs) Get(ctx context.Context, which DbType, file string, opts string, log core.ThinLogger) (*DB, error) {
 	d.Lock()
 	defer d.Unlock()
 
@@ -138,6 +138,8 @@ func (d *DBs) Get(ctx context.Context, which DbType, file string, opts string) (
 	if cached != nil {
 		return cached, nil
 	}
+	// The DB path can be redirected anywhere via config, so unlike the config
+	// and log dirs we only create the parent here; we never chmod it.
 	err := os.MkdirAll(filepath.Dir(file), MkdirAllMode)
 	if err != nil {
 		return nil, err
@@ -153,6 +155,16 @@ func (d *DBs) Get(ctx context.Context, which DbType, file string, opts string) (
 	err = initDB(ctx, db, which)
 	if err != nil {
 		return nil, err
+	}
+	// sqlite3 creates the DB as 0666&^umask, which typically leaves it
+	// world-readable. It holds boxed key material, team membership and cached
+	// KV data, so clamp it. SQLite copies the main DB's mode onto the
+	// journal/WAL sidecars, and initDB has just created the file, so doing
+	// this here covers those too. Best-effort, as with the dir above: we
+	// just opened the DB read-write, so it's usable whether or not we own it.
+	err = os.Chmod(file, DbFileMode)
+	if err != nil {
+		log.Warnw("DBs.Get: chmod failed; continuing", "file", file, "mode", DbFileMode, "err", err)
 	}
 	ret := &DB{db: db, scopeMap: make(map[scopeMapKey]lcl.ScopeID), which: which}
 	d.dbs[which] = ret

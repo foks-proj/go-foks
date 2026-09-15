@@ -1021,30 +1021,22 @@ func (c *Config) defaultLocalKeyEncryptionLocked() (
 	return ParseSecretKeyStorageType(s)
 }
 
-func (c *Config) makeConfigDir(ctx context.Context) error {
+func (c *Config) makeConfigDir(ctx context.Context, log core.ThinLogger) error {
 	// Make our config dir if it didn't already exist, since we'll need it
 	// to do things like write private keys in the secret store.
 	configDir, err := c.HomeFinder().ConfigDir()
 	if err != nil {
 		return err
 	}
-	err = os.MkdirAll(configDir, MkdirAllMode)
-	if err != nil {
-		return err
-	}
-	return nil
+	return core.Path(configDir).MkdirAllMode(MkdirAllMode, log)
 }
 
-func (c *Config) makeLogDir(ctx context.Context) error {
+func (c *Config) makeLogDir(ctx context.Context, log core.ThinLogger) error {
 	logDir, err := c.HomeFinder().LogDir()
 	if err != nil {
 		return err
 	}
-	err = os.MkdirAll(logDir, MkdirAllMode)
-	if err != nil {
-		return err
-	}
-	return nil
+	return core.Path(logDir).MkdirAllMode(MkdirAllMode, log)
 }
 
 func (c *Config) Configure(ctx context.Context, log core.ThinLogger) error {
@@ -1057,12 +1049,12 @@ func (c *Config) Configure(ctx context.Context, log core.ThinLogger) error {
 		return err
 	}
 
-	err = c.makeConfigDir(ctx)
+	err = c.makeConfigDir(ctx, log)
 	if err != nil {
 		return err
 	}
 
-	err = c.makeLogDir(ctx)
+	err = c.makeLogDir(ctx, log)
 	if err != nil {
 		return err
 	}
