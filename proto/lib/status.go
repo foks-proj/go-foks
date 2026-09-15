@@ -162,6 +162,8 @@ const (
 	StatusCode_RT_NOT_FOUND_ERROR                      StatusCode = 12005
 	StatusCode_RT_MSG_ORDER_ERROR                      StatusCode = 12006
 	StatusCode_RT_MSG_REPLAY_MISMATCH                  StatusCode = 12007
+	StatusCode_RT_MSG_QUEUED                           StatusCode = 12008
+	StatusCode_RT_OUTBOX_FULL                          StatusCode = 12009
 )
 
 var StatusCodeMap = map[string]StatusCode{
@@ -315,6 +317,8 @@ var StatusCodeMap = map[string]StatusCode{
 	"RT_NOT_FOUND_ERROR":                      12005,
 	"RT_MSG_ORDER_ERROR":                      12006,
 	"RT_MSG_REPLAY_MISMATCH":                  12007,
+	"RT_MSG_QUEUED":                           12008,
+	"RT_OUTBOX_FULL":                          12009,
 }
 var StatusCodeRevMap = map[StatusCode]string{
 	0:     "OK",
@@ -467,6 +471,8 @@ var StatusCodeRevMap = map[StatusCode]string{
 	12005: "RT_NOT_FOUND_ERROR",
 	12006: "RT_MSG_ORDER_ERROR",
 	12007: "RT_MSG_REPLAY_MISMATCH",
+	12008: "RT_MSG_QUEUED",
+	12009: "RT_OUTBOX_FULL",
 }
 
 type StatusCodeInternal__ StatusCode
@@ -1227,6 +1233,7 @@ type Status struct {
 	F_20__ *OAuth2IdPError       `json:"f20,omitempty"`
 	F_21__ *int64                `json:"f21,omitempty"`
 	F_22__ *bool                 `json:"f22,omitempty"`
+	F_23__ *RTMsgID              `json:"f23,omitempty"`
 	F_0__  *string               `json:"f0,omitempty"`
 }
 type StatusInternal__ struct {
@@ -1258,12 +1265,13 @@ type StatusInternalSwitch__ struct {
 	F_20__  *OAuth2IdPErrorInternal__       `codec:"k"`
 	F_21__  *int64                          `codec:"l"`
 	F_22__  *bool                           `codec:"m"`
+	F_23__  *RTMsgIDInternal__              `codec:"n"`
 	F_0__   *string                         `codec:"0"`
 }
 
 func (s Status) GetSc() (ret StatusCode, err error) {
 	switch s.Sc {
-	case StatusCode_OK, StatusCode_AUTH_ERROR, StatusCode_TIMEOUT_ERROR, StatusCode_REPLAY_ERROR, StatusCode_BAD_PASSPHRASE_ERROR, StatusCode_RATE_LIMIT_ERROR, StatusCode_TX_RETRY_ERROR, StatusCode_WRONG_USER_ERROR, StatusCode_BAD_INVITE_CODE_ERROR, StatusCode_NOT_IMPLEMENTED, StatusCode_USERNAME_IN_USE_ERROR, StatusCode_MERKLE_NO_ROOT_ERROR, StatusCode_NO_DEFAULT_HOST_ERROR, StatusCode_KEY_IN_USE_ERROR, StatusCode_MERKLE_LEAF_NOT_FOUND_ERROR, StatusCode_USER_NOT_FOUND_ERROR, StatusCode_ROW_NOT_FOUND_ERROR, StatusCode_KEX_BAD_SECRET, StatusCode_PASSPHRASE_LOCKED_ERROR, StatusCode_NO_ACTIVE_USER_ERROR, StatusCode_SIGNING_KEY_NOT_FULLY_PROVISIONED_ERROR, StatusCode_CANCELED_INPUT_ERROR, StatusCode_TESTING_ONLY_ERROR, StatusCode_PASSPHRASE_NOT_FOUND_ERROR, StatusCode_RPC_EOF, StatusCode_TEAM_NOT_FOUND_ERROR, StatusCode_TEAM_NO_SRC_ROLE_ERROR, StatusCode_TEAM_ADHOC_CREATOR_INCLUDED_ERROR, StatusCode_TEAM_ADHOC_OPEN_VIEWERSHIP_ERROR, StatusCode_TEAM_ADHOC_DUPLICATE_ERROR, StatusCode_NEED_LOGIN_ERROR, StatusCode_BAD_RANGE_ERROR, StatusCode_HOSTID_NOT_FOUND_ERROR, StatusCode_KV_UPLOAD_IN_PROGRESS_ERROR, StatusCode_KV_EXISTS_ERROR, StatusCode_KV_NEED_FILE_ERROR, StatusCode_KV_NEED_DIR_ERROR, StatusCode_KV_PATH_TOO_DEEP_ERROR, StatusCode_KV_LOCK_ALREADY_HELD_ERROR, StatusCode_KV_LOCK_TIMEOUT_ERROR, StatusCode_KV_RMDIR_NEED_RECURSIVE_ERROR, StatusCode_CONTEXT_CANCELED_ERROR, StatusCode_NETWORK_CONDITIONER_ERROR, StatusCode_WEB_SESSION_NOT_FOUND_ERROR, StatusCode_NO_ACTIVE_PLAN_ERROR, StatusCode_OVER_QUOTA_ERROR, StatusCode_PLAN_EXISTS_ERROR, StatusCode_EXPIRED_ERROR, StatusCode_STRIPE_SESSION_EXISTS_ERROR, StatusCode_SSO_IDP_LOCKED_ERROR, StatusCode_TEAM_INVITE_ALREADY_ACCEPTED_ERROR, StatusCode_DEVICE_ALREADY_PROVISIONED_ERROR, StatusCode_KV_NOT_AVAILABLE_ERROR, StatusCode_YUBI_DEFAULT_MANAGEMENT_KEY_ERROR, StatusCode_YUBI_BAD_PIN_FORMAT_ERROR, StatusCode_YUBI_PIN_REQUIRED_ERROR, StatusCode_YUBI_DEFAULT_PIN_ERROR, StatusCode_BOT_TOKEN_LOCKED_ERROR, StatusCode_RT_CHANNEL_EXISTS_ERROR, StatusCode_TEAM_VO_BEARER_TOKEN_NOT_FOUND_ERROR, StatusCode_RT_MSG_REPLAY_MISMATCH:
+	case StatusCode_OK, StatusCode_AUTH_ERROR, StatusCode_TIMEOUT_ERROR, StatusCode_REPLAY_ERROR, StatusCode_BAD_PASSPHRASE_ERROR, StatusCode_RATE_LIMIT_ERROR, StatusCode_TX_RETRY_ERROR, StatusCode_WRONG_USER_ERROR, StatusCode_BAD_INVITE_CODE_ERROR, StatusCode_NOT_IMPLEMENTED, StatusCode_USERNAME_IN_USE_ERROR, StatusCode_MERKLE_NO_ROOT_ERROR, StatusCode_NO_DEFAULT_HOST_ERROR, StatusCode_KEY_IN_USE_ERROR, StatusCode_MERKLE_LEAF_NOT_FOUND_ERROR, StatusCode_USER_NOT_FOUND_ERROR, StatusCode_ROW_NOT_FOUND_ERROR, StatusCode_KEX_BAD_SECRET, StatusCode_PASSPHRASE_LOCKED_ERROR, StatusCode_NO_ACTIVE_USER_ERROR, StatusCode_SIGNING_KEY_NOT_FULLY_PROVISIONED_ERROR, StatusCode_CANCELED_INPUT_ERROR, StatusCode_TESTING_ONLY_ERROR, StatusCode_PASSPHRASE_NOT_FOUND_ERROR, StatusCode_RPC_EOF, StatusCode_TEAM_NOT_FOUND_ERROR, StatusCode_TEAM_NO_SRC_ROLE_ERROR, StatusCode_TEAM_ADHOC_CREATOR_INCLUDED_ERROR, StatusCode_TEAM_ADHOC_OPEN_VIEWERSHIP_ERROR, StatusCode_TEAM_ADHOC_DUPLICATE_ERROR, StatusCode_NEED_LOGIN_ERROR, StatusCode_BAD_RANGE_ERROR, StatusCode_HOSTID_NOT_FOUND_ERROR, StatusCode_KV_UPLOAD_IN_PROGRESS_ERROR, StatusCode_KV_EXISTS_ERROR, StatusCode_KV_NEED_FILE_ERROR, StatusCode_KV_NEED_DIR_ERROR, StatusCode_KV_PATH_TOO_DEEP_ERROR, StatusCode_KV_LOCK_ALREADY_HELD_ERROR, StatusCode_KV_LOCK_TIMEOUT_ERROR, StatusCode_KV_RMDIR_NEED_RECURSIVE_ERROR, StatusCode_CONTEXT_CANCELED_ERROR, StatusCode_NETWORK_CONDITIONER_ERROR, StatusCode_WEB_SESSION_NOT_FOUND_ERROR, StatusCode_NO_ACTIVE_PLAN_ERROR, StatusCode_OVER_QUOTA_ERROR, StatusCode_PLAN_EXISTS_ERROR, StatusCode_EXPIRED_ERROR, StatusCode_STRIPE_SESSION_EXISTS_ERROR, StatusCode_SSO_IDP_LOCKED_ERROR, StatusCode_TEAM_INVITE_ALREADY_ACCEPTED_ERROR, StatusCode_DEVICE_ALREADY_PROVISIONED_ERROR, StatusCode_KV_NOT_AVAILABLE_ERROR, StatusCode_YUBI_DEFAULT_MANAGEMENT_KEY_ERROR, StatusCode_YUBI_BAD_PIN_FORMAT_ERROR, StatusCode_YUBI_PIN_REQUIRED_ERROR, StatusCode_YUBI_DEFAULT_PIN_ERROR, StatusCode_BOT_TOKEN_LOCKED_ERROR, StatusCode_RT_CHANNEL_EXISTS_ERROR, StatusCode_TEAM_VO_BEARER_TOKEN_NOT_FOUND_ERROR, StatusCode_RT_MSG_REPLAY_MISMATCH, StatusCode_RT_OUTBOX_FULL:
 		break
 	case StatusCode_TLS_ERROR, StatusCode_CONFIG_ERROR, StatusCode_DUPLICATE_ERROR, StatusCode_RESERVATION_ERROR, StatusCode_LINK_ERROR, StatusCode_VALIDATION_ERROR, StatusCode_VERIFY_ERROR, StatusCode_X509_ERROR, StatusCode_PERMISSION_ERROR, StatusCode_PREV_ERROR, StatusCode_BOX_ERROR, StatusCode_INSERT_ERROR, StatusCode_UPDATE_ERROR, StatusCode_REVOKE_ERROR, StatusCode_COMMITMENT_ERROR, StatusCode_YUBI_ERROR, StatusCode_HOSTCHAIN_ERROR, StatusCode_GRANT_ERROR, StatusCode_NO_CHANGE_ERROR, StatusCode_BAD_ARGS_ERROR, StatusCode_KEY_NOT_FOUND_ERROR, StatusCode_PROTO_DATA_ERROR, StatusCode_HOST_MISMATCH_ERROR, StatusCode_BAD_FORMAT_ERROR, StatusCode_AMBIGUOUS_ERROR, StatusCode_ROLE_ERROR, StatusCode_REVOKE_RACE_ERROR, StatusCode_MERKLE_VERIFY_ERROR, StatusCode_TEAM_ERROR, StatusCode_TEAM_RACE_ERROR, StatusCode_TEAM_BEARER_TOKEN_STALE_ERROR, StatusCode_TEAM_CERT_ERROR, StatusCode_TEAM_ROSTER_ERROR, StatusCode_TEAM_KEY_ERROR, StatusCode_TEAM_INDEX_RANGE_ERROR, StatusCode_TEAM_REMOVAL_KEY_ERROR, StatusCode_TEAM_EXPLORE_ERROR, StatusCode_GENERIC_NOT_FOUND_ERROR, StatusCode_KV_UPLOAD_ERROR, StatusCode_KV_RACE_ERROR, StatusCode_KV_PATH_ERROR, StatusCode_KV_MKDIR_ERROR, StatusCode_KV_TYPE_ERROR, StatusCode_KV_NOENT_ERROR, StatusCode_GIT_GENERIC_ERROR, StatusCode_GIT_BAD_PATH_ERROR, StatusCode_UPGRADE_NEEDED_ERROR, StatusCode_VERSION_NOT_SUPPORTED_ERROR, StatusCode_HOST_IN_USE_ERROR, StatusCode_OAUTH2_ERROR, StatusCode_KV_ABS_PATH_ERROR, StatusCode_YUBI_BUS_ERROR, StatusCode_KEYCHAIN_ERROR, StatusCode_AGENT_CONNECT_ERROR, StatusCode_BOT_TOKEN_ERROR, StatusCode_GIT_BAD_HEAD_ERROR, StatusCode_GIT_BAD_REF_NAME_ERROR, StatusCode_INTERNAL_ERROR, StatusCode_RT_GENERIC_ERROR, StatusCode_RT_RACE, StatusCode_RT_AMBIGUOUS_CHANNEL_ERROR, StatusCode_RT_NOT_FOUND_ERROR, StatusCode_TEAM_ADHOC_INVALID_TEAM_CHANGE_ERROR, StatusCode_RT_MSG_ORDER_ERROR:
 		if s.F_1__ == nil {
@@ -1352,6 +1360,10 @@ func (s Status) GetSc() (ret StatusCode, err error) {
 	case StatusCode_GIT_DANGLING_REF_ERROR:
 		if s.F_22__ == nil {
 			return ret, errors.New("unexpected nil case for F_22__")
+		}
+	case StatusCode_RT_MSG_QUEUED:
+		if s.F_23__ == nil {
+			return ret, errors.New("unexpected nil case for F_23__")
 		}
 	default:
 		if s.F_0__ == nil {
@@ -2143,6 +2155,15 @@ func (s Status) GitDanglingRefError() bool {
 	}
 	return *s.F_22__
 }
+func (s Status) RtMsgQueued() RTMsgID {
+	if s.F_23__ == nil {
+		panic("unexpected nil case; should have been checked")
+	}
+	if s.Sc != StatusCode_RT_MSG_QUEUED {
+		panic(fmt.Sprintf("unexpected switch value (%v) when RtMsgQueued is called", s.Sc))
+	}
+	return *s.F_23__
+}
 func (s Status) Default() string {
 	if s.F_0__ == nil {
 		panic("unexpected nil case; should have been checked")
@@ -2452,6 +2473,11 @@ func NewStatusWithTeamVoBearerTokenNotFoundError() Status {
 func NewStatusWithRtMsgReplayMismatch() Status {
 	return Status{
 		Sc: StatusCode_RT_MSG_REPLAY_MISMATCH,
+	}
+}
+func NewStatusWithRtOutboxFull() Status {
+	return Status{
+		Sc: StatusCode_RT_OUTBOX_FULL,
 	}
 }
 func NewStatusWithTlsError(v string) Status {
@@ -2976,6 +3002,12 @@ func NewStatusWithGitDanglingRefError(v bool) Status {
 		F_22__: &v,
 	}
 }
+func NewStatusWithRtMsgQueued(v RTMsgID) Status {
+	return Status{
+		Sc:     StatusCode_RT_MSG_QUEUED,
+		F_23__: &v,
+	}
+}
 func NewStatusDefault(s StatusCode, v string) Status {
 	return Status{
 		Sc:    s,
@@ -3205,7 +3237,19 @@ func (s StatusInternal__) Import() Status {
 		})(s.Switch__.F_20__),
 		F_21__: s.Switch__.F_21__,
 		F_22__: s.Switch__.F_22__,
-		F_0__:  s.Switch__.F_0__,
+		F_23__: (func(x *RTMsgIDInternal__) *RTMsgID {
+			if x == nil {
+				return nil
+			}
+			tmp := (func(x *RTMsgIDInternal__) (ret RTMsgID) {
+				if x == nil {
+					return ret
+				}
+				return x.Import()
+			})(x)
+			return &tmp
+		})(s.Switch__.F_23__),
+		F_0__: s.Switch__.F_0__,
 	}
 }
 func (s Status) Export() *StatusInternal__ {
@@ -3324,7 +3368,13 @@ func (s Status) Export() *StatusInternal__ {
 			})(s.F_20__),
 			F_21__: s.F_21__,
 			F_22__: s.F_22__,
-			F_0__:  s.F_0__,
+			F_23__: (func(x *RTMsgID) *RTMsgIDInternal__ {
+				if x == nil {
+					return nil
+				}
+				return (*x).Export()
+			})(s.F_23__),
+			F_0__: s.F_0__,
 		},
 	}
 }

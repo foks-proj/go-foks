@@ -80,6 +80,9 @@ const (
 	DataType_RTChannelSet         DataType = 99
 	DataType_RTInboxSyncState     DataType = 100
 	DataType_RTInboxChannel       DataType = 101
+	DataType_RTOutboxEntry        DataType = 102
+	DataType_RTOutboxIndex        DataType = 103
+	DataType_RTReadThroughPending DataType = 104
 )
 
 var DataTypeMap = map[string]DataType{
@@ -114,6 +117,9 @@ var DataTypeMap = map[string]DataType{
 	"RTChannelSet":         99,
 	"RTInboxSyncState":     100,
 	"RTInboxChannel":       101,
+	"RTOutboxEntry":        102,
+	"RTOutboxIndex":        103,
+	"RTReadThroughPending": 104,
 }
 var DataTypeRevMap = map[DataType]string{
 	0:   "None",
@@ -147,6 +153,9 @@ var DataTypeRevMap = map[DataType]string{
 	99:  "RTChannelSet",
 	100: "RTInboxSyncState",
 	101: "RTInboxChannel",
+	102: "RTOutboxEntry",
+	103: "RTOutboxIndex",
+	104: "RTReadThroughPending",
 }
 
 type DataTypeInternal__ DataType
