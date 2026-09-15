@@ -46,27 +46,18 @@ import (
 // channel, and is retried only explicitly. Distinct channels drain
 // concurrently.
 //
-// Locking: the outbox and pending read-mark singletons are PER-USER state,
+// Locking: the outbox and pending read-mark singletons are per-user state,
 // but Minder instances are not one-per-user -- librt.App keeps one Minder per
 // team plus a user-scoped Minder. A mutex on the Minder therefore cannot
-// serialize these read-modify-write cycles. outboxLocks hands out one
-// process-wide mutex per party scope, shared by every Minder for that user.
-var outboxLocks sync.Map // party-scope key (string) -> *sync.Mutex
-
-func (d *Minder) outboxLock() *sync.Mutex {
-	// FQParty holds slice-backed IDs, so it can't key a map directly; a
-	// byte-string of party+host is an equivalent, hashable identity.
-	fqp := d.au.FQParty()
-	key := string(fqp.Party) + "@" + string(fqp.Host[:])
-	v, _ := outboxLocks.LoadOrStore(key, &sync.Mutex{})
-	return v.(*sync.Mutex)
+// serialize these read-modify-write cycles, so the lock is taken from a
+// per-party table on the GlobalContext, shared by every Minder for that user.
+func (d *Minder) lockOutbox(m MetaContext) (*core.LocktabEntry[proto.FQEntityFixed], error) {
+	key, err := d.au.FQParty().FQEntity().Fixed()
+	if err != nil {
+		return nil, err
+	}
+	return m.G().RTOutboxLocks().Acquire(*key), nil
 }
-
-// maxOutboxPerChannel bounds outbox rows per channel -- queued and failed
-// alike, so a stream of rejections cannot grow state unboundedly. At
-// capacity, sends fail fast with RTOutboxFullError rather than silently
-// shedding a row.
-const maxOutboxPerChannel = 256
 
 // dbGetSingleton loads a singleton soft-DB row under the party scope,
 // treating a missing row as the zero value. On any error the zero value is
@@ -110,7 +101,7 @@ func (d *Minder) dbPutSingleton(
 }
 
 // dbGetOutboxIndex loads the outbox index; a missing row is an empty outbox.
-// Callers mutating outbox state must hold d.outboxLock().
+// Callers mutating outbox state must hold d.lockOutbox.
 func (d *Minder) dbGetOutboxIndex(m MetaContext) (lcl.RTOutboxIndex, error) {
 	return dbGetSingleton[lcl.RTOutboxIndex](d, m, lcl.DataType_RTOutboxIndex)
 }
@@ -185,9 +176,11 @@ func (d *Minder) enqueueOutbox(
 	hasEarlier bool,
 	err error,
 ) {
-	lk := d.outboxLock()
-	lk.Lock()
-	defer lk.Unlock()
+	lk, err := d.lockOutbox(m)
+	if err != nil {
+		return false, err
+	}
+	defer lk.Release()
 
 	chid := msgCached.Md.Chid
 	idx, err := d.dbGetOutboxIndex(m)
@@ -204,7 +197,9 @@ func (d *Minder) enqueueOutbox(
 			nQueued++
 		}
 	}
-	if nAll >= maxOutboxPerChannel {
+	// The bound counts queued and failed rows alike; see
+	// Config.RTOutboxMaxPerChannel.
+	if uint64(nAll) >= m.G().Cfg().RTOutboxMaxPerChannel() {
 		return false, core.RTOutboxFullError{}
 	}
 	hasEarlier = nQueued > 0
@@ -233,9 +228,11 @@ func (d *Minder) enqueueOutbox(
 // second, so a crash in between self-heals (see the layout comment above).
 // Reports whether an index entry was actually removed.
 func (d *Minder) removeOutbox(m MetaContext, msgID proto.RTMsgID) (bool, error) {
-	lk := d.outboxLock()
-	lk.Lock()
-	defer lk.Unlock()
+	lk, err := d.lockOutbox(m)
+	if err != nil {
+		return false, err
+	}
+	defer lk.Release()
 	return d.removeOutboxLocked(m, msgID)
 }
 
@@ -309,9 +306,11 @@ func (d *Minder) setOutboxState(
 	state lcl.RTOutboxState,
 	attemptErr error,
 ) error {
-	lk := d.outboxLock()
-	lk.Lock()
-	defer lk.Unlock()
+	lk, err := d.lockOutbox(m)
+	if err != nil {
+		return err
+	}
+	defer lk.Release()
 
 	entry, err := d.dbGetOutboxEntry(m, msgID)
 	if err != nil {
@@ -472,9 +471,11 @@ func (d *Minder) snapshotQueue(
 	map[proto.RTChannelID][]lcl.RTOutboxIndexEntry,
 	error,
 ) {
-	lk := d.outboxLock()
-	lk.Lock()
-	defer lk.Unlock()
+	lk, err := d.lockOutbox(m)
+	if err != nil {
+		return nil, err
+	}
+	defer lk.Release()
 
 	idx, err := d.dbGetOutboxIndex(m)
 	if err != nil {
@@ -644,7 +645,7 @@ func (d *Minder) hasOutboxWork(m MetaContext) bool {
 // loadOutboxRowsLocked resolves the index to its live entry rows in queue
 // order, applying the shared enumeration policy: self-heal index entries
 // whose row is missing (any state), and skip -- with a warning, without
-// aborting -- rows that fail to load. Callers must hold d.outboxLock().
+// aborting -- rows that fail to load. Callers must hold d.lockOutbox.
 func (d *Minder) loadOutboxRowsLocked(
 	m MetaContext,
 	only *proto.RTChannelID,
@@ -683,9 +684,11 @@ func (d *Minder) loadOutboxRowsLocked(
 
 // ListOutbox returns every outbox entry, queued and failed, in queue order.
 func (d *Minder) ListOutbox(m MetaContext) ([]lcl.RTOutboxRowView, error) {
-	lk := d.outboxLock()
-	lk.Lock()
-	defer lk.Unlock()
+	lk, err := d.lockOutbox(m)
+	if err != nil {
+		return nil, err
+	}
+	defer lk.Release()
 
 	entries, err := d.loadOutboxRowsLocked(m, nil)
 	if err != nil {
@@ -762,9 +765,11 @@ func (d *Minder) pendingMsgViews(
 	error,
 ) {
 	entries, err := func() ([]lcl.RTOutboxEntry, error) {
-		lk := d.outboxLock()
-		lk.Lock()
-		defer lk.Unlock()
+		lk, err := d.lockOutbox(m)
+		if err != nil {
+			return nil, err
+		}
+		defer lk.Release()
 		return d.loadOutboxRowsLocked(m, &chid)
 	}()
 	if err != nil {

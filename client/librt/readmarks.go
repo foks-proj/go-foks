@@ -57,9 +57,11 @@ func (d *Minder) queuePendingMark(
 	chid proto.RTChannelID,
 	seq proto.RTMsgSeq,
 ) error {
-	lk := d.outboxLock()
-	lk.Lock()
-	defer lk.Unlock()
+	lk, err := d.lockOutbox(m)
+	if err != nil {
+		return err
+	}
+	defer lk.Release()
 
 	set, err := d.dbGetPendingMarks(m)
 	if err != nil {
@@ -93,9 +95,11 @@ func (d *Minder) clearPendingMarks(
 	if len(acked) == 0 {
 		return nil
 	}
-	lk := d.outboxLock()
-	lk.Lock()
-	defer lk.Unlock()
+	lk, err := d.lockOutbox(m)
+	if err != nil {
+		return err
+	}
+	defer lk.Release()
 
 	set, err := d.dbGetPendingMarks(m)
 	if err != nil {
