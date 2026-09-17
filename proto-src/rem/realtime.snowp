@@ -84,6 +84,21 @@ struct RTChannelMetadata @0xddf6b26b2ace1535 {
     noPush @13 : Bool;
 }
 
+// A held push row, by member and message seq, that the holder of a push hold
+// deletes instead of releasing.
+struct RTPushDrop {
+    uid @0 : lib.UID;
+    seq @1 : lib.RTMsgSeq;
+}
+
+// One content-free push the holder of a push hold queues for a member. handle
+// is opaque (at most 32 bytes) and is stored in push_outbox.data as-is; empty
+// means none.
+struct RTPushNotify {
+    uid @0 : lib.UID;
+    handle @1 : Blob;
+}
+
 struct RTChannelSet {
     vers @0 : lib.RTChannelSetVersion;
     lst @1 : List(RTChannelMetadata);
@@ -231,6 +246,40 @@ protocol RealTime
         token @1 : lib.RTPushToken,
         deviceKey @2 : lib.EntityID,
         enabled @3 : Bool
+    );
+
+    // Push holds. A team admin may place a push hold on a (team, appID) and
+    // becomes its holder. While the holder is an active team member, a send
+    // into any channel of the team whose read role the holder's role clears
+    // writes its push_outbox rows as 'held' instead of 'queued'. Only the
+    // holder decides held rows. Setting again replaces the holder. Clearing
+    // (team admin) releases every held row of the team's channels in the app.
+    rtSetPushHold @12 (
+        team @0 : lib.TeamID,
+        appID @1 : lib.RTAppID
+    );
+    rtClearPushHold @13 (
+        team @0 : lib.TeamID,
+        appID @1 : lib.RTAppID
+    );
+
+    // Holder only. For the channel's held rows with seq <= throughSeq: rows of
+    // members in keep stay held, rows named in drop are deleted, and for every
+    // other member the highest seq is queued and the lower ones deleted.
+    // Only held rows change, so repeating a call is a no-op.
+    rtReleasePushes @14 (
+        channelID @0 : lib.RTChannelID,
+        throughSeq @1 : lib.RTMsgSeq,
+        keep @2 : List(lib.UID),
+        drop @3 : List(RTPushDrop)
+    );
+
+    // Holder only. Queue one content-free 'system' push for each listed member
+    // who can read the channel; other members are skipped. A member listed
+    // more than once gets one push.
+    rtNotifyMembers @15 (
+        channelID @0 : lib.RTChannelID,
+        entries @1 : List(RTPushNotify)
     );
 
 }

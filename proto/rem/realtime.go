@@ -616,6 +616,102 @@ func (r *RTChannelMetadata) GetTypeUniqueID() rpc.TypeUniqueID {
 }
 func (r *RTChannelMetadata) Bytes() []byte { return nil }
 
+type RTPushDrop struct {
+	Uid lib.UID
+	Seq lib.RTMsgSeq
+}
+type RTPushDropInternal__ struct {
+	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
+	Uid     *lib.UIDInternal__
+	Seq     *lib.RTMsgSeqInternal__
+}
+
+func (r RTPushDropInternal__) Import() RTPushDrop {
+	return RTPushDrop{
+		Uid: (func(x *lib.UIDInternal__) (ret lib.UID) {
+			if x == nil {
+				return ret
+			}
+			return x.Import()
+		})(r.Uid),
+		Seq: (func(x *lib.RTMsgSeqInternal__) (ret lib.RTMsgSeq) {
+			if x == nil {
+				return ret
+			}
+			return x.Import()
+		})(r.Seq),
+	}
+}
+func (r RTPushDrop) Export() *RTPushDropInternal__ {
+	return &RTPushDropInternal__{
+		Uid: r.Uid.Export(),
+		Seq: r.Seq.Export(),
+	}
+}
+func (r *RTPushDrop) Encode(enc rpc.Encoder) error {
+	return enc.Encode(r.Export())
+}
+
+func (r *RTPushDrop) Decode(dec rpc.Decoder) error {
+	var tmp RTPushDropInternal__
+	err := dec.Decode(&tmp)
+	if err != nil {
+		return err
+	}
+	*r = tmp.Import()
+	return nil
+}
+
+func (r *RTPushDrop) Bytes() []byte { return nil }
+
+type RTPushNotify struct {
+	Uid    lib.UID
+	Handle []byte
+}
+type RTPushNotifyInternal__ struct {
+	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
+	Uid     *lib.UIDInternal__
+	Handle  *[]byte
+}
+
+func (r RTPushNotifyInternal__) Import() RTPushNotify {
+	return RTPushNotify{
+		Uid: (func(x *lib.UIDInternal__) (ret lib.UID) {
+			if x == nil {
+				return ret
+			}
+			return x.Import()
+		})(r.Uid),
+		Handle: (func(x *[]byte) (ret []byte) {
+			if x == nil {
+				return ret
+			}
+			return *x
+		})(r.Handle),
+	}
+}
+func (r RTPushNotify) Export() *RTPushNotifyInternal__ {
+	return &RTPushNotifyInternal__{
+		Uid:    r.Uid.Export(),
+		Handle: &r.Handle,
+	}
+}
+func (r *RTPushNotify) Encode(enc rpc.Encoder) error {
+	return enc.Encode(r.Export())
+}
+
+func (r *RTPushNotify) Decode(dec rpc.Decoder) error {
+	var tmp RTPushNotifyInternal__
+	err := dec.Decode(&tmp)
+	if err != nil {
+		return err
+	}
+	*r = tmp.Import()
+	return nil
+}
+
+func (r *RTPushNotify) Bytes() []byte { return nil }
+
 type RTChannelSet struct {
 	Vers  lib.RTChannelSetVersion
 	Lst   []RTChannelMetadata
@@ -1777,6 +1873,279 @@ func (r *RtSetPushTokenArg) Decode(dec rpc.Decoder) error {
 
 func (r *RtSetPushTokenArg) Bytes() []byte { return nil }
 
+type RtSetPushHoldArg struct {
+	Team  lib.TeamID
+	AppID lib.RTAppID
+}
+type RtSetPushHoldArgInternal__ struct {
+	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
+	Team    *lib.TeamIDInternal__
+	AppID   *lib.RTAppIDInternal__
+}
+
+func (r RtSetPushHoldArgInternal__) Import() RtSetPushHoldArg {
+	return RtSetPushHoldArg{
+		Team: (func(x *lib.TeamIDInternal__) (ret lib.TeamID) {
+			if x == nil {
+				return ret
+			}
+			return x.Import()
+		})(r.Team),
+		AppID: (func(x *lib.RTAppIDInternal__) (ret lib.RTAppID) {
+			if x == nil {
+				return ret
+			}
+			return x.Import()
+		})(r.AppID),
+	}
+}
+func (r RtSetPushHoldArg) Export() *RtSetPushHoldArgInternal__ {
+	return &RtSetPushHoldArgInternal__{
+		Team:  r.Team.Export(),
+		AppID: r.AppID.Export(),
+	}
+}
+func (r *RtSetPushHoldArg) Encode(enc rpc.Encoder) error {
+	return enc.Encode(r.Export())
+}
+
+func (r *RtSetPushHoldArg) Decode(dec rpc.Decoder) error {
+	var tmp RtSetPushHoldArgInternal__
+	err := dec.Decode(&tmp)
+	if err != nil {
+		return err
+	}
+	*r = tmp.Import()
+	return nil
+}
+
+func (r *RtSetPushHoldArg) Bytes() []byte { return nil }
+
+type RtClearPushHoldArg struct {
+	Team  lib.TeamID
+	AppID lib.RTAppID
+}
+type RtClearPushHoldArgInternal__ struct {
+	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
+	Team    *lib.TeamIDInternal__
+	AppID   *lib.RTAppIDInternal__
+}
+
+func (r RtClearPushHoldArgInternal__) Import() RtClearPushHoldArg {
+	return RtClearPushHoldArg{
+		Team: (func(x *lib.TeamIDInternal__) (ret lib.TeamID) {
+			if x == nil {
+				return ret
+			}
+			return x.Import()
+		})(r.Team),
+		AppID: (func(x *lib.RTAppIDInternal__) (ret lib.RTAppID) {
+			if x == nil {
+				return ret
+			}
+			return x.Import()
+		})(r.AppID),
+	}
+}
+func (r RtClearPushHoldArg) Export() *RtClearPushHoldArgInternal__ {
+	return &RtClearPushHoldArgInternal__{
+		Team:  r.Team.Export(),
+		AppID: r.AppID.Export(),
+	}
+}
+func (r *RtClearPushHoldArg) Encode(enc rpc.Encoder) error {
+	return enc.Encode(r.Export())
+}
+
+func (r *RtClearPushHoldArg) Decode(dec rpc.Decoder) error {
+	var tmp RtClearPushHoldArgInternal__
+	err := dec.Decode(&tmp)
+	if err != nil {
+		return err
+	}
+	*r = tmp.Import()
+	return nil
+}
+
+func (r *RtClearPushHoldArg) Bytes() []byte { return nil }
+
+type RtReleasePushesArg struct {
+	ChannelID  lib.RTChannelID
+	ThroughSeq lib.RTMsgSeq
+	Keep       []lib.UID
+	Drop       []RTPushDrop
+}
+type RtReleasePushesArgInternal__ struct {
+	_struct    struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
+	ChannelID  *lib.RTChannelIDInternal__
+	ThroughSeq *lib.RTMsgSeqInternal__
+	Keep       *[](*lib.UIDInternal__)
+	Drop       *[](*RTPushDropInternal__)
+}
+
+func (r RtReleasePushesArgInternal__) Import() RtReleasePushesArg {
+	return RtReleasePushesArg{
+		ChannelID: (func(x *lib.RTChannelIDInternal__) (ret lib.RTChannelID) {
+			if x == nil {
+				return ret
+			}
+			return x.Import()
+		})(r.ChannelID),
+		ThroughSeq: (func(x *lib.RTMsgSeqInternal__) (ret lib.RTMsgSeq) {
+			if x == nil {
+				return ret
+			}
+			return x.Import()
+		})(r.ThroughSeq),
+		Keep: (func(x *[](*lib.UIDInternal__)) (ret []lib.UID) {
+			if x == nil || len(*x) == 0 {
+				return nil
+			}
+			ret = make([]lib.UID, len(*x))
+			for k, v := range *x {
+				if v == nil {
+					continue
+				}
+				ret[k] = (func(x *lib.UIDInternal__) (ret lib.UID) {
+					if x == nil {
+						return ret
+					}
+					return x.Import()
+				})(v)
+			}
+			return ret
+		})(r.Keep),
+		Drop: (func(x *[](*RTPushDropInternal__)) (ret []RTPushDrop) {
+			if x == nil || len(*x) == 0 {
+				return nil
+			}
+			ret = make([]RTPushDrop, len(*x))
+			for k, v := range *x {
+				if v == nil {
+					continue
+				}
+				ret[k] = (func(x *RTPushDropInternal__) (ret RTPushDrop) {
+					if x == nil {
+						return ret
+					}
+					return x.Import()
+				})(v)
+			}
+			return ret
+		})(r.Drop),
+	}
+}
+func (r RtReleasePushesArg) Export() *RtReleasePushesArgInternal__ {
+	return &RtReleasePushesArgInternal__{
+		ChannelID:  r.ChannelID.Export(),
+		ThroughSeq: r.ThroughSeq.Export(),
+		Keep: (func(x []lib.UID) *[](*lib.UIDInternal__) {
+			if len(x) == 0 {
+				return nil
+			}
+			ret := make([](*lib.UIDInternal__), len(x))
+			for k, v := range x {
+				ret[k] = v.Export()
+			}
+			return &ret
+		})(r.Keep),
+		Drop: (func(x []RTPushDrop) *[](*RTPushDropInternal__) {
+			if len(x) == 0 {
+				return nil
+			}
+			ret := make([](*RTPushDropInternal__), len(x))
+			for k, v := range x {
+				ret[k] = v.Export()
+			}
+			return &ret
+		})(r.Drop),
+	}
+}
+func (r *RtReleasePushesArg) Encode(enc rpc.Encoder) error {
+	return enc.Encode(r.Export())
+}
+
+func (r *RtReleasePushesArg) Decode(dec rpc.Decoder) error {
+	var tmp RtReleasePushesArgInternal__
+	err := dec.Decode(&tmp)
+	if err != nil {
+		return err
+	}
+	*r = tmp.Import()
+	return nil
+}
+
+func (r *RtReleasePushesArg) Bytes() []byte { return nil }
+
+type RtNotifyMembersArg struct {
+	ChannelID lib.RTChannelID
+	Entries   []RTPushNotify
+}
+type RtNotifyMembersArgInternal__ struct {
+	_struct   struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
+	ChannelID *lib.RTChannelIDInternal__
+	Entries   *[](*RTPushNotifyInternal__)
+}
+
+func (r RtNotifyMembersArgInternal__) Import() RtNotifyMembersArg {
+	return RtNotifyMembersArg{
+		ChannelID: (func(x *lib.RTChannelIDInternal__) (ret lib.RTChannelID) {
+			if x == nil {
+				return ret
+			}
+			return x.Import()
+		})(r.ChannelID),
+		Entries: (func(x *[](*RTPushNotifyInternal__)) (ret []RTPushNotify) {
+			if x == nil || len(*x) == 0 {
+				return nil
+			}
+			ret = make([]RTPushNotify, len(*x))
+			for k, v := range *x {
+				if v == nil {
+					continue
+				}
+				ret[k] = (func(x *RTPushNotifyInternal__) (ret RTPushNotify) {
+					if x == nil {
+						return ret
+					}
+					return x.Import()
+				})(v)
+			}
+			return ret
+		})(r.Entries),
+	}
+}
+func (r RtNotifyMembersArg) Export() *RtNotifyMembersArgInternal__ {
+	return &RtNotifyMembersArgInternal__{
+		ChannelID: r.ChannelID.Export(),
+		Entries: (func(x []RTPushNotify) *[](*RTPushNotifyInternal__) {
+			if len(x) == 0 {
+				return nil
+			}
+			ret := make([](*RTPushNotifyInternal__), len(x))
+			for k, v := range x {
+				ret[k] = v.Export()
+			}
+			return &ret
+		})(r.Entries),
+	}
+}
+func (r *RtNotifyMembersArg) Encode(enc rpc.Encoder) error {
+	return enc.Encode(r.Export())
+}
+
+func (r *RtNotifyMembersArg) Decode(dec rpc.Decoder) error {
+	var tmp RtNotifyMembersArgInternal__
+	err := dec.Decode(&tmp)
+	if err != nil {
+		return err
+	}
+	*r = tmp.Import()
+	return nil
+}
+
+func (r *RtNotifyMembersArg) Bytes() []byte { return nil }
+
 type RealTimeInterface interface {
 	RtNewChannel(context.Context, RtNewChannelArg) error
 	RtGetChannel(context.Context, lib.RTChannelID) (RTChannelMetadata, error)
@@ -1790,6 +2159,10 @@ type RealTimeInterface interface {
 	RtSelectVHost(context.Context, lib.HostID) error
 	RtGetThreadRecents(context.Context, RtGetThreadRecentsArg) (RTMsgList, error)
 	RtSetPushToken(context.Context, RtSetPushTokenArg) error
+	RtSetPushHold(context.Context, RtSetPushHoldArg) error
+	RtClearPushHold(context.Context, RtClearPushHoldArg) error
+	RtReleasePushes(context.Context, RtReleasePushesArg) error
+	RtNotifyMembers(context.Context, RtNotifyMembersArg) error
 	ErrorWrapper() func(error) lib.Status
 	CheckArgHeader(ctx context.Context, h lib.Header) error
 	MakeResHeader() lib.Header
@@ -2096,6 +2469,86 @@ func (c RealTimeClient) RtSetPushToken(ctx context.Context, arg RtSetPushTokenAr
 	}
 	var tmp rpc.DataWrap[lib.Header, interface{}]
 	err = c.Cli.Call2(ctx, rpc.NewMethodV2(RealTimeProtocolID, 11, "RealTime.rtSetPushToken"), warg, &tmp, 0*time.Millisecond, realTimeErrorUnwrapperAdapter{h: c.ErrorUnwrapper})
+	if err != nil {
+		return
+	}
+	if c.CheckResHeader != nil {
+		err = c.CheckResHeader(ctx, tmp.Header)
+		if err != nil {
+			return
+		}
+	}
+	return
+}
+func (c RealTimeClient) RtSetPushHold(ctx context.Context, arg RtSetPushHoldArg) (err error) {
+	warg := &rpc.DataWrap[lib.Header, *RtSetPushHoldArgInternal__]{
+		Data: arg.Export(),
+	}
+	if c.MakeArgHeader != nil {
+		warg.Header = c.MakeArgHeader()
+	}
+	var tmp rpc.DataWrap[lib.Header, interface{}]
+	err = c.Cli.Call2(ctx, rpc.NewMethodV2(RealTimeProtocolID, 12, "RealTime.rtSetPushHold"), warg, &tmp, 0*time.Millisecond, realTimeErrorUnwrapperAdapter{h: c.ErrorUnwrapper})
+	if err != nil {
+		return
+	}
+	if c.CheckResHeader != nil {
+		err = c.CheckResHeader(ctx, tmp.Header)
+		if err != nil {
+			return
+		}
+	}
+	return
+}
+func (c RealTimeClient) RtClearPushHold(ctx context.Context, arg RtClearPushHoldArg) (err error) {
+	warg := &rpc.DataWrap[lib.Header, *RtClearPushHoldArgInternal__]{
+		Data: arg.Export(),
+	}
+	if c.MakeArgHeader != nil {
+		warg.Header = c.MakeArgHeader()
+	}
+	var tmp rpc.DataWrap[lib.Header, interface{}]
+	err = c.Cli.Call2(ctx, rpc.NewMethodV2(RealTimeProtocolID, 13, "RealTime.rtClearPushHold"), warg, &tmp, 0*time.Millisecond, realTimeErrorUnwrapperAdapter{h: c.ErrorUnwrapper})
+	if err != nil {
+		return
+	}
+	if c.CheckResHeader != nil {
+		err = c.CheckResHeader(ctx, tmp.Header)
+		if err != nil {
+			return
+		}
+	}
+	return
+}
+func (c RealTimeClient) RtReleasePushes(ctx context.Context, arg RtReleasePushesArg) (err error) {
+	warg := &rpc.DataWrap[lib.Header, *RtReleasePushesArgInternal__]{
+		Data: arg.Export(),
+	}
+	if c.MakeArgHeader != nil {
+		warg.Header = c.MakeArgHeader()
+	}
+	var tmp rpc.DataWrap[lib.Header, interface{}]
+	err = c.Cli.Call2(ctx, rpc.NewMethodV2(RealTimeProtocolID, 14, "RealTime.rtReleasePushes"), warg, &tmp, 0*time.Millisecond, realTimeErrorUnwrapperAdapter{h: c.ErrorUnwrapper})
+	if err != nil {
+		return
+	}
+	if c.CheckResHeader != nil {
+		err = c.CheckResHeader(ctx, tmp.Header)
+		if err != nil {
+			return
+		}
+	}
+	return
+}
+func (c RealTimeClient) RtNotifyMembers(ctx context.Context, arg RtNotifyMembersArg) (err error) {
+	warg := &rpc.DataWrap[lib.Header, *RtNotifyMembersArgInternal__]{
+		Data: arg.Export(),
+	}
+	if c.MakeArgHeader != nil {
+		warg.Header = c.MakeArgHeader()
+	}
+	var tmp rpc.DataWrap[lib.Header, interface{}]
+	err = c.Cli.Call2(ctx, rpc.NewMethodV2(RealTimeProtocolID, 15, "RealTime.rtNotifyMembers"), warg, &tmp, 0*time.Millisecond, realTimeErrorUnwrapperAdapter{h: c.ErrorUnwrapper})
 	if err != nil {
 		return
 	}
@@ -2455,6 +2908,118 @@ func RealTimeProtocol(i RealTimeInterface) rpc.ProtocolV2 {
 					},
 				},
 				Name: "rtSetPushToken",
+			},
+			12: {
+				ServeHandlerDescription: rpc.ServeHandlerDescription{
+					MakeArg: func() interface{} {
+						var ret rpc.DataWrap[lib.Header, *RtSetPushHoldArgInternal__]
+						return &ret
+					},
+					Handler: func(ctx context.Context, args interface{}) (interface{}, error) {
+						typedWrappedArg, ok := args.(*rpc.DataWrap[lib.Header, *RtSetPushHoldArgInternal__])
+						if !ok {
+							err := rpc.NewTypeError((*rpc.DataWrap[lib.Header, *RtSetPushHoldArgInternal__])(nil), args)
+							return nil, err
+						}
+						if err := i.CheckArgHeader(ctx, typedWrappedArg.Header); err != nil {
+							return nil, err
+						}
+						typedArg := typedWrappedArg.Data
+						err := i.RtSetPushHold(ctx, (typedArg.Import()))
+						if err != nil {
+							return nil, err
+						}
+						ret := rpc.DataWrap[lib.Header, interface{}]{
+							Header: i.MakeResHeader(),
+						}
+						return &ret, nil
+					},
+				},
+				Name: "rtSetPushHold",
+			},
+			13: {
+				ServeHandlerDescription: rpc.ServeHandlerDescription{
+					MakeArg: func() interface{} {
+						var ret rpc.DataWrap[lib.Header, *RtClearPushHoldArgInternal__]
+						return &ret
+					},
+					Handler: func(ctx context.Context, args interface{}) (interface{}, error) {
+						typedWrappedArg, ok := args.(*rpc.DataWrap[lib.Header, *RtClearPushHoldArgInternal__])
+						if !ok {
+							err := rpc.NewTypeError((*rpc.DataWrap[lib.Header, *RtClearPushHoldArgInternal__])(nil), args)
+							return nil, err
+						}
+						if err := i.CheckArgHeader(ctx, typedWrappedArg.Header); err != nil {
+							return nil, err
+						}
+						typedArg := typedWrappedArg.Data
+						err := i.RtClearPushHold(ctx, (typedArg.Import()))
+						if err != nil {
+							return nil, err
+						}
+						ret := rpc.DataWrap[lib.Header, interface{}]{
+							Header: i.MakeResHeader(),
+						}
+						return &ret, nil
+					},
+				},
+				Name: "rtClearPushHold",
+			},
+			14: {
+				ServeHandlerDescription: rpc.ServeHandlerDescription{
+					MakeArg: func() interface{} {
+						var ret rpc.DataWrap[lib.Header, *RtReleasePushesArgInternal__]
+						return &ret
+					},
+					Handler: func(ctx context.Context, args interface{}) (interface{}, error) {
+						typedWrappedArg, ok := args.(*rpc.DataWrap[lib.Header, *RtReleasePushesArgInternal__])
+						if !ok {
+							err := rpc.NewTypeError((*rpc.DataWrap[lib.Header, *RtReleasePushesArgInternal__])(nil), args)
+							return nil, err
+						}
+						if err := i.CheckArgHeader(ctx, typedWrappedArg.Header); err != nil {
+							return nil, err
+						}
+						typedArg := typedWrappedArg.Data
+						err := i.RtReleasePushes(ctx, (typedArg.Import()))
+						if err != nil {
+							return nil, err
+						}
+						ret := rpc.DataWrap[lib.Header, interface{}]{
+							Header: i.MakeResHeader(),
+						}
+						return &ret, nil
+					},
+				},
+				Name: "rtReleasePushes",
+			},
+			15: {
+				ServeHandlerDescription: rpc.ServeHandlerDescription{
+					MakeArg: func() interface{} {
+						var ret rpc.DataWrap[lib.Header, *RtNotifyMembersArgInternal__]
+						return &ret
+					},
+					Handler: func(ctx context.Context, args interface{}) (interface{}, error) {
+						typedWrappedArg, ok := args.(*rpc.DataWrap[lib.Header, *RtNotifyMembersArgInternal__])
+						if !ok {
+							err := rpc.NewTypeError((*rpc.DataWrap[lib.Header, *RtNotifyMembersArgInternal__])(nil), args)
+							return nil, err
+						}
+						if err := i.CheckArgHeader(ctx, typedWrappedArg.Header); err != nil {
+							return nil, err
+						}
+						typedArg := typedWrappedArg.Data
+						err := i.RtNotifyMembers(ctx, (typedArg.Import()))
+						if err != nil {
+							return nil, err
+						}
+						ret := rpc.DataWrap[lib.Header, interface{}]{
+							Header: i.MakeResHeader(),
+						}
+						return &ret, nil
+					},
+				},
+				Name: "rtNotifyMembers",
 			},
 		},
 		WrapError: RealTimeMakeGenericErrorWrapper(i.ErrorWrapper()),
