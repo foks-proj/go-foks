@@ -1729,6 +1729,38 @@ func simTransportErr() error {
 // TestRTOutboxQueueAndDrain: sends attempted while the transport is down are
 // queued durably (in FIFO order, msgID-keyed so rapid sends never collide)
 // and a later drain delivers all of them in order. docs/rt_offline.md, D2.
+// TestRTOutboxCap: at the configured per-channel bound a send is refused with
+// RTOutboxFullError rather than dropping a queued message, and draining frees
+// the room again.
+func TestRTOutboxCap(t *testing.T) {
+	r := makeRTOutboxTestRig(t)
+	cfg := r.mb.G().Cfg()
+	cfg.TestSetRTOutboxMaxPerChannel(2)
+	t.Cleanup(func() { cfg.TestSetRTOutboxMaxPerChannel(0) })
+
+	r.minder.SetTestHooks(&librt.MinderTestHooks{
+		SendRPC: func(librt.MetaContext, rem.RTSendArg) (*rem.RTSendRes, error) {
+			return nil, simTransportErr()
+		},
+	})
+	r.sendExpectQueued(t, "one")
+	r.sendExpectQueued(t, "two")
+	_, err := r.send(t, "three")
+	require.ErrorIs(t, err, core.RTOutboxFullError{})
+
+	rows, err := r.minder.ListOutbox(r.mb)
+	require.NoError(t, err)
+	require.Len(t, rows, 2)
+
+	r.minder.SetTestHooks(nil)
+	dres, err := r.minder.Drain(r.mb)
+	require.NoError(t, err)
+	require.Len(t, dres.Acked, 2)
+
+	_, err = r.send(t, "three")
+	require.NoError(t, err)
+}
+
 func TestRTOutboxQueueAndDrain(t *testing.T) {
 	r := makeRTOutboxTestRig(t)
 

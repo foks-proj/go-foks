@@ -133,6 +133,12 @@ type GlobalContext struct {
 	usernameLoader *UsernameLoader
 	teamnameLoader *TeamnameLoader
 
+	// One lock per user party for the realtime outbox and pending read-marks.
+	// That state is per user, but a process holds several librt Minders for
+	// the same user (one per team plus a user-scoped one), so a lock on any
+	// single Minder cannot serialize their read-modify-write cycles.
+	rtOutboxLocks core.Locktab[proto.FQEntityFixed]
+
 	logRotate *LogRotate
 
 	// We keep track of the last active server after a signup; this way we can debug signup
@@ -161,6 +167,10 @@ func (d *GlobalContext) DeviceNameCache() *DeviceNameCache {
 	d.Lock()
 	defer d.Unlock()
 	return &d.deviceNameCache
+}
+
+func (d *GlobalContext) RTOutboxLocks() *core.Locktab[proto.FQEntityFixed] {
+	return &d.rtOutboxLocks
 }
 
 func (d *GlobalContext) UsernameLoader() *UsernameLoader {
