@@ -6,6 +6,7 @@ package libclient
 import (
 	"errors"
 	"slices"
+	"time"
 
 	"github.com/foks-proj/go-foks/lib/chains"
 	"github.com/foks-proj/go-foks/lib/core"
@@ -395,6 +396,29 @@ func (t *TeamWrapper) AllFQStrings() ([]proto.FQTeamString, error) {
 	return ret, nil
 }
 
+// VerifiedAt is when this team's snapshot was last confirmed against the
+// server's merkle root. It dates the verification rather than the read: an
+// offline load serves a snapshot without advancing it, so the gap between this
+// and now is how stale the caller's view actually is. Zero means the snapshot
+// predates the field.
+func (l *TeamWrapper) VerifiedAt() proto.Time {
+	return l.prot.VerifiedAt
+}
+
+// VerifiedAge is how long ago this snapshot was last confirmed against the
+// merkle root -- the staleness of what an offline load is serving. The bool is
+// false when the snapshot predates the verifiedAt field, which is reported
+// rather than folded into a zero duration: "not known" and "just now" are
+// different answers, and a staleness check that confuses them fails open on
+// exactly the oldest snapshots.
+func (l *TeamWrapper) VerifiedAge(now time.Time) (time.Duration, bool) {
+	v := l.prot.VerifiedAt
+	if v.IsZero() {
+		return 0, false
+	}
+	return now.Sub(v.Import()), true
+}
+
 func (l *TeamWrapper) KeyRing() *TeamKeyRing {
 	return l.ptks
 }
@@ -591,10 +615,101 @@ func (l *TeamLoader) Run(m MetaContext) (*TeamWrapper, error) {
 	}
 	err = l.BaseChainLoader.runMany(m, l.runOnce, l.resetState)
 	if err != nil {
+		// Offline fallback: with the server unreachable, serve the last
+		// verified snapshot instead of nothing. The snapshot -- PTKs and the
+		// historical-sender records alongside them -- was fully verified
+		// before it was written, so its keys are usable offline without
+		// replaying links; the next online load re-verifies as usual. The
+		// view bearer token exists only to gate server resources, so a
+		// token-less wrapper is correct for local-only work (any server
+		// operation attempted with it meets a connect-class error at its own
+		// boundary). A team never loaded online has no snapshot and keeps
+		// the original connect error.
+		if core.IsTransportError(err) && l.au != nil {
+			tw, cerr := LoadTeamFromCache(m, l.au, l.Arg)
+			if cerr == nil {
+				// Report how stale the thing being served actually is. The
+				// snapshot's verification is what entitles us to serve it, so
+				// the age of that verification is the one number a reader
+				// needs to judge what they are looking at.
+				age, known := tw.VerifiedAge(m.G().Now())
+				m.Warnw("TeamLoader.Run", "err", err,
+					"note", "server unreachable; serving verified team snapshot",
+					"staleFor", age, "staleForKnown", known)
+				return tw, nil
+			}
+			m.Warnw("TeamLoader.Run", "stage", "cacheFallback", "err", cerr)
+		}
 		return nil, err
 	}
 	w := l.WrappedRes()
 	return w, nil
+}
+
+// LoadTeamFromCache builds a TeamWrapper purely from the locally persisted
+// team snapshot (lcl.TeamChainState), with no network. The snapshot was
+// merkle-verified by a full loader run before it was ever written (saveState
+// runs at the end of runOnce), so this is the same trust posture as
+// LoadMeFromCache: nothing is re-verified, the last verified state -- PTK
+// keyring, roster, historical senders -- is simply rehydrated. The wrapper
+// carries no view bearer token (server-minted, and only needed for server
+// resources) and no roster details (built during link play; member lookups
+// go through the snapshot's member list instead).
+//
+// Returns RowNotFoundError when no snapshot exists.
+func LoadTeamFromCache(
+	m MetaContext,
+	au *UserContext,
+	arg LoadTeamArg,
+) (
+	*TeamWrapper,
+	error,
+) {
+	l := NewTeamLoader(au, arg)
+	defer l.finish()
+	l.resetState()
+	err := l.checkArg(m)
+	if err != nil {
+		return nil, err
+	}
+	// Only the probe's chain identity is needed (hostname for display);
+	// probes hydrate from their cached public zone when the network is
+	// gone, so this works offline for any previously-probed host.
+	err = l.connectHost(m)
+	if err != nil {
+		return nil, err
+	}
+	err = l.loadExistingTeam(m)
+	if err != nil {
+		return nil, err
+	}
+	if l.existing == nil {
+		return nil, core.RowNotFoundError{}
+	}
+	// The snapshot's member list is the last verified post-roster (saveState
+	// exports rosterPost), so it serves as the roster for unboxing: opening
+	// the cached PTK parcels with the caller's PUKs, verified against the
+	// snapshot's historical-sender records the snapshot persists alongside
+	// them.
+	l.rosterPost = l.rosterPre
+	if l.Arg.Keys != nil && l.rosterPost != nil {
+		err = l.runUnbox(m)
+		if err != nil {
+			return nil, err
+		}
+	}
+	// Roster details normally come out of link play; the snapshot's
+	// post-roster carries the same member set, so building them here keeps
+	// member lookups, roster exports, and ad-hoc display names truthful
+	// offline instead of silently empty. (Remote members' view tokens are
+	// server-fetched and stay absent.)
+	if l.rosterPost != nil {
+		err = l.setupRosterDetails(m)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return l.WrappedRes(), nil
 }
 
 func NewTeamLoader(au *UserContext, arg LoadTeamArg) *TeamLoader {
@@ -1957,6 +2072,23 @@ func (l *TeamLoader) saveState(m MetaContext) error {
 		// The user might have updated the UTf8 preimage of the normalized username,
 		// so update that here. This is based on server-trust, for now.
 		l.newState.Name.B = unb
+
+		// Playing no new links still means the chain was just checked against a
+		// fresh merkle root, so the snapshot is freshly verified even though its
+		// contents did not move. Re-stamping (and writing) here is what keeps a
+		// quiet team from ageing as if it had gone unchecked -- otherwise any
+		// staleness horizon would punish teams for being idle.
+		l.newState.VerifiedAt = proto.ExportTime(m.G().Now())
+		scoper := l.au.FQU()
+		err := m.DbPut(l.dbType(), PutArg{
+			Scope: &scoper,
+			Typ:   lcl.DataType_TeamChainState,
+			Val:   l.newState,
+			Key:   l.Arg,
+		})
+		if err != nil {
+			return err
+		}
 		return nil
 	}
 
@@ -1994,6 +2126,9 @@ func (l *TeamLoader) saveState(m MetaContext) error {
 		Tir:               ir,
 		HistoricalSenders: l.histSend.Export(),
 		MemberLoadFloor:   l.memberLoadFloor,
+		// Dates the verification, not the read: only a full online run reaches
+		// saveState, and LoadTeamFromCache never does.
+		VerifiedAt: proto.ExportTime(m.G().Now()),
 	}
 	if l.sctlsc == nil {
 		return core.InternalError("no 'sctlsc' set; it should be set in save(); refusing to save")
