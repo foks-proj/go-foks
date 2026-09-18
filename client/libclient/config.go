@@ -124,6 +124,9 @@ type Flags struct {
 	team struct {
 		exploreConcurrency int64
 	}
+	rt struct {
+		outboxMaxPerChannel int64
+	}
 }
 
 type JSONStringKVPair struct {
@@ -217,6 +220,9 @@ type JSONConfigData struct {
 	Team struct {
 		ExploreConcurrency *uint64 `json:"explore_concurrency"`
 	} `json:"team"`
+	RT struct {
+		OutboxMaxPerChannel *uint64 `json:"outbox_max_per_channel"`
+	} `json:"rt"`
 	Testing bool
 }
 
@@ -301,6 +307,7 @@ func (c *Config) setupGlobalFlags(cmd *cobra.Command) {
 	pf.Int32Var(&c.fl.bg.clkr.jitter, "bg-clkr-random-jitter-percent", -1, "what %age of the duration to randomly jitter")
 	pf.Int32Var(&c.fl.bg.user.jitter, "bg-user-random-jitter-percent", -1, "what %age of the duration to randomly jitter")
 	pf.Int64Var(&c.fl.team.exploreConcurrency, "team-explore-concurrency", -1, "number of concurrent team loads when exploring the team graph")
+	pf.Int64Var(&c.fl.rt.outboxMaxPerChannel, "rt-outbox-max-per-channel", -1, "max queued or failed outgoing realtime messages held per channel")
 	pf.StringVar(&c.fl.agent.stopperFile, "agent-stopper-file", "", "file to check for to stop the agent")
 	pf.BoolVar(&c.fl.agent.checkStopper, "agent-check-stopper", false, "check for the stopper file to stop the agent")
 }
@@ -841,6 +848,34 @@ func (c *Config) TeamExploreConcurrency() uint64 {
 	return max(ret, 1)
 }
 
+// defRTOutboxMaxPerChannel is the default bound on outbox rows per channel,
+// queued and failed alike, so a client that stays offline or keeps being
+// refused cannot grow local state without limit. At the bound a send fails
+// fast with RTOutboxFullError rather than dropping a queued message.
+const defRTOutboxMaxPerChannel = 256
+
+func (c *Config) RTOutboxMaxPerChannel() uint64 {
+	c.Lock()
+	defer c.Unlock()
+	// A bound of zero would refuse every send, so zero from any source selects
+	// the default. That also covers a Config whose flags were never registered
+	// with cobra, where the flag reads 0 rather than its -1 "unset" value.
+	cli := c.fl.rt.outboxMaxPerChannel
+	if cli == 0 {
+		cli = -1
+	}
+	ret := c.getUint(
+		cli,
+		prefixed("RT_OUTBOX_MAX_PER_CHANNEL"),
+		c.file.Data.RT.OutboxMaxPerChannel,
+		defRTOutboxMaxPerChannel,
+	)
+	if ret == 0 {
+		return defRTOutboxMaxPerChannel
+	}
+	return ret
+}
+
 func (c *Config) ProfilerPort() int {
 	c.Lock()
 	defer c.Unlock()
@@ -1153,6 +1188,12 @@ func (c *Config) TestSetKVListPageSize(i int64) {
 	c.Lock()
 	defer c.Unlock()
 	c.fl.kv.listPageSize = i
+}
+
+func (c *Config) TestSetRTOutboxMaxPerChannel(i int64) {
+	c.Lock()
+	defer c.Unlock()
+	c.fl.rt.outboxMaxPerChannel = i
 }
 
 func (c *Config) TestSetLogTargets(out, err string) {

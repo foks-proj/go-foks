@@ -37,10 +37,13 @@ enum DataType {
     KVGitRefSet @73;
 
     RTThreadMsgData @97;
-    RTOutboxMsg @98;
+    RTOutboxMsg @98;       // legacy pre-drain outbox rows; unreachable dead soft state, never written or read
     RTChannelSet @99;
     RTInboxSyncState @100; // cursor + channelID index; see librt inbox syncer
     RTInboxChannel @101;   // one rem.RTInboxChannel row per channel
+    RTOutboxEntry @102;    // one queued/failed outgoing message, keyed by msgID
+    RTOutboxIndex @103;    // singleton index of outbox entries; see librt outbox
+    RTReadThroughPending @104; // singleton set of read-marks queued while offline
 }
 
 typedef ScopeLabel = Blob;
