@@ -580,6 +580,25 @@ func loadLargeFileMetadata(
 	if err != nil {
 		return nil, err
 	}
+	// Authorize before disclosing anything further about the file. Every other
+	// loader in this package checks this -- getDir, listDir, loadDirent and
+	// mLoadSmallFilesOrSymlinks -- and large files were the one node type that
+	// did not, even though this function hands back the key box.
+	//
+	// The check comes before the status switch on purpose: KVUploadInProgress
+	// and KVNoent below distinguish an uploading file from a deleted one from
+	// a live one, which is exactly what a caller under the read role must not
+	// learn. It also avoids decoding the key box for a caller who is refused.
+	var fileRole proto.Role
+	err = fileRole.ImportFromDB(rt, vl)
+	if err != nil {
+		return nil, err
+	}
+	err = assertAtOrAbove(role, fileRole, proto.KVOp_Read, proto.KVNodeType_File)
+	if err != nil {
+		return nil, err
+	}
+
 	st, err := ParseLargeFileStatus(status)
 	if err != nil {
 		return nil, err
@@ -601,17 +620,49 @@ func loadLargeFileMetadata(
 
 	ret := proto.LargeFileMetadata{
 		Rg: proto.RoleAndGen{
-			Gen: proto.Generation(ptkg),
+			Role: fileRole,
+			Gen:  proto.Generation(ptkg),
 		},
 		KeySeed: sb,
 		Vers:    proto.KVVersion(v),
 	}
-	err = ret.Rg.Role.ImportFromDB(rt, vl)
-	if err != nil {
-		return nil, err
-	}
 
 	return &ret, nil
+}
+
+// loadLargeFileReadRole reads the read role of a large file's current version,
+// for callers that must authorize access without loading the key box.
+func loadLargeFileReadRole(
+	m shared.MetaContext,
+	db *pgxpool.Conn,
+	pid proto.PartyID,
+	fid proto.FileID,
+) (
+	proto.Role,
+	error,
+) {
+	var ret proto.Role
+	var rt, vl int
+	err := db.QueryRow(
+		m.Ctx(),
+		`SELECT read_role_type, read_role_viz_level
+		FROM large_file_key
+		WHERE short_host_id=$1 AND short_party_id=$2 AND file_id=$3
+		ORDER BY version DESC
+		LIMIT 1`,
+		int(m.ShortHostID()), pid.Shorten().ExportToDB(), fid.ExportToDB(),
+	).Scan(&rt, &vl)
+	if err != nil && err == pgx.ErrNoRows {
+		return ret, core.NotFoundError("large file key")
+	}
+	if err != nil {
+		return ret, err
+	}
+	err = ret.ImportFromDB(rt, vl)
+	if err != nil {
+		return ret, err
+	}
+	return ret, nil
 }
 
 func getNode(
@@ -643,6 +694,19 @@ func getChunk(
 	*rem.GetEncryptedChunkRes,
 	error,
 ) {
+	// Authorize before serving bytes. This path accepted a role and ignored it,
+	// so chunks of any large file went to any party member who knew the file
+	// ID, at any role. The chunk is sealed to the PTK at the file's read role,
+	// so this was not a plaintext leak; it disclosed existence, size and chunk
+	// layout, and left the whole gate to the crypto.
+	fileRole, err := loadLargeFileReadRole(m, db, pid, arg.Id)
+	if err != nil {
+		return nil, err
+	}
+	err = assertAtOrAbove(role, fileRole, proto.KVOp_Read, proto.KVNodeType_File)
+	if err != nil {
+		return nil, err
+	}
 	return lfe.Get(m, db, pid, arg.Id, arg.Offset)
 }
 
