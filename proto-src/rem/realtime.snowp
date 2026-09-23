@@ -82,6 +82,14 @@ struct RTChannelMetadata @0xddf6b26b2ace1535 {
     // still wake; only the phone notification is suppressed. For channels
     // carrying app control traffic rather than conversation.
     noPush @13 : Bool;
+    // An archived channel is closed to new activity and gone from the inbox,
+    // but it deliberately STAYS in this listing: the channel set doubles as
+    // the team's name registry, names are PTK-encrypted so only a client can
+    // compare them, and a client can only refuse a duplicate name it can
+    // still see. Dropping archived rows here would free the name and make
+    // every un-archive a collision the server cannot detect. The caller is
+    // therefore what hides an archived channel from a channel list.
+    archived @14 : Bool;
 }
 
 struct RTChannelSet {
@@ -231,6 +239,34 @@ protocol RealTime
         token @1 : lib.RTPushToken,
         deviceKey @2 : lib.EntityID,
         enabled @3 : Bool
+    );
+
+    // @12-@15 are left free for the push-hold RPCs in PR #370, which is open
+    // against this same interface; these two move down if that one does not land.
+
+    // Change a channel's own metadata: rename, and edit or clear the
+    // description. CAS on seqno -- the caller passes the seqno it last saw,
+    // and a mismatch is RTRaceError, which librt retries after re-reading.
+    // Team admins only. Permitted on an archived channel, because renaming
+    // one is how its reserved name is released.
+    //
+    // nameBox must be sealed at the channel's TIER name role (MinRTRole for
+    // bottom, AdminRole for admin), not at the caller's own role; descBox at
+    // the channel's read role. An absent descBox clears the description.
+    rtUpdateChannel @16 (
+        chid @0 : lib.RTChannelID,
+        seqno @1 : lib.RTChannelSeqno,
+        nameBox @2 : lib.RTBoxRG,
+        descBox @3 : Option(lib.RTBoxRG)
+    );
+
+    // Archive or un-archive a channel. A target state rather than a one-way
+    // verb, so un-archive needs no second RPC and no later wire change.
+    // Team admins only; CAS on seqno as above.
+    rtSetChannelArchived @17 (
+        chid @0 : lib.RTChannelID,
+        seqno @1 : lib.RTChannelSeqno,
+        archived @2 : Bool
     );
 
 }

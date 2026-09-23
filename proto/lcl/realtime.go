@@ -459,6 +459,8 @@ type RTChannelMetadataPlaintext struct {
 	UpdatedAt  lib.RTChannelSetVersion
 	Unreadable bool
 	NoPush     bool
+	Seqno      lib.RTChannelSeqno
+	Archived   bool
 }
 type RTChannelMetadataPlaintextInternal__ struct {
 	_struct    struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
@@ -472,6 +474,8 @@ type RTChannelMetadataPlaintextInternal__ struct {
 	UpdatedAt  *lib.RTChannelSetVersionInternal__
 	Unreadable *bool
 	NoPush     *bool
+	Seqno      *lib.RTChannelSeqnoInternal__
+	Archived   *bool
 }
 
 func (r RTChannelMetadataPlaintextInternal__) Import() RTChannelMetadataPlaintext {
@@ -542,6 +546,18 @@ func (r RTChannelMetadataPlaintextInternal__) Import() RTChannelMetadataPlaintex
 			}
 			return *x
 		})(r.NoPush),
+		Seqno: (func(x *lib.RTChannelSeqnoInternal__) (ret lib.RTChannelSeqno) {
+			if x == nil {
+				return ret
+			}
+			return x.Import()
+		})(r.Seqno),
+		Archived: (func(x *bool) (ret bool) {
+			if x == nil {
+				return ret
+			}
+			return *x
+		})(r.Archived),
 	}
 }
 func (r RTChannelMetadataPlaintext) Export() *RTChannelMetadataPlaintextInternal__ {
@@ -561,6 +577,8 @@ func (r RTChannelMetadataPlaintext) Export() *RTChannelMetadataPlaintextInternal
 		UpdatedAt:  r.UpdatedAt.Export(),
 		Unreadable: &r.Unreadable,
 		NoPush:     &r.NoPush,
+		Seqno:      r.Seqno.Export(),
+		Archived:   &r.Archived,
 	}
 }
 func (r *RTChannelMetadataPlaintext) Encode(enc rpc.Encoder) error {
@@ -1697,6 +1715,111 @@ func (c *ClientRTOutboxRetryArg) Decode(dec rpc.Decoder) error {
 
 func (c *ClientRTOutboxRetryArg) Bytes() []byte { return nil }
 
+type ClientRTUpdateChannelArg struct {
+	Cfg  RTConfig
+	Name lib.RTChannelName
+	Desc lib.RTChannelDesc
+}
+type ClientRTUpdateChannelArgInternal__ struct {
+	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
+	Cfg     *RTConfigInternal__
+	Name    *lib.RTChannelNameInternal__
+	Desc    *lib.RTChannelDescInternal__
+}
+
+func (c ClientRTUpdateChannelArgInternal__) Import() ClientRTUpdateChannelArg {
+	return ClientRTUpdateChannelArg{
+		Cfg: (func(x *RTConfigInternal__) (ret RTConfig) {
+			if x == nil {
+				return ret
+			}
+			return x.Import()
+		})(c.Cfg),
+		Name: (func(x *lib.RTChannelNameInternal__) (ret lib.RTChannelName) {
+			if x == nil {
+				return ret
+			}
+			return x.Import()
+		})(c.Name),
+		Desc: (func(x *lib.RTChannelDescInternal__) (ret lib.RTChannelDesc) {
+			if x == nil {
+				return ret
+			}
+			return x.Import()
+		})(c.Desc),
+	}
+}
+func (c ClientRTUpdateChannelArg) Export() *ClientRTUpdateChannelArgInternal__ {
+	return &ClientRTUpdateChannelArgInternal__{
+		Cfg:  c.Cfg.Export(),
+		Name: c.Name.Export(),
+		Desc: c.Desc.Export(),
+	}
+}
+func (c *ClientRTUpdateChannelArg) Encode(enc rpc.Encoder) error {
+	return enc.Encode(c.Export())
+}
+
+func (c *ClientRTUpdateChannelArg) Decode(dec rpc.Decoder) error {
+	var tmp ClientRTUpdateChannelArgInternal__
+	err := dec.Decode(&tmp)
+	if err != nil {
+		return err
+	}
+	*c = tmp.Import()
+	return nil
+}
+
+func (c *ClientRTUpdateChannelArg) Bytes() []byte { return nil }
+
+type ClientRTSetChannelArchivedArg struct {
+	Cfg      RTConfig
+	Archived bool
+}
+type ClientRTSetChannelArchivedArgInternal__ struct {
+	_struct  struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
+	Cfg      *RTConfigInternal__
+	Archived *bool
+}
+
+func (c ClientRTSetChannelArchivedArgInternal__) Import() ClientRTSetChannelArchivedArg {
+	return ClientRTSetChannelArchivedArg{
+		Cfg: (func(x *RTConfigInternal__) (ret RTConfig) {
+			if x == nil {
+				return ret
+			}
+			return x.Import()
+		})(c.Cfg),
+		Archived: (func(x *bool) (ret bool) {
+			if x == nil {
+				return ret
+			}
+			return *x
+		})(c.Archived),
+	}
+}
+func (c ClientRTSetChannelArchivedArg) Export() *ClientRTSetChannelArchivedArgInternal__ {
+	return &ClientRTSetChannelArchivedArgInternal__{
+		Cfg:      c.Cfg.Export(),
+		Archived: &c.Archived,
+	}
+}
+func (c *ClientRTSetChannelArchivedArg) Encode(enc rpc.Encoder) error {
+	return enc.Encode(c.Export())
+}
+
+func (c *ClientRTSetChannelArchivedArg) Decode(dec rpc.Decoder) error {
+	var tmp ClientRTSetChannelArchivedArgInternal__
+	err := dec.Decode(&tmp)
+	if err != nil {
+		return err
+	}
+	*c = tmp.Import()
+	return nil
+}
+
+func (c *ClientRTSetChannelArchivedArg) Bytes() []byte { return nil }
+
 type ClientRTOutboxDiscardArg struct {
 	MsgID lib.RTMsgID
 }
@@ -1745,6 +1868,8 @@ type RealTimeInterface interface {
 	ClientRTOutboxList(context.Context) (RTOutboxView, error)
 	ClientRTOutboxDrain(context.Context) (RTOutboxDrainRes, error)
 	ClientRTOutboxRetry(context.Context, lib.RTMsgID) (RTOutboxDrainRes, error)
+	ClientRTUpdateChannel(context.Context, ClientRTUpdateChannelArg) error
+	ClientRTSetChannelArchived(context.Context, ClientRTSetChannelArchivedArg) error
 	ClientRTOutboxDiscard(context.Context, lib.RTMsgID) error
 	ErrorWrapper() func(error) lib.Status
 	CheckArgHeader(ctx context.Context, h Header) error
@@ -1965,6 +2090,46 @@ func (c RealTimeClient) ClientRTOutboxRetry(ctx context.Context, msgID lib.RTMsg
 		}
 	}
 	res = tmp.Data.Import()
+	return
+}
+func (c RealTimeClient) ClientRTUpdateChannel(ctx context.Context, arg ClientRTUpdateChannelArg) (err error) {
+	warg := &rpc.DataWrap[Header, *ClientRTUpdateChannelArgInternal__]{
+		Data: arg.Export(),
+	}
+	if c.MakeArgHeader != nil {
+		warg.Header = c.MakeArgHeader()
+	}
+	var tmp rpc.DataWrap[Header, interface{}]
+	err = c.Cli.Call2(ctx, rpc.NewMethodV2(RealTimeProtocolID, 9, "RealTime.clientRTUpdateChannel"), warg, &tmp, 0*time.Millisecond, realTimeErrorUnwrapperAdapter{h: c.ErrorUnwrapper})
+	if err != nil {
+		return
+	}
+	if c.CheckResHeader != nil {
+		err = c.CheckResHeader(ctx, tmp.Header)
+		if err != nil {
+			return
+		}
+	}
+	return
+}
+func (c RealTimeClient) ClientRTSetChannelArchived(ctx context.Context, arg ClientRTSetChannelArchivedArg) (err error) {
+	warg := &rpc.DataWrap[Header, *ClientRTSetChannelArchivedArgInternal__]{
+		Data: arg.Export(),
+	}
+	if c.MakeArgHeader != nil {
+		warg.Header = c.MakeArgHeader()
+	}
+	var tmp rpc.DataWrap[Header, interface{}]
+	err = c.Cli.Call2(ctx, rpc.NewMethodV2(RealTimeProtocolID, 10, "RealTime.clientRTSetChannelArchived"), warg, &tmp, 0*time.Millisecond, realTimeErrorUnwrapperAdapter{h: c.ErrorUnwrapper})
+	if err != nil {
+		return
+	}
+	if c.CheckResHeader != nil {
+		err = c.CheckResHeader(ctx, tmp.Header)
+		if err != nil {
+			return
+		}
+	}
 	return
 }
 func (c RealTimeClient) ClientRTOutboxDiscard(ctx context.Context, msgID lib.RTMsgID) (err error) {
@@ -2224,6 +2389,62 @@ func RealTimeProtocol(i RealTimeInterface) rpc.ProtocolV2 {
 					},
 				},
 				Name: "clientRTOutboxRetry",
+			},
+			9: {
+				ServeHandlerDescription: rpc.ServeHandlerDescription{
+					MakeArg: func() interface{} {
+						var ret rpc.DataWrap[Header, *ClientRTUpdateChannelArgInternal__]
+						return &ret
+					},
+					Handler: func(ctx context.Context, args interface{}) (interface{}, error) {
+						typedWrappedArg, ok := args.(*rpc.DataWrap[Header, *ClientRTUpdateChannelArgInternal__])
+						if !ok {
+							err := rpc.NewTypeError((*rpc.DataWrap[Header, *ClientRTUpdateChannelArgInternal__])(nil), args)
+							return nil, err
+						}
+						if err := i.CheckArgHeader(ctx, typedWrappedArg.Header); err != nil {
+							return nil, err
+						}
+						typedArg := typedWrappedArg.Data
+						err := i.ClientRTUpdateChannel(ctx, (typedArg.Import()))
+						if err != nil {
+							return nil, err
+						}
+						ret := rpc.DataWrap[Header, interface{}]{
+							Header: i.MakeResHeader(),
+						}
+						return &ret, nil
+					},
+				},
+				Name: "clientRTUpdateChannel",
+			},
+			10: {
+				ServeHandlerDescription: rpc.ServeHandlerDescription{
+					MakeArg: func() interface{} {
+						var ret rpc.DataWrap[Header, *ClientRTSetChannelArchivedArgInternal__]
+						return &ret
+					},
+					Handler: func(ctx context.Context, args interface{}) (interface{}, error) {
+						typedWrappedArg, ok := args.(*rpc.DataWrap[Header, *ClientRTSetChannelArchivedArgInternal__])
+						if !ok {
+							err := rpc.NewTypeError((*rpc.DataWrap[Header, *ClientRTSetChannelArchivedArgInternal__])(nil), args)
+							return nil, err
+						}
+						if err := i.CheckArgHeader(ctx, typedWrappedArg.Header); err != nil {
+							return nil, err
+						}
+						typedArg := typedWrappedArg.Data
+						err := i.ClientRTSetChannelArchived(ctx, (typedArg.Import()))
+						if err != nil {
+							return nil, err
+						}
+						ret := rpc.DataWrap[Header, interface{}]{
+							Header: i.MakeResHeader(),
+						}
+						return &ret, nil
+					},
+				},
+				Name: "clientRTSetChannelArchived",
 			},
 			8: {
 				ServeHandlerDescription: rpc.ServeHandlerDescription{

@@ -51,21 +51,28 @@ func (s *messageSender) lockChannel(m shared.MetaContext) error {
 	var wrt, wvl, rrt, rvl int
 	var prevSeqRaw *int64
 	var appRaw string
+	var archivedAt *time.Time
 	err := s.tx.QueryRow(
 		m.Ctx(),
 		`SELECT parent_team_id, write_role_type, write_role_viz_level,
 		        read_role_type, read_role_viz_level, last_msg_seq, app_id,
-		        no_push
+		        no_push, archived_at
 		 FROM channels
 		 WHERE short_host_id=$1 AND channel_id=$2
 		 FOR UPDATE`,
 		m.ShortHostID(),
 		s.channelID(),
-	).Scan(&teamRaw, &wrt, &wvl, &rrt, &rvl, &prevSeqRaw, &appRaw, &s.noPush)
+	).Scan(&teamRaw, &wrt, &wvl, &rrt, &rvl, &prevSeqRaw, &appRaw, &s.noPush,
+		&archivedAt)
 	if err == pgx.ErrNoRows {
 		return core.RowNotFoundError{}
 	}
 	if err != nil {
+		return err
+	}
+	// An archived channel is closed to new activity. Checked here, under the
+	// row lock, so a send cannot race an archive and land after it.
+	if err = archivedBlocks(archivedAt); err != nil {
 		return err
 	}
 	err = s.parentTeam.ImportFromDB(teamRaw)
