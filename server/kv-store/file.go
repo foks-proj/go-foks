@@ -696,6 +696,14 @@ func loadNode(
 		}
 		tmp := rem.NewKVGetNodeResWithDir(*dir)
 		ret = &tmp
+	default:
+		// KVNodeType_None is a tombstone, which is a legal value of the type
+		// -- Type() returns it without error -- but not a node anyone can
+		// load. Without this arm ret stays nil and the caller dereferences
+		// it, which is the same crash by a different route. A default rather
+		// than a None case so that a node type added to the enum later fails
+		// loudly here instead of panicking in the handler.
+		return nil, core.BadArgsError("cannot load a node of this type")
 	}
 	return ret, nil
 }
@@ -791,7 +799,13 @@ func loadSmallFileOrSymlink(
 	if err != nil {
 		return nil, err
 	}
-	if len(ret) != 1 {
+	// A node ID with no row comes back as a nil ENTRY, not as a short slice:
+	// mLoadSmallFilesOrSymlinks builds its result by appending a map lookup
+	// per requested key, so a key it did not find contributes nil. The length
+	// check alone therefore passed for a missing node and handed loadNode a
+	// nil box to dereference. The batch caller already guards (listDir skips
+	// nil entries); this one did not.
+	if len(ret) != 1 || ret[0] == nil {
 		return nil, core.NotFoundError("small file")
 	}
 	return ret[0], nil
