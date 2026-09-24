@@ -186,6 +186,14 @@ type MakeChannelOpts struct {
 	// queued. For channels carrying app control traffic rather than
 	// conversation. Creation-time only.
 	NoPush bool
+
+	// AllowDuplicateName skips the team-wide name-collision check and the
+	// refusal of the name "general", for a caller that identifies channels by
+	// id and treats names as display text. Never for the EMPTY name, which
+	// stays unique so that None-specifier lookups of the default channel
+	// resolve. Off by default, because a caller that creates a channel on
+	// demand relies on the collision check to create it exactly once.
+	AllowDuplicateName bool
 }
 
 func (d *Minder) MakeChannelWithTestHooks(
@@ -216,7 +224,7 @@ func (d *Minder) MakeChannelWithOpts(
 	*proto.RTChannelID,
 	error,
 ) {
-	if nm.Eq(proto.RTGeneralChannel) {
+	if nm.Eq(proto.RTGeneralChannel) && !opts.AllowDuplicateName {
 		return nil, core.RTGenericError("cannot make channel named #general")
 	}
 	// The default channel may not be created no-push. Names are encrypted, so
@@ -331,11 +339,16 @@ func (d *Minder) makeChannelOneAttempt(
 	}
 	nameRole := nameRoleForTier(newChTier)
 
-	if _, found := chMap[chKey{
-		name: nm.Normalize(),
-		tier: newChTier,
-	}]; found {
-		return nil, core.RTChannelExistsError{}
+	// AllowDuplicateName never covers the EMPTY name: None-specifier lookups
+	// resolve a team's nameless default channel, and a second one would make
+	// them ambiguous.
+	if !opts.AllowDuplicateName || nm.IsEmpty() {
+		if _, found := chMap[chKey{
+			name: nm.Normalize(),
+			tier: newChTier,
+		}]; found {
+			return nil, core.RTChannelExistsError{}
+		}
 	}
 	nameKeySeq, err := rtp.PLCNode().SKM().PrivateKeysForRole(m.Base(), nameRole)
 	if err != nil {
@@ -2565,9 +2578,10 @@ func (d *Minder) UpdateChannel(
 	spec lcl.RTChannelSpecifier,
 	nm proto.RTChannelName,
 	desc proto.RTChannelDesc,
+	allowDuplicateName bool,
 ) error {
 	return d.retryOnRace(m, func() error {
-		return d.updateChannelOneAttempt(m, team, appID, spec, nm, desc)
+		return d.updateChannelOneAttempt(m, team, appID, spec, nm, desc, allowDuplicateName)
 	})
 }
 
@@ -2665,13 +2679,16 @@ func (d *Minder) updateChannelOneAttempt(
 	spec lcl.RTChannelSpecifier,
 	nm proto.RTChannelName,
 	desc proto.RTChannelDesc,
+	allowDuplicateName bool,
 ) error {
 	// The default channel carries the EMPTY name, and "general" is its
 	// reserved alias (MakeChannel refuses both). Renaming onto either would
 	// produce a second default channel -- and at a different tier the
 	// collision check below would not catch it, since names are compared
-	// per-tier.
-	if nm.IsEmpty() || nm.Eq(proto.RTGeneralChannel) {
+	// per-tier. A caller that identifies channels by id (allowDuplicateName)
+	// treats "general" as an ordinary name; the empty name stays refused,
+	// because None-specifier lookups resolve it.
+	if nm.IsEmpty() || (nm.Eq(proto.RTGeneralChannel) && !allowDuplicateName) {
 		return core.RTGenericError("cannot rename a channel to the default channel's name")
 	}
 	rtp, ch, lst, cli, err := d.loadChannelForMutation(m, team, appID, spec)
@@ -2682,13 +2699,15 @@ func (d *Minder) updateChannelOneAttempt(
 	// Name-collision check, against the same list the create path uses.
 	// Archived channels are NOT exempt: their names stay reserved, which is
 	// what makes un-archiving safe, and renaming an archived channel is how a
-	// name is released.
-	for _, other := range lst.Channels {
-		if other.Id.Eq(ch.Id) {
-			continue // renaming a channel to its own name is a no-op, not a clash
-		}
-		if other.Tier == ch.Tier && other.Name.Normalize().Eq(nm.Normalize()) {
-			return core.RTChannelExistsError{}
+	// name is released. Skipped for a caller that allows duplicate names.
+	if !allowDuplicateName {
+		for _, other := range lst.Channels {
+			if other.Id.Eq(ch.Id) {
+				continue // renaming a channel to its own name is a no-op, not a clash
+			}
+			if other.Tier == ch.Tier && other.Name.Normalize().Eq(nm.Normalize()) {
+				return core.RTChannelExistsError{}
+			}
 		}
 	}
 

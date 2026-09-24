@@ -130,13 +130,13 @@ func TestRTRenameRequiresAdmin(t *testing.T) {
 	sc := setupRTMutScene(t)
 
 	err := sc.mo.UpdateChannel(sc.moM, sc.teamCfg(), proto.RTAppID_Chat,
-		sc.spec(), rtRandomChannelName(t, "nope-"), "")
+		sc.spec(), rtRandomChannelName(t, "nope-"), "", false)
 	require.Error(t, err)
 	require.IsType(t, core.PermissionError(""), err)
 
 	newName := rtRandomChannelName(t, "ok-")
 	require.NoError(t, sc.ada.UpdateChannel(sc.adaM, sc.teamCfg(),
-		proto.RTAppID_Chat, sc.spec(), newName, "renamed"))
+		proto.RTAppID_Chat, sc.spec(), newName, "renamed", false))
 	require.Equal(t, newName, sc.find(t, sc.ada, sc.adaM, sc.pubID).Name)
 }
 
@@ -153,7 +153,7 @@ func TestRTRenameResealsAtTierRole(t *testing.T) {
 	// which is what lets an ordinary member read the new name.
 	bottomName := rtRandomChannelName(t, "bottom-")
 	require.NoError(t, sc.ada.UpdateChannel(sc.adaM, sc.teamCfg(),
-		proto.RTAppID_Chat, sc.spec(), bottomName, ""))
+		proto.RTAppID_Chat, sc.spec(), bottomName, "", false))
 	fromMo := sc.find(t, sc.mo, sc.moM, sc.pubID)
 	require.NotNil(t, fromMo, "an ordinary member must still see the channel")
 	require.Equal(t, bottomName, fromMo.Name,
@@ -168,7 +168,7 @@ func TestRTRenameResealsAtTierRole(t *testing.T) {
 
 	renamed := rtRandomChannelName(t, "admin2-")
 	require.NoError(t, sc.ada.UpdateChannel(sc.adaM, sc.teamCfg(),
-		proto.RTAppID_Chat, sc.specFor(*adminID), renamed, ""))
+		proto.RTAppID_Chat, sc.specFor(*adminID), renamed, "", false))
 	got := sc.find(t, sc.ada, sc.adaM, *adminID)
 	require.NotNil(t, got)
 	require.Equal(t, renamed, got.Name)
@@ -188,7 +188,7 @@ func TestRTRenameVisibleToOtherMembers(t *testing.T) {
 
 	newName := rtRandomChannelName(t, "seen-")
 	require.NoError(t, sc.ada.UpdateChannel(sc.adaM, sc.teamCfg(),
-		proto.RTAppID_Chat, sc.spec(), newName, "now with a description"))
+		proto.RTAppID_Chat, sc.spec(), newName, "now with a description", false))
 
 	got := sc.find(t, sc.mo, sc.moM, sc.pubID)
 	require.NotNil(t, got)
@@ -208,14 +208,14 @@ func TestRTRenameOntoExistingNameFails(t *testing.T) {
 	require.NoError(t, err)
 
 	err = sc.ada.UpdateChannel(sc.adaM, sc.teamCfg(), proto.RTAppID_Chat,
-		sc.spec(), otherName, "")
+		sc.spec(), otherName, "", false)
 	require.Error(t, err)
 	require.IsType(t, core.RTChannelExistsError{}, err)
 
 	// Renaming a channel to the name it already has is a no-op, not a clash
 	// with itself.
 	require.NoError(t, sc.ada.UpdateChannel(sc.adaM, sc.teamCfg(),
-		proto.RTAppID_Chat, sc.spec(), sc.pubName, ""))
+		proto.RTAppID_Chat, sc.spec(), sc.pubName, "", false))
 }
 
 // --- archive --------------------------------------------------------------
@@ -286,7 +286,7 @@ func TestRTRenamedArchivedFreesTheName(t *testing.T) {
 	require.NoError(t, sc.setArchived(t, true))
 
 	require.NoError(t, sc.ada.UpdateChannel(sc.adaM, sc.teamCfg(),
-		proto.RTAppID_Chat, sc.spec(), rtRandomChannelName(t, "retired-"), ""))
+		proto.RTAppID_Chat, sc.spec(), rtRandomChannelName(t, "retired-"), "", false))
 
 	_, err := sc.ada.MakeChannel(sc.adaM, sc.teamCfg(), proto.RTAppID_Chat,
 		sc.pubName, "reusing the freed name",
@@ -421,4 +421,48 @@ func TestRTArchivedNotFannedInOnJoin(t *testing.T) {
 		require.Equal(t, before, rows(),
 			"the fan-in must not create a delivery row for an archived channel")
 	}
+}
+
+// --- duplicate names ---------------------------------------------------------
+
+// AllowDuplicateName is for a caller that identifies channels by id: a name
+// another channel has, and "general", become allowed on create and rename.
+// The empty name never does -- it would make a second default channel.
+func TestRTAllowDuplicateName(t *testing.T) {
+	sc := setupRTMutScene(t)
+	roles := proto.RolePairOpt{Read: &proto.DefaultRole, Write: &proto.DefaultRole}
+	dup := librt.MakeChannelOpts{AllowDuplicateName: true}
+
+	// Without the flag: refused, as before.
+	_, err := sc.ada.MakeChannel(sc.adaM, sc.teamCfg(), proto.RTAppID_Chat, sc.pubName, "", roles)
+	require.IsType(t, core.RTChannelExistsError{}, err)
+
+	// With it: a second channel of the same name.
+	second, err := sc.ada.MakeChannelWithOpts(sc.adaM, sc.teamCfg(), proto.RTAppID_Chat,
+		sc.pubName, "", roles, dup, nil)
+	require.NoError(t, err)
+	require.False(t, second.Eq(sc.pubID))
+
+	// "general" too, on create and on rename.
+	gen, err := sc.ada.MakeChannelWithOpts(sc.adaM, sc.teamCfg(), proto.RTAppID_Chat,
+		proto.RTGeneralChannel, "", roles, dup, nil)
+	require.NoError(t, err)
+	require.Error(t, sc.ada.UpdateChannel(sc.adaM, sc.teamCfg(), proto.RTAppID_Chat,
+		sc.specFor(*second), proto.RTGeneralChannel, "", false))
+	require.NoError(t, sc.ada.UpdateChannel(sc.adaM, sc.teamCfg(), proto.RTAppID_Chat,
+		sc.specFor(*second), proto.RTGeneralChannel, "", true))
+
+	// Renaming onto a live name: refused without the flag, allowed with it.
+	require.IsType(t, core.RTChannelExistsError{}, sc.ada.UpdateChannel(sc.adaM, sc.teamCfg(),
+		proto.RTAppID_Chat, sc.specFor(*gen), sc.pubName, "", false))
+	require.NoError(t, sc.ada.UpdateChannel(sc.adaM, sc.teamCfg(), proto.RTAppID_Chat,
+		sc.specFor(*gen), sc.pubName, "", true))
+
+	// The empty name stays refused either way: on rename, and on create,
+	// where the scene's default channel already holds it.
+	require.Error(t, sc.ada.UpdateChannel(sc.adaM, sc.teamCfg(), proto.RTAppID_Chat,
+		sc.specFor(*gen), "", "", true))
+	_, err = sc.ada.MakeChannelWithOpts(sc.adaM, sc.teamCfg(), proto.RTAppID_Chat,
+		"", "", roles, dup, nil)
+	require.IsType(t, core.RTChannelExistsError{}, err)
 }

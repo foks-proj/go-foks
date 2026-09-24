@@ -45,13 +45,15 @@ func (c *AgentConn) ClientRTMakeChannel(
 		return zed, core.BadArgsError("expected a channel name")
 	}
 	nm := arg.Cfg.Channel.Name().Name
-	chid, err := minder.MakeChannel(
+	chid, err := minder.MakeChannelWithOpts(
 		m,
 		arg.Cfg.Team,
 		arg.Cfg.AppID,
 		nm,
 		arg.Desc,
 		arg.Cfg.Roles,
+		librt.MakeChannelOpts{AllowDuplicateName: arg.AllowDuplicateName},
+		nil,
 	)
 	if err != nil {
 		return zed, err
@@ -230,7 +232,8 @@ func (c *AgentConn) ClientRTUpdateChannel(
 		return err
 	}
 	return minder.UpdateChannel(
-		m, arg.Cfg.Team, arg.Cfg.AppID, arg.Cfg.Channel, arg.Name, arg.Desc)
+		m, arg.Cfg.Team, arg.Cfg.AppID, arg.Cfg.Channel, arg.Name, arg.Desc,
+		arg.AllowDuplicateName)
 }
 
 // ClientRTSetChannelArchived archives or un-archives a channel. Admin-only,

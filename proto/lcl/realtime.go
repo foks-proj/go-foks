@@ -1381,13 +1381,15 @@ func (r *RTThreadView) Bytes() []byte { return nil }
 var RealTimeProtocolID rpc.ProtocolUniqueID = rpc.ProtocolUniqueID(0xaaf0cd97)
 
 type ClientRTMakeChannelArg struct {
-	Cfg  RTConfig
-	Desc lib.RTChannelDesc
+	Cfg                RTConfig
+	Desc               lib.RTChannelDesc
+	AllowDuplicateName bool
 }
 type ClientRTMakeChannelArgInternal__ struct {
-	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
-	Cfg     *RTConfigInternal__
-	Desc    *lib.RTChannelDescInternal__
+	_struct            struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
+	Cfg                *RTConfigInternal__
+	Desc               *lib.RTChannelDescInternal__
+	AllowDuplicateName *bool
 }
 
 func (c ClientRTMakeChannelArgInternal__) Import() ClientRTMakeChannelArg {
@@ -1404,12 +1406,19 @@ func (c ClientRTMakeChannelArgInternal__) Import() ClientRTMakeChannelArg {
 			}
 			return x.Import()
 		})(c.Desc),
+		AllowDuplicateName: (func(x *bool) (ret bool) {
+			if x == nil {
+				return ret
+			}
+			return *x
+		})(c.AllowDuplicateName),
 	}
 }
 func (c ClientRTMakeChannelArg) Export() *ClientRTMakeChannelArgInternal__ {
 	return &ClientRTMakeChannelArgInternal__{
-		Cfg:  c.Cfg.Export(),
-		Desc: c.Desc.Export(),
+		Cfg:                c.Cfg.Export(),
+		Desc:               c.Desc.Export(),
+		AllowDuplicateName: &c.AllowDuplicateName,
 	}
 }
 func (c *ClientRTMakeChannelArg) Encode(enc rpc.Encoder) error {
@@ -1716,15 +1725,17 @@ func (c *ClientRTOutboxRetryArg) Decode(dec rpc.Decoder) error {
 func (c *ClientRTOutboxRetryArg) Bytes() []byte { return nil }
 
 type ClientRTUpdateChannelArg struct {
-	Cfg  RTConfig
-	Name lib.RTChannelName
-	Desc lib.RTChannelDesc
+	Cfg                RTConfig
+	Name               lib.RTChannelName
+	Desc               lib.RTChannelDesc
+	AllowDuplicateName bool
 }
 type ClientRTUpdateChannelArgInternal__ struct {
-	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
-	Cfg     *RTConfigInternal__
-	Name    *lib.RTChannelNameInternal__
-	Desc    *lib.RTChannelDescInternal__
+	_struct            struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
+	Cfg                *RTConfigInternal__
+	Name               *lib.RTChannelNameInternal__
+	Desc               *lib.RTChannelDescInternal__
+	AllowDuplicateName *bool
 }
 
 func (c ClientRTUpdateChannelArgInternal__) Import() ClientRTUpdateChannelArg {
@@ -1747,13 +1758,20 @@ func (c ClientRTUpdateChannelArgInternal__) Import() ClientRTUpdateChannelArg {
 			}
 			return x.Import()
 		})(c.Desc),
+		AllowDuplicateName: (func(x *bool) (ret bool) {
+			if x == nil {
+				return ret
+			}
+			return *x
+		})(c.AllowDuplicateName),
 	}
 }
 func (c ClientRTUpdateChannelArg) Export() *ClientRTUpdateChannelArgInternal__ {
 	return &ClientRTUpdateChannelArgInternal__{
-		Cfg:  c.Cfg.Export(),
-		Name: c.Name.Export(),
-		Desc: c.Desc.Export(),
+		Cfg:                c.Cfg.Export(),
+		Name:               c.Name.Export(),
+		Desc:               c.Desc.Export(),
+		AllowDuplicateName: &c.AllowDuplicateName,
 	}
 }
 func (c *ClientRTUpdateChannelArg) Encode(enc rpc.Encoder) error {
