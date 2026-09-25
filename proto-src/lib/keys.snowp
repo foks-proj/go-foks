@@ -49,6 +49,43 @@ variant KVKeyDerivation switch (t : KVKeyType) @0xdbdf2ba29c0de2cb {
     default: void;
 }
 
+// Social invites (docs/social_signup_spec.md): Alice invites Bob onto the
+// host and into a team, bootstrapped from a random seed s shared over an
+// out-of-band E2EE channel. Three keys come off s via the standard
+// derivation; the variant's type ID separates this family from every other
+// use of HMAC in the protocol.
+
+typedef SocialInviteID = Blob(32);                           // HMAC(s, ID arm); the invitee's only handle
+typedef SocialInviteWriteKey @0xbfc12c8ea6417d09 = Blob(32); // wk; typed so it can be prefix-hashed
+typedef SocialInviteWriteKeyCommitment = StdHash;            // hash commitment to wk; gates the reply
+typedef SocialInviteSeed @0x9e60ab215fc0d3b4 = Blob(32);     // s; typed so it can be boxed to the inviter's PUK
+
+enum SocialInviteKeyType {
+    ID @1;
+    Box @2;
+    Write @3;
+}
+
+variant SocialInviteKeyDerivation switch (t : SocialInviteKeyType)
+    @0x8053b9737d1d8a37 {
+    default: void;
+}
+
+enum SocialInviteState {
+    None @0;
+    Open @1;
+    Replied @2;
+    AskAgain @3;
+    Accepted @4;
+    Declined @5;
+    Canceled @6;
+}
+
+enum SocialInviteParty {
+    Inviter @1;
+    Invitee @2;
+}
+
 enum KeyGenus {
     Device @0;
     Yubi @1;

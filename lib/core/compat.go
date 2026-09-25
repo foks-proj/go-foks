@@ -144,6 +144,24 @@ func NewKVStoreClient(gcli rpc.GenericClient, wcw WithContextWarner) rem.KVStore
 	}
 }
 
+func NewSocialInviteClient(gcli rpc.GenericClient, wcw WithContextWarner) rem.SocialInviteClient {
+	return rem.SocialInviteClient{
+		Cli:            gcli,
+		ErrorUnwrapper: StatusToError,
+		MakeArgHeader:  MakeProtoHeader,
+		CheckResHeader: MakeCheckProtoResHeader(wcw),
+	}
+}
+
+func NewSocialInviteGuestClient(gcli rpc.GenericClient, wcw WithContextWarner) rem.SocialInviteGuestClient {
+	return rem.SocialInviteGuestClient{
+		Cli:            gcli,
+		ErrorUnwrapper: StatusToError,
+		MakeArgHeader:  MakeProtoHeader,
+		CheckResHeader: MakeCheckProtoResHeader(wcw),
+	}
+}
+
 func NewBeaconClient(gcli rpc.GenericClient, wcw WithContextWarner) rem.BeaconClient {
 	return rem.BeaconClient{
 		Cli:            gcli,
