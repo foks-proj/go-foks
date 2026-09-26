@@ -275,21 +275,43 @@ func (w *TestEnvWrapper) NewClientMetaContextWithEracer(t *testing.T, u *TestUse
 }
 
 func (w *TestEnvWrapper) NewClientMetaContextWithDevice(t *testing.T, u *TestUser, d core.PrivateSuiter) libclient.MetaContext {
+	return w.newClientMetaContextAtHome(t, u, d, "")
+}
+
+// NewClientMetaContextAtHome builds a client context over a home directory the
+// caller supplies. Passing the same directory twice is how a test gets a *cold
+// start*: a context with no warmed in-memory state, over local state an
+// earlier context already wrote. Every other constructor here makes a fresh
+// temp home, which discards exactly the state an offline test needs to keep.
+func (w *TestEnvWrapper) NewClientMetaContextAtHome(t *testing.T, u *TestUser, home string) libclient.MetaContext {
+	require.NotEmpty(t, home)
+	return w.newClientMetaContextAtHome(t, u, u.devices[0], home)
+}
+
+func (w *TestEnvWrapper) newClientMetaContextAtHome(
+	t *testing.T,
+	u *TestUser,
+	d core.PrivateSuiter,
+	home string,
+) libclient.MetaContext {
 	cm := libclient.NewMetaContextMain()
-	tmp, err := os.MkdirTemp("", "foks_agent_test_")
-	require.NoError(t, err)
-	w.pushShutdownHook(func() {
-		err := os.RemoveAll(tmp)
+	if home == "" {
+		tmp, err := os.MkdirTemp("", "foks_agent_test_")
 		require.NoError(t, err)
-	})
+		w.pushShutdownHook(func() {
+			err := os.RemoveAll(tmp)
+			require.NoError(t, err)
+		})
+		home = tmp
+	}
 
 	// Make sure that the test env and the client's meta data
 	// refer to the same Yubi dispatch.
 	cm.G().SetYubiDispatch(w.YubiDisp(t))
 
-	cm.G().Cfg().TestSetHomeCLIFlag(tmp)
+	cm.G().Cfg().TestSetHomeCLIFlag(home)
 	cm.G().Cfg().TestSetLogTargets("stdout", "stderr")
-	err = cm.Configure()
+	err := cm.Configure()
 	require.NoError(t, err)
 
 	// No need to retry in test, since we can just poke merkle

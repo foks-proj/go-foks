@@ -29,6 +29,12 @@ type MetaContext interface {
 type DiscoveryInterface interface {
 	MakeRpcClient(m MetaContext, addr proto.TCPAddr, rootCAs *x509.CertPool, cliCert *tls.Certificate, opts *core.RpcClientOpts) (*core.RpcClient, error)
 	LoadHostchainFromDB(m MetaContext, hostID proto.HostID) (*core.Hostchain, error)
+	// Store/LoadPublicZoneFromDB cache the host's signed public zone after it
+	// has been verified (CheckZoneSig), so a cold start with no network can
+	// still name the host's service addresses. Verified-on-write: only a zone
+	// that passed verification is ever stored.
+	StorePublicZoneToDB(m MetaContext, hostID proto.HostID, pz *proto.PublicZone) error
+	LoadPublicZoneFromDB(m MetaContext, hostID proto.HostID) (*proto.PublicZone, error)
 	MakeMerkleAgent(m MetaContext, hostID proto.HostID, addr proto.TCPAddr, rootCAs *x509.CertPool) (*merkle.Agent, error)
 	StoreHostchainToDB(m MetaContext, hc *core.Hostchain) error
 	CheckPin(m MetaContext, hn proto.Hostname, hid proto.HostID) error

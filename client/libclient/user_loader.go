@@ -269,6 +269,27 @@ func (u *UserWrapper) Prot() *lcl.UserSigchainState {
 	return u.prot
 }
 
+// VerifiedAt is when this account's snapshot was last confirmed against the
+// server's merkle root. It dates the verification rather than the read: a
+// cold start serves the snapshot without re-verifying it, so the gap between
+// this and now is how long the device has gone without learning about a
+// revocation. Zero means the snapshot predates the field.
+func (u *UserWrapper) VerifiedAt() proto.Time {
+	return u.prot.VerifiedAt
+}
+
+// VerifiedAge is that gap, with a bool that is false when no stamp was
+// recorded. "Not known" and "just now" are different answers, and a check that
+// folds them together fails open on the oldest snapshots -- the ones most
+// likely to be badly out of date.
+func (u *UserWrapper) VerifiedAge(now time.Time) (time.Duration, bool) {
+	v := u.prot.VerifiedAt
+	if v.IsZero() {
+		return 0, false
+	}
+	return now.Sub(v.Import()), true
+}
+
 func (u *UserWrapper) ProtoWithMetadata() *lcl.UserMetadataAndSigchainState {
 	return &lcl.UserMetadataAndSigchainState{
 		Fqu:      u.fqu,
@@ -311,6 +332,70 @@ func NewUserLoader(arg LoadUserArg) *UserLoader {
 func LoadUser(m MetaContext, arg LoadUserArg) (*UserWrapper, error) {
 	loader := NewUserLoader(arg)
 	return loader.Run(m)
+}
+
+// LoadMeFromCache builds a UserWrapper for the active user purely from the
+// locally persisted sigchain snapshot (lcl.UserSigchainState), with no
+// network. The snapshot was merkle-verified by a full loader run before it
+// was ever written (saveState runs after checkRes/playLinks), so this is the
+// same trust posture as every other verified-on-ingest cache in the client:
+// no new links enter and nothing is re-verified, the last verified state is
+// simply rehydrated. Worst case it is stale -- missing a rotation or a
+// revocation that happened after the device went offline -- which an offline
+// device could not learn about anyway; the next online LoadMe re-verifies
+// and refreshes as usual.
+//
+// Returns RowNotFoundError when no snapshot exists (a device that never
+// completed an online load has nothing verified to serve).
+func LoadMeFromCache(m MetaContext, au *UserContext) (*UserWrapper, error) {
+	if au == nil {
+		au = m.G().ActiveUser()
+	}
+	if au == nil {
+		return nil, core.NoActiveUserError{}
+	}
+	hs := au.HomeServer()
+	if hs == nil {
+		return nil, core.HomeError("no home server probe")
+	}
+	// A dead probe that could not hydrate (no cached zone/chain -- e.g. a DB
+	// predating the host-identity cache) has no chain identity to scope the
+	// snapshot by; without this guard the load would nil-deref instead of
+	// reporting that nothing verified is available offline.
+	if hs.Chain() == nil {
+		return nil, core.RowNotFoundError{}
+	}
+	u := NewUserLoader(LoadUserArg{
+		Uid:        au.Info.Fqu.Uid,
+		LoadMode:   LoadModeSelf,
+		ActiveUser: au,
+	})
+	u.resetState()
+	err := u.checkArgs(m)
+	if err != nil {
+		return nil, err
+	}
+	// The probe object survives a failed connection; only its chain identity
+	// is needed here, never its sockets.
+	u.probe = hs
+	err = u.loadExistingUser(m)
+	if err != nil {
+		return nil, err
+	}
+	if u.existing == nil {
+		return nil, core.RowNotFoundError{}
+	}
+	return &UserWrapper{
+		prot:      u.existing,
+		hostAddr:  au.Info.HostAddr,
+		keys:      u.keys,
+		DevInfo:   u.devInfo,
+		pukGens:   u.pukGens,
+		puks:      u.puksByRole,
+		fqu:       u.fqu(),
+		Hepks:     u.hepks,
+		stalePUKs: u.stalePUKs,
+	}, nil
 }
 
 func LoadMe(m MetaContext, au *UserContext) (*UserWrapper, error) {
@@ -527,8 +612,14 @@ func (u *UserLoader) loadUserFromServer(m MetaContext) error {
 	}
 	res, err := u.rpcLoader.LoadUserChain(m.Ctx(), arg)
 	if err != nil {
+		// A merkle race is worth retrying with backoff; an auth refusal or
+		// an unreachable server is not -- retrying a dead network just
+		// stalls the caller (and, at agent startup, the whole unlock chain)
+		// for the full backoff schedule before the offline fallbacks can
+		// run.
 		race := true
-		if core.IsAuthError(err) || core.IsPermissionError(err) {
+		if core.IsAuthError(err) || core.IsPermissionError(err) ||
+			core.IsTransportError(err) {
 			race = false
 		}
 		return core.ChainLoaderError{
@@ -1227,6 +1318,24 @@ func (u *UserLoader) saveState(m MetaContext) error {
 		// The user might have updated the UTf8 preimage of the normalized username,
 		// so update that here. This is based on server-trust, for now.
 		u.newState.Username.B = unb
+
+		// Playing no new links still means the chain was just checked against
+		// a fresh merkle root, so the snapshot is freshly verified even though
+		// its contents did not move. Re-stamp and persist, or an account that
+		// simply is not changing would age as though nobody had checked it.
+		u.newState.VerifiedAt = proto.ExportTime(m.G().Now())
+		if u.arg.LoadMode != LoadModeDeadSelf {
+			scoper := u.fqu()
+			err = m.DbPut(u.dbType(), PutArg{
+				Scope: &scoper,
+				Typ:   lcl.DataType_UserSigchainState,
+				Val:   u.newState,
+				Key:   core.EmptyKey{},
+			})
+			if err != nil {
+				return err
+			}
+		}
 		return nil
 	}
 
@@ -1240,6 +1349,9 @@ func (u *UserLoader) saveState(m MetaContext) error {
 		MerkleLeaves: u.allMerkleLeaves,
 		Hepks:        u.hepks.Export(),
 		StalePUKs:    u.stalePUKs.Export(),
+		// Dates the verification, not the read: only a full online run reaches
+		// saveState, and LoadMeFromCache never does.
+		VerifiedAt: proto.ExportTime(m.G().Now()),
 	}
 	if u.sctlsc != nil {
 		res.Sctlsc = *u.sctlsc
