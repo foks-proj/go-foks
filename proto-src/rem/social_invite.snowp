@@ -1,0 +1,90 @@
+// Copyright (c) 2025 ne43, Inc.
+// Licensed under the MIT License. See LICENSE in the project root for details.
+
+@0xa7e389fb5c88d102;
+
+go:import "github.com/foks-proj/go-foks/proto/lib" as lib;
+
+// Social invites (docs/social_signup_spec.md). Two protocols: SocialInviteGuest
+// is served on reg, unauthenticated, because the invitee may have no account
+// yet; SocialInvite is served on the user server and authenticated.
+
+struct SocialInviteMsg {
+    seq @0 : Uint;
+    sender @1 : lib.SocialInviteParty;
+    box @2 : lib.SecretBox;
+}
+
+struct SocialInviteGuestView {
+    state @0 : lib.SocialInviteState;
+    msgs @1 : List(SocialInviteMsg);
+}
+
+struct SocialInviteRow {
+    id @0 : lib.SocialInviteID;
+    team @1 : lib.TeamID;
+    state @2 : lib.SocialInviteState;
+    seedBox @3 : lib.SharedKeyBox;    // Enc(PUK_inviter, s); carries the generation it sealed to
+    msgs @4 : List(SocialInviteMsg);  // full transcript, ordered by seq
+    invitee @5 : Option(lib.UID);     // filled from the replying session; a hint, not proof
+    ctime @6 : lib.Time;
+    mtime @7 : lib.Time;
+    etime @8 : lib.Time;
+}
+
+// Application-level payload for the boxes above. The server never parses
+// these; the struct exists so clients and tests agree on a shape. Conventions
+// (docs/social_signup_spec.md): the invite code and, on closed hosts, the
+// FQTeam travel in the opening message; the invitee's user ID travels in the
+// invitee's first reply. Append-only.
+struct SocialInviteMsgPayload @0x85d21f4e60b7c9aa {
+    text @0 : Text;
+    inviteCode @1 : Option(InviteCode);  // opening-message convention
+    team @2 : Option(lib.FQTeam);        // opening-message convention (closed hosts)
+    user @3 : Option(lib.FQUser);        // invitee-first-reply convention
+}
+
+protocol SocialInviteGuest
+    errors lib.Status
+    argHeader lib.Header
+    resHeader lib.Header @0xc6f4b985 {
+
+    fetch @0 (
+        id @0 : lib.SocialInviteID
+    ) -> SocialInviteGuestView;
+}
+
+protocol SocialInvite
+    errors lib.Status
+    argHeader lib.Header
+    resHeader lib.Header @0xee2c9d1c {
+
+    create @0 (
+        id @0 : lib.SocialInviteID,
+        team @1 : lib.TeamID,
+        seedBox @2 : lib.SharedKeyBox,
+        msg @3 : lib.SecretBox,        /* the opening message, seq 1 */
+        wkCommit @4 : lib.SocialInviteWriteKeyCommitment,
+        inviteCode @5 : Option(InviteCode),
+        etime @6 : lib.Time
+    );
+
+    list @1 () -> List(SocialInviteRow);
+
+    reply @2 (
+        id @0 : lib.SocialInviteID,
+        wk @1 : lib.SocialInviteWriteKey,
+        inReplyTo @2 : Uint,           /* seq of the turn being answered */
+        msg @3 : lib.SecretBox
+    );
+
+    askAgain @3 (
+        id @0 : lib.SocialInviteID,
+        msg @1 : lib.SecretBox
+    );
+
+    close @4 (
+        id @0 : lib.SocialInviteID,
+        st @1 : lib.SocialInviteState  /* accepted, declined or canceled */
+    );
+}

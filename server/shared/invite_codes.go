@@ -39,6 +39,59 @@ func GenerateStandardInviteCode(m MetaContext, creator proto.UID) (*rem.InviteCo
 	return &ret, nil
 }
 
+// NewUserInviteCode is the RPC path for minting a standard code: unlike
+// GenerateStandardInviteCode (tools and tests), it caps the caller's
+// outstanding unused codes. The count and the insert run in one transaction
+// under the same per-user advisory lock the social-invite create takes, so
+// concurrent calls cannot pass the count together and exceed the cap.
+func NewUserInviteCode(m MetaContext, creator proto.UID) (*rem.InviteCode, error) {
+	settings, err := m.G().Config().Settings(m.Ctx())
+	if err != nil {
+		return nil, err
+	}
+	b := make([]byte, core.InviteCodeBytes)
+	err = core.RandomFill(b)
+	if err != nil {
+		return nil, err
+	}
+	shid := m.ShortHostID().ExportToDB()
+	err = RetryTxUserDB(m, "NewUserInviteCode", func(m MetaContext, tx pgx.Tx) error {
+		err := lockSocialInviteInviter(m, tx, shid, creator)
+		if err != nil {
+			return err
+		}
+		var n int
+		err = tx.QueryRow(m.Ctx(),
+			`SELECT COUNT(*) FROM invite_codes
+			 WHERE short_host_id=$1 AND creator=$2 AND used_by IS NULL`,
+			shid, creator.ExportToDB(),
+		).Scan(&n)
+		if err != nil {
+			return err
+		}
+		if n >= settings.MaxUnusedInviteCodes() {
+			return core.RateLimitError{}
+		}
+		tags, err := tx.Exec(m.Ctx(),
+			`INSERT INTO invite_codes(short_host_id, code, creator)
+			 VALUES($1, $2, $3)`,
+			shid, b, creator.ExportToDB(),
+		)
+		if err != nil {
+			return err
+		}
+		if tags.RowsAffected() != 1 {
+			return core.InsertError("invite_codes")
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	ret := rem.NewInviteCodeWithStandard(b)
+	return &ret, nil
+}
+
 type MultiUseInviteCode struct {
 	Code  rem.MultiUseInviteCode
 	Valid bool

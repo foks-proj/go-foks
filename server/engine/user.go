@@ -82,6 +82,7 @@ func (c *UserClientConn) RegisterProtocols(m shared.MetaContext, srv *rpc.Server
 		rem.TeamLoaderProtocol(c),
 		rem.TeamMemberProtocol(c),
 		rem.LogSendProtocol(c),
+		rem.SocialInviteProtocol(c),
 	}
 	for _, p := range prots {
 		err := srv.RegisterV2(p)
