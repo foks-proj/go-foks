@@ -45,13 +45,15 @@ func (c *AgentConn) ClientRTMakeChannel(
 		return zed, core.BadArgsError("expected a channel name")
 	}
 	nm := arg.Cfg.Channel.Name().Name
-	chid, err := minder.MakeChannel(
+	chid, err := minder.MakeChannelWithOpts(
 		m,
 		arg.Cfg.Team,
 		arg.Cfg.AppID,
 		nm,
 		arg.Desc,
 		arg.Cfg.Roles,
+		librt.MakeChannelOpts{AllowDuplicateName: arg.AllowDuplicateName},
+		nil,
 	)
 	if err != nil {
 		return zed, err
@@ -217,6 +219,35 @@ func (c *AgentConn) ClientRTOutboxDiscard(
 		return err
 	}
 	return minder.DiscardOutbox(m, msgID)
+}
+
+// ClientRTUpdateChannel renames a channel and replaces its description; an
+// empty desc clears it. Admin-only, enforced by the server.
+func (c *AgentConn) ClientRTUpdateChannel(
+	ctx context.Context,
+	arg lcl.ClientRTUpdateChannelArg,
+) error {
+	m, minder, err := c.rtInit(ctx, arg.Cfg)
+	if err != nil {
+		return err
+	}
+	return minder.UpdateChannel(
+		m, arg.Cfg.Team, arg.Cfg.AppID, arg.Cfg.Channel, arg.Name, arg.Desc,
+		arg.AllowDuplicateName)
+}
+
+// ClientRTSetChannelArchived archives or un-archives a channel. Admin-only,
+// enforced by the server.
+func (c *AgentConn) ClientRTSetChannelArchived(
+	ctx context.Context,
+	arg lcl.ClientRTSetChannelArchivedArg,
+) error {
+	m, minder, err := c.rtInit(ctx, arg.Cfg)
+	if err != nil {
+		return err
+	}
+	return minder.SetChannelArchived(
+		m, arg.Cfg.Team, arg.Cfg.AppID, arg.Cfg.Channel, arg.Archived)
 }
 
 var _ lcl.RealTimeInterface = (*AgentConn)(nil)

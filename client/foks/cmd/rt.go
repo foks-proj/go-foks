@@ -268,6 +268,73 @@ func rtNewChannel(m libclient.MetaContext, top *cobra.Command) {
 	)
 }
 
+func rtRenameChannel(m libclient.MetaContext, top *cobra.Command) {
+	var desc, nm string
+	quickRTCmd(
+		m, top,
+		"rename-channel", []string{"rename"},
+		"rename a channel, or edit its description",
+		"rename a channel and replace its description; admins only. An empty "+
+			"--description clears the description. The new name must not collide "+
+			"with another channel of the same tier, including an archived one, "+
+			"whose name stays reserved until it is renamed or the channel is "+
+			"un-archived.",
+		quickRTOpts{SupportChannel: true},
+		func(cmd *cobra.Command) {
+			cmd.Flags().StringVar(&nm, "name", "", "new channel name")
+			cmd.Flags().StringVar(&desc, "description", "", "new channel description (empty clears)")
+		},
+		func(args []string, cfg lcl.RTConfig, cli lcl.RealTimeClient) error {
+			if len(args) != 0 {
+				return ArgsError("no args; specify the new name with --name")
+			}
+			if len(nm) > 0 && nm[0] == '#' {
+				nm = nm[1:]
+			}
+			var ch proto.RTChannelName
+			if err := ch.ParseFrom(nm); err != nil {
+				return err
+			}
+			if ch.IsEmpty() {
+				return ArgsError("specify a new channel name with --name")
+			}
+			var cd proto.RTChannelDesc
+			if err := cd.ParseFrom(desc); err != nil {
+				return err
+			}
+			return cli.ClientRTUpdateChannel(m.Ctx(),
+				lcl.ClientRTUpdateChannelArg{Cfg: cfg, Name: ch, Desc: cd},
+			)
+		},
+	)
+}
+
+func rtArchiveChannel(m libclient.MetaContext, top *cobra.Command) {
+	var unarchive bool
+	quickRTCmd(
+		m, top,
+		"archive-channel", []string{"archive"},
+		"archive a channel, or bring one back",
+		"archive a channel: it stops accepting messages and leaves everyone's "+
+			"inbox. Nothing is deleted -- the history stays, and the channel keeps "+
+			"its place in the team's channel list so its name stays reserved. "+
+			"Pass --unarchive to bring it back, with its history and membership "+
+			"intact. Admins only.",
+		quickRTOpts{SupportChannel: true},
+		func(cmd *cobra.Command) {
+			cmd.Flags().BoolVar(&unarchive, "unarchive", false, "bring an archived channel back")
+		},
+		func(args []string, cfg lcl.RTConfig, cli lcl.RealTimeClient) error {
+			if len(args) != 0 {
+				return ArgsError("no args; select the channel with --channel")
+			}
+			return cli.ClientRTSetChannelArchived(m.Ctx(),
+				lcl.ClientRTSetChannelArchivedArg{Cfg: cfg, Archived: !unarchive},
+			)
+		},
+	)
+}
+
 func rtListChannels(m libclient.MetaContext, top *cobra.Command) {
 	quickRTCmd(
 		m, top,
@@ -630,6 +697,8 @@ func rtCmd(m libclient.MetaContext) *cobra.Command {
 		},
 	}
 	rtNewChannel(m, top)
+	rtRenameChannel(m, top)
+	rtArchiveChannel(m, top)
 	rtListChannels(m, top)
 	rtSend(m, top)
 	rtRead(m, top)

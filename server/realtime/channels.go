@@ -185,6 +185,11 @@ type channelMetadataRaw struct {
 	updatedAtSetVers              int
 	tierRaw                       string
 	noPush                        bool
+	// archivedAt is non-NULL for an archived channel. Unlike noPush, a client
+	// decision hangs on this one: an archived channel stays in the team
+	// listing so its encrypted name stays reserved, and the caller is what
+	// hides it from a channel list.
+	archivedAt *time.Time
 }
 
 // channelMetadataCols is the column list matching channelMetadataRaw.scanDests,
@@ -195,7 +200,8 @@ const channelMetadataCols = `c.channel_id_full, c.seqno, c.name_box, c.desc_box,
 	        c.write_role_type, c.write_role_viz_level,
 	        c.last_msg_type, c.last_msg_seq, c.last_send_time,
 	        cp.party_id, cp.uid,
-	        c.ctime, c.mtime, c.updated_at_set_vers, c.tier, c.no_push`
+	        c.ctime, c.mtime, c.updated_at_set_vers, c.tier, c.no_push,
+	        c.archived_at`
 
 // lastSenderJoin attributes the channel's denormalized last message to its
 // sender; LEFT so channels with no messages still row.
@@ -211,7 +217,7 @@ func (r *channelMetadataRaw) scanDests() []any {
 		&r.lastMsgType, &r.lastMsgSeq, &r.lastSendTime,
 		&r.partyIDRaw, &r.uidRaw,
 		&r.ctime, &r.mtime, &r.updatedAtSetVers,
-		&r.tierRaw, &r.noPush,
+		&r.tierRaw, &r.noPush, &r.archivedAt,
 	}
 }
 
@@ -267,6 +273,7 @@ func (r *channelMetadataRaw) export(
 	if err != nil {
 		return nil, err
 	}
+	md.Archived = r.archivedAt != nil
 	md.NoPush = r.noPush
 	return &md, nil
 }
@@ -771,6 +778,593 @@ func MakeChannel(
 			// long-pollers so the channel surfaces immediately.
 			return func(m shared.MetaContext) {
 				wakeInboxPollers(m, md.AppID, mk.wakeUIDs)
+			}, nil
+		},
+	)
+}
+
+// notArchived is the set-based archived predicate, for the paths that read
+// many channels at once and so cannot inspect a loaded row. Exactly one uses
+// it: the late-join fan-in's anti-join, which must never create a delivery row
+// for an archived channel.
+//
+// Neither path that RETURNS channel metadata filters on it, and both omissions
+// are deliberate. The inbox changed-threads query does not, because an
+// archived channel has to be delivered once, carrying the flag, or a client
+// has no way to learn it should drop its stored row -- a delta of rows cannot
+// express a removal. The team listing does not, because that listing is what
+// reserves the channel's encrypted name (see p8.sql).
+func notArchived(chAlias string) string {
+	return chAlias + `.archived_at IS NULL`
+}
+
+// archivedBlocks is the per-row archived gate: an archived channel is closed
+// to new activity, so the callers that represent activity refuse it.
+//
+// Takes the loaded timestamp rather than a channel struct so every caller can
+// decide for itself whether the access it represents counts as activity.
+// Reads are not blocked: the channel is hidden, not destroyed.
+func archivedBlocks(archivedAt *time.Time) error {
+	if archivedAt != nil {
+		return core.RTChannelArchivedError{}
+	}
+	return nil
+}
+
+// touchChannelSet bumps the parent team's channel-set version and stamps the
+// channel at the new version, so the change surfaces in the INCREMENTAL
+// channel listing.
+//
+// Needed because a metadata change is otherwise invisible to
+// rtListAllChannelsForTeam: a client sends its cached set version as `last`,
+// ListAllChannels short-circuits to an empty list when that equals the current
+// version, and readAllChannels filters on `updated_at_set_vers > last` -- a
+// value written only at channel creation.
+//
+// A concurrent rtNewChannel loses its optimistic-concurrency check against
+// this bump and retries, the same RTRaceError path two concurrent creates
+// already take.
+func touchChannelSet(
+	m shared.MetaContext,
+	tx pgx.Tx,
+	team proto.TeamID,
+	appDB string,
+	channelID int64,
+) error {
+	var vers int
+	err := tx.QueryRow(
+		m.Ctx(),
+		`UPDATE channel_sets SET vers = vers + 1, mtime = NOW()
+		 WHERE short_host_id=$1 AND parent_team_id=$2 AND app_id=$3
+		 RETURNING vers`,
+		m.ShortHostID(),
+		team.ExportToDB(),
+		appDB,
+	).Scan(&vers)
+	if err == pgx.ErrNoRows {
+		return core.InternalError("no channel_sets row for a team that has channels")
+	}
+	if err != nil {
+		return err
+	}
+	_, err = tx.Exec(
+		m.Ctx(),
+		`UPDATE channels SET updated_at_set_vers=$3, mtime=NOW()
+		 WHERE short_host_id=$1 AND channel_id=$2`,
+		m.ShortHostID(),
+		channelID,
+		vers,
+	)
+	return err
+}
+
+// channelMutator carries the state the two metadata-mutation RPCs share. Both
+// CAS on channels.seqno, both bump the team's channel-set version so the change
+// reaches every member's incremental listing, and both re-stamp the members'
+// inbox rows so it reaches their inbox too.
+type channelMutator struct {
+	chid   int64
+	seqno  proto.RTChannelSeqno
+	tx     pgx.Tx
+	userdb shared.Querier
+
+	team       proto.TeamID
+	appID      proto.RTAppID
+	appDB      string
+	tier       proto.RTChannelTier
+	readRole   proto.Role
+	archivedAt *time.Time
+
+	// wakeUIDs are the members whose inbox versions were bumped; the caller
+	// wakes their parked long-pollers after the transaction commits.
+	wakeUIDs []proto.UID
+}
+
+// authorize loads the channel under a row lock and requires the caller to be
+// an admin of its parent team.
+//
+// The row lock matters: without it this transaction could read a live channel,
+// pause, and commit after a concurrent archive had committed -- past the gate
+// that just let it through.
+func (c *channelMutator) authorize(m shared.MetaContext) error {
+	var teamRaw, appRaw, tierRaw string
+	var teamBytes []byte
+	var rrt, rvl int
+	err := c.tx.QueryRow(
+		m.Ctx(),
+		`SELECT parent_team_id, app_id, tier, read_role_type, read_role_viz_level,
+		        archived_at
+		 FROM channels
+		 WHERE short_host_id=$1 AND channel_id=$2
+		 FOR UPDATE`,
+		m.ShortHostID(),
+		c.chid,
+	).Scan(&teamBytes, &appRaw, &tierRaw, &rrt, &rvl, &c.archivedAt)
+	if err == pgx.ErrNoRows {
+		return core.RowNotFoundError{}
+	}
+	if err != nil {
+		return err
+	}
+	_ = teamRaw
+	if err = c.team.ImportFromDB(teamBytes); err != nil {
+		return err
+	}
+	if err = c.appID.ImportFromDB(appRaw); err != nil {
+		return err
+	}
+	if err = c.tier.ImportFromDB(tierRaw); err != nil {
+		return err
+	}
+	if err = c.readRole.ImportFromDB(rrt, rvl); err != nil {
+		return err
+	}
+	if c.appDB, err = c.appID.ExportToDB(); err != nil {
+		return err
+	}
+
+	role, err := AuthorizeUserForTeam(m, c.userdb, c.team)
+	if err != nil {
+		return err
+	}
+	if !role.IsAdminOrAbove() {
+		return core.PermissionError("must be a team admin to change channel metadata")
+	}
+	return nil
+}
+
+// casSeqno applies `set` to the channel row, conditional on the seqno the
+// caller last saw, and increments it. A lost race is RTRaceError, which librt
+// retries after re-reading the channel -- the same path two concurrent creates
+// already take. `set` is a SQL fragment whose placeholders start at $4.
+func (c *channelMutator) casSeqno(
+	m shared.MetaContext,
+	set string,
+	args ...any,
+) error {
+	all := append([]any{m.ShortHostID(), c.chid, int64(c.seqno)}, args...)
+	tag, err := c.tx.Exec(
+		m.Ctx(),
+		`UPDATE channels
+		 SET seqno=seqno+1, mtime=NOW(), `+set+`
+		 WHERE short_host_id=$1 AND channel_id=$2 AND seqno=$3`,
+		all...,
+	)
+	if err != nil {
+		return err
+	}
+	if tag.RowsAffected() != 1 {
+		return core.RTRaceError{Which: "channels"}
+	}
+	return nil
+}
+
+// stampMembers re-stamps every member's user_channels row for this channel at
+// a fresh inbox version, so the channel is re-delivered on their next inbox
+// sync carrying its new metadata.
+//
+// One inbox-version allocation per stamped row, never a batch: the UNIQUE
+// user_channels_inbox_idx forbids two of a user's rows sharing a version, and
+// get_changed_threads' cursor pagination depends on that.
+//
+// This is what makes a rename reach the inbox rather than only the channel
+// listing, and what lets a client drop an archived channel's persisted inbox
+// row -- the delta re-delivers it once with archived=true. The cost is
+// O(members) writes per mutation, the same cost channel creation already pays
+// in fanoutUsers, on operations that happen once in a channel's life rather
+// than once per message.
+//
+// Ordered by uid so the user_inbox row locks are taken in the same order as
+// the send fan-out, which keeps concurrent transactions deadlock-free.
+func (c *channelMutator) stampMembers(m shared.MetaContext) error {
+	uids, err := c.channelMemberUIDs(m)
+	if err != nil {
+		return err
+	}
+	for _, uid := range uids {
+		var vers int64
+		err = c.tx.QueryRow(
+			m.Ctx(),
+			`INSERT INTO user_inbox (short_host_id, uid, app_id, inbox_version, mtime)
+			 VALUES ($1, $2, $3, 1, NOW())
+			 ON CONFLICT (short_host_id, uid, app_id)
+			 DO UPDATE SET inbox_version = user_inbox.inbox_version + 1, mtime = NOW()
+			 RETURNING inbox_version`,
+			m.ShortHostID(),
+			uid.ExportToDB(),
+			c.appDB,
+		).Scan(&vers)
+		if err != nil {
+			return err
+		}
+		_, err = c.tx.Exec(
+			m.Ctx(),
+			`UPDATE user_channels SET inbox_version=$4, mtime=NOW()
+			 WHERE short_host_id=$1 AND channel_id=$2 AND uid=$3`,
+			m.ShortHostID(),
+			c.chid,
+			uid.ExportToDB(),
+			vers,
+		)
+		if err != nil {
+			return err
+		}
+	}
+	c.wakeUIDs = uids
+	return nil
+}
+
+// channelMemberUIDs lists the users holding a delivery row for this channel,
+// ascending -- the package-wide user_inbox lock order.
+func (c *channelMutator) channelMemberUIDs(m shared.MetaContext) ([]proto.UID, error) {
+	rows, err := c.tx.Query(
+		m.Ctx(),
+		`SELECT uid FROM user_channels
+		 WHERE short_host_id=$1 AND channel_id=$2
+		 ORDER BY uid`,
+		m.ShortHostID(),
+		c.chid,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var uids []proto.UID
+	for rows.Next() {
+		var raw []byte
+		if err = rows.Scan(&raw); err != nil {
+			return nil, err
+		}
+		var uid proto.UID
+		if err = uid.ImportFromDB(raw); err != nil {
+			return nil, err
+		}
+		uids = append(uids, uid)
+	}
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+	return uids, nil
+}
+
+// finish does the bookkeeping both mutations share: surface the change in the
+// members' inboxes, and in the incremental channel listing.
+//
+// ORDER IS A LOCK ORDER, not a preference. Every writer in this package takes
+// its row locks in the sequence channels -> user_inbox -> push_outbox ->
+// channel_sets: channel creation locks user_inbox in fanoutUsers and only then
+// channel_sets in commit, and a send locks user_inbox and then push_outbox in
+// fanoutInboxVersions. Touching channel_sets first here would invert that
+// against a concurrent create in the same team -- the create holding a
+// member's user_inbox row and waiting for channel_sets, this transaction
+// holding channel_sets and waiting for the same member -- which Postgres
+// resolves by killing one of them with a deadlock error the retry loop is not
+// built to absorb.
+func (c *channelMutator) finish(m shared.MetaContext) error {
+	if err := c.stampMembers(m); err != nil {
+		return err
+	}
+	return touchChannelSet(m, c.tx, c.team, c.appDB, c.chid)
+}
+
+// dropChannelPushes discards a closing channel's undelivered push rows.
+//
+// Queued rows would fire after the channel closed, buzzing members about a
+// room that has just been shut. Rows already 'sending' are left alone -- the
+// relay owns those, and racing it is worse than one late notification.
+func dropChannelPushes(m shared.MetaContext, tx pgx.Tx, channelID int64) error {
+	_, err := tx.Exec(
+		m.Ctx(),
+		`DELETE FROM push_outbox
+		 WHERE short_host_id=$1 AND channel_id=$2 AND status='queued'`,
+		m.ShortHostID(),
+		channelID,
+	)
+	return err
+}
+
+// fanInEligibleMembers gives a delivery row to every current team member who
+// can read the channel and has none, at one fresh inbox version each.
+//
+// Un-archiving needs this and stampMembers is not enough. The late-join fan-in
+// skips archived channels -- it has to, or it would re-create rows for them on
+// every sync -- but it still records the membership version it reconciled
+// through. So a member who joined the team while the channel was archived is
+// recorded as reconciled, has no delivery row, and would never be given one:
+// stampMembers only re-stamps rows that already exist, and the fan-in will not
+// look again until their membership changes.
+//
+// Members who already hold a row are skipped rather than re-fanned:
+// fanUserIntoChannel allocates an inbox version BEFORE its ON CONFLICT DO
+// NOTHING insert, so calling it for an existing member burns a version that
+// stamps no row -- and a version no row carries cannot be reached by a
+// client's cursor, leaving its head permanently above anything it can sync to.
+func (c *channelMutator) fanInEligibleMembers(m shared.MetaContext) error {
+	readRole, err := core.ImportRole(c.readRole)
+	if err != nil {
+		return err
+	}
+	ownerType, ownerViz, err := proto.OwnerRole.ExportToDB()
+	if err != nil {
+		return err
+	}
+	rows, err := c.userdb.Query(
+		m.Ctx(),
+		`SELECT member_id, dst_role_type, dst_viz_level
+		 FROM team_members
+		 WHERE short_host_id=$1 AND team_id=$2 AND member_host_id=$3
+		 AND src_role_type=$4 AND src_viz_level=$5 AND active=true`,
+		m.ShortHostID(),
+		c.team.ExportToDB(),
+		shared.ExportHostP(nil),
+		ownerType,
+		ownerViz,
+	)
+	if err != nil {
+		return err
+	}
+	var uids []proto.UID
+	for rows.Next() {
+		var memRaw []byte
+		var dstType, dstViz int
+		if err = rows.Scan(&memRaw, &dstType, &dstViz); err != nil {
+			rows.Close()
+			return err
+		}
+		var pid proto.PartyID
+		if err = pid.ImportFromDB(memRaw); err != nil {
+			rows.Close()
+			return err
+		}
+		if !pid.IsUser() {
+			continue
+		}
+		memRole, err := core.ImportRoleKeyFromDB(dstType, dstViz)
+		if err != nil {
+			rows.Close()
+			return err
+		}
+		if memRole.LessThan(*readRole) {
+			continue
+		}
+		uid, err := pid.UID()
+		if err != nil {
+			rows.Close()
+			return err
+		}
+		uids = append(uids, uid)
+	}
+	err = rows.Err()
+	rows.Close()
+	if err != nil {
+		return err
+	}
+
+	have, err := c.channelMemberUIDs(m)
+	if err != nil {
+		return err
+	}
+	existing := make(map[proto.UID]bool, len(have))
+	for _, u := range have {
+		existing[u] = true
+	}
+	slices.SortFunc(uids, func(a, b proto.UID) int { return bytes.Compare(a[:], b[:]) })
+	for _, uid := range uids {
+		if existing[uid] {
+			continue
+		}
+		inserted, err := fanUserIntoChannel(m, c.tx, uid, c.appDB, proto.RTChannelIDShort(c.chid))
+		if err != nil {
+			return err
+		}
+		if inserted {
+			c.wakeUIDs = append(c.wakeUIDs, uid)
+		}
+	}
+	return nil
+}
+
+// checkNameBoxRole verifies the client sealed the channel name at the role the
+// channel's TIER dictates -- the minimum realtime role for a bottom-tier
+// channel, admin for an admin-tier one -- rather than at whatever role the
+// caller happens to hold.
+//
+// Sealing higher would lock out members who could read the old name; sealing
+// lower would hand an admin-tier channel's name to everyone. Either way the
+// box is wrong, so reject it rather than persist a name the wrong set of
+// people can open. Mirrors checkEncryptionRole on the send path.
+func checkNameBoxRole(tier proto.RTChannelTier, box proto.RTBoxRG) error {
+	want := proto.MinRTRole
+	if tier == proto.RTChannelTier_Admin {
+		want = proto.AdminRole
+	}
+	wantKey, err := core.ImportRole(want)
+	if err != nil {
+		return err
+	}
+	gotKey, err := core.ImportRole(box.Rg.Role)
+	if err != nil {
+		return err
+	}
+	if !gotKey.Eq(*wantKey) {
+		return core.BadArgsError("channel name must be sealed at the channel tier's name role")
+	}
+	return nil
+}
+
+// checkDescBoxRole verifies the description was sealed at the channel's read
+// role, exactly as at creation.
+func checkDescBoxRole(readRole proto.Role, box proto.RTBoxRG) error {
+	readKey, err := core.ImportRole(readRole)
+	if err != nil {
+		return err
+	}
+	gotKey, err := core.ImportRole(box.Rg.Role)
+	if err != nil {
+		return err
+	}
+	if !gotKey.Eq(*readKey) {
+		return core.BadArgsError("channel description must be sealed at the channel's read role")
+	}
+	return nil
+}
+
+// UpdateChannel renames a channel and/or replaces its description. Team admins
+// only.
+//
+// The server cannot check what the name says -- name_box is sealed with the
+// parent team's key -- so two things stay the client's responsibility, and
+// librt does both: sealing the name at the channel's TIER name role rather
+// than the caller's own, and refusing a name that collides with another
+// channel of the same tier. What the server CAN check is the box's role, and
+// does.
+//
+// Permitted on an archived channel: renaming one is how its reserved name is
+// released for reuse.
+func UpdateChannel(m shared.MetaContext, arg rem.RtUpdateChannelArg) error {
+	rtdb, err := m.Db(shared.DbTypeRealTime)
+	if err != nil {
+		return err
+	}
+	defer rtdb.Release()
+	userdb, err := m.Db(shared.DbTypeUsers)
+	if err != nil {
+		return err
+	}
+	defer userdb.Release()
+
+	nameBox, err := core.EncodeToBytes(&arg.NameBox)
+	if err != nil {
+		return err
+	}
+	var descBox []byte
+	var descGen *int
+	if arg.DescBox != nil {
+		descBox, err = core.EncodeToBytes(arg.DescBox)
+		if err != nil {
+			return err
+		}
+		g := int(arg.DescBox.Rg.Gen)
+		descGen = &g
+	}
+
+	return shared.RetryTx2(m,
+		rtdb,
+		"realtime.UpdateChannel",
+		func(m shared.MetaContext, tx pgx.Tx) (func(shared.MetaContext), error) {
+			mu := channelMutator{
+				chid:   arg.Chid.Short().Int64(),
+				seqno:  arg.Seqno,
+				tx:     tx,
+				userdb: userdb,
+			}
+			if err := mu.authorize(m); err != nil {
+				return nil, err
+			}
+			if err := checkNameBoxRole(mu.tier, arg.NameBox); err != nil {
+				return nil, err
+			}
+			if arg.DescBox != nil {
+				if err := checkDescBoxRole(mu.readRole, *arg.DescBox); err != nil {
+					return nil, err
+				}
+			}
+			err := mu.casSeqno(m,
+				`name_box=$4, name_box_ptk_gen=$5, desc_box=$6, desc_box_ptk_gen=$7`,
+				nameBox, int(arg.NameBox.Rg.Gen), descBox, descGen,
+			)
+			if err != nil {
+				return nil, err
+			}
+			if err := mu.finish(m); err != nil {
+				return nil, err
+			}
+			app, uids := mu.appID, mu.wakeUIDs
+			return func(m shared.MetaContext) {
+				wakeInboxPollers(m, app, uids)
+			}, nil
+		},
+	)
+}
+
+// SetChannelArchived archives or un-archives a channel. Team admins only.
+//
+// Archiving closes the channel to new activity and drops it out of the inbox
+// and the late-join fan-in, but deletes nothing: messages, parties and
+// delivery rows all stay, and the channel remains in the team's channel
+// listing so its encrypted name stays reserved. Un-archiving is the exact
+// inverse and needs no separate call.
+func SetChannelArchived(m shared.MetaContext, arg rem.RtSetChannelArchivedArg) error {
+	rtdb, err := m.Db(shared.DbTypeRealTime)
+	if err != nil {
+		return err
+	}
+	defer rtdb.Release()
+	userdb, err := m.Db(shared.DbTypeUsers)
+	if err != nil {
+		return err
+	}
+	defer userdb.Release()
+
+	return shared.RetryTx2(m,
+		rtdb,
+		"realtime.SetChannelArchived",
+		func(m shared.MetaContext, tx pgx.Tx) (func(shared.MetaContext), error) {
+			mu := channelMutator{
+				chid:   arg.Chid.Short().Int64(),
+				seqno:  arg.Seqno,
+				tx:     tx,
+				userdb: userdb,
+			}
+			if err := mu.authorize(m); err != nil {
+				return nil, err
+			}
+			set := `archived_at=NULL`
+			if arg.Archived {
+				set = `archived_at=NOW()`
+			}
+			if err := mu.casSeqno(m, set); err != nil {
+				return nil, err
+			}
+			// stampMembers takes the user_inbox locks; dropping the channel's
+			// push rows comes after it, because a send takes those two in that
+			// order too (see finish's note on lock order).
+			if err := mu.stampMembers(m); err != nil {
+				return nil, err
+			}
+			if arg.Archived {
+				if err := dropChannelPushes(m, tx, mu.chid); err != nil {
+					return nil, err
+				}
+			} else if err := mu.fanInEligibleMembers(m); err != nil {
+				return nil, err
+			}
+			if err := touchChannelSet(m, tx, mu.team, mu.appDB, mu.chid); err != nil {
+				return nil, err
+			}
+			app, uids := mu.appID, mu.wakeUIDs
+			return func(m shared.MetaContext) {
+				wakeInboxPollers(m, app, uids)
 			}, nil
 		},
 	)

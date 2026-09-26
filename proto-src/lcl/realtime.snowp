@@ -50,6 +50,15 @@ struct RTChannelMetadataPlaintext {
     unreadable @8 : Bool; // caller can't read this channel (role below read role);
                           // kept for name-collision detection, hidden from the inbox
     noPush @9 : Bool;     // sends here queue no push notifications (see rem)
+    // The channel's metadata seqno, which rtUpdateChannel and
+    // rtSetChannelArchived CAS on: a caller that wants to mutate a channel
+    // needs the value it last saw.
+    seqno @10 : lib.RTChannelSeqno;
+    // Mirrors rem.RTChannelMetadata.archived. An archived channel stays in
+    // this list, because the list is what reserves its name against a future
+    // create or rename; callers above the agent are what hide it from a
+    // channel list.
+    archived @11 : Bool;
 }
 
 struct RTChannelSetForTeam {
@@ -144,7 +153,11 @@ protocol RealTime
 
     clientRTMakeChannel @0 (
         cfg @0 : RTConfig, /* contains the new channel name (if applicable) */
-        desc @1 : lib.RTChannelDesc /* only specify if channel name is specified (above) */
+        desc @1 : lib.RTChannelDesc, /* only specify if channel name is specified (above) */
+        /* Allow a name another channel of the tier already has, and the
+         * name "general" -- for a caller that identifies channels by id.
+         * Never the empty name. See librt.MakeChannelOpts.AllowDuplicateName. */
+        allowDuplicateName @2 : Bool
     ) -> lib.RTChannelID;
 
     clientRTListChannelsForTeam @1 (
@@ -174,6 +187,24 @@ protocol RealTime
     clientRTOutboxRetry @7 (
         msgID @0 : lib.RTMsgID
     ) -> RTOutboxDrainRes;
+
+    // Rename a channel and/or replace its description. Admins only (enforced
+    // server-side). An empty desc clears it. The agent reseals the name at the
+    // channel's TIER name role, checks the new name against the team's
+    // channels, and retries the metadata CAS on a lost race.
+    clientRTUpdateChannel @9 (
+        cfg @0 : RTConfig,  /* cfg.channel selects the channel to update */
+        name @1 : lib.RTChannelName,
+        desc @2 : lib.RTChannelDesc,
+        /* As on clientRTMakeChannel. The empty name stays refused. */
+        allowDuplicateName @3 : Bool
+    );
+
+    // Archive or un-archive a channel. Admins only (enforced server-side).
+    clientRTSetChannelArchived @10 (
+        cfg @0 : RTConfig,
+        archived @1 : Bool
+    );
 
     clientRTOutboxDiscard @8 (
         msgID @0 : lib.RTMsgID
