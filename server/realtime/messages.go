@@ -351,16 +351,23 @@ func (s *messageSender) fanoutInboxVersions(
 	if s.noPush {
 		return nil
 	}
+	// Under a push hold the rows are written as 'held' and wait for the
+	// holder; see pushhold.go.
+	status, err := s.pushStatusForSend(m)
+	if err != nil {
+		return err
+	}
 	_, err = s.tx.Exec(
 		m.Ctx(),
 		`INSERT INTO push_outbox (short_host_id, uid, channel_id, kind, seq, status, ctime, mtime)
-		 SELECT uc.short_host_id, uc.uid, uc.channel_id, 'msg', $3, 'queued', NOW(), NOW()
+		 SELECT uc.short_host_id, uc.uid, uc.channel_id, 'msg', $3, $5::push_status, NOW(), NOW()
 		   FROM user_channels uc
 		  WHERE uc.short_host_id=$1 AND uc.channel_id=$2 AND uc.uid <> $4`,
 		m.ShortHostID(),
 		s.channelID(),
 		seq.Int64(),
 		s.sender.ExportToDB(),
+		status,
 	)
 	return err
 }
