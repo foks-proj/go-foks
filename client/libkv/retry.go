@@ -68,6 +68,13 @@ func (m MetaContext) catchStaleCacheError(e error) error {
 		return sce
 	}
 
+	// The server checks the precondition before the operation, so a
+	// KVNoentError from it also means the cache entries we sent were fresh.
+	// Clearing them saves cacheRaceLoop from checking them again.
+	if core.IsKVNoentError(e) {
+		m.cacheAccess.clear()
+	}
+
 	return nil
 }
 
@@ -217,12 +224,15 @@ func (k *Minder) cacheRaceLoop(
 		return true, err
 	}
 
+	// Errors that might come from stale cache entries. They are returned only
+	// after the cache check confirms those entries. KVNoentError is included
+	// because a cached tombstone produces one without asking the server.
 	isCacheRetriableError := func(err error) bool {
 		if err == nil {
 			return false
 		}
 		switch err.(type) {
-		case core.KVNeedDirError, core.KVNeedFileError, core.KVPathTooDeepError:
+		case core.KVNeedDirError, core.KVNeedFileError, core.KVPathTooDeepError, core.KVNoentError:
 			return true
 		default:
 			return false
