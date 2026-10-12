@@ -1399,12 +1399,28 @@ func (c *Config) BgConfig() (*BgConfig, error) {
 	}, nil
 }
 
+// applyJitter returns base perturbed by a random amount of up to plus or
+// minus c.jitter percent, so that background jobs on different clients do not
+// all fire on the same schedule.
 func (c *BgTiming) applyJitter(base time.Duration) time.Duration {
-	if c.jitter == 0 {
+	if c.jitter == 0 || base <= 0 {
 		return base
 	}
-	jitFact := time.Duration(rand.Intn(int(2*c.jitter))-int(c.jitter)) / 100
-	ret := base * (1 + jitFact)
+
+	// Cap the percentage at 100. Past that the low end is floored at zero
+	// anyway, and the multiplication below would overflow int64 for a large
+	// base: 65535% of 48h wraps, and the wrapped value is as likely to come
+	// back negative as positive.
+	pct := min(int(c.jitter), 100)
+
+	off := base * time.Duration(rand.Intn(2*pct+1)-pct) / 100
+	ret := base + off
+
+	// At a jitter of exactly 100 the offset can cancel base outright; never
+	// hand a caller a non-positive duration to sleep on.
+	if ret <= 0 {
+		ret = 1
+	}
 	return ret
 }
 
