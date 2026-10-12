@@ -21,6 +21,11 @@ type OpenTeamLinkRes struct {
 	Sched      KeySchedule
 	Tnc        *proto.Commitment
 	Range      *core.RationalRange
+
+	// RosterDelegationFloor is set when this link carries a
+	// ChangeType_RosterDelegationFloor entry; the team's effective floor is
+	// the last one in the chain. nil means this link does not change it.
+	RosterDelegationFloor *proto.Role
 }
 
 type OpenEldestRes struct {
@@ -298,7 +303,11 @@ func OpenTeamLink(
 
 	var tnc *proto.Commitment
 	var rng *core.RationalRange
-	// Open link metadata -- only team name changes are supported now, and team index range changes are supported.
+	var rdf *proto.Role
+	// Open link metadata -- team name changes, team index range changes, and
+	// roster delegation floor changes are supported; anything else is skipped,
+	// which is what lets clients from before a given type open links that
+	// carry it.
 	for _, md := range gc.Metadata {
 		typ, err := md.GetT()
 		if err != nil {
@@ -317,6 +326,16 @@ func OpenTeamLink(
 			}
 			tmp := core.NewRationalRange(md.Teamindexrange())
 			rng = &tmp
+		case proto.ChangeType_RosterDelegationFloor:
+			if rdf != nil {
+				return nil, core.LinkError("only one roster delegation floor allowed")
+			}
+			tmp := md.Rosterdelegationfloor()
+			err = CheckRosterDelegationFloor(tmp)
+			if err != nil {
+				return nil, err
+			}
+			rdf = &tmp
 		}
 	}
 
@@ -328,6 +347,8 @@ func OpenTeamLink(
 		Sched:      *sched,
 		Tnc:        tnc,
 		Range:      rng,
+
+		RosterDelegationFloor: rdf,
 	}
 
 	return &ret, nil

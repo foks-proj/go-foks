@@ -127,5 +127,10 @@ struct TeamChainState {
     tir @12 : lib.RationalRange; // TeamIndexRange
     historicalSenders @13 : List(lib.SenderPair); // Senders we have used for unboxing in the past
     memberLoadFloor @14 : Option(lib.Role); // Defaults to m/0 if not set.
+    rosterDelegationFloor @15 : Option(lib.Role); // Absent or NONE = roster delegation off.
+    // Set by every client that tracks rosterDelegationFloor. A client from
+    // before it skips the floor-setting link's metadata and saves no floor,
+    // so a state without this mark is replayed from scratch, not resumed.
+    rosterDelegationFloorTracked @16 : Bool;
 }
 

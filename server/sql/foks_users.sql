@@ -948,6 +948,22 @@ CREATE TABLE team_member_load_floor (
     FOREIGN KEY (short_host_id, team_id) REFERENCES teams(short_host_id, team_id)
 );
 
+
+CREATE TABLE team_roster_delegation_floor (
+    short_host_id SMALLINT NOT NULL,
+    team_id BYTEA NOT NULL,
+
+    -- The seqno of the team chain link that set this floor. The effective
+    -- floor is the row with the highest seqno; a NONE role there means
+    -- delegation was turned off.
+    seqno INTEGER NOT NULL,
+
+    role_type SMALLINT NOT NULL,
+    viz_level SMALLINT NOT NULL,
+
+    ctime TIMESTAMPTZ NOT NULL,
+    PRIMARY KEY(short_host_id, team_id, seqno)
+);
 CREATE TABLE log_send (
     short_host_id SMALLINT NOT NULL,
     id BYTEA NOT NULL, /* a random 16-byte ID */
@@ -1009,3 +1025,4 @@ INSERT INTO schema_patches (id, ctime) VALUES (4, NOW());
 INSERT INTO schema_patches (id, ctime) VALUES (5, NOW());
 INSERT INTO schema_patches (id, ctime) VALUES (6, NOW());
 INSERT INTO schema_patches (id, ctime) VALUES (7, NOW());
+INSERT INTO schema_patches (id, ctime) VALUES (8, NOW());

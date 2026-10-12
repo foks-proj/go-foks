@@ -366,6 +366,43 @@ func (c *teamEditor) checkAndInsertRemovals(
 	)
 }
 
+// insertRosterDelegationFloor stores the floor when this link carries one.
+// It runs after insertPTKs so that the key check below sees keys this link
+// itself creates. The link-open code already validated the value (member
+// role at viz level >= 1, or NONE).
+func (c *teamEditor) insertRosterDelegationFloor(
+	m shared.MetaContext,
+) error {
+	flr := c.openres.RosterDelegationFloor
+	if flr == nil {
+		return nil
+	}
+	tcfg, err := m.G().Config().TeamConfig(m.Ctx())
+	if err != nil {
+		return err
+	}
+	if !tcfg.RosterDelegation() {
+		return core.PermissionError("roster delegation is not enabled on this host")
+	}
+	active, err := team.RosterDelegationFloorActive(flr)
+	if err != nil {
+		return err
+	}
+	if active != nil {
+		// A floor nobody can ever act at is a footgun, so require the floor
+		// role to have a PTK once this link is in: someone holds the role,
+		// or this same link grants it.
+		ok, err := shared.TeamHasPTKAtRole(m, c.tx, c.teamID, *flr)
+		if err != nil {
+			return err
+		}
+		if !ok {
+			return core.TeamError("roster delegation floor role has no PTK; grant the role in or before the link that sets the floor")
+		}
+	}
+	return shared.InsertRosterDelegationFloor(m, c.tx, c.teamID, c.seqno, *flr)
+}
+
 func (c *teamEditor) checkMemberIndexRangesAgainstTeam(
 	m shared.MetaContext,
 ) error {
@@ -712,6 +749,11 @@ func (c *teamEditor) runEditCommon(m shared.MetaContext) error {
 	}
 
 	err = c.insertPTKs(m)
+	if err != nil {
+		return err
+	}
+
+	err = c.insertRosterDelegationFloor(m)
 	if err != nil {
 		return err
 	}

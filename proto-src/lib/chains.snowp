@@ -190,6 +190,7 @@ enum ChangeType {
     Teamname @3;
     TeamIndexRange @4;
     MemberLoadFloor @5;
+    RosterDelegationFloor @6;
 }
 
 enum DeviceType {
@@ -237,6 +238,12 @@ variant ChangeMetadata switch (t : ChangeType) {
     // this field is required in eldest team links. In the future,
     // but not now, we might allow this field to be updated.
     case MemberLoadFloor @3 : Role;
+
+    // If set, members at or above this role may sign some roster changes
+    // for the team (see team.CheckRosterDelegationFloor for which values
+    // are legal). NONE turns delegation off. Absent means off, which is
+    // the pre-existing behavior; clients from before this field ignore it.
+    case RosterDelegationFloor @4 : Role;
 }
 
 variant LinkOuter switch (v : LinkVersion) @0xed4cc0f7081732b6 {

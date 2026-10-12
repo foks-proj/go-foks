@@ -145,15 +145,18 @@ type TeamLoader struct {
 	allMerkleLeaves []proto.MerkleLeaf
 	sctlsc          *proto.TreeLocationCommitment
 	memberLoadFloor *proto.Role
-	tncs            []proto.Commitment // team name commitments
-	tnseq           proto.NameSeqno
-	removalKey      *rem.TeamRemovalKey
-	rosterDetails   map[proto.FQEntityFixed][](*rosterPackage)
-	canLoadMembers  bool
-	openView        bool
-	hepks           *core.HEPKSet
-	indexRange      *core.RationalRange
-	histSend        HistoricalSenders
+
+	// Latest roster delegation floor seen in the chain; nil or NONE = off.
+	rosterDelegationFloor *proto.Role
+	tncs                  []proto.Commitment // team name commitments
+	tnseq                 proto.NameSeqno
+	removalKey            *rem.TeamRemovalKey
+	rosterDetails         map[proto.FQEntityFixed][](*rosterPackage)
+	canLoadMembers        bool
+	openView              bool
+	hepks                 *core.HEPKSet
+	indexRange            *core.RationalRange
+	histSend              HistoricalSenders
 }
 
 type TeamWrapper struct {
@@ -409,6 +412,13 @@ func (l *TeamWrapper) SeedCommitment() *proto.TreeLocationCommitment {
 
 func (l *TeamWrapper) MemberLoadFloor() proto.Role {
 	return l.prot.MemberLoadFloor.WithDefaultMemberLoadFloor()
+}
+
+// RosterDelegationFloor returns the team's stored roster delegation floor,
+// or nil if none was ever set. A NONE value also means delegation is off;
+// team.RosterDelegationFloorActive folds the two cases together.
+func (l *TeamWrapper) RosterDelegationFloor() *proto.Role {
+	return l.prot.RosterDelegationFloor
 }
 
 func (l *TeamLoader) Tok() *rem.TeamVOBearerToken {
@@ -932,6 +942,7 @@ func (l *TeamLoader) loadExistingTeam(m MetaContext) error {
 		l.preload = nil
 		l.sctlsc = &l.existing.Sctlsc
 		l.memberLoadFloor = l.existing.MemberLoadFloor
+		l.rosterDelegationFloor = l.existing.RosterDelegationFloor
 
 		err := loadHEPKs()
 		if err != nil {
@@ -947,6 +958,16 @@ func (l *TeamLoader) loadExistingTeam(m MetaContext) error {
 	}
 	if err != nil {
 		return err
+	}
+
+	// Saved by a client from before the delegation floor: it played any
+	// floor-setting link without recording the floor, so resuming from it
+	// would report the floor as off until the next one. Replay from scratch;
+	// the save at the end of this load marks the state and heals it.
+	if !ret.RosterDelegationFloorTracked {
+		m.Infow("TeamLoader.loadExistingTeam", "stage", "untrackedFloor",
+			"note", "cached state predates the delegation floor; replaying from scratch")
+		return nil
 	}
 
 	// Treat a failure to load a team as non-fatal. We can reload the team from scratch.
@@ -969,6 +990,7 @@ func (l *TeamLoader) loadExistingTeam(m MetaContext) error {
 	l.histSend.Load(ret.HistoricalSenders)
 	l.sctlsc = &ret.Sctlsc
 	l.memberLoadFloor = ret.MemberLoadFloor
+	l.rosterDelegationFloor = ret.RosterDelegationFloor
 
 	err = loadHEPKs()
 	if err != nil {
@@ -1121,6 +1143,9 @@ func (l *TeamLoader) playLinkEldest(m MetaContext, link *proto.LinkOuter, otlr t
 	}
 	l.sctlsc = &res.Stltc
 	l.memberLoadFloor = res.MemberLoadFloor
+	if res.RosterDelegationFloor != nil {
+		l.rosterDelegationFloor = res.RosterDelegationFloor
+	}
 
 	return nil
 }
@@ -1199,6 +1224,12 @@ func (l *TeamLoader) playLink(m MetaContext, link *proto.LinkOuter, otlr team.Op
 	err = l.addIndexRange(otlr.Range, otlr.Gc.Chainer.Base.Seqno)
 	if err != nil {
 		return err
+	}
+
+	// A later link may set or clear the roster delegation floor; the latest
+	// one in the chain wins.
+	if otlr.RosterDelegationFloor != nil {
+		l.rosterDelegationFloor = otlr.RosterDelegationFloor
 	}
 
 	// and done, most of the work was done in the Roster system...
@@ -1994,6 +2025,9 @@ func (l *TeamLoader) saveState(m MetaContext) error {
 		Tir:               ir,
 		HistoricalSenders: l.histSend.Export(),
 		MemberLoadFloor:   l.memberLoadFloor,
+
+		RosterDelegationFloor:        l.rosterDelegationFloor,
+		RosterDelegationFloorTracked: true,
 	}
 	if l.sctlsc == nil {
 		return core.InternalError("no 'sctlsc' set; it should be set in save(); refusing to save")

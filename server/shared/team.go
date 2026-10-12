@@ -2204,6 +2204,110 @@ func LoadMemberLoadFloor(
 	return proto.ImportRoleFromDB(rk, vl)
 }
 
+// InsertRosterDelegationFloor records the floor a team chain link set (or,
+// with a NONE role, cleared). One row per link; the effective floor is the
+// row with the highest seqno.
+func InsertRosterDelegationFloor(
+	m MetaContext,
+	tx pgx.Tx,
+	teamID proto.TeamID,
+	seqno proto.Seqno,
+	role proto.Role,
+) error {
+	rk, vl, err := role.ExportToDB()
+	if err != nil {
+		return err
+	}
+	tag, err := tx.Exec(m.Ctx(),
+		`INSERT INTO team_roster_delegation_floor
+		 (short_host_id, team_id, seqno, role_type, viz_level, ctime)
+		 VALUES($1, $2, $3, $4, $5, NOW())`,
+		m.ShortHostID().ExportToDB(),
+		teamID.ExportToDB(),
+		int(seqno),
+		rk,
+		vl,
+	)
+	if err != nil {
+		return err
+	}
+	if tag.RowsAffected() != 1 {
+		return core.InsertError("team_roster_delegation_floor")
+	}
+	return nil
+}
+
+// LoadRosterDelegationFloor returns the team's current roster delegation
+// floor, or nil if no link ever set one. A non-nil NONE role means the last
+// link turned delegation off; team.RosterDelegationFloorActive folds the
+// nil and NONE cases together.
+func LoadRosterDelegationFloor(
+	m MetaContext,
+	rq Querier,
+	teamID proto.TeamID,
+) (
+	*proto.Role,
+	error,
+) {
+	var rk, vl int
+	err := rq.QueryRow(m.Ctx(),
+		`SELECT role_type, viz_level FROM team_roster_delegation_floor
+		 WHERE short_host_id=$1 AND team_id=$2
+		 ORDER BY seqno DESC LIMIT 1`,
+		m.ShortHostID().ExportToDB(),
+		teamID.ExportToDB(),
+	).Scan(&rk, &vl)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	// ImportRoleFromDB refuses NONE, which for this table is the stored
+	// "delegation turned off" marker, so handle it here.
+	if proto.RoleType(rk) == proto.RoleType_NONE && vl == 0 {
+		none := proto.NewRoleDefault(proto.RoleType_NONE)
+		return &none, nil
+	}
+	return proto.ImportRoleFromDB(rk, vl)
+}
+
+// TeamHasPTKAtRole says whether the team has ever had a PTK at the given
+// role; once created a role key is rotated but never dropped, so this is
+// also "does the team have a current PTK at the role".
+func TeamHasPTKAtRole(
+	m MetaContext,
+	rq Querier,
+	teamID proto.TeamID,
+	role proto.Role,
+) (
+	bool,
+	error,
+) {
+	rk, vl, err := role.ExportToDB()
+	if err != nil {
+		return false, err
+	}
+	var one int
+	err = rq.QueryRow(m.Ctx(),
+		`SELECT 1 FROM shared_keys
+		 WHERE short_host_id=$1 AND entity_id=$2
+		 AND role_type=$3 AND viz_level=$4
+		 LIMIT 1`,
+		m.ShortHostID().ExportToDB(),
+		teamID.ExportToDB(),
+		rk,
+		vl,
+	).Scan(&one)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return false, nil
+	}
+	if err != nil {
+		return false, err
+	}
+	return true, nil
+}
+
 type AdHocTeamNamesManager struct {
 	sync.Mutex
 	// inserted[h] means the placeholder name row for host h is known to be

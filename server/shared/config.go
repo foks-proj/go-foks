@@ -181,6 +181,10 @@ type PKIXConfigger interface {
 
 type TeamConfigger interface {
 	MaxRoles() uint
+	// RosterDelegation gates links that set a team's roster delegation
+	// floor. While false (the default), the server refuses them, so a host
+	// operator decides when teams may start using delegation at all.
+	RosterDelegation() bool
 }
 
 type DefaultAutocertServiceConfig struct{}
@@ -358,7 +362,8 @@ var _ BeaconServerConfigger = DefaultBeaconServerConfig{}
 
 type DefaultTeamConfig struct{}
 
-func (d DefaultTeamConfig) MaxRoles() uint { return 0x10 }
+func (d DefaultTeamConfig) MaxRoles() uint         { return 0x10 }
+func (d DefaultTeamConfig) RosterDelegation() bool { return false }
 
 var _ TeamConfigger = DefaultTeamConfig{}
 

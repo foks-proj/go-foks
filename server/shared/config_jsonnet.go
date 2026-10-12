@@ -206,7 +206,8 @@ type CKSConfigJSON struct {
 }
 
 type TeamConfigJSON struct {
-	MaxRoles_ uint `json:"max_roles"`
+	MaxRoles_         uint `json:"max_roles"`
+	RosterDelegation_ bool `json:"roster_delegation"`
 }
 
 type PKIXConfigJSON struct {
@@ -922,6 +923,13 @@ func (t *TeamConfigJSON) MaxRoles() uint {
 		return DefaultTeamConfig{}.MaxRoles()
 	}
 	return t.MaxRoles_
+}
+
+func (t *TeamConfigJSON) RosterDelegation() bool {
+	if t == nil {
+		return DefaultTeamConfig{}.RosterDelegation()
+	}
+	return t.RosterDelegation_
 }
 
 func (c *ConfigJSonnet) TeamConfig(ctx context.Context) (TeamConfigger, error) {

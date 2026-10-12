@@ -1798,21 +1798,23 @@ func (l *LinkOuterV1) Bytes() []byte { return nil }
 type ChangeType int
 
 const (
-	ChangeType_DeviceName      ChangeType = 0
-	ChangeType_Username        ChangeType = 1
-	ChangeType_Eldest          ChangeType = 2
-	ChangeType_Teamname        ChangeType = 3
-	ChangeType_TeamIndexRange  ChangeType = 4
-	ChangeType_MemberLoadFloor ChangeType = 5
+	ChangeType_DeviceName            ChangeType = 0
+	ChangeType_Username              ChangeType = 1
+	ChangeType_Eldest                ChangeType = 2
+	ChangeType_Teamname              ChangeType = 3
+	ChangeType_TeamIndexRange        ChangeType = 4
+	ChangeType_MemberLoadFloor       ChangeType = 5
+	ChangeType_RosterDelegationFloor ChangeType = 6
 )
 
 var ChangeTypeMap = map[string]ChangeType{
-	"DeviceName":      0,
-	"Username":        1,
-	"Eldest":          2,
-	"Teamname":        3,
-	"TeamIndexRange":  4,
-	"MemberLoadFloor": 5,
+	"DeviceName":            0,
+	"Username":              1,
+	"Eldest":                2,
+	"Teamname":              3,
+	"TeamIndexRange":        4,
+	"MemberLoadFloor":       5,
+	"RosterDelegationFloor": 6,
 }
 var ChangeTypeRevMap = map[ChangeType]string{
 	0: "DeviceName",
@@ -1821,6 +1823,7 @@ var ChangeTypeRevMap = map[ChangeType]string{
 	3: "Teamname",
 	4: "TeamIndexRange",
 	5: "MemberLoadFloor",
+	6: "RosterDelegationFloor",
 }
 
 type ChangeTypeInternal__ ChangeType
@@ -2079,6 +2082,7 @@ type ChangeMetadata struct {
 	F_1__ *EldestMetadata `json:"f1,omitempty"`
 	F_2__ *RationalRange  `json:"f2,omitempty"`
 	F_3__ *Role           `json:"f3,omitempty"`
+	F_4__ *Role           `json:"f4,omitempty"`
 }
 type ChangeMetadataInternal__ struct {
 	_struct  struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
@@ -2091,6 +2095,7 @@ type ChangeMetadataInternalSwitch__ struct {
 	F_1__   *EldestMetadataInternal__ `codec:"1"`
 	F_2__   *RationalRangeInternal__  `codec:"2"`
 	F_3__   *RoleInternal__           `codec:"3"`
+	F_4__   *RoleInternal__           `codec:"4"`
 }
 
 func (c ChangeMetadata) GetT() (ret ChangeType, err error) {
@@ -2110,6 +2115,10 @@ func (c ChangeMetadata) GetT() (ret ChangeType, err error) {
 	case ChangeType_MemberLoadFloor:
 		if c.F_3__ == nil {
 			return ret, errors.New("unexpected nil case for F_3__")
+		}
+	case ChangeType_RosterDelegationFloor:
+		if c.F_4__ == nil {
+			return ret, errors.New("unexpected nil case for F_4__")
 		}
 	}
 	return c.T, nil
@@ -2168,6 +2177,15 @@ func (c ChangeMetadata) Memberloadfloor() Role {
 	}
 	return *c.F_3__
 }
+func (c ChangeMetadata) Rosterdelegationfloor() Role {
+	if c.F_4__ == nil {
+		panic("unexpected nil case; should have been checked")
+	}
+	if c.T != ChangeType_RosterDelegationFloor {
+		panic(fmt.Sprintf("unexpected switch value (%v) when Rosterdelegationfloor is called", c.T))
+	}
+	return *c.F_4__
+}
 func NewChangeMetadataWithDevicename(v Commitment) ChangeMetadata {
 	return ChangeMetadata{
 		T:     ChangeType_DeviceName,
@@ -2202,6 +2220,12 @@ func NewChangeMetadataWithMemberloadfloor(v Role) ChangeMetadata {
 	return ChangeMetadata{
 		T:     ChangeType_MemberLoadFloor,
 		F_3__: &v,
+	}
+}
+func NewChangeMetadataWithRosterdelegationfloor(v Role) ChangeMetadata {
+	return ChangeMetadata{
+		T:     ChangeType_RosterDelegationFloor,
+		F_4__: &v,
 	}
 }
 func (c ChangeMetadataInternal__) Import() ChangeMetadata {
@@ -2255,6 +2279,18 @@ func (c ChangeMetadataInternal__) Import() ChangeMetadata {
 			})(x)
 			return &tmp
 		})(c.Switch__.F_3__),
+		F_4__: (func(x *RoleInternal__) *Role {
+			if x == nil {
+				return nil
+			}
+			tmp := (func(x *RoleInternal__) (ret Role) {
+				if x == nil {
+					return ret
+				}
+				return x.Import()
+			})(x)
+			return &tmp
+		})(c.Switch__.F_4__),
 	}
 }
 func (c ChangeMetadata) Export() *ChangeMetadataInternal__ {
@@ -2285,6 +2321,12 @@ func (c ChangeMetadata) Export() *ChangeMetadataInternal__ {
 				}
 				return (*x).Export()
 			})(c.F_3__),
+			F_4__: (func(x *Role) *RoleInternal__ {
+				if x == nil {
+					return nil
+				}
+				return (*x).Export()
+			})(c.F_4__),
 		},
 	}
 }
