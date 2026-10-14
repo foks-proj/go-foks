@@ -84,6 +84,35 @@ func (e *DiscoveryEngine) StoreHostchainToDB(mc chains.MetaContext, hc *core.Hos
 	return nil
 }
 
+func (e *DiscoveryEngine) StorePublicZoneToDB(mc chains.MetaContext, hid proto.HostID, pz *proto.PublicZone) error {
+	m, err := UpcastChainsContext(mc)
+	if err != nil {
+		return err
+	}
+	return m.DbPut(DbTypeHard, PutArg{
+		Scope: &hid,
+		Typ:   lcl.DataType_HostPublicZone,
+		Key:   core.EmptyKey{},
+		Val:   pz,
+	})
+}
+
+func (e *DiscoveryEngine) LoadPublicZoneFromDB(mc chains.MetaContext, hid proto.HostID) (*proto.PublicZone, error) {
+	m, err := UpcastChainsContext(mc)
+	if err != nil {
+		return nil, err
+	}
+	var ret proto.PublicZone
+	_, err = m.DbGet(&ret, DbTypeHard, &hid, lcl.DataType_HostPublicZone, core.EmptyKey{})
+	if errors.Is(err, core.RowNotFoundError{}) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return &ret, nil
+}
+
 func (e *DiscoveryEngine) CheckPin(mc chains.MetaContext, hn proto.Hostname, hid proto.HostID) error {
 	m, err := UpcastChainsContext(mc)
 	if err != nil {
