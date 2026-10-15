@@ -136,6 +136,16 @@ func (c *ClientConn) RtGetThreadRecents(
 	return *ret, nil
 }
 
+func (c *ClientConn) RtUpdateChannel(ctx context.Context, arg rem.RtUpdateChannelArg) error {
+	m := shared.NewMetaContextConn(ctx, c)
+	return UpdateChannel(m, arg)
+}
+
+func (c *ClientConn) RtSetChannelArchived(ctx context.Context, arg rem.RtSetChannelArchivedArg) error {
+	m := shared.NewMetaContextConn(ctx, c)
+	return SetChannelArchived(m, arg)
+}
+
 var _ shared.RPCServer = (*Server)(nil)
 
 var _ rem.RealTimeInterface = (*ClientConn)(nil)
