@@ -270,41 +270,53 @@ func rtNewChannel(m libclient.MetaContext, top *cobra.Command) {
 
 func rtRenameChannel(m libclient.MetaContext, top *cobra.Command) {
 	var desc, nm string
+	var cmd *cobra.Command
 	quickRTCmd(
 		m, top,
-		"rename-channel", []string{"rename"},
+		"rename-channel", []string{"rename", "edit-channel"},
 		"rename a channel, or edit its description",
-		"rename a channel and replace its description; admins only. An empty "+
-			"--description clears the description. The new name must not collide "+
-			"with another channel of the same tier, including an archived one, "+
-			"whose name stays reserved until it is renamed or the channel is "+
-			"un-archived.",
+		"rename a channel and/or set its description; admins only. Whatever "+
+			"is not passed is left as it is, and --description '' clears the "+
+			"description. The new name must not collide with another channel of "+
+			"the same tier, including an archived one, whose name stays reserved "+
+			"until it is renamed or the channel is un-archived. The team's "+
+			"default channel (the one used when no --channel is given) cannot "+
+			"be renamed, but its description can be edited.",
 		quickRTOpts{SupportChannel: true},
-		func(cmd *cobra.Command) {
+		func(c *cobra.Command) {
+			cmd = c
 			cmd.Flags().StringVar(&nm, "name", "", "new channel name")
 			cmd.Flags().StringVar(&desc, "description", "", "new channel description (empty clears)")
 		},
 		func(args []string, cfg lcl.RTConfig, cli lcl.RealTimeClient) error {
 			if len(args) != 0 {
-				return ArgsError("no args; specify the new name with --name")
+				return ArgsError("no args; use --name and/or --description")
 			}
-			if len(nm) > 0 && nm[0] == '#' {
-				nm = nm[1:]
+			arg := lcl.ClientRTUpdateChannelArg{Cfg: cfg}
+			if cmd.Flags().Changed("name") {
+				if len(nm) > 0 && nm[0] == '#' {
+					nm = nm[1:]
+				}
+				var ch proto.RTChannelName
+				if err := ch.ParseFrom(nm); err != nil {
+					return err
+				}
+				if ch.IsEmpty() {
+					return ArgsError("--name cannot be empty")
+				}
+				arg.Name = &ch
 			}
-			var ch proto.RTChannelName
-			if err := ch.ParseFrom(nm); err != nil {
-				return err
+			if cmd.Flags().Changed("description") {
+				var cd proto.RTChannelDesc
+				if err := cd.ParseFrom(desc); err != nil {
+					return err
+				}
+				arg.Desc = &cd
 			}
-			if ch.IsEmpty() {
-				return ArgsError("specify a new channel name with --name")
+			if arg.Name == nil && arg.Desc == nil {
+				return ArgsError("nothing to change; pass --name and/or --description")
 			}
-			var cd proto.RTChannelDesc
-			if err := cd.ParseFrom(desc); err != nil {
-				return err
-			}
-			return cli.ClientRTUpdateChannel(m.Ctx(),
-				lcl.ClientRTUpdateChannelArg{Cfg: cfg, Name: ch, Desc: cd},
-			)
+			return cli.ClientRTUpdateChannel(m.Ctx(), arg)
 		},
 	)
 }

@@ -35,6 +35,7 @@ type messageSender struct {
 	prevSeq    proto.RTMsgSeq
 	appID      proto.RTAppID
 	noPush     bool
+	archivedAt *time.Time
 
 	// members whose inbox versions the fanout bumped; the caller wakes their
 	// parked long-pollers after the transaction commits.
@@ -51,7 +52,6 @@ func (s *messageSender) lockChannel(m shared.MetaContext) error {
 	var wrt, wvl, rrt, rvl int
 	var prevSeqRaw *int64
 	var appRaw string
-	var archivedAt *time.Time
 	err := s.tx.QueryRow(
 		m.Ctx(),
 		`SELECT parent_team_id, write_role_type, write_role_viz_level,
@@ -63,16 +63,11 @@ func (s *messageSender) lockChannel(m shared.MetaContext) error {
 		m.ShortHostID(),
 		s.channelID(),
 	).Scan(&teamRaw, &wrt, &wvl, &rrt, &rvl, &prevSeqRaw, &appRaw, &s.noPush,
-		&archivedAt)
+		&s.archivedAt)
 	if err == pgx.ErrNoRows {
 		return core.RowNotFoundError{}
 	}
 	if err != nil {
-		return err
-	}
-	// An archived channel is closed to new activity. Checked here, under the
-	// row lock, so a send cannot race an archive and land after it.
-	if err = archivedBlocks(archivedAt); err != nil {
 		return err
 	}
 	err = s.parentTeam.ImportFromDB(teamRaw)
@@ -379,6 +374,13 @@ func (s *messageSender) run(m shared.MetaContext) (*rem.RTSendRes, error) {
 	}
 	err = s.authorize(m)
 	if err != nil {
+		return nil, err
+	}
+	// An archived channel is closed to new activity. Checked under the row
+	// lockChannel took, so a send cannot race an archive and land after it,
+	// and only after authorize, so a caller with no right to send learns
+	// nothing about the channel's state.
+	if err = archivedBlocks(s.archivedAt); err != nil {
 		return nil, err
 	}
 	seq := s.prevSeq + 1

@@ -45,6 +45,7 @@ type mutScene struct {
 	moM     librt.MetaContext
 	pubID   proto.RTChannelID
 	pubName proto.RTChannelName
+	defID   proto.RTChannelID
 }
 
 func setupRTMutScene(t *testing.T) *mutScene {
@@ -73,9 +74,10 @@ func setupRTMutScene(t *testing.T) *mutScene {
 	// The default channel first, as a real team has it: it goes in on the
 	// team's first send. Without it the channel under test would be the team's
 	// only one, which is not how anything else in this package behaves.
-	_, err := sc.ada.MakeChannel(sc.adaM, sc.teamCfg(), proto.RTAppID_Chat, "", "",
+	defID, err := sc.ada.MakeChannel(sc.adaM, sc.teamCfg(), proto.RTAppID_Chat, "", "",
 		proto.RolePairOpt{Read: &proto.DefaultRole, Write: &proto.DefaultRole})
 	require.NoError(t, err)
+	sc.defID = *defID
 
 	sc.pubName = rtRandomChannelName(t, "pub-")
 	chid, err := sc.ada.MakeChannel(sc.adaM, sc.teamCfg(), proto.RTAppID_Chat,
@@ -117,6 +119,19 @@ func (s *mutScene) find(
 	return nil
 }
 
+// rename is a name-only ChannelUpdate; describe a description-only one.
+func rename(nm proto.RTChannelName) librt.ChannelUpdate {
+	return librt.ChannelUpdate{Name: &nm}
+}
+
+func describe(desc proto.RTChannelDesc) librt.ChannelUpdate {
+	return librt.ChannelUpdate{Desc: &desc}
+}
+
+func (s *mutScene) update(spec lcl.RTChannelSpecifier, upd librt.ChannelUpdate) error {
+	return s.ada.UpdateChannel(s.adaM, s.teamCfg(), proto.RTAppID_Chat, spec, upd)
+}
+
 func (s *mutScene) setArchived(t *testing.T, archived bool) error {
 	return s.ada.SetChannelArchived(s.adaM, s.teamCfg(), proto.RTAppID_Chat,
 		s.spec(), archived)
@@ -130,13 +145,12 @@ func TestRTRenameRequiresAdmin(t *testing.T) {
 	sc := setupRTMutScene(t)
 
 	err := sc.mo.UpdateChannel(sc.moM, sc.teamCfg(), proto.RTAppID_Chat,
-		sc.spec(), rtRandomChannelName(t, "nope-"), "", false)
+		sc.spec(), rename(rtRandomChannelName(t, "nope-")))
 	require.Error(t, err)
 	require.IsType(t, core.PermissionError(""), err)
 
 	newName := rtRandomChannelName(t, "ok-")
-	require.NoError(t, sc.ada.UpdateChannel(sc.adaM, sc.teamCfg(),
-		proto.RTAppID_Chat, sc.spec(), newName, "renamed", false))
+	require.NoError(t, sc.update(sc.spec(), rename(newName)))
 	require.Equal(t, newName, sc.find(t, sc.ada, sc.adaM, sc.pubID).Name)
 }
 
@@ -152,8 +166,7 @@ func TestRTRenameResealsAtTierRole(t *testing.T) {
 	// MinRTRole. The box must still be sealed at the bottom tier's name role,
 	// which is what lets an ordinary member read the new name.
 	bottomName := rtRandomChannelName(t, "bottom-")
-	require.NoError(t, sc.ada.UpdateChannel(sc.adaM, sc.teamCfg(),
-		proto.RTAppID_Chat, sc.spec(), bottomName, "", false))
+	require.NoError(t, sc.update(sc.spec(), rename(bottomName)))
 	fromMo := sc.find(t, sc.mo, sc.moM, sc.pubID)
 	require.NotNil(t, fromMo, "an ordinary member must still see the channel")
 	require.Equal(t, bottomName, fromMo.Name,
@@ -167,8 +180,7 @@ func TestRTRenameResealsAtTierRole(t *testing.T) {
 	require.NoError(t, err)
 
 	renamed := rtRandomChannelName(t, "admin2-")
-	require.NoError(t, sc.ada.UpdateChannel(sc.adaM, sc.teamCfg(),
-		proto.RTAppID_Chat, sc.specFor(*adminID), renamed, "", false))
+	require.NoError(t, sc.update(sc.specFor(*adminID), rename(renamed)))
 	got := sc.find(t, sc.ada, sc.adaM, *adminID)
 	require.NotNil(t, got)
 	require.Equal(t, renamed, got.Name)
@@ -187,8 +199,9 @@ func TestRTRenameVisibleToOtherMembers(t *testing.T) {
 	require.Equal(t, sc.pubName, sc.find(t, sc.mo, sc.moM, sc.pubID).Name)
 
 	newName := rtRandomChannelName(t, "seen-")
-	require.NoError(t, sc.ada.UpdateChannel(sc.adaM, sc.teamCfg(),
-		proto.RTAppID_Chat, sc.spec(), newName, "now with a description", false))
+	desc := proto.RTChannelDesc("now with a description")
+	require.NoError(t, sc.update(sc.spec(),
+		librt.ChannelUpdate{Name: &newName, Desc: &desc}))
 
 	got := sc.find(t, sc.mo, sc.moM, sc.pubID)
 	require.NotNil(t, got)
@@ -207,15 +220,13 @@ func TestRTRenameOntoExistingNameFails(t *testing.T) {
 		otherName, "", proto.RolePairOpt{Read: &proto.DefaultRole, Write: &proto.DefaultRole})
 	require.NoError(t, err)
 
-	err = sc.ada.UpdateChannel(sc.adaM, sc.teamCfg(), proto.RTAppID_Chat,
-		sc.spec(), otherName, "", false)
+	err = sc.update(sc.spec(), rename(otherName))
 	require.Error(t, err)
 	require.IsType(t, core.RTChannelExistsError{}, err)
 
 	// Renaming a channel to the name it already has is a no-op, not a clash
 	// with itself.
-	require.NoError(t, sc.ada.UpdateChannel(sc.adaM, sc.teamCfg(),
-		proto.RTAppID_Chat, sc.spec(), sc.pubName, "", false))
+	require.NoError(t, sc.update(sc.spec(), rename(sc.pubName)))
 }
 
 // --- archive --------------------------------------------------------------
@@ -285,8 +296,7 @@ func TestRTRenamedArchivedFreesTheName(t *testing.T) {
 	sc := setupRTMutScene(t)
 	require.NoError(t, sc.setArchived(t, true))
 
-	require.NoError(t, sc.ada.UpdateChannel(sc.adaM, sc.teamCfg(),
-		proto.RTAppID_Chat, sc.spec(), rtRandomChannelName(t, "retired-"), "", false))
+	require.NoError(t, sc.update(sc.spec(), rename(rtRandomChannelName(t, "retired-"))))
 
 	_, err := sc.ada.MakeChannel(sc.adaM, sc.teamCfg(), proto.RTAppID_Chat,
 		sc.pubName, "reusing the freed name",
@@ -447,22 +457,263 @@ func TestRTAllowDuplicateName(t *testing.T) {
 	gen, err := sc.ada.MakeChannelWithOpts(sc.adaM, sc.teamCfg(), proto.RTAppID_Chat,
 		proto.RTGeneralChannel, "", roles, dup, nil)
 	require.NoError(t, err)
-	require.Error(t, sc.ada.UpdateChannel(sc.adaM, sc.teamCfg(), proto.RTAppID_Chat,
-		sc.specFor(*second), proto.RTGeneralChannel, "", false))
-	require.NoError(t, sc.ada.UpdateChannel(sc.adaM, sc.teamCfg(), proto.RTAppID_Chat,
-		sc.specFor(*second), proto.RTGeneralChannel, "", true))
+	allowDup := func(nm proto.RTChannelName) librt.ChannelUpdate {
+		upd := rename(nm)
+		upd.AllowDuplicateName = true
+		return upd
+	}
+	require.Error(t, sc.update(sc.specFor(*second), rename(proto.RTGeneralChannel)))
+	require.NoError(t, sc.update(sc.specFor(*second), allowDup(proto.RTGeneralChannel)))
 
 	// Renaming onto a live name: refused without the flag, allowed with it.
-	require.IsType(t, core.RTChannelExistsError{}, sc.ada.UpdateChannel(sc.adaM, sc.teamCfg(),
-		proto.RTAppID_Chat, sc.specFor(*gen), sc.pubName, "", false))
-	require.NoError(t, sc.ada.UpdateChannel(sc.adaM, sc.teamCfg(), proto.RTAppID_Chat,
-		sc.specFor(*gen), sc.pubName, "", true))
+	require.IsType(t, core.RTChannelExistsError{},
+		sc.update(sc.specFor(*gen), rename(sc.pubName)))
+	require.NoError(t, sc.update(sc.specFor(*gen), allowDup(sc.pubName)))
 
 	// The empty name stays refused either way: on rename, and on create,
 	// where the scene's default channel already holds it.
-	require.Error(t, sc.ada.UpdateChannel(sc.adaM, sc.teamCfg(), proto.RTAppID_Chat,
-		sc.specFor(*gen), "", "", true))
+	require.Error(t, sc.update(sc.specFor(*gen), allowDup("")))
 	_, err = sc.ada.MakeChannelWithOpts(sc.adaM, sc.teamCfg(), proto.RTAppID_Chat,
 		"", "", roles, dup, nil)
 	require.IsType(t, core.RTChannelExistsError{}, err)
+}
+
+// --- default channel ---------------------------------------------------------
+
+// The team's default channel is the nameless one, and a lookup that names no
+// channel (`foks rt send` without --channel, for one) resolves it by that
+// empty name. Renaming it would leave those lookups nothing to find, and
+// archiving it would make every such send fail. The server cannot read names,
+// so librt refuses both. Its description can still be edited.
+func TestRTDefaultChannelCannotBeRenamedOrArchived(t *testing.T) {
+	sc := setupRTMutScene(t)
+	none := lcl.NewRTChannelSpecifierDefault(lcl.RTChannelSpecifierType_None)
+
+	for _, spec := range []lcl.RTChannelSpecifier{none, sc.specFor(sc.defID)} {
+		err := sc.update(spec, rename(rtRandomChannelName(t, "not-default-")))
+		require.Error(t, err)
+		require.IsType(t, core.RTGenericError(""), err)
+
+		err = sc.ada.SetChannelArchived(sc.adaM, sc.teamCfg(), proto.RTAppID_Chat, spec, true)
+		require.Error(t, err)
+		require.IsType(t, core.RTGenericError(""), err)
+	}
+
+	def := sc.find(t, sc.ada, sc.adaM, sc.defID)
+	require.NotNil(t, def)
+	require.True(t, def.Name.IsEmpty())
+	require.False(t, def.Archived)
+
+	_, err := sc.ada.Send(sc.adaM, sc.teamCfg(), proto.RTAppID_Chat, none,
+		[]byte("a send that names no channel still lands"))
+	require.NoError(t, err)
+
+	require.NoError(t, sc.update(none, describe("the default channel")))
+	def = sc.find(t, sc.ada, sc.adaM, sc.defID)
+	require.True(t, def.Name.IsEmpty(), "a description edit must not touch the name")
+	require.NotNil(t, def.Desc)
+	require.Equal(t, proto.RTChannelDesc("the default channel"), *def.Desc)
+}
+
+// --- partial updates ---------------------------------------------------------
+
+// A rename that says nothing about the description leaves it alone, and a
+// description can be edited without restating the name. An empty description
+// clears it, and an update that changes nothing is refused.
+func TestRTRenameKeepsDescription(t *testing.T) {
+	sc := setupRTMutScene(t)
+
+	newName := rtRandomChannelName(t, "typo-fixed-")
+	require.NoError(t, sc.update(sc.spec(), rename(newName)))
+	got := sc.find(t, sc.mo, sc.moM, sc.pubID)
+	require.Equal(t, newName, got.Name)
+	require.NotNil(t, got.Desc, "a rename must keep the description")
+	require.Equal(t, proto.RTChannelDesc("a public channel"), *got.Desc)
+
+	require.NoError(t, sc.update(sc.spec(), describe("edited")))
+	got = sc.find(t, sc.mo, sc.moM, sc.pubID)
+	require.Equal(t, newName, got.Name, "a description edit must keep the name")
+	require.NotNil(t, got.Desc)
+	require.Equal(t, proto.RTChannelDesc("edited"), *got.Desc)
+
+	require.NoError(t, sc.update(sc.spec(), describe("")))
+	got = sc.find(t, sc.mo, sc.moM, sc.pubID)
+	require.Equal(t, newName, got.Name)
+	require.Nil(t, got.Desc, "an empty description clears it")
+
+	err := sc.update(sc.spec(), librt.ChannelUpdate{})
+	require.Error(t, err)
+	require.IsType(t, core.BadArgsError(""), err)
+}
+
+// --- name checks over an unreadable row --------------------------------------
+
+// The name-collision check is the only thing keeping two channels of one tier
+// from sharing a name: the server cannot compare encrypted names. A listing
+// that skipped a row it could not decrypt cannot see that row's name, so a
+// create or rename relying on the check must fail rather than pass without
+// it. Display, channel resolution, and the operations that check no name keep
+// the lenient listing.
+func TestRTNameCheckFailsOnUnreadableRow(t *testing.T) {
+	sc := setupRTMutScene(t)
+	roles := proto.RolePairOpt{Read: &proto.DefaultRole, Write: &proto.DefaultRole}
+	otherID, err := sc.ada.MakeChannel(sc.adaM, sc.teamCfg(), proto.RTAppID_Chat,
+		rtRandomChannelName(t, "other-"), "", roles)
+	require.NoError(t, err)
+
+	sc.corruptName(t, sc.pubID)
+
+	require.Nil(t, sc.find(t, sc.ada, sc.adaM, sc.pubID),
+		"the listing skips the row it cannot decrypt")
+	require.NotNil(t, sc.find(t, sc.ada, sc.adaM, *otherID),
+		"and keeps the rest")
+
+	_, err = sc.ada.MakeChannel(sc.adaM, sc.teamCfg(), proto.RTAppID_Chat,
+		rtRandomChannelName(t, "new-"), "", roles)
+	require.Error(t, err, "a create must not pass a name check that could not see every name")
+	require.Error(t, sc.update(sc.specFor(*otherID), rename(rtRandomChannelName(t, "renamed-"))),
+		"nor may a rename")
+
+	_, err = sc.ada.MakeChannelWithOpts(sc.adaM, sc.teamCfg(), proto.RTAppID_Chat,
+		rtRandomChannelName(t, "dup-ok-"), "", roles,
+		librt.MakeChannelOpts{AllowDuplicateName: true}, nil)
+	require.NoError(t, err, "a create that checks no name is unaffected")
+	require.NoError(t, sc.update(sc.specFor(*otherID), describe("no name involved")))
+	require.NoError(t, sc.ada.SetChannelArchived(sc.adaM, sc.teamCfg(),
+		proto.RTAppID_Chat, sc.specFor(*otherID), true))
+}
+
+// corruptName replaces a channel's name box with one that will not open, and
+// bumps the team's channel-set version so clients re-fetch the row.
+func (s *mutScene) corruptName(t *testing.T, id proto.RTChannelID) {
+	m := s.tew.MetaContext()
+	db, err := m.Db(shared.DbTypeRealTime)
+	require.NoError(t, err)
+	defer db.Release()
+	chid := id.Short().Int64()
+
+	var raw []byte
+	require.NoError(t, db.QueryRow(m.Ctx(),
+		`SELECT name_box FROM channels WHERE short_host_id=$1 AND channel_id=$2`,
+		m.ShortHostID(), chid).Scan(&raw))
+	var box proto.RTBoxRG
+	require.NoError(t, core.DecodeFromBytes(&box, raw))
+	nacl := box.Box.Nacl()
+	ct := append(proto.NaclCiphertext(nil), nacl.Ciphertext...)
+	ct[0] ^= 0xff
+	nacl.Ciphertext = ct
+	box.Box = proto.NewSecretBoxWithNacl(nacl)
+	enc, err := core.EncodeToBytes(&box)
+	require.NoError(t, err)
+
+	var vers int
+	require.NoError(t, db.QueryRow(m.Ctx(),
+		`UPDATE channel_sets cs SET vers = cs.vers + 1, mtime = NOW()
+		 FROM channels c
+		 WHERE c.short_host_id=$1 AND c.channel_id=$2
+		 AND cs.short_host_id=c.short_host_id
+		 AND cs.parent_team_id=c.parent_team_id AND cs.app_id=c.app_id
+		 RETURNING cs.vers`,
+		m.ShortHostID(), chid).Scan(&vers))
+	_, err = db.Exec(m.Ctx(),
+		`UPDATE channels SET name_box=$3, updated_at_set_vers=$4
+		 WHERE short_host_id=$1 AND channel_id=$2`,
+		m.ShortHostID(), chid, enc, vers)
+	require.NoError(t, err)
+}
+
+// --- archive: authorization order, no-ops, and late joiners ------------------
+
+// A caller who may not send into a channel learns nothing about whether it is
+// archived: the permission check comes first, so they get the same
+// PermissionError either way. Only a caller who could send is told why not.
+func TestRTArchivedSendChecksPermissionFirst(t *testing.T) {
+	sc := setupRTMutScene(t)
+	ann, err := sc.ada.MakeChannel(sc.adaM, sc.teamCfg(), proto.RTAppID_Chat,
+		rtRandomChannelName(t, "announce-"), "admins post here",
+		proto.RolePairOpt{Read: &proto.DefaultRole, Write: &proto.AdminRole})
+	require.NoError(t, err)
+	send := func(mndr *librt.Minder, m librt.MetaContext) error {
+		_, err := mndr.Send(m, sc.teamCfg(), proto.RTAppID_Chat, sc.specFor(*ann),
+			[]byte("hello"))
+		return err
+	}
+
+	require.IsType(t, core.PermissionError(""), send(sc.mo, sc.moM))
+	require.NoError(t, sc.ada.SetChannelArchived(sc.adaM, sc.teamCfg(),
+		proto.RTAppID_Chat, sc.specFor(*ann), true))
+	require.IsType(t, core.PermissionError(""), send(sc.mo, sc.moM),
+		"an archived channel must look the same as a live one to a caller who cannot send")
+	require.IsType(t, core.RTChannelArchivedError{}, send(sc.ada, sc.adaM))
+}
+
+// Setting a channel to the archived state it is already in writes nothing: no
+// seqno bump, and no channel-set version bump, so no client re-fetches the
+// listing and no member's inbox row is re-stamped.
+func TestRTArchiveToCurrentStateIsNoop(t *testing.T) {
+	sc := setupRTMutScene(t)
+	snapshot := func() (proto.RTChannelSeqno, proto.RTChannelSetVersion) {
+		lst, err := sc.ada.ListAllChannelsForTeam(sc.adaM, sc.teamCfg(), proto.RTAppID_Chat)
+		require.NoError(t, err)
+		for _, ch := range lst.Channels {
+			if ch.Id.Eq(sc.pubID) {
+				return ch.Seqno, lst.Vers
+			}
+		}
+		require.FailNow(t, "channel missing from the listing")
+		return 0, 0
+	}
+
+	seq0, vers0 := snapshot()
+	require.NoError(t, sc.setArchived(t, false))
+	seq1, vers1 := snapshot()
+	require.Equal(t, seq0, seq1, "un-archiving a live channel must not bump its seqno")
+	require.Equal(t, vers0, vers1, "nor the channel-set version")
+
+	require.NoError(t, sc.setArchived(t, true))
+	seq2, vers2 := snapshot()
+	require.Greater(t, seq2, seq1, "a real change does bump the seqno")
+	require.Greater(t, vers2, vers1)
+
+	require.NoError(t, sc.setArchived(t, true))
+	seq3, vers3 := snapshot()
+	require.Equal(t, seq2, seq3, "archiving an archived channel must not bump its seqno")
+	require.Equal(t, vers2, vers3, "nor the channel-set version")
+}
+
+// A member who joined while the channel was archived has no delivery row, since
+// the late-join fan-in skips archived channels and still records them as
+// reconciled. Un-archiving gives them one, in the same pass that re-stamps the
+// existing members' rows.
+func TestRTUnarchiveFansInLateJoiner(t *testing.T) {
+	sc := setupRTMutScene(t)
+	_, err := sc.ada.Send(sc.adaM, sc.teamCfg(), proto.RTAppID_Chat, sc.spec(),
+		[]byte("before the archive"))
+	require.NoError(t, err)
+	require.NoError(t, sc.setArchived(t, true))
+
+	newbie := sc.tew.NewTestUser(t)
+	sc.tm.makeChanges(t, sc.tew.MetaContext(), sc.adaUser,
+		[]proto.MemberRole{newbie.toMemberRole(t, proto.DefaultRole, sc.tm.hepks)}, nil)
+	nm := librt.NewMetaContext(sc.tew.NewClientMetaContextWithEracer(t, newbie))
+	nMinder := librt.NewMinder(nm.G().ActiveUser())
+
+	// This sync runs the late-join fan-in, which skips the archived channel
+	// and records the newbie's membership as reconciled.
+	_, err = nMinder.SyncInbox(nm, proto.RTAppID_Chat)
+	require.NoError(t, err)
+	require.False(t, rtInboxHas(t, nMinder, nm, sc.pubID))
+
+	require.NoError(t, sc.setArchived(t, false))
+
+	for _, who := range []struct {
+		name string
+		mndr *librt.Minder
+		m    librt.MetaContext
+	}{{"existing member", sc.mo, sc.moM}, {"late joiner", nMinder, nm}} {
+		_, err = who.mndr.SyncInbox(who.m, proto.RTAppID_Chat)
+		require.NoError(t, err)
+		require.True(t, rtInboxHas(t, who.mndr, who.m, sc.pubID),
+			"un-archiving must put the channel in the %s's inbox", who.name)
+	}
 }

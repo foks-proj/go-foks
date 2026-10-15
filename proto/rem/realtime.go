@@ -6,6 +6,7 @@ package rem
 import (
 	"context"
 	"errors"
+	"fmt"
 	"github.com/foks-proj/go-snowpack-rpc/rpc"
 	"time"
 )
@@ -624,6 +625,125 @@ func (r *RTChannelMetadata) GetTypeUniqueID() rpc.TypeUniqueID {
 	return RTChannelMetadataTypeUniqueID
 }
 func (r *RTChannelMetadata) Bytes() []byte { return nil }
+
+type RTChannelDescUpdateType int
+
+const (
+	RTChannelDescUpdateType_Keep  RTChannelDescUpdateType = 0
+	RTChannelDescUpdateType_Clear RTChannelDescUpdateType = 1
+	RTChannelDescUpdateType_Set   RTChannelDescUpdateType = 2
+)
+
+var RTChannelDescUpdateTypeMap = map[string]RTChannelDescUpdateType{
+	"Keep":  0,
+	"Clear": 1,
+	"Set":   2,
+}
+var RTChannelDescUpdateTypeRevMap = map[RTChannelDescUpdateType]string{
+	0: "Keep",
+	1: "Clear",
+	2: "Set",
+}
+
+type RTChannelDescUpdateTypeInternal__ RTChannelDescUpdateType
+
+func (r RTChannelDescUpdateTypeInternal__) Import() RTChannelDescUpdateType {
+	return RTChannelDescUpdateType(r)
+}
+func (r RTChannelDescUpdateType) Export() *RTChannelDescUpdateTypeInternal__ {
+	return ((*RTChannelDescUpdateTypeInternal__)(&r))
+}
+
+type RTChannelDescUpdate struct {
+	T     RTChannelDescUpdateType
+	F_2__ *lib.RTBoxRG `json:"f2,omitempty"`
+}
+type RTChannelDescUpdateInternal__ struct {
+	_struct  struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
+	T        RTChannelDescUpdateType
+	Switch__ RTChannelDescUpdateInternalSwitch__
+}
+type RTChannelDescUpdateInternalSwitch__ struct {
+	_struct struct{}               `codec:",omitempty"` //lint:ignore U1000 msgpack internal field
+	F_2__   *lib.RTBoxRGInternal__ `codec:"2"`
+}
+
+func (r RTChannelDescUpdate) GetT() (ret RTChannelDescUpdateType, err error) {
+	switch r.T {
+	case RTChannelDescUpdateType_Set:
+		if r.F_2__ == nil {
+			return ret, errors.New("unexpected nil case for F_2__")
+		}
+	default:
+		break
+	}
+	return r.T, nil
+}
+func (r RTChannelDescUpdate) Set() lib.RTBoxRG {
+	if r.F_2__ == nil {
+		panic("unexpected nil case; should have been checked")
+	}
+	if r.T != RTChannelDescUpdateType_Set {
+		panic(fmt.Sprintf("unexpected switch value (%v) when Set is called", r.T))
+	}
+	return *r.F_2__
+}
+func NewRTChannelDescUpdateWithSet(v lib.RTBoxRG) RTChannelDescUpdate {
+	return RTChannelDescUpdate{
+		T:     RTChannelDescUpdateType_Set,
+		F_2__: &v,
+	}
+}
+func NewRTChannelDescUpdateDefault(s RTChannelDescUpdateType) RTChannelDescUpdate {
+	return RTChannelDescUpdate{
+		T: s,
+	}
+}
+func (r RTChannelDescUpdateInternal__) Import() RTChannelDescUpdate {
+	return RTChannelDescUpdate{
+		T: r.T,
+		F_2__: (func(x *lib.RTBoxRGInternal__) *lib.RTBoxRG {
+			if x == nil {
+				return nil
+			}
+			tmp := (func(x *lib.RTBoxRGInternal__) (ret lib.RTBoxRG) {
+				if x == nil {
+					return ret
+				}
+				return x.Import()
+			})(x)
+			return &tmp
+		})(r.Switch__.F_2__),
+	}
+}
+func (r RTChannelDescUpdate) Export() *RTChannelDescUpdateInternal__ {
+	return &RTChannelDescUpdateInternal__{
+		T: r.T,
+		Switch__: RTChannelDescUpdateInternalSwitch__{
+			F_2__: (func(x *lib.RTBoxRG) *lib.RTBoxRGInternal__ {
+				if x == nil {
+					return nil
+				}
+				return (*x).Export()
+			})(r.F_2__),
+		},
+	}
+}
+func (r *RTChannelDescUpdate) Encode(enc rpc.Encoder) error {
+	return enc.Encode(r.Export())
+}
+
+func (r *RTChannelDescUpdate) Decode(dec rpc.Decoder) error {
+	var tmp RTChannelDescUpdateInternal__
+	err := dec.Decode(&tmp)
+	if err != nil {
+		return err
+	}
+	*r = tmp.Import()
+	return nil
+}
+
+func (r *RTChannelDescUpdate) Bytes() []byte { return nil }
 
 type RTChannelSet struct {
 	Vers  lib.RTChannelSetVersion
@@ -1789,15 +1909,15 @@ func (r *RtSetPushTokenArg) Bytes() []byte { return nil }
 type RtUpdateChannelArg struct {
 	Chid    lib.RTChannelID
 	Seqno   lib.RTChannelSeqno
-	NameBox lib.RTBoxRG
-	DescBox *lib.RTBoxRG
+	NameBox *lib.RTBoxRG
+	Desc    RTChannelDescUpdate
 }
 type RtUpdateChannelArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Chid    *lib.RTChannelIDInternal__
 	Seqno   *lib.RTChannelSeqnoInternal__
 	NameBox *lib.RTBoxRGInternal__
-	DescBox *lib.RTBoxRGInternal__
+	Desc    *RTChannelDescUpdateInternal__
 }
 
 func (r RtUpdateChannelArgInternal__) Import() RtUpdateChannelArg {
@@ -1814,13 +1934,7 @@ func (r RtUpdateChannelArgInternal__) Import() RtUpdateChannelArg {
 			}
 			return x.Import()
 		})(r.Seqno),
-		NameBox: (func(x *lib.RTBoxRGInternal__) (ret lib.RTBoxRG) {
-			if x == nil {
-				return ret
-			}
-			return x.Import()
-		})(r.NameBox),
-		DescBox: (func(x *lib.RTBoxRGInternal__) *lib.RTBoxRG {
+		NameBox: (func(x *lib.RTBoxRGInternal__) *lib.RTBoxRG {
 			if x == nil {
 				return nil
 			}
@@ -1831,20 +1945,26 @@ func (r RtUpdateChannelArgInternal__) Import() RtUpdateChannelArg {
 				return x.Import()
 			})(x)
 			return &tmp
-		})(r.DescBox),
+		})(r.NameBox),
+		Desc: (func(x *RTChannelDescUpdateInternal__) (ret RTChannelDescUpdate) {
+			if x == nil {
+				return ret
+			}
+			return x.Import()
+		})(r.Desc),
 	}
 }
 func (r RtUpdateChannelArg) Export() *RtUpdateChannelArgInternal__ {
 	return &RtUpdateChannelArgInternal__{
-		Chid:    r.Chid.Export(),
-		Seqno:   r.Seqno.Export(),
-		NameBox: r.NameBox.Export(),
-		DescBox: (func(x *lib.RTBoxRG) *lib.RTBoxRGInternal__ {
+		Chid:  r.Chid.Export(),
+		Seqno: r.Seqno.Export(),
+		NameBox: (func(x *lib.RTBoxRG) *lib.RTBoxRGInternal__ {
 			if x == nil {
 				return nil
 			}
 			return (*x).Export()
-		})(r.DescBox),
+		})(r.NameBox),
+		Desc: r.Desc.Export(),
 	}
 }
 func (r *RtUpdateChannelArg) Encode(enc rpc.Encoder) error {

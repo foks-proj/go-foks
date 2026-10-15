@@ -1726,8 +1726,8 @@ func (c *ClientRTOutboxRetryArg) Bytes() []byte { return nil }
 
 type ClientRTUpdateChannelArg struct {
 	Cfg                RTConfig
-	Name               lib.RTChannelName
-	Desc               lib.RTChannelDesc
+	Name               *lib.RTChannelName
+	Desc               *lib.RTChannelDesc
 	AllowDuplicateName bool
 }
 type ClientRTUpdateChannelArgInternal__ struct {
@@ -1746,17 +1746,29 @@ func (c ClientRTUpdateChannelArgInternal__) Import() ClientRTUpdateChannelArg {
 			}
 			return x.Import()
 		})(c.Cfg),
-		Name: (func(x *lib.RTChannelNameInternal__) (ret lib.RTChannelName) {
+		Name: (func(x *lib.RTChannelNameInternal__) *lib.RTChannelName {
 			if x == nil {
-				return ret
+				return nil
 			}
-			return x.Import()
+			tmp := (func(x *lib.RTChannelNameInternal__) (ret lib.RTChannelName) {
+				if x == nil {
+					return ret
+				}
+				return x.Import()
+			})(x)
+			return &tmp
 		})(c.Name),
-		Desc: (func(x *lib.RTChannelDescInternal__) (ret lib.RTChannelDesc) {
+		Desc: (func(x *lib.RTChannelDescInternal__) *lib.RTChannelDesc {
 			if x == nil {
-				return ret
+				return nil
 			}
-			return x.Import()
+			tmp := (func(x *lib.RTChannelDescInternal__) (ret lib.RTChannelDesc) {
+				if x == nil {
+					return ret
+				}
+				return x.Import()
+			})(x)
+			return &tmp
 		})(c.Desc),
 		AllowDuplicateName: (func(x *bool) (ret bool) {
 			if x == nil {
@@ -1768,9 +1780,19 @@ func (c ClientRTUpdateChannelArgInternal__) Import() ClientRTUpdateChannelArg {
 }
 func (c ClientRTUpdateChannelArg) Export() *ClientRTUpdateChannelArgInternal__ {
 	return &ClientRTUpdateChannelArgInternal__{
-		Cfg:                c.Cfg.Export(),
-		Name:               c.Name.Export(),
-		Desc:               c.Desc.Export(),
+		Cfg: c.Cfg.Export(),
+		Name: (func(x *lib.RTChannelName) *lib.RTChannelNameInternal__ {
+			if x == nil {
+				return nil
+			}
+			return (*x).Export()
+		})(c.Name),
+		Desc: (func(x *lib.RTChannelDesc) *lib.RTChannelDescInternal__ {
+			if x == nil {
+				return nil
+			}
+			return (*x).Export()
+		})(c.Desc),
 		AllowDuplicateName: &c.AllowDuplicateName,
 	}
 }

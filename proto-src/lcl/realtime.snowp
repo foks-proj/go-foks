@@ -189,13 +189,15 @@ protocol RealTime
     ) -> RTOutboxDrainRes;
 
     // Rename a channel and/or replace its description. Admins only (enforced
-    // server-side). An empty desc clears it. The agent reseals the name at the
-    // channel's TIER name role, checks the new name against the team's
-    // channels, and retries the metadata CAS on a lost race.
+    // server-side). An absent name or desc is left as it is, and an empty desc
+    // clears it. The agent reseals the name at the channel's TIER name role,
+    // checks the new name against the team's channels, and retries the
+    // metadata CAS on a lost race. The team's default (nameless) channel
+    // cannot be renamed, since lookups that name no channel resolve it.
     clientRTUpdateChannel @9 (
         cfg @0 : RTConfig,  /* cfg.channel selects the channel to update */
-        name @1 : lib.RTChannelName,
-        desc @2 : lib.RTChannelDesc,
+        name @1 : Option(lib.RTChannelName),
+        desc @2 : Option(lib.RTChannelDesc),
         /* As on clientRTMakeChannel. The empty name stays refused. */
         allowDuplicateName @3 : Bool
     );
