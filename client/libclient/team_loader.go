@@ -182,21 +182,16 @@ func (t *TeamWrapper) VOBearerToken() *rem.TeamVOBearerToken { return t.voTok }
 func (t *TeamWrapper) Hostname() proto.Hostname              { return t.hostname }
 func (t *TeamWrapper) Name() proto.NameUtf8                  { return t.prot.Name.B.NameUtf8 }
 func (t *TeamWrapper) TeamMemberKeys(r core.RoleKey) (*proto.TeamMemberKeys, *proto.HEPK, error) {
-	ptk := t.ptks.CurrentPublicKeyAtRole(r)
-	if ptk == nil {
-		return nil, nil, nil
-	}
-	fp := ptk.Sk.HepkFp
-	hepk, ok := t.ptks.hepks.Lookup(&fp)
-	if !ok {
-		return nil, nil, core.KeyNotFoundError{Which: "hepk"}
+	sps, err := t.ptks.CurrentPublicSuiteAtRole(r)
+	if err != nil || sps == nil {
+		return nil, nil, err
 	}
 	return &proto.TeamMemberKeys{
-		VerifyKey: ptk.Sk.VerifyKey,
-		HepkFp:    fp,
-		Gen:       ptk.Sk.Gen,
+		VerifyKey: sps.VerifyKey,
+		HepkFp:    sps.HepkFp,
+		Gen:       sps.Gen,
 		Tir:       &t.prot.Tir,
-	}, hepk.Obj(), nil
+	}, &sps.HEPK, nil
 }
 
 func (t *TeamWrapper) CheckTeamIndexRange(targetTeam core.RationalRange, tirInJoinReq *proto.RationalRange) error {
