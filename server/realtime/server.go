@@ -136,6 +136,23 @@ func (c *ClientConn) RtGetThreadRecents(
 	return *ret, nil
 }
 
+func (c *ClientConn) RtSetPushHold(ctx context.Context, arg rem.RtSetPushHoldArg) error {
+	m := shared.NewMetaContextConn(ctx, c)
+	return SetPushHold(m, arg)
+}
+func (c *ClientConn) RtClearPushHold(ctx context.Context, arg rem.RtClearPushHoldArg) error {
+	m := shared.NewMetaContextConn(ctx, c)
+	return ClearPushHold(m, arg)
+}
+func (c *ClientConn) RtReleasePushes(ctx context.Context, arg rem.RtReleasePushesArg) error {
+	m := shared.NewMetaContextConn(ctx, c)
+	return ReleasePushes(m, arg)
+}
+func (c *ClientConn) RtNotifyMembers(ctx context.Context, arg rem.RtNotifyMembersArg) error {
+	m := shared.NewMetaContextConn(ctx, c)
+	return NotifyMembers(m, arg)
+}
+
 var _ shared.RPCServer = (*Server)(nil)
 
 var _ rem.RealTimeInterface = (*ClientConn)(nil)
