@@ -147,7 +147,7 @@ One table in `foks_users`, delivered as a patch.
         FOREIGN KEY(short_host_id, inviter) REFERENCES users(short_host_id, uid),
         FOREIGN KEY(short_host_id, team_id) REFERENCES teams(short_host_id, team_id),
         FOREIGN KEY(short_host_id, invite_code)
-            REFERENCES invite_codes(short_host_id, code) ON DELETE SET NULL
+            REFERENCES invite_codes(short_host_id, code) ON DELETE SET NULL (invite_code)
     );
 
     CREATE INDEX social_invites_inviter_idx
@@ -425,7 +425,7 @@ the code would outlive the invitation — anyone the seed reached could join the
 host after Alice canceled. This must ride the transition, not the sweeper alone:
 a grace period between cancel and sweep would be a window where the revoked
 invitation's code still signs people up. Deleting the code is the revocation
-(the FK's `ON DELETE SET NULL` permits it); the pending signup then fails its
+(the FK's `ON DELETE SET NULL (invite_code)` permits it; a bare `SET NULL` would null `short_host_id` too); the pending signup then fails its
 `checkInviteCode` like any other bad code. An `accepted` close leaves the code
 alone — it was consumed at signup, and the consumed row is the audit trail.
 

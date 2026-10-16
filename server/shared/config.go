@@ -414,6 +414,10 @@ type Settings struct {
 	Tbtl    core.Duration `json:"team_bearer_token_lifespan"`
 	Cit     core.Duration `json:"connection_idle_timeout"`
 	Wsd     core.Duration `json:"web_session_duration"`
+	Siml    core.Duration `json:"social_invite_max_lifespan"`
+	Sig     core.Duration `json:"social_invite_grace"`
+	Simo    int           `json:"social_invite_max_open"`
+	Muic    int           `json:"max_unused_invite_codes"`
 }
 
 type StripeSecretKey string
@@ -524,6 +528,44 @@ func (s Settings) ConnectionIdleTimeout() time.Duration {
 		return time.Duration(6) * time.Hour
 	}
 	return s.Cit.Duration
+}
+
+func (s Settings) SocialInviteMaxLifespan() time.Duration {
+	var zed core.Duration
+	if s.Siml == zed {
+		return time.Duration(30) * 24 * time.Hour
+	}
+	return s.Siml.Duration
+}
+
+// SocialInviteGrace is how long expired and terminal invitations stay
+// readable before the sweeper deletes them. It is the window in which the
+// invitee's poll can still read accepted or declined, so it defaults to
+// days, not minutes.
+func (s Settings) SocialInviteGrace() time.Duration {
+	var zed core.Duration
+	if s.Sig == zed {
+		return time.Duration(7) * 24 * time.Hour
+	}
+	return s.Sig.Duration
+}
+
+func (s Settings) SocialInviteMaxOpen() int {
+	if s.Simo == 0 {
+		return 25
+	}
+	return s.Simo
+}
+
+// MaxUnusedInviteCodes caps how many unredeemed standard codes one user can
+// hold at a time, which bounds what User.newInviteCode can mint. On an
+// invite-code-gated host an unbounded mint would let a single account issue
+// working signup codes without limit.
+func (s Settings) MaxUnusedInviteCodes() int {
+	if s.Muic == 0 {
+		return 25
+	}
+	return s.Muic
 }
 
 type BindAddr string
