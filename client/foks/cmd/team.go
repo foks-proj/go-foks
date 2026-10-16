@@ -288,14 +288,18 @@ func teamAdd(m libclient.MetaContext, top *cobra.Command) {
 	cmd := &cobra.Command{
 		Use:     "add <team> <user1> <user2> ...",
 		Aliases: nil,
-		Short:   "add a user to a team (on an open-view host)",
-		Long: libterm.MustRewrapSense(`Add a user to a team on an open-view host.
+		Short:   "add a user to a team directly",
+		Long: libterm.MustRewrapSense(`Add a user to a team directly.
 
 Recall that typically, adding a team (or user) to a team is a 3-way handshake, since
 the intended party needs to allow the team admin first to view its sigchain. On an open-view
-host, this permissioning is not needed, since anyone can see anyone. Therefore, it's also 
+host, this permissioning is not needed, since anyone can see anyone. Therefore, it's also
 possible for an admin to add other members directly to a team. This command (`+"`foks team add`"+`)
 does this addition.
+
+On a closed-view host, a user can be added directly once they have granted the team
+a local view permission on themselves; name them by user ID, since usernames do not
+resolve there. Teams cannot be added directly on a closed-view host.
 
 Each user added can be specified with or without a source role. If source roles are not provided:
 for users the default role is owner; for teams, the default role is member/0 

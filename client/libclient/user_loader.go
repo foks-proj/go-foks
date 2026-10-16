@@ -334,25 +334,32 @@ func LoadUserByFQUserParsed(m MetaContext, fqu proto.FQUserParsed) (*UserWrapper
 	if au == nil {
 		return nil, core.NoActiveUserError{}
 	}
-	arg := LoadUserArg{
-		LoadMode:   LoadModeOpenOthers,
-		ActiveUser: au,
-	}
-	isS, err := fqu.User.GetS()
+	arg, err := loadUserArgFromFQUserParsed(fqu)
 	if err != nil {
 		return nil, err
 	}
+	arg.LoadMode = LoadModeOpenOthers
+	arg.ActiveUser = au
+	return LoadUser(m, arg)
+}
+
+// loadUserArgFromFQUserParsed fills in who to load (UID or username) and, if
+// named, which host; the caller sets how.
+func loadUserArgFromFQUserParsed(fqu proto.FQUserParsed) (LoadUserArg, error) {
+	var arg LoadUserArg
+	isS, err := fqu.User.GetS()
+	if err != nil {
+		return arg, err
+	}
 	if isS {
-		nm := fqu.User.True()
-		arg.Username = nm
+		arg.Username = fqu.User.True()
 	} else {
-		uid := fqu.User.False()
-		arg.Uid = uid
+		arg.Uid = fqu.User.False()
 	}
 	if fqu.Host != nil {
 		isS, err := fqu.Host.GetS()
 		if err != nil {
-			return nil, err
+			return arg, err
 		}
 		if isS {
 			arg.Host = &LoadUserHost{
@@ -364,7 +371,7 @@ func LoadUserByFQUserParsed(m MetaContext, fqu proto.FQUserParsed) (*UserWrapper
 			}
 		}
 	}
-	return LoadUser(m, arg)
+	return arg, nil
 }
 
 func (u *UserLoader) SetRPCLoader(l UserChainRPCLoader) {
