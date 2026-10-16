@@ -372,3 +372,62 @@ func TestAdminCLKRSkipsStaleHigherRoleMember(t *testing.T) {
 	require.Equal(t, proto.AdminRole, roles[w.name], "the actor keeps their role")
 	require.Equal(t, readerRole, roles[u.name], "CLKR must not change the role of the member it rekeys")
 }
+
+// TestCLKRSkipsTeamsBelowAdminWithoutLoading covers the pre-check in
+// visitAllTeams. A team this client has no standing to change is dropped
+// before it is loaded, rather than after loadTeam has refreshed the team and
+// every member's user chain from the server only for run() to find the client
+// is below admin and return. The teams that are visited are unaffected.
+func TestCLKRSkipsTeamsBelowAdminWithoutLoading(t *testing.T) {
+	tew := testEnvBeta(t)
+	v := tew.NewTestUser(t) // owns A, and is only a reader in B
+	u := tew.NewTestUser(t) // reader in A; the member the sweep has to rekey
+	w := tew.NewTestUser(t) // owns B
+	tew.DirectDoubleMerklePokeInTest(t)
+
+	m := tew.MetaContext()
+	A := tew.makeTeamForOwner(t, v)
+	A.setIndexRange(t, m, v, index0)
+	B := tew.makeTeamForOwner(t, w)
+	B.setIndexRange(t, m, w, index1)
+	readerRole := proto.NewRoleWithMember(0)
+	tew.DirectDoubleMerklePokeInTest(t)
+
+	runLocalJoinSequenceForUser(t, m, A, v, u, readerRole, nil)
+	tew.DirectDoubleMerklePokeInTest(t)
+	runLocalJoinSequenceForUser(t, m, B, w, v, readerRole, nil)
+	tew.DirectDoubleMerklePokeInTest(t)
+
+	mv := tew.NewClientMetaContextWithDevice(t, v, v.eldest)
+	mv = mv.WithLogTag("testrun")
+	av := mv.G().ActiveUser()
+	require.NotNil(t, av)
+	tmm := libclient.NewTeamMinder(av)
+	tmm.TestHooks = &libclient.TeamMinderTestHooks{
+		PostChainHook: func() error {
+			tew.DirectDoubleMerklePokeInTest(t)
+			return nil
+		},
+	}
+
+	// Nothing is stale yet, so this sweep rekeys nothing -- but it still has
+	// to decline B, which is the point.
+	clkr := libclient.NewCLKR(tmm, libclient.CLKROpts{})
+	require.NoError(t, clkr.Run(mv))
+	require.Equal(t, 0, len(clkr.Rekeys()))
+	require.Equal(t, []proto.FQTeam{B.FQTeam(t)}, clkr.Skipped(),
+		"v is only a reader in B, so B is skipped before it is loaded")
+
+	// Roll u's PUK so A genuinely needs a rekey: a sweep that skipped too
+	// much would now show up as a missing rekey rather than as a pass.
+	d := u.ProvisionNewDevice(t, u.eldest, "ucpu2", proto.DeviceType_Computer, proto.OwnerRole)
+	tew.DirectDoubleMerklePokeInTest(t)
+	u.RevokeDevice(t, u.eldest, d)
+	tew.DirectMerklePokeInTest(t)
+
+	clkr = libclient.NewCLKR(tmm, tew.clkrOpts(t))
+	require.NoError(t, clkr.Run(mv))
+	require.Equal(t, 1, len(clkr.Rekeys()), "skipping B must not cost A its rekey")
+	require.Equal(t, A.FQTeam(t), clkr.Rekeys()[0])
+	require.Equal(t, []proto.FQTeam{B.FQTeam(t)}, clkr.Skipped())
+}
