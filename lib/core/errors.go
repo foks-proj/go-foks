@@ -1384,6 +1384,24 @@ func (r RTChannelExistsError) Error() string {
 	return "channel already exists"
 }
 
+type SocialInviteNotFoundError struct{}
+
+func (s SocialInviteNotFoundError) Error() string {
+	return "social invite not found"
+}
+
+type SocialInviteWrongStateError struct{}
+
+func (s SocialInviteWrongStateError) Error() string {
+	return "social invite in wrong state for this operation"
+}
+
+type SocialInviteStaleTurnError struct{}
+
+func (s SocialInviteStaleTurnError) Error() string {
+	return "social invite reply names a turn that is no longer current"
+}
+
 // RTRaceError signals a lost optimistic-concurrency race in the realtime
 // service. Which names the table that raced ("channels" or "messages") so the
 // retry logic and logs aren't misleadingly channel-specific.
@@ -1648,6 +1666,12 @@ func ErrorToStatus(e error) proto.Status {
 		return proto.NewStatusWithRtGenericError(string(te))
 	case RTChannelExistsError:
 		return proto.NewStatusWithRtChannelExistsError()
+	case SocialInviteNotFoundError:
+		return proto.NewStatusWithSocialInviteNotFoundError()
+	case SocialInviteWrongStateError:
+		return proto.NewStatusWithSocialInviteWrongStateError()
+	case SocialInviteStaleTurnError:
+		return proto.NewStatusWithSocialInviteStaleTurnError()
 	case RTRaceError:
 		return proto.NewStatusWithRtRace(te.Which)
 	case RTAmbiguousChannelError:
@@ -2123,6 +2147,12 @@ func StatusToError(s proto.Status) error {
 		return errors.New(s.InternalError())
 	case proto.StatusCode_RT_CHANNEL_EXISTS_ERROR:
 		return RTChannelExistsError{}
+	case proto.StatusCode_SOCIAL_INVITE_NOT_FOUND_ERROR:
+		return SocialInviteNotFoundError{}
+	case proto.StatusCode_SOCIAL_INVITE_WRONG_STATE_ERROR:
+		return SocialInviteWrongStateError{}
+	case proto.StatusCode_SOCIAL_INVITE_STALE_TURN_ERROR:
+		return SocialInviteStaleTurnError{}
 	case proto.StatusCode_RT_GENERIC_ERROR:
 		return RTGenericError(s.RtGenericError())
 	case proto.StatusCode_RT_RACE:

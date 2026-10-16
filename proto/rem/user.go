@@ -3033,6 +3033,34 @@ func (g *GetAllYubiManagementKeysArg) Decode(dec rpc.Decoder) error {
 
 func (g *GetAllYubiManagementKeysArg) Bytes() []byte { return nil }
 
+type NewInviteCodeArg struct {
+}
+type NewInviteCodeArgInternal__ struct {
+	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
+}
+
+func (n NewInviteCodeArgInternal__) Import() NewInviteCodeArg {
+	return NewInviteCodeArg{}
+}
+func (n NewInviteCodeArg) Export() *NewInviteCodeArgInternal__ {
+	return &NewInviteCodeArgInternal__{}
+}
+func (n *NewInviteCodeArg) Encode(enc rpc.Encoder) error {
+	return enc.Encode(n.Export())
+}
+
+func (n *NewInviteCodeArg) Decode(dec rpc.Decoder) error {
+	var tmp NewInviteCodeArgInternal__
+	err := dec.Decode(&tmp)
+	if err != nil {
+		return err
+	}
+	*n = tmp.Import()
+	return nil
+}
+
+func (n *NewInviteCodeArg) Bytes() []byte { return nil }
+
 type UserInterface interface {
 	Ping(context.Context) (lib.UID, error)
 	SetPassphrase(context.Context, SetPassphraseArg) error
@@ -3063,6 +3091,7 @@ type UserInterface interface {
 	PutYubiManagementKey(context.Context, YubiEncryptedManagementKey) error
 	GetYubiManagementKey(context.Context, lib.YubiID) (YubiEncryptedManagementKey, error)
 	GetAllYubiManagementKeys(context.Context) ([]YubiEncryptedManagementKey, error)
+	NewInviteCode(context.Context) (InviteCode, error)
 	ErrorWrapper() func(error) lib.Status
 	CheckArgHeader(ctx context.Context, h lib.Header) error
 	MakeResHeader() lib.Header
@@ -3765,6 +3794,28 @@ func (c UserClient) GetAllYubiManagementKeys(ctx context.Context) (res []YubiEnc
 		}
 		return ret
 	})(&tmp.Data)
+	return
+}
+func (c UserClient) NewInviteCode(ctx context.Context) (res InviteCode, err error) {
+	var arg NewInviteCodeArg
+	warg := &rpc.DataWrap[lib.Header, *NewInviteCodeArgInternal__]{
+		Data: arg.Export(),
+	}
+	if c.MakeArgHeader != nil {
+		warg.Header = c.MakeArgHeader()
+	}
+	var tmp rpc.DataWrap[lib.Header, InviteCodeInternal__]
+	err = c.Cli.Call2(ctx, rpc.NewMethodV2(UserProtocolID, 30, "User.newInviteCode"), warg, &tmp, 0*time.Millisecond, userErrorUnwrapperAdapter{h: c.ErrorUnwrapper})
+	if err != nil {
+		return
+	}
+	if c.CheckResHeader != nil {
+		err = c.CheckResHeader(ctx, tmp.Header)
+		if err != nil {
+			return
+		}
+	}
+	res = tmp.Data.Import()
 	return
 }
 func UserProtocol(i UserInterface) rpc.ProtocolV2 {
@@ -4604,6 +4655,34 @@ func UserProtocol(i UserInterface) rpc.ProtocolV2 {
 					},
 				},
 				Name: "getAllYubiManagementKeys",
+			},
+			30: {
+				ServeHandlerDescription: rpc.ServeHandlerDescription{
+					MakeArg: func() interface{} {
+						var ret rpc.DataWrap[lib.Header, *NewInviteCodeArgInternal__]
+						return &ret
+					},
+					Handler: func(ctx context.Context, args interface{}) (interface{}, error) {
+						typedWrappedArg, ok := args.(*rpc.DataWrap[lib.Header, *NewInviteCodeArgInternal__])
+						if !ok {
+							err := rpc.NewTypeError((*rpc.DataWrap[lib.Header, *NewInviteCodeArgInternal__])(nil), args)
+							return nil, err
+						}
+						if err := i.CheckArgHeader(ctx, typedWrappedArg.Header); err != nil {
+							return nil, err
+						}
+						tmp, err := i.NewInviteCode(ctx)
+						if err != nil {
+							return nil, err
+						}
+						ret := rpc.DataWrap[lib.Header, *InviteCodeInternal__]{
+							Data:   tmp.Export(),
+							Header: i.MakeResHeader(),
+						}
+						return &ret, nil
+					},
+				},
+				Name: "newInviteCode",
 			},
 		},
 		WrapError: UserMakeGenericErrorWrapper(i.ErrorWrapper()),

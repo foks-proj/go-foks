@@ -569,7 +569,22 @@ func (c *QuotaServer) DoOnePollForHost(m shared.MetaContext) error {
 	if err != nil {
 		return err
 	}
+	err = c.doOnePollForHostSocialInviteSweep(m)
+	if err != nil {
+		return err
+	}
 	return nil
+}
+
+// doOnePollForHostSocialInviteSweep runs as a quota-server sub-sweep
+// because this looper already polls foks_users per host on a suitable
+// cadence. Hosts that run no quota server never sweep. For the rows that is
+// harmless (every reader treats a row past its etime as absent), but the
+// sweep is also what reclaims an expired invitation's unused attached code,
+// so on such hosts that code stays redeemable until the invitation is
+// canceled.
+func (c *QuotaServer) doOnePollForHostSocialInviteSweep(m shared.MetaContext) error {
+	return shared.SweepSocialInvites(m)
 }
 
 func (c *QuotaClientConn) asTesting(
