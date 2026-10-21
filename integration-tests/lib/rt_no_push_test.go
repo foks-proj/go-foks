@@ -211,3 +211,44 @@ func TestRTDefaultChannelCannotBeNoPush(t *testing.T) {
 	)
 	require.NoError(t, err, "the guard must not block ordinary default-channel creation")
 }
+
+// An edit and a delete queue no push row, while a message and a reaction in
+// the same channel still queue one per recipient, and the edits still bump
+// the recipients' inbox versions. Clients delete by editing to an empty
+// body: librt cannot send a Delete, which TestTypeWakesPhone covers.
+func TestRTEditQueuesNoPushRows(t *testing.T) {
+	sc := setupNoPushScene(t)
+	chid := sc.makeChannel(t, "chat", librt.MakeChannelOpts{})
+	cfg := team.WrapNamedPtr(sc.tm.ToFQTeamParsed(t))
+	ch := makeChannelSpecifierWithString("chat")
+	recipients := []*TestUser{sc.mem1, sc.mem2}
+
+	sc.send(t, "chat", "lunch?")
+	msgs, err := recents(sc.mo, sc.minder, cfg, proto.RTAppID_Chat, ch, 0)
+	require.NoError(t, err)
+	require.Len(t, msgs, 1)
+	target := msgs[0].MsgID
+
+	before := map[*TestUser]int64{}
+	for _, u := range recipients {
+		before[u] = sc.inboxVersion(t, u)
+	}
+	for _, body := range []string{"lunch at 1?", ""} {
+		_, err = sc.minder.SendTyped(sc.mo, cfg, proto.RTAppID_Chat, ch,
+			[]byte(body), proto.RTMsgType_Edit, &target)
+		require.NoError(t, err)
+	}
+	for _, u := range recipients {
+		require.Equal(t, 1, sc.pushRows(t, chid, u), "an edit or a delete must not push")
+		require.Greater(t, sc.inboxVersion(t, u), before[u],
+			"an edit must still bump the inbox version")
+	}
+
+	_, err = sc.minder.SendTyped(sc.mo, cfg, proto.RTAppID_Chat, ch,
+		[]byte(`{"emoji":"👍"}`), proto.RTMsgType_Reactji, &target)
+	require.NoError(t, err)
+	for _, u := range recipients {
+		require.Equal(t, 2, sc.pushRows(t, chid, u), "a reaction still pushes")
+	}
+	require.Equal(t, 0, sc.pushRows(t, chid, sc.owner), "the sender is never pushed to")
+}
