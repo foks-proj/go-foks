@@ -89,7 +89,10 @@ func (e *DiscoveryEngine) StorePublicZoneToDB(mc chains.MetaContext, hid proto.H
 	if err != nil {
 		return err
 	}
-	return m.DbPut(DbTypeHard, PutArg{
+	// Soft: a derived cache the next successful probe rewrites. Losing it
+	// costs nothing while online, and offline it only means a cold start
+	// cannot hydrate until the host is reachable again.
+	return m.DbPut(DbTypeSoft, PutArg{
 		Scope: &hid,
 		Typ:   lcl.DataType_HostPublicZone,
 		Key:   core.EmptyKey{},
@@ -103,7 +106,7 @@ func (e *DiscoveryEngine) LoadPublicZoneFromDB(mc chains.MetaContext, hid proto.
 		return nil, err
 	}
 	var ret proto.PublicZone
-	_, err = m.DbGet(&ret, DbTypeHard, &hid, lcl.DataType_HostPublicZone, core.EmptyKey{})
+	_, err = m.DbGet(&ret, DbTypeSoft, &hid, lcl.DataType_HostPublicZone, core.EmptyKey{})
 	if errors.Is(err, core.RowNotFoundError{}) {
 		return nil, nil
 	}

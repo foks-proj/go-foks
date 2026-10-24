@@ -700,10 +700,12 @@ func (c *UserContext) clientCertLocked(m MetaContext) (*tls.Certificate, error) 
 }
 
 // fetchClientCertChain gets the cert chain the reg server issued for the
-// given key, caching it in the hard DB. Offline, the cached chain (public
-// certificate material only; the private key stays in the local keyring) is
-// served instead, so a cold start can still present mTLS credentials -- an
-// expired chain simply fails the TLS handshake, which reads as offline.
+// given key, caching it in the soft DB (it is derived state: the reg server
+// reissues it on demand, so losing the row costs nothing while online).
+// Offline, the cached chain (public certificate material only; the private
+// key stays in the local keyring) is served instead, so a cold start can
+// still present mTLS credentials -- an expired chain simply fails the TLS
+// handshake, which reads as offline.
 func (c *UserContext) fetchClientCertChain(
 	m MetaContext,
 	eid proto.EntityID,
@@ -715,46 +717,54 @@ func (c *UserContext) fetchClientCertChain(
 	// Callers hold c's lock (clientCertLocked); touch fields directly rather
 	// than via locking accessors.
 	uid := c.Info.Fqu.Uid
-	loadCached := func() [][]byte {
-		var cached lcl.UserCertChain
-		_, derr := m.DbGet(&cached, DbTypeHard, &uid,
-			lcl.DataType_UserCertChain, eid)
-		if derr != nil || len(cached.Certs) == 0 {
-			return nil
-		}
-		return cached.Certs
-	}
 
-	cli, err := c.regClientLocked(m)
+	certChain, err := c.fetchClientCertChainFromServer(m, uid, eid)
 	if err == nil {
-		var certChain [][]byte
-		certChain, err = cli.GetClientCertChain(m.Ctx(), rem.GetClientCertChainArg{
-			Uid: c.Info.Fqu.Uid,
-			Key: eid,
-		})
-		if err == nil {
-			store := lcl.UserCertChain{Certs: certChain}
-			serr := m.DbPut(DbTypeHard, PutArg{
-				Scope: &uid,
-				Typ:   lcl.DataType_UserCertChain,
-				Key:   eid,
-				Val:   &store,
-			})
-			if serr != nil {
-				m.Warnw("fetchClientCertChain", "stage", "store", "err", serr)
-			}
-			return certChain, false, nil
-		}
+		return certChain, false, nil
 	}
 	if !core.IsTransportError(err) {
 		return nil, false, err
 	}
-	if cached := loadCached(); cached != nil {
-		m.Warnw("fetchClientCertChain", "err", err,
-			"note", "server unreachable; using cached cert chain")
-		return cached, true, nil
+	var cached lcl.UserCertChain
+	_, derr := m.DbGet(&cached, DbTypeSoft, &uid, lcl.DataType_UserCertChain, eid)
+	if derr != nil || len(cached.Certs) == 0 {
+		return nil, false, err
 	}
-	return nil, false, err
+	m.Warnw("fetchClientCertChain", "err", err,
+		"note", "server unreachable; using cached cert chain")
+	return cached.Certs, true, nil
+}
+
+// fetchClientCertChainFromServer asks the reg server for the chain and caches
+// what it returns. A failed cache write is logged, not returned: the chain in
+// hand is still good, and the next fetch will try the write again.
+func (c *UserContext) fetchClientCertChainFromServer(
+	m MetaContext,
+	uid proto.UID,
+	eid proto.EntityID,
+) ([][]byte, error) {
+	cli, err := c.regClientLocked(m)
+	if err != nil {
+		return nil, err
+	}
+	certChain, err := cli.GetClientCertChain(m.Ctx(), rem.GetClientCertChainArg{
+		Uid: uid,
+		Key: eid,
+	})
+	if err != nil {
+		return nil, err
+	}
+	store := lcl.UserCertChain{Certs: certChain}
+	serr := m.DbPut(DbTypeSoft, PutArg{
+		Scope: &uid,
+		Typ:   lcl.DataType_UserCertChain,
+		Key:   eid,
+		Val:   &store,
+	})
+	if serr != nil {
+		m.Warnw("fetchClientCertChain", "stage", "store", "err", serr)
+	}
+	return certChain, nil
 }
 
 func (c *UserContext) UserGCli(m MetaContext) (*core.RpcClient, error) {
@@ -905,7 +915,7 @@ func (u *UserContext) GetSharedKeyManager(m MetaContext) (SharedKeyManager, erro
 func (u *UserContext) PopulateWithDevkey(m MetaContext) error {
 	user, err := LoadMe(m, u)
 
-	if err != nil && core.IsTransportError(err) {
+	if core.IsTransportError(err) {
 		// Cold start with no network: fall back to the last verified
 		// sigchain snapshot, so a device that has completed an online load
 		// before can unlock and work offline (cached reads, durably queued
