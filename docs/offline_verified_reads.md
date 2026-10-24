@@ -130,8 +130,10 @@ getting the key material right.
 
 ## What is built
 
-Each layer caches only material a verified load produced, in the client's soft
-(self-healing) database. Wiping any of it costs a resync, never correctness.
+Each layer caches only material a verified load produced. The rows this change
+adds live in the client's soft (self-healing) database: wiping any of them
+costs a resync, never correctness. The user's own sigchain snapshot was already
+in the hard database before this change, and stays there.
 
 | Layer | Local state | Offline entry point |
 |---|---|---|
