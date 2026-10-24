@@ -614,32 +614,32 @@ func (l *TeamLoader) Run(m MetaContext) (*TeamWrapper, error) {
 		return nil, err
 	}
 	err = l.BaseChainLoader.runMany(m, l.runOnce, l.resetState)
-	if err != nil {
-		// Offline fallback: with the server unreachable, serve the last
-		// verified snapshot instead of nothing. The snapshot -- PTKs and the
-		// historical-sender records alongside them -- was fully verified
-		// before it was written, so its keys are usable offline without
-		// replaying links; the next online load re-verifies as usual. The
-		// view bearer token exists only to gate server resources, so a
-		// token-less wrapper is correct for local-only work (any server
-		// operation attempted with it meets a connect-class error at its own
-		// boundary). A team never loaded online has no snapshot and keeps
-		// the original connect error.
-		if core.IsTransportError(err) && l.au != nil {
-			tw, cerr := LoadTeamFromCache(m, l.au, l.Arg)
-			if cerr == nil {
-				// Report how stale the thing being served actually is. The
-				// snapshot's verification is what entitles us to serve it, so
-				// the age of that verification is the one number a reader
-				// needs to judge what they are looking at.
-				age, known := tw.VerifiedAge(m.G().Now())
-				m.Warnw("TeamLoader.Run", "err", err,
-					"note", "server unreachable; serving verified team snapshot",
-					"staleFor", age, "staleForKnown", known)
-				return tw, nil
-			}
-			m.Warnw("TeamLoader.Run", "stage", "cacheFallback", "err", cerr)
+	// Offline fallback: with the server unreachable, serve the last
+	// verified snapshot instead of nothing. The snapshot -- PTKs and the
+	// historical-sender records alongside them -- was fully verified
+	// before it was written, so its keys are usable offline without
+	// replaying links; the next online load re-verifies as usual. The
+	// view bearer token exists only to gate server resources, so a
+	// token-less wrapper is correct for local-only work (any server
+	// operation attempted with it meets a connect-class error at its own
+	// boundary). A team never loaded online has no snapshot and keeps
+	// the original connect error.
+	if core.IsTransportError(err) && l.au != nil {
+		tw, cerr := LoadTeamFromCache(m, l.au, l.Arg)
+		if cerr == nil {
+			// Report how stale the thing being served actually is. The
+			// snapshot's verification is what entitles us to serve it, so
+			// the age of that verification is the one number a reader
+			// needs to judge what they are looking at.
+			age, known := tw.VerifiedAge(m.G().Now())
+			m.Warnw("TeamLoader.Run", "err", err,
+				"note", "server unreachable; serving verified team snapshot",
+				"staleFor", age, "staleForKnown", known)
+			return tw, nil
 		}
+		m.Warnw("TeamLoader.Run", "stage", "cacheFallback", "err", cerr)
+	}
+	if err != nil {
 		return nil, err
 	}
 	w := l.WrappedRes()

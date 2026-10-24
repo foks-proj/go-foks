@@ -130,7 +130,8 @@ func (a *ActiveUserLoader) Run(m MetaContext) error {
 		// A caller that demanded an unlocked user gets the real error --
 		// swallowing it here would leave lockState Unset and turn the outage
 		// into GenerateLockError's "unset lock state" internal error.
-		if err != nil && core.IsTransportError(err) {
+		switch {
+		case core.IsTransportError(err):
 			if a.opts.NeedUnlocked {
 				return err
 			}
@@ -138,7 +139,7 @@ func (a *ActiveUserLoader) Run(m MetaContext) error {
 				"note", "server unreachable; user stays loaded but locked")
 			a.lockState = a.uc.lockState
 			err = nil
-		} else if err == nil {
+		case err == nil:
 			// Propagate the UserContext's lockState back to the loader so that
 			// GenerateLockError() can see the actual lock state instead of the
 			// zero value (UserLockState_Unset). Without this, any caller that
@@ -486,26 +487,27 @@ func (u *UserContext) Reconnect(m MetaContext) error {
 	}
 
 	err := hs.Reconnect(m)
-	if err != nil {
-		// Cold start with no network: the unlock chain no longer requires
-		// the server (keys unlock from local material, the sigchain comes
-		// from the verified local snapshot, PUK parcels from the local
-		// cache), so try it before giving up. If it succeeds the user can
-		// work offline -- cached reads, durably queued writes -- and each
-		// later RPC meets its own transport error where it can degrade
-		// deliberately. A device that never completed an online load fails
-		// the unlock and keeps the original connect error.
-		if core.IsTransportError(err) {
-			uerr := u.UnlockKeys(m, LoadActiveUserOpts{})
-			if uerr == nil && u.AssertUnlocked(m.Ctx()) == nil {
-				m.Warnw("UserContext.Reconnect", "err", err,
-					"note", "server unreachable; unlocked from local state")
-				return nil
-			}
-			if uerr != nil {
-				m.Warnw("UserContext.Reconnect", "stage", "offlineUnlock", "err", uerr)
-			}
+	// Cold start with no network: the unlock chain no longer requires
+	// the server (keys unlock from local material, the sigchain comes
+	// from the verified local snapshot, PUK parcels from the local
+	// cache), so try it before giving up. If it succeeds the user can
+	// work offline -- cached reads, durably queued writes -- and each
+	// later RPC meets its own transport error where it can degrade
+	// deliberately. A device that never completed an online load fails
+	// the unlock and keeps the original connect error.
+	if core.IsTransportError(err) {
+		uerr := u.UnlockKeys(m, LoadActiveUserOpts{})
+		if uerr == nil && u.AssertUnlocked(m.Ctx()) == nil {
+			m.Warnw("UserContext.Reconnect", "err", err,
+				"note", "server unreachable; unlocked from local state")
+			return nil
 		}
+		if uerr != nil {
+			m.Warnw("UserContext.Reconnect", "stage", "offlineUnlock", "err", uerr)
+		}
+		return err
+	}
+	if err != nil {
 		return err
 	}
 
@@ -561,20 +563,21 @@ func (m MetaContext) ConnectUser(
 		return nil, core.UserNotFoundError{}
 	}
 	err := au.Reconnect(m)
-	if err != nil {
-		// Offline tolerance: losing the server must not disable work that
-		// needs no server. A user whose keys are unlocked -- verified while
-		// connected, or unlocked from local verified caches by Reconnect's
-		// cold-start path -- stays usable for local-only work (cached reads,
-		// durably queued writes) while the network is gone; each caller then
-		// meets its own transport error at its own RPC, where it can degrade
-		// or queue deliberately. See docs/rt_offline.md, "Cold-start
-		// bootstrap".
-		if !core.IsTransportError(err) || au.AssertUnlocked(m.Ctx()) != nil {
-			return nil, err
-		}
+	// Offline tolerance: losing the server must not disable work that
+	// needs no server. A user whose keys are unlocked -- verified while
+	// connected, or unlocked from local verified caches by Reconnect's
+	// cold-start path -- stays usable for local-only work (cached reads,
+	// durably queued writes) while the network is gone; each caller then
+	// meets its own transport error at its own RPC, where it can degrade
+	// or queue deliberately. See docs/rt_offline.md, "Cold-start
+	// bootstrap".
+	if core.IsTransportError(err) && au.AssertUnlocked(m.Ctx()) == nil {
 		m.Warnw("ConnectUser", "stage", "reconnect",
 			"err", err, "note", "proceeding offline with an unlocked user")
+		err = nil
+	}
+	if err != nil {
+		return nil, err
 	}
 	if opts == nil || (!opts.AssertUnlocked && !opts.ProbeUnlocked) {
 		return au, nil

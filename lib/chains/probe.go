@@ -451,7 +451,7 @@ func (p *Probe) Run(m MetaContext) error {
 	// A transport failure with a locally cached, previously verified identity
 	// is survivable: hydrate and proceed offline. The failure is remembered
 	// (lastFail), so the next refresh re-probes.
-	if err != nil && core.IsTransportError(err) && p.hydrateFromCache(m) {
+	if core.IsTransportError(err) && p.hydrateFromCache(m) {
 		// Reaching here means this device has verified this host before --
 		// hydrateFromCache only succeeds on a chain and zone an earlier probe
 		// accepted. That is exactly the condition under which a certificate
