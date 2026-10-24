@@ -66,9 +66,6 @@ const (
 	DataType_UsernameLookup       DataType = 15
 	DataType_UsernameCacheEntry   DataType = 16
 	DataType_TeamnameCacheEntry   DataType = 17
-	DataType_HostPublicZone       DataType = 18
-	DataType_UserCertChain        DataType = 19
-	DataType_TeamNameLookup       DataType = 20
 	DataType_KVRealm              DataType = 65
 	DataType_KVNSRoot             DataType = 66
 	DataType_KVDir                DataType = 67
@@ -106,9 +103,6 @@ var DataTypeMap = map[string]DataType{
 	"UsernameLookup":       15,
 	"UsernameCacheEntry":   16,
 	"TeamnameCacheEntry":   17,
-	"HostPublicZone":       18,
-	"UserCertChain":        19,
-	"TeamNameLookup":       20,
 	"KVRealm":              65,
 	"KVNSRoot":             66,
 	"KVDir":                67,
@@ -145,9 +139,6 @@ var DataTypeRevMap = map[DataType]string{
 	15:  "UsernameLookup",
 	16:  "UsernameCacheEntry",
 	17:  "TeamnameCacheEntry",
-	18:  "HostPublicZone",
-	19:  "UserCertChain",
-	20:  "TeamNameLookup",
 	65:  "KVRealm",
 	66:  "KVNSRoot",
 	67:  "KVDir",
@@ -175,61 +166,6 @@ func (d DataTypeInternal__) Import() DataType {
 func (d DataType) Export() *DataTypeInternal__ {
 	return ((*DataTypeInternal__)(&d))
 }
-
-type UserCertChain struct {
-	Certs [][]byte
-}
-type UserCertChainInternal__ struct {
-	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
-	Certs   *[]([]byte)
-}
-
-func (u UserCertChainInternal__) Import() UserCertChain {
-	return UserCertChain{
-		Certs: (func(x *[]([]byte)) (ret [][]byte) {
-			if x == nil || len(*x) == 0 {
-				return nil
-			}
-			ret = make([][]byte, len(*x))
-			for k, v := range *x {
-				ret[k] = (func(x *[]byte) (ret []byte) {
-					if x == nil {
-						return ret
-					}
-					return *x
-				})(&v)
-			}
-			return ret
-		})(u.Certs),
-	}
-}
-func (u UserCertChain) Export() *UserCertChainInternal__ {
-	return &UserCertChainInternal__{
-		Certs: (func(x [][]byte) *[]([]byte) {
-			if len(x) == 0 {
-				return nil
-			}
-			ret := make([]([]byte), len(x))
-			copy(ret, x)
-			return &ret
-		})(u.Certs),
-	}
-}
-func (u *UserCertChain) Encode(enc rpc.Encoder) error {
-	return enc.Encode(u.Export())
-}
-
-func (u *UserCertChain) Decode(dec rpc.Decoder) error {
-	var tmp UserCertChainInternal__
-	err := dec.Decode(&tmp)
-	if err != nil {
-		return err
-	}
-	*u = tmp.Import()
-	return nil
-}
-
-func (u *UserCertChain) Bytes() []byte { return nil }
 
 type ScopeLabel []byte
 type ScopeLabelInternal__ []byte
@@ -312,7 +248,6 @@ type UserSigchainState struct {
 	MerkleLeaves []lib.MerkleLeaf
 	Hepks        lib.HEPKSet
 	StalePUKs    []lib.Role
-	VerifiedAt   lib.Time
 }
 type UserSigchainStateInternal__ struct {
 	_struct      struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
@@ -327,7 +262,6 @@ type UserSigchainStateInternal__ struct {
 	MerkleLeaves *[](*lib.MerkleLeafInternal__)
 	Hepks        *lib.HEPKSetInternal__
 	StalePUKs    *[](*lib.RoleInternal__)
-	VerifiedAt   *lib.TimeInternal__
 }
 
 func (u UserSigchainStateInternal__) Import() UserSigchainState {
@@ -452,12 +386,6 @@ func (u UserSigchainStateInternal__) Import() UserSigchainState {
 			}
 			return ret
 		})(u.StalePUKs),
-		VerifiedAt: (func(x *lib.TimeInternal__) (ret lib.Time) {
-			if x == nil {
-				return ret
-			}
-			return x.Import()
-		})(u.VerifiedAt),
 	}
 }
 func (u UserSigchainState) Export() *UserSigchainStateInternal__ {
@@ -517,7 +445,6 @@ func (u UserSigchainState) Export() *UserSigchainStateInternal__ {
 			}
 			return &ret
 		})(u.StalePUKs),
-		VerifiedAt: u.VerifiedAt.Export(),
 	}
 }
 func (u *UserSigchainState) Encode(enc rpc.Encoder) error {
@@ -1144,7 +1071,6 @@ type TeamChainState struct {
 	Tir               lib.RationalRange
 	HistoricalSenders []lib.SenderPair
 	MemberLoadFloor   *lib.Role
-	VerifiedAt        lib.Time
 }
 type TeamChainStateInternal__ struct {
 	_struct           struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
@@ -1163,7 +1089,6 @@ type TeamChainStateInternal__ struct {
 	Tir               *lib.RationalRangeInternal__
 	HistoricalSenders *[](*lib.SenderPairInternal__)
 	MemberLoadFloor   *lib.RoleInternal__
-	VerifiedAt        *lib.TimeInternal__
 }
 
 func (t TeamChainStateInternal__) Import() TeamChainState {
@@ -1342,12 +1267,6 @@ func (t TeamChainStateInternal__) Import() TeamChainState {
 			})(x)
 			return &tmp
 		})(t.MemberLoadFloor),
-		VerifiedAt: (func(x *lib.TimeInternal__) (ret lib.Time) {
-			if x == nil {
-				return ret
-			}
-			return x.Import()
-		})(t.VerifiedAt),
 	}
 }
 func (t TeamChainState) Export() *TeamChainStateInternal__ {
@@ -1431,7 +1350,6 @@ func (t TeamChainState) Export() *TeamChainStateInternal__ {
 			}
 			return (*x).Export()
 		})(t.MemberLoadFloor),
-		VerifiedAt: t.VerifiedAt.Export(),
 	}
 }
 func (t *TeamChainState) Encode(enc rpc.Encoder) error {

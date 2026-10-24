@@ -4,7 +4,6 @@
 package libkv
 
 import (
-	"errors"
 	"sync"
 	"time"
 
@@ -197,13 +196,7 @@ func (k *KVParty) fillAuthToken(
 	}
 	tok := k.plcn.ViewTok()
 	if tok == nil {
-		// A nil token here means the team came up from its offline snapshot
-		// (tokens are server-minted; nothing else produces a token-less
-		// node). That is an outage, not a refusal: report it transport-class
-		// so retry and queueing layers classify it correctly.
-		return core.NewConnectError(
-			"no view token: team was loaded from an offline snapshot",
-			errors.New("server unreachable"))
+		return core.PermissionError("no VO token")
 	}
 	*auth = rem.NewKVAuthWithTeam(*tok)
 	return nil
