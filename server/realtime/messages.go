@@ -367,6 +367,22 @@ func (s *messageSender) fanoutInboxVersions(
 	return err
 }
 
+// msgIDExists reports whether this send's msg_id is already in messages_enc,
+// which means the caller is retrying a send whose ack it lost. The caller
+// then returns errMsgIDReplay so SendMessage resolves the replay.
+func (s *messageSender) msgIDExists(m shared.MetaContext) (bool, error) {
+	var exists bool
+	err := s.tx.QueryRow(
+		m.Ctx(),
+		`SELECT EXISTS(SELECT 1 FROM messages_enc WHERE msg_id=$1)`,
+		s.arg.Md.MsgID.Bytes(),
+	).Scan(&exists)
+	if err != nil {
+		return false, err
+	}
+	return exists, nil
+}
+
 func (s *messageSender) run(m shared.MetaContext) (*rem.RTSendRes, error) {
 	err := s.lockChannel(m)
 	if err != nil {
@@ -380,8 +396,22 @@ func (s *messageSender) run(m shared.MetaContext) (*rem.RTSendRes, error) {
 	// lockChannel took, so a send cannot race an archive and land after it,
 	// and only after authorize, so a caller with no right to send learns
 	// nothing about the channel's state.
-	if err = archivedBlocks(s.archivedAt); err != nil {
-		return nil, err
+	//
+	// A retry of a send that already landed is not new activity, so the
+	// idempotency contract comes first: if this msg_id is in the thread, the
+	// caller lost an ack, and gets the original result back as it would from
+	// a live channel. Otherwise the client's outbox would mark as failed a
+	// message every member can already read. The lookup runs only for an
+	// archived channel, so a live send pays nothing for it.
+	if s.archivedAt != nil {
+		exists, err := s.msgIDExists(m)
+		if err != nil {
+			return nil, err
+		}
+		if exists {
+			return nil, errMsgIDReplay
+		}
+		return nil, archivedBlocks(s.archivedAt)
 	}
 	seq := s.prevSeq + 1
 	// Optional optimistic-concurrency check from the client.
@@ -391,12 +421,7 @@ func (s *messageSender) run(m shared.MetaContext) (*rem.RTSendRes, error) {
 	// the lost-ack ambiguity the replay path exists to remove.
 	if s.arg.ExpectedPrevSeq.IsValid() &&
 		s.arg.ExpectedPrevSeq != s.prevSeq {
-		var exists bool
-		err := s.tx.QueryRow(
-			m.Ctx(),
-			`SELECT EXISTS(SELECT 1 FROM messages_enc WHERE msg_id=$1)`,
-			s.arg.Md.MsgID.Bytes(),
-		).Scan(&exists)
+		exists, err := s.msgIDExists(m)
 		if err != nil {
 			return nil, err
 		}

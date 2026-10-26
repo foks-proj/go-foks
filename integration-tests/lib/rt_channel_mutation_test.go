@@ -241,12 +241,19 @@ func TestRTArchiveRequiresAdmin(t *testing.T) {
 }
 
 // An archived channel stops accepting messages, and says so rather than
-// looking like a channel that does not exist.
+// looking like a channel that does not exist. A retry of a message that
+// landed before the archive is not a new message: the sender lost an ack,
+// and gets the original result back, or its outbox would mark as failed a
+// message every member can already read.
 func TestRTArchivedChannelRejectsSend(t *testing.T) {
 	sc := setupRTMutScene(t)
-	_, err := sc.ada.Send(sc.adaM, sc.teamCfg(), proto.RTAppID_Chat, sc.spec(),
-		[]byte("before"))
+	var msgID proto.RTMsgID
+	require.NoError(t, core.RandomFill(msgID[:]))
+	hooks := &librt.SendTestHooks{MsgIDOverride: &msgID}
+	before, err := sc.ada.SendWithTestHooks(sc.adaM, sc.teamCfg(), proto.RTAppID_Chat,
+		sc.spec(), []byte("before"), hooks)
 	require.NoError(t, err)
+	require.False(t, before.WasReplay)
 
 	require.NoError(t, sc.setArchived(t, true))
 
@@ -254,6 +261,14 @@ func TestRTArchivedChannelRejectsSend(t *testing.T) {
 		[]byte("after"))
 	require.Error(t, err)
 	require.IsType(t, core.RTChannelArchivedError{}, err)
+
+	// Same msg_id as the message that landed before the archive: a replay,
+	// answered with the original seq, not refused as new activity.
+	again, err := sc.ada.SendWithTestHooks(sc.adaM, sc.teamCfg(), proto.RTAppID_Chat,
+		sc.spec(), []byte("before, retried after a lost ack"), hooks)
+	require.NoError(t, err, "a lost-ack retry must resolve on an archived channel")
+	require.True(t, again.WasReplay)
+	require.Equal(t, before.Seq, again.Seq)
 }
 
 // The invariant the archive design rests on: an archived channel stays in the
