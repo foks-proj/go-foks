@@ -1470,6 +1470,54 @@ func TestUserLoadAsTeam(t *testing.T) {
 		},
 		err,
 	)
+
+	// Removing coco revokes the view grant she gave the team to join, so
+	// the team can no longer load her: the grant was consent to be admitted,
+	// and it must not outlive the membership, or on a closed host an admin
+	// could re-add her by UID without asking again.
+	none := proto.NewRoleDefault(proto.RoleType_NONE)
+	tm.makeChanges(t, m, bingo,
+		[]proto.MemberRole{coco.toMemberRole(t, none, tm.hepks)}, nil)
+
+	grantState := func() string {
+		db, err := m.Db(shared.DbTypeUsers)
+		require.NoError(t, err)
+		defer db.Release()
+		var st string
+		err = db.QueryRow(m.Ctx(),
+			`SELECT state::text FROM local_view_permissions
+			 WHERE short_host_id=$1 AND viewer_eid=$2 AND target_eid=$3`,
+			m.ShortHostID().ExportToDB(),
+			tm.FQTeam(t).Team.ExportToDB(),
+			coco.uid.ToPartyID().ExportToDB(),
+		).Scan(&st)
+		require.NoError(t, err)
+		return st
+	}
+	require.Equal(t, "revoked", grantState())
+
+	tok = makeVOBearerTokenForUser(t, tm, snickers, nil)
+	_, err = libclient.LoadUser(mSnickers,
+		libclient.LoadUserArg{
+			Uid:               coco.uid,
+			LoadMode:          libclient.LoadModeOthers,
+			TeamVOBearerToken: &tok,
+		},
+	)
+	require.Equal(t,
+		core.ChainLoaderError{Err: core.PermissionError("no view permission")},
+		err,
+		"a removed member's grant to the team must not stand")
+
+	// Consenting again restores it: the grant upserts back to valid.
+	cli, closer := coco.newTeamMemberClient(t, m.Ctx())
+	defer closer()
+	_, err = cli.AcceptInviteLocal(m.Ctx(), rem.AcceptInviteLocalArg{
+		I:       invite,
+		SrcRole: proto.OwnerRole,
+	})
+	require.NoError(t, err)
+	require.Equal(t, "valid", grantState())
 }
 
 func TestTeamCertPutGet(t *testing.T) {
