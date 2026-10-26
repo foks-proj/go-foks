@@ -23,7 +23,7 @@ TLSDIR=${TOPDIR}/tls
 ##
 declare -a services=(
     "reg" "user" "merkle_builder" "internal_ca" "merkle_query" "queue" 
-    "merkle_batcher" "merkle_signer" "kv_store" "autocert"
+    "merkle_batcher" "merkle_signer" "kv_store" "autocert" "realtime"
 )
 
 # New array to store modified service names
