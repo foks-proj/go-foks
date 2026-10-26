@@ -702,10 +702,11 @@ func displayRTChannelName(n proto.RTChannelName) string {
 }
 
 type rtChannelRow struct {
-	name string
-	tier proto.RTChannelTier
-	desc string
-	id   string
+	name     string
+	tier     proto.RTChannelTier
+	desc     string
+	id       string
+	archived bool
 }
 
 // rtChannelTierGlyph renders a channel tier as a single character to keep
@@ -721,11 +722,20 @@ func rtChannelTierGlyph(c proto.RTChannelTier) string {
 
 func (r rtChannelRow) toTableRow() table.Row {
 	return table.Row{
-		r.name,
+		// An archived channel is listed rather than hidden: it still holds its
+		// name, so someone who cannot reuse one needs to see why.
+		archivedName(r.name, r.archived),
 		rtChannelTierGlyph(r.tier),
 		r.desc,
 		r.id,
 	}
+}
+
+func archivedName(name string, archived bool) string {
+	if archived {
+		return name + " (archived)"
+	}
+	return name
 }
 
 func (r rtChannelRow) headers() table.Row {
@@ -909,10 +919,11 @@ func outputRTChannelListTable(
 			desc = string(*c.Desc)
 		}
 		ret := rtChannelRow{
-			name: displayRTChannelName(c.Name),
-			tier: c.Tier,
-			desc: desc,
-			id:   id,
+			name:     displayRTChannelName(c.Name),
+			tier:     c.Tier,
+			desc:     desc,
+			id:       id,
+			archived: c.Archived,
 		}
 		return ret, nil
 	}

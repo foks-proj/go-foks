@@ -86,6 +86,12 @@ CREATE TABLE channels (
      * patches/foks_realtime/p5.sql, so a fresh and a migrated DB dump the
      * same. */
     no_push BOOLEAN NOT NULL DEFAULT false,
+    /* NULL = live. An archived channel is closed to new activity and leaves
+     * the inbox, but keeps every row it had and STAYS in the team's channel
+     * listing, which is what reserves its (encrypted) name. Declared last, so
+     * a fresh install's column order matches what ADD COLUMN produces on a
+     * database migrated by patches/foks_realtime/p8.sql. */
+    archived_at TIMESTAMPTZ,
     PRIMARY KEY(short_host_id, channel_id)
 );
 /* no FK to teams (cross-DB); enforced at app layer */
@@ -283,3 +289,4 @@ INSERT INTO schema_patches (id, ctime) VALUES (2, NOW());
 INSERT INTO schema_patches (id, ctime) VALUES (3, NOW());
 INSERT INTO schema_patches (id, ctime) VALUES (4, NOW());
 INSERT INTO schema_patches (id, ctime) VALUES (5, NOW());
+INSERT INTO schema_patches (id, ctime) VALUES (8, NOW());
