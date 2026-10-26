@@ -143,6 +143,29 @@ func EditMember(
 			return core.UpdateError("team_members set removal_seqno")
 		}
 
+		// A local member's view grant to the team is consent to be loaded
+		// (and so admitted) as the team; it was given to join, and leaving
+		// or being removed ends it. Without this the grant stands forever,
+		// and on a closed-viewership host an admin could re-add a former
+		// member by UID without their consenting again. A fresh grant
+		// (GrantLocalViewPermission upserts back to 'valid') restores it.
+		// Remote members hold remote_view_permissions on their own host,
+		// which this host cannot revoke.
+		if mr.Member.Id.Host == nil {
+			_, err = tx.Exec(
+				m.Ctx(),
+				`UPDATE local_view_permissions SET state='revoked', mtime=NOW()
+				 WHERE short_host_id=$1 AND viewer_eid=$2 AND target_eid=$3
+				 AND state='valid'`,
+				m.ShortHostID().ExportToDB(),
+				team.ExportToDB(),
+				mr.Member.Id.Entity.ExportToDB(),
+			)
+			if err != nil {
+				return err
+			}
+		}
+
 	} else {
 
 		keys := mr.Member.Keys
