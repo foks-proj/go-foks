@@ -12,22 +12,17 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
-func GenerateStandardInviteCode(m MetaContext, creator proto.UID) (*rem.InviteCode, error) {
-	db, err := m.Db(DbTypeUsers)
-	if err != nil {
-		return nil, err
-	}
-	defer db.Release()
+// insertStandardInviteCode mints a random standard code for creator.
+func insertStandardInviteCode(m MetaContext, q DbExecer, creator proto.UID) (*rem.InviteCode, error) {
 	b := make([]byte, core.InviteCodeBytes)
-	err = core.RandomFill(b)
+	err := core.RandomFill(b)
 	if err != nil {
 		return nil, err
 	}
-	tags, err := db.Exec(m.Ctx(),
+	tags, err := q.Exec(m.Ctx(),
 		`INSERT INTO invite_codes(short_host_id, code, creator)
-		VALUES($1, $2, $3)`,
-		m.ShortHostID().ExportToDB(),
-		b, creator.ExportToDB(),
+		 VALUES($1, $2, $3)`,
+		m.ShortHostID().ExportToDB(), b, creator.ExportToDB(),
 	)
 	if err != nil {
 		return nil, err
@@ -37,6 +32,15 @@ func GenerateStandardInviteCode(m MetaContext, creator proto.UID) (*rem.InviteCo
 	}
 	ret := rem.NewInviteCodeWithStandard(b)
 	return &ret, nil
+}
+
+func GenerateStandardInviteCode(m MetaContext, creator proto.UID) (*rem.InviteCode, error) {
+	db, err := m.Db(DbTypeUsers)
+	if err != nil {
+		return nil, err
+	}
+	defer db.Release()
+	return insertStandardInviteCode(m, db, creator)
 }
 
 // NewUserInviteCode is the RPC path for minting a standard code: unlike
@@ -49,12 +53,8 @@ func NewUserInviteCode(m MetaContext, creator proto.UID) (*rem.InviteCode, error
 	if err != nil {
 		return nil, err
 	}
-	b := make([]byte, core.InviteCodeBytes)
-	err = core.RandomFill(b)
-	if err != nil {
-		return nil, err
-	}
 	shid := m.ShortHostID().ExportToDB()
+	var ret *rem.InviteCode
 	err = RetryTxUserDB(m, "NewUserInviteCode", func(m MetaContext, tx pgx.Tx) error {
 		err := lockSocialInviteInviter(m, tx, shid, creator)
 		if err != nil {
@@ -72,24 +72,13 @@ func NewUserInviteCode(m MetaContext, creator proto.UID) (*rem.InviteCode, error
 		if n >= settings.MaxUnusedInviteCodes() {
 			return core.RateLimitError{}
 		}
-		tags, err := tx.Exec(m.Ctx(),
-			`INSERT INTO invite_codes(short_host_id, code, creator)
-			 VALUES($1, $2, $3)`,
-			shid, b, creator.ExportToDB(),
-		)
-		if err != nil {
-			return err
-		}
-		if tags.RowsAffected() != 1 {
-			return core.InsertError("invite_codes")
-		}
-		return nil
+		ret, err = insertStandardInviteCode(m, tx, creator)
+		return err
 	})
 	if err != nil {
 		return nil, err
 	}
-	ret := rem.NewInviteCodeWithStandard(b)
-	return &ret, nil
+	return ret, nil
 }
 
 type MultiUseInviteCode struct {

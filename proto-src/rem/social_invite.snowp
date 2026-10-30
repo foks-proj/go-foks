@@ -49,7 +49,7 @@ protocol SocialInviteGuest
     argHeader lib.Header
     resHeader lib.Header @0xc6f4b985 {
 
-    fetch @0 (
+    fetchSocialInvite @0 (
         id @0 : lib.SocialInviteID
     ) -> SocialInviteGuestView;
 }
@@ -59,7 +59,7 @@ protocol SocialInvite
     argHeader lib.Header
     resHeader lib.Header @0xee2c9d1c {
 
-    create @0 (
+    createSocialInvite @0 (
         id @0 : lib.SocialInviteID,
         team @1 : lib.TeamID,
         seedBox @2 : lib.SharedKeyBox,
@@ -69,21 +69,21 @@ protocol SocialInvite
         etime @6 : lib.Time
     );
 
-    list @1 () -> List(SocialInviteRow);
+    listSocialInvites @1 () -> List(SocialInviteRow);
 
-    reply @2 (
+    replySocialInvite @2 (
         id @0 : lib.SocialInviteID,
         wk @1 : lib.SocialInviteWriteKey,
         inReplyTo @2 : Uint,           /* seq of the turn being answered */
         msg @3 : lib.SecretBox
     );
 
-    askAgain @3 (
+    askAgainSocialInvite @3 (
         id @0 : lib.SocialInviteID,
         msg @1 : lib.SecretBox
     );
 
-    close @4 (
+    closeSocialInvite @4 (
         id @0 : lib.SocialInviteID,
         st @1 : lib.SocialInviteState  /* accepted, declined or canceled */
     );

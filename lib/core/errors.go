@@ -1378,6 +1378,12 @@ func (r RTGenericError) Error() string {
 	return "generic realtime error: " + string(r)
 }
 
+type RTChannelArchivedError struct{}
+
+func (r RTChannelArchivedError) Error() string {
+	return "channel is archived"
+}
+
 type RTChannelExistsError struct{}
 
 func (r RTChannelExistsError) Error() string {
@@ -1400,6 +1406,18 @@ type SocialInviteStaleTurnError struct{}
 
 func (s SocialInviteStaleTurnError) Error() string {
 	return "social invite reply names a turn that is no longer current"
+}
+
+// SocialInviteTooBigError refuses a social-invite box over the host's byte
+// cap, or a turn past its per-invitation turn cap; Desc says which.
+type SocialInviteTooBigError struct {
+	Limit  int
+	Actual int
+	Desc   string
+}
+
+func (s SocialInviteTooBigError) Error() string {
+	return fmt.Sprintf("social invite too big (%s: %d > %d)", s.Desc, s.Actual, s.Limit)
 }
 
 // RTRaceError signals a lost optimistic-concurrency race in the realtime
@@ -1664,6 +1682,8 @@ func ErrorToStatus(e error) proto.Status {
 		return proto.NewStatusWithAgentConnectError(te.Path.String())
 	case RTGenericError:
 		return proto.NewStatusWithRtGenericError(string(te))
+	case RTChannelArchivedError:
+		return proto.NewStatusWithRtChannelArchivedError()
 	case RTChannelExistsError:
 		return proto.NewStatusWithRtChannelExistsError()
 	case SocialInviteNotFoundError:
@@ -1672,6 +1692,14 @@ func ErrorToStatus(e error) proto.Status {
 		return proto.NewStatusWithSocialInviteWrongStateError()
 	case SocialInviteStaleTurnError:
 		return proto.NewStatusWithSocialInviteStaleTurnError()
+	case SocialInviteTooBigError:
+		return proto.NewStatusWithSocialInviteTooBigError(
+			proto.TooBigError{
+				Limit:  uint64(te.Limit),
+				Actual: uint64(te.Actual),
+				Desc:   te.Desc,
+			},
+		)
 	case RTRaceError:
 		return proto.NewStatusWithRtRace(te.Which)
 	case RTAmbiguousChannelError:
@@ -2147,12 +2175,21 @@ func StatusToError(s proto.Status) error {
 		return errors.New(s.InternalError())
 	case proto.StatusCode_RT_CHANNEL_EXISTS_ERROR:
 		return RTChannelExistsError{}
+	case proto.StatusCode_RT_CHANNEL_ARCHIVED_ERROR:
+		return RTChannelArchivedError{}
 	case proto.StatusCode_SOCIAL_INVITE_NOT_FOUND_ERROR:
 		return SocialInviteNotFoundError{}
 	case proto.StatusCode_SOCIAL_INVITE_WRONG_STATE_ERROR:
 		return SocialInviteWrongStateError{}
 	case proto.StatusCode_SOCIAL_INVITE_STALE_TURN_ERROR:
 		return SocialInviteStaleTurnError{}
+	case proto.StatusCode_SOCIAL_INVITE_TOO_BIG_ERROR:
+		tbe := s.SocialInviteTooBigError()
+		return SocialInviteTooBigError{
+			Limit:  int(tbe.Limit),
+			Actual: int(tbe.Actual),
+			Desc:   tbe.Desc,
+		}
 	case proto.StatusCode_RT_GENERIC_ERROR:
 		return RTGenericError(s.RtGenericError())
 	case proto.StatusCode_RT_RACE:

@@ -35,6 +35,7 @@ type messageSender struct {
 	prevSeq    proto.RTMsgSeq
 	appID      proto.RTAppID
 	noPush     bool
+	archivedAt *time.Time
 
 	// members whose inbox versions the fanout bumped; the caller wakes their
 	// parked long-pollers after the transaction commits.
@@ -55,13 +56,14 @@ func (s *messageSender) lockChannel(m shared.MetaContext) error {
 		m.Ctx(),
 		`SELECT parent_team_id, write_role_type, write_role_viz_level,
 		        read_role_type, read_role_viz_level, last_msg_seq, app_id,
-		        no_push
+		        no_push, archived_at
 		 FROM channels
 		 WHERE short_host_id=$1 AND channel_id=$2
 		 FOR UPDATE`,
 		m.ShortHostID(),
 		s.channelID(),
-	).Scan(&teamRaw, &wrt, &wvl, &rrt, &rvl, &prevSeqRaw, &appRaw, &s.noPush)
+	).Scan(&teamRaw, &wrt, &wvl, &rrt, &rvl, &prevSeqRaw, &appRaw, &s.noPush,
+		&s.archivedAt)
 	if err == pgx.ErrNoRows {
 		return core.RowNotFoundError{}
 	}
@@ -365,6 +367,22 @@ func (s *messageSender) fanoutInboxVersions(
 	return err
 }
 
+// msgIDExists reports whether this send's msg_id is already in messages_enc,
+// which means the caller is retrying a send whose ack it lost. The caller
+// then returns errMsgIDReplay so SendMessage resolves the replay.
+func (s *messageSender) msgIDExists(m shared.MetaContext) (bool, error) {
+	var exists bool
+	err := s.tx.QueryRow(
+		m.Ctx(),
+		`SELECT EXISTS(SELECT 1 FROM messages_enc WHERE msg_id=$1)`,
+		s.arg.Md.MsgID.Bytes(),
+	).Scan(&exists)
+	if err != nil {
+		return false, err
+	}
+	return exists, nil
+}
+
 func (s *messageSender) run(m shared.MetaContext) (*rem.RTSendRes, error) {
 	err := s.lockChannel(m)
 	if err != nil {
@@ -374,6 +392,27 @@ func (s *messageSender) run(m shared.MetaContext) (*rem.RTSendRes, error) {
 	if err != nil {
 		return nil, err
 	}
+	// An archived channel is closed to new activity. Checked under the row
+	// lockChannel took, so a send cannot race an archive and land after it,
+	// and only after authorize, so a caller with no right to send learns
+	// nothing about the channel's state.
+	//
+	// A retry of a send that already landed is not new activity, so the
+	// idempotency contract comes first: if this msg_id is in the thread, the
+	// caller lost an ack, and gets the original result back as it would from
+	// a live channel. Otherwise the client's outbox would mark as failed a
+	// message every member can already read. The lookup runs only for an
+	// archived channel, so a live send pays nothing for it.
+	if s.archivedAt != nil {
+		exists, err := s.msgIDExists(m)
+		if err != nil {
+			return nil, err
+		}
+		if exists {
+			return nil, errMsgIDReplay
+		}
+		return nil, archivedBlocks(s.archivedAt)
+	}
 	seq := s.prevSeq + 1
 	// Optional optimistic-concurrency check from the client.
 	// A failed CAS must still honor the idempotency contract: if this msg_id
@@ -382,12 +421,7 @@ func (s *messageSender) run(m shared.MetaContext) (*rem.RTSendRes, error) {
 	// the lost-ack ambiguity the replay path exists to remove.
 	if s.arg.ExpectedPrevSeq.IsValid() &&
 		s.arg.ExpectedPrevSeq != s.prevSeq {
-		var exists bool
-		err := s.tx.QueryRow(
-			m.Ctx(),
-			`SELECT EXISTS(SELECT 1 FROM messages_enc WHERE msg_id=$1)`,
-			s.arg.Md.MsgID.Bytes(),
-		).Scan(&exists)
+		exists, err := s.msgIDExists(m)
 		if err != nil {
 			return nil, err
 		}

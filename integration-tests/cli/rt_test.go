@@ -654,3 +654,114 @@ func TestRTUnreadableChannelHiddenFromInbox(t *testing.T) {
 	require.Error(t, err)
 	require.Equal(t, core.RTChannelExistsError{}, err)
 }
+
+// TestRTOfflineCLIWalkthrough is the scripted manual CLI pass: the exact
+// command sequence a person would type, through the real `foks` command tree
+// against a real agent and server, with the agent's network genuinely killed
+// (--test-kill-network) for the offline leg.
+//
+// The offline leg is a COLD START with zero connectivity: the agent binds its
+// socket, the active user unlocks from local material (cached sigchain
+// snapshot, PUK parcels, client-cert chain, hydrated host identity), the team
+// resolves by name from the persisted index and comes up from its verified
+// snapshot (cached PTKs, no view token: the snapshot's verification carries
+// forward, and the token only gates server
+// resources), and the full RT offline arc runs: send queues durably, reads
+// serve the cache flagged stale with the queued message overlaid, the inbox
+// renders its last synced state with the pending badge.
+//
+// The restart legs double as persistence proof: the queued message survives
+// an agent restart and drains on the next inbox sync once connectivity is
+// back, ending with a server-confirmed sequence number.
+func TestRTOfflineCLIWalkthrough(t *testing.T) {
+	bob := makeBobAndHisAgent(t)
+	b := bob.agent
+	defer b.stop(t)
+
+	merklePoke(t)
+	merklePoke(t)
+
+	tm := "t-" + strings.ToLower(fsRandomString(t, 8))
+	var teamRes lcl.TeamCreateRes
+	b.runCmdToJSON(t, &teamRes, "team", "create", tm)
+	merklePoke(t)
+	b.runCmd(t, nil, "rt", "new-channel", "-t", tm,
+		"--name", "foo", "--description", "the foo channel")
+
+	out := func(args ...string) string {
+		return string(b.runCmdToBytes(t, args...))
+	}
+
+	restartAgent := func(networkDead bool) {
+		b.stop(t)
+		b.opts.killNetwork = networkDead
+		b.setFlags(t)
+		b.runAgent(t)
+	}
+
+	// --- online baseline ---
+	b.runCmd(t, nil, "rt", "send", "-t", tm, "--channel", "foo", "sent while online")
+	b.runCmd(t, nil, "rt", "inbox")
+	require.Contains(t, out("rt", "outbox", "ls"), "outbox is empty")
+
+	// --- reopened in airplane mode (cold start, zero connectivity) ---
+	restartAgent(true)
+
+	// User-scoped state serves: the outbox is readable, and still empty.
+	require.Contains(t, out("rt", "outbox", "ls"), "outbox is empty")
+
+	// `rt send` resolves the team and channel from verified local state,
+	// seals with the cached PTK, and reports the message queued rather than
+	// failing (runCmdToBytes asserts a clean exit).
+	sendOut := out("rt", "send", "-t", tm, "--channel", "foo", "written offline")
+	require.Contains(t, sendOut, "offline")
+	require.Contains(t, sendOut, "queued for delivery")
+
+	lsOut := out("rt", "outbox", "ls")
+	require.Contains(t, lsOut, "queued")
+	require.NotContains(t, lsOut, "FAILED")
+	require.NotContains(t, lsOut, "outbox is empty")
+
+	// `rt read` serves the cache, flags it, and overlays the queued message.
+	readOut := out("rt", "read", "-t", tm, "--channel", "foo")
+	require.Contains(t, readOut, "offline")
+	require.Contains(t, readOut, "sent while online")
+	require.Contains(t, readOut, "written offline")
+	require.Contains(t, readOut, "queued")
+
+	// `rt inbox` renders the last synced state, flagged, with the pending
+	// badge on the channel's row.
+	inboxOut := out("rt", "inbox")
+	require.Contains(t, inboxOut, "offline")
+	require.Contains(t, inboxOut, "showing the last synced state")
+	require.Contains(t, inboxOut, "+1q")
+
+	// The queued message survives yet another offline restart.
+	restartAgent(true)
+	lsOut = out("rt", "outbox", "ls")
+	require.Contains(t, lsOut, "queued")
+
+	// --- back online ---
+	restartAgent(false)
+
+	// The persisted name index must not short-circuit online resolution: a
+	// fresh agent whose in-memory index is cold still has to explore, so
+	// non-refresh team paths (like the join-request inbox) find their record.
+	b.runCmd(t, nil, "team", "inbox", tm)
+
+	// A plain `rt inbox` is enough: the successful sync drains the outbox.
+	inboxOut = out("rt", "inbox")
+	require.NotContains(t, inboxOut, "offline")
+	require.NotContains(t, inboxOut, "+1q")
+	require.Contains(t, out("rt", "outbox", "ls"), "outbox is empty")
+
+	// The message really delivered: it has a server-assigned sequence
+	// number, and the thread shows nothing queued.
+	var thread lcl.RTThreadView
+	b.runCmdToJSON(t, &thread, "rt", "read", "-t", tm, "--channel", "foo")
+	require.Len(t, thread.Msgs, 2)
+	require.False(t, thread.Stale)
+	require.Len(t, thread.Pending, 0)
+	require.Equal(t, "written offline", string(thread.Msgs[0].Body))
+	require.Equal(t, proto.RTMsgSeq(2), thread.Msgs[0].Seq)
+}

@@ -63,7 +63,7 @@ func (k *Minder) prepareMovePath(
 		}
 		ret.typ = typ
 
-		if pap.TrailingSlash && typ != proto.KVNodeType_Dir {
+		if pap.TrailingSlash && typ != proto.KVNodeType_Dir && typ != proto.KVNodeType_None {
 			return nil, core.KVPathError("trailing slash on non-directory")
 		}
 	}
@@ -99,14 +99,13 @@ func (k *Minder) mvInner(
 	if err != nil {
 		return err
 	}
+	if src.de.found == nil || src.typ == proto.KVNodeType_None {
+		return core.KVNoentError{Path: srcPath}
+	}
 
 	dst, err := k.prepareMovePath(m, kvp, dstPath, walkOpts{mvDst: true, writePerms: rp})
 	if err != nil {
 		return err
-	}
-
-	if src.de.found == nil || src.typ == proto.KVNodeType_None {
-		return core.KVNoentError{Path: srcPath}
 	}
 
 	val := src.de.found.Value
@@ -119,14 +118,15 @@ func (k *Minder) mvInner(
 	dlno := linkNodeOpts{perms: *rp, overwriteOk: cfg.OverwriteOk}
 
 	switch {
-	case dst.de.found == nil:
+	case dst.typ == proto.KVNodeType_None:
 
+		de := core.Or(dst.de.found, dst.de.templ)
 		// Should never happen
-		if dst.de.templ == nil {
+		if de == nil {
 			return core.InternalError("templ and found were both nil")
 		}
 
-		tmp, err := dst.de.templ.edit(m, val, dlno, dst.de.newKb)
+		tmp, err := de.edit(m, val, dlno, dst.de.newKb)
 		if err != nil {
 			return err
 		}

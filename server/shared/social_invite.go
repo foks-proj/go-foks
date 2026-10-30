@@ -96,11 +96,29 @@ func lockSocialInviteInviter(m MetaContext, tx pgx.Tx, shid int, uid proto.UID) 
 	return err
 }
 
+// checkSocialInviteBox refuses an encoded box over the host's byte cap.
+func checkSocialInviteBox(settings Settings, box []byte, desc string) error {
+	limit := settings.SocialInviteMaxBoxBytes()
+	if len(box) > limit {
+		return core.SocialInviteTooBigError{Limit: limit, Actual: len(box), Desc: desc}
+	}
+	return nil
+}
+
+// checkSocialInviteTurn refuses a turn past the host's per-invitation cap.
+func checkSocialInviteTurn(settings Settings, seq uint64) error {
+	limit := settings.SocialInviteMaxTurns()
+	if seq > uint64(limit) {
+		return core.SocialInviteTooBigError{Limit: limit, Actual: int(seq), Desc: "turns"}
+	}
+	return nil
+}
+
 // InsertSocialInvite creates a row in state open with the opening message at
 // seq 1. If a standard invite code is attached, it must be the caller's and
 // unused; the column exists so the sweeper and terminal transitions can
 // reclaim it. The code the invitee redeems travels inside the message box.
-func InsertSocialInvite(m MetaContext, arg rem.CreateArg, inviter proto.UID) error {
+func InsertSocialInvite(m MetaContext, arg rem.CreateSocialInviteArg, inviter proto.UID) error {
 	settings, err := socialInviteSettings(m)
 	if err != nil {
 		return err
@@ -125,6 +143,14 @@ func InsertSocialInvite(m MetaContext, arg rem.CreateArg, inviter proto.UID) err
 		return err
 	}
 	msgBox, err := core.EncodeToBytes(&arg.Msg)
+	if err != nil {
+		return err
+	}
+	err = checkSocialInviteBox(settings, seedBox, "seed box")
+	if err != nil {
+		return err
+	}
+	err = checkSocialInviteBox(settings, msgBox, "message box")
 	if err != nil {
 		return err
 	}
@@ -203,12 +229,12 @@ func InsertSocialInvite(m MetaContext, arg rem.CreateArg, inviter proto.UID) err
 		tags, err := tx.Exec(m.Ctx(),
 			`INSERT INTO social_invites(
 				short_host_id, id, inviter, team_id, state, last_seq,
-				invite_code, wk_commit, seed_box, seed_box_gen, invitee,
+				invite_code, wk_commit, seed_box, invitee,
 				ctime, mtime, etime)
-			 VALUES($1, $2, $3, $4, 'open', 1, $5, $6, $7, $8, NULL,
-			 	NOW(), NOW(), $9)`,
+			 VALUES($1, $2, $3, $4, 'open', 1, $5, $6, $7, NULL,
+			 	NOW(), NOW(), $8)`,
 			shid, arg.Id[:], inviter.ExportToDB(), arg.Team.ExportToDB(),
-			code, arg.WkCommit[:], seedBox, int(arg.SeedBox.Gen), etime,
+			code, arg.WkCommit[:], seedBox, etime,
 		)
 		if err != nil {
 			if IsDuplicateKeyError(err, "social_invites_pkey") {
@@ -449,7 +475,7 @@ func ListSocialInvites(m MetaContext, inviter proto.UID) ([]rem.SocialInviteRow,
 		 FROM social_invite_msgs m
 		 JOIN social_invites si
 		   ON si.short_host_id=m.short_host_id AND si.id=m.id
-		 WHERE m.short_host_id=$1 AND si.inviter=$2
+		 WHERE m.short_host_id=$1 AND si.inviter=$2 AND si.etime > NOW()
 		 ORDER BY m.seq ASC`,
 		m.ShortHostID().ExportToDB(), inviter.ExportToDB(),
 	)
@@ -467,11 +493,10 @@ func ListSocialInvites(m MetaContext, inviter proto.UID) ([]rem.SocialInviteRow,
 		}
 		var id proto.SocialInviteID
 		copy(id[:], idRaw)
+		// Same snapshot and same filter as the rows above.
 		i, found := idx[id]
 		if !found {
-			// A transcript of an expired row: the join above does not
-			// repeat the listing's etime filter.
-			continue
+			return nil, core.InternalError("social invite transcript without its row")
 		}
 		msg, err := importSocialInviteMsg(seq, sender, box)
 		if err != nil {
@@ -497,8 +522,16 @@ func ListSocialInvites(m MetaContext, inviter proto.UID) ([]rem.SocialInviteRow,
 // turn that is no longer current fails with SocialInviteStaleTurnError, and
 // a second reply to the same turn is a lost-ack retry that replaces the
 // invitee's message rather than appending.
-func ReplySocialInvite(m MetaContext, arg rem.ReplyArg, invitee proto.UID) error {
+func ReplySocialInvite(m MetaContext, arg rem.ReplySocialInviteArg, invitee proto.UID) error {
+	settings, err := socialInviteSettings(m)
+	if err != nil {
+		return err
+	}
 	msgBox, err := core.EncodeToBytes(&arg.Msg)
+	if err != nil {
+		return err
+	}
+	err = checkSocialInviteBox(settings, msgBox, "message box")
 	if err != nil {
 		return err
 	}
@@ -538,6 +571,10 @@ func ReplySocialInvite(m MetaContext, arg rem.ReplyArg, invitee proto.UID) error
 			// last_seq is an inviter turn; the reply appends after it.
 			if arg.InReplyTo != lastSeq {
 				return core.SocialInviteStaleTurnError{}
+			}
+			err = checkSocialInviteTurn(settings, lastSeq+1)
+			if err != nil {
+				return err
 			}
 			tags, err := tx.Exec(m.Ctx(),
 				`INSERT INTO social_invite_msgs(
@@ -605,8 +642,16 @@ func ReplySocialInvite(m MetaContext, arg rem.ReplyArg, invitee proto.UID) error
 
 // AskAgainSocialInvite appends an inviter turn to a replied row. Rows the
 // caller doesn't own read as absent.
-func AskAgainSocialInvite(m MetaContext, arg rem.AskAgainArg, inviter proto.UID) error {
+func AskAgainSocialInvite(m MetaContext, arg rem.AskAgainSocialInviteArg, inviter proto.UID) error {
+	settings, err := socialInviteSettings(m)
+	if err != nil {
+		return err
+	}
 	msgBox, err := core.EncodeToBytes(&arg.Msg)
+	if err != nil {
+		return err
+	}
+	err = checkSocialInviteBox(settings, msgBox, "message box")
 	if err != nil {
 		return err
 	}
@@ -634,6 +679,10 @@ func AskAgainSocialInvite(m MetaContext, arg rem.AskAgainArg, inviter proto.UID)
 		}
 		if state != proto.SocialInviteState_Replied {
 			return core.SocialInviteWrongStateError{}
+		}
+		err = checkSocialInviteTurn(settings, lastSeq+1)
+		if err != nil {
+			return err
 		}
 		tags, err := tx.Exec(m.Ctx(),
 			`INSERT INTO social_invite_msgs(
@@ -665,11 +714,12 @@ func AskAgainSocialInvite(m MetaContext, arg rem.AskAgainArg, inviter proto.UID)
 
 // CloseSocialInvite moves a row to a terminal state. It is bookkeeping, not
 // the membership change: an accepted close follows the team edit made
-// through the existing team machinery. A canceled or declined close deletes
-// a still-unused attached code in the same transaction: the code was handed
-// out inside the opening message, and deleting it is the revocation. An
-// accepted close leaves the code alone; the consumed row is the audit trail.
-func CloseSocialInvite(m MetaContext, arg rem.CloseArg, inviter proto.UID) error {
+// through the existing team machinery. Every close revokes a still-unused
+// attached code in the same transaction: the code was handed out inside the
+// opening message, and an accepted invitee may have joined without it (an
+// existing account, or the host's multiuse code). A consumed code is left as
+// the audit trail.
+func CloseSocialInvite(m MetaContext, arg rem.CloseSocialInviteArg, inviter proto.UID) error {
 	switch arg.St {
 	case proto.SocialInviteState_Accepted,
 		proto.SocialInviteState_Declined,
@@ -723,17 +773,11 @@ func CloseSocialInvite(m MetaContext, arg rem.CloseArg, inviter proto.UID) error
 			return core.SocialInviteWrongStateError{}
 		}
 
-		if arg.St != proto.SocialInviteState_Accepted && code != nil {
-			// Deleting the code is the revocation; the FK's ON DELETE SET
-			// NULL clears the row's reference. It has to happen in this
-			// transaction rather than waiting for the sweeper: a gap
-			// between cancel and sweep would be a window where the revoked
+		if code != nil {
+			// In this transaction rather than waiting for the sweeper: a gap
+			// between close and sweep would be a window where the closed
 			// invitation's code still signs people up.
-			_, err = tx.Exec(m.Ctx(),
-				`DELETE FROM invite_codes
-				 WHERE short_host_id=$1 AND code=$2 AND used_by IS NULL`,
-				shid, code,
-			)
+			err = revokeUnusedSocialInviteCodes(m, tx, shid, [][]byte{code})
 			if err != nil {
 				return err
 			}
@@ -758,13 +802,68 @@ func CloseSocialInvite(m MetaContext, arg rem.CloseArg, inviter proto.UID) error
 	})
 }
 
-// SweepSocialInvites deletes expired and terminal rows once the grace period
-// has elapsed, reclaiming any still-unused attached codes in the same
-// transaction. Row deletion is tidiness, not correctness: every reader
-// already treats a row past its etime as absent. Code reclamation is not:
-// an expired invitation's unused code is deleted on the first sweep after
-// etime, because the grace period keeps the row readable but must not keep
-// an expired invitation's signup code redeemable.
+// revokeUnusedSocialInviteCodes deletes those of codes that are still unused,
+// first clearing the invitations' references to them. The FK has no ON DELETE
+// action, because nulling one column of a composite key needs PostgreSQL 15.
+// The codes are locked first, so a signup cannot consume one between the check
+// and the delete; a used code keeps its reference as the audit trail.
+func revokeUnusedSocialInviteCodes(m MetaContext, tx pgx.Tx, shid int, codes [][]byte) error {
+	if len(codes) == 0 {
+		return nil
+	}
+	unused, err := queryByteaColumn(m, tx,
+		`SELECT code FROM invite_codes
+		 WHERE short_host_id=$1 AND code = ANY($2) AND used_by IS NULL
+		 FOR UPDATE`,
+		shid, codes,
+	)
+	if err != nil {
+		return err
+	}
+	if len(unused) == 0 {
+		return nil
+	}
+	_, err = tx.Exec(m.Ctx(),
+		`UPDATE social_invites SET invite_code=NULL
+		 WHERE short_host_id=$1 AND invite_code = ANY($2)`,
+		shid, unused,
+	)
+	if err != nil {
+		return err
+	}
+	_, err = tx.Exec(m.Ctx(),
+		`DELETE FROM invite_codes WHERE short_host_id=$1 AND code = ANY($2)`,
+		shid, unused,
+	)
+	return err
+}
+
+// queryByteaColumn runs a query that selects one bytea column.
+func queryByteaColumn(m MetaContext, q Querier, sql string, args ...any) ([][]byte, error) {
+	rows, err := q.Query(m.Ctx(), sql, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var ret [][]byte
+	for rows.Next() {
+		var b []byte
+		err = rows.Scan(&b)
+		if err != nil {
+			return nil, err
+		}
+		ret = append(ret, b)
+	}
+	return ret, rows.Err()
+}
+
+// SweepSocialInvites deletes this host's expired and terminal rows once the
+// grace period has elapsed, revoking any still-unused attached codes in the
+// same transaction. Row deletion is tidiness, not correctness: every reader
+// already treats a row past its etime as absent. Code revocation is not: an
+// expired invitation's unused code is revoked on the first sweep after etime,
+// because the grace period keeps the row readable but must not keep an
+// expired invitation's signup code redeemable.
 func SweepSocialInvites(m MetaContext) error {
 	settings, err := socialInviteSettings(m)
 	if err != nil {
@@ -775,17 +874,24 @@ func SweepSocialInvites(m MetaContext) error {
 	shid := m.ShortHostID().ExportToDB()
 
 	return RetryTxUserDB(m, "SweepSocialInvites", func(m MetaContext, tx pgx.Tx) error {
-		// Codes first: this join needs the parent rows still present.
-		_, err := tx.Exec(m.Ctx(),
-			`DELETE FROM invite_codes ic
-			 USING social_invites si
-			 WHERE ic.short_host_id=$1 AND si.short_host_id=$1
-			 AND si.invite_code=ic.code AND ic.used_by IS NULL
-			 AND (si.etime < $2
-			      OR (si.state IN ('accepted', 'declined', 'canceled')
-			          AND si.mtime < $3))`,
+		// Codes first, while the rows that reference them still exist. The
+		// rows are locked before their codes, the order CloseSocialInvite
+		// takes them in, so a close and a sweep of the same invitation
+		// cannot deadlock.
+		codes, err := queryByteaColumn(m, tx,
+			`SELECT invite_code FROM social_invites
+			 WHERE short_host_id=$1 AND invite_code IS NOT NULL
+			 AND (etime < $2
+			      OR (state IN ('accepted', 'declined', 'canceled')
+			          AND mtime < $3))
+			 ORDER BY id
+			 FOR UPDATE`,
 			shid, now, cutoff,
 		)
+		if err != nil {
+			return err
+		}
+		err = revokeUnusedSocialInviteCodes(m, tx, shid, codes)
 		if err != nil {
 			return err
 		}
@@ -800,4 +906,67 @@ func SweepSocialInvites(m MetaContext) error {
 		)
 		return err
 	})
+}
+
+// socialInviteSweepTimeout bounds each database step of a sweep (listing the
+// hosts, then each host's sweep). Like the poll loops' database timeout, it
+// only fires on a wedged connection.
+const socialInviteSweepTimeout = time.Minute
+
+// SweepSocialInvitesAllHosts sweeps every host that has invitations. A host
+// whose sweep fails is logged and skipped, so one bad host does not stop the
+// others; row deletion is tidiness, and the next sweep retries.
+func SweepSocialInvitesAllHosts(m MetaContext) error {
+	hosts, err := socialInviteHosts(m)
+	if err != nil {
+		return err
+	}
+	hosts, err = m.G().HostIDMap().Filter(m, hosts)
+	if err != nil {
+		return err
+	}
+	for _, h := range hosts {
+		err := sweepSocialInvitesForHost(m, h)
+		if err != nil {
+			m.Warnw("SweepSocialInvitesAllHosts", "host", h, "err", err)
+		}
+	}
+	return nil
+}
+
+func sweepSocialInvitesForHost(m MetaContext, h core.ShortHostID) error {
+	m, err := m.WithShortHostID(h)
+	if err != nil {
+		return err
+	}
+	m, cancel := m.WithContextTimeout(socialInviteSweepTimeout)
+	defer cancel()
+	return SweepSocialInvites(m)
+}
+
+// socialInviteHosts lists the hosts that have any invitation rows, which are
+// the only ones a sweep can change.
+func socialInviteHosts(m MetaContext) ([]core.ShortHostID, error) {
+	m, cancel := m.WithContextTimeout(socialInviteSweepTimeout)
+	defer cancel()
+	db, err := m.Db(DbTypeUsers)
+	if err != nil {
+		return nil, err
+	}
+	defer db.Release()
+	rows, err := db.Query(m.Ctx(), `SELECT DISTINCT short_host_id FROM social_invites`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var ret []core.ShortHostID
+	for rows.Next() {
+		var h int
+		err = rows.Scan(&h)
+		if err != nil {
+			return nil, err
+		}
+		ret = append(ret, core.ShortHostID(h))
+	}
+	return ret, rows.Err()
 }

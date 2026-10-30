@@ -329,10 +329,12 @@ type CacheAccess struct {
 	kvp  *KVParty
 }
 
+// clear forgets the cache entries used so far, but keeps the party: it is
+// fixed for the whole request, and clearCaches needs it to act on any later
+// KVStaleCacheError in the same cache-race loop.
 func (C *CacheAccess) clear() {
 	C.Dir = nil
 	C.Root = 0
-	C.kvp = nil
 }
 
 func NewCacheAccess() *CacheAccess {

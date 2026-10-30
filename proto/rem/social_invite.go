@@ -387,16 +387,16 @@ func (s *SocialInviteMsgPayload) Bytes() []byte { return nil }
 
 var SocialInviteGuestProtocolID rpc.ProtocolUniqueID = rpc.ProtocolUniqueID(0xc6f4b985)
 
-type FetchArg struct {
+type FetchSocialInviteArg struct {
 	Id lib.SocialInviteID
 }
-type FetchArgInternal__ struct {
+type FetchSocialInviteArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Id      *lib.SocialInviteIDInternal__
 }
 
-func (f FetchArgInternal__) Import() FetchArg {
-	return FetchArg{
+func (f FetchSocialInviteArgInternal__) Import() FetchSocialInviteArg {
+	return FetchSocialInviteArg{
 		Id: (func(x *lib.SocialInviteIDInternal__) (ret lib.SocialInviteID) {
 			if x == nil {
 				return ret
@@ -405,17 +405,17 @@ func (f FetchArgInternal__) Import() FetchArg {
 		})(f.Id),
 	}
 }
-func (f FetchArg) Export() *FetchArgInternal__ {
-	return &FetchArgInternal__{
+func (f FetchSocialInviteArg) Export() *FetchSocialInviteArgInternal__ {
+	return &FetchSocialInviteArgInternal__{
 		Id: f.Id.Export(),
 	}
 }
-func (f *FetchArg) Encode(enc rpc.Encoder) error {
+func (f *FetchSocialInviteArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(f.Export())
 }
 
-func (f *FetchArg) Decode(dec rpc.Decoder) error {
-	var tmp FetchArgInternal__
+func (f *FetchSocialInviteArg) Decode(dec rpc.Decoder) error {
+	var tmp FetchSocialInviteArgInternal__
 	err := dec.Decode(&tmp)
 	if err != nil {
 		return err
@@ -424,10 +424,10 @@ func (f *FetchArg) Decode(dec rpc.Decoder) error {
 	return nil
 }
 
-func (f *FetchArg) Bytes() []byte { return nil }
+func (f *FetchSocialInviteArg) Bytes() []byte { return nil }
 
 type SocialInviteGuestInterface interface {
-	Fetch(context.Context, lib.SocialInviteID) (SocialInviteGuestView, error)
+	FetchSocialInvite(context.Context, lib.SocialInviteID) (SocialInviteGuestView, error)
 	ErrorWrapper() func(error) lib.Status
 	CheckArgHeader(ctx context.Context, h lib.Header) error
 	MakeResHeader() lib.Header
@@ -473,18 +473,18 @@ type SocialInviteGuestClient struct {
 	CheckResHeader func(context.Context, lib.Header) error
 }
 
-func (c SocialInviteGuestClient) Fetch(ctx context.Context, id lib.SocialInviteID) (res SocialInviteGuestView, err error) {
-	arg := FetchArg{
+func (c SocialInviteGuestClient) FetchSocialInvite(ctx context.Context, id lib.SocialInviteID) (res SocialInviteGuestView, err error) {
+	arg := FetchSocialInviteArg{
 		Id: id,
 	}
-	warg := &rpc.DataWrap[lib.Header, *FetchArgInternal__]{
+	warg := &rpc.DataWrap[lib.Header, *FetchSocialInviteArgInternal__]{
 		Data: arg.Export(),
 	}
 	if c.MakeArgHeader != nil {
 		warg.Header = c.MakeArgHeader()
 	}
 	var tmp rpc.DataWrap[lib.Header, SocialInviteGuestViewInternal__]
-	err = c.Cli.Call2(ctx, rpc.NewMethodV2(SocialInviteGuestProtocolID, 0, "SocialInviteGuest.fetch"), warg, &tmp, 0*time.Millisecond, socialInviteGuestErrorUnwrapperAdapter{h: c.ErrorUnwrapper})
+	err = c.Cli.Call2(ctx, rpc.NewMethodV2(SocialInviteGuestProtocolID, 0, "SocialInviteGuest.fetchSocialInvite"), warg, &tmp, 0*time.Millisecond, socialInviteGuestErrorUnwrapperAdapter{h: c.ErrorUnwrapper})
 	if err != nil {
 		return
 	}
@@ -505,20 +505,20 @@ func SocialInviteGuestProtocol(i SocialInviteGuestInterface) rpc.ProtocolV2 {
 			0: {
 				ServeHandlerDescription: rpc.ServeHandlerDescription{
 					MakeArg: func() interface{} {
-						var ret rpc.DataWrap[lib.Header, *FetchArgInternal__]
+						var ret rpc.DataWrap[lib.Header, *FetchSocialInviteArgInternal__]
 						return &ret
 					},
 					Handler: func(ctx context.Context, args interface{}) (interface{}, error) {
-						typedWrappedArg, ok := args.(*rpc.DataWrap[lib.Header, *FetchArgInternal__])
+						typedWrappedArg, ok := args.(*rpc.DataWrap[lib.Header, *FetchSocialInviteArgInternal__])
 						if !ok {
-							err := rpc.NewTypeError((*rpc.DataWrap[lib.Header, *FetchArgInternal__])(nil), args)
+							err := rpc.NewTypeError((*rpc.DataWrap[lib.Header, *FetchSocialInviteArgInternal__])(nil), args)
 							return nil, err
 						}
 						if err := i.CheckArgHeader(ctx, typedWrappedArg.Header); err != nil {
 							return nil, err
 						}
 						typedArg := typedWrappedArg.Data
-						tmp, err := i.Fetch(ctx, (typedArg.Import()).Id)
+						tmp, err := i.FetchSocialInvite(ctx, (typedArg.Import()).Id)
 						if err != nil {
 							return nil, err
 						}
@@ -529,7 +529,7 @@ func SocialInviteGuestProtocol(i SocialInviteGuestInterface) rpc.ProtocolV2 {
 						return &ret, nil
 					},
 				},
-				Name: "fetch",
+				Name: "fetchSocialInvite",
 			},
 		},
 		WrapError: SocialInviteGuestMakeGenericErrorWrapper(i.ErrorWrapper()),
@@ -538,7 +538,7 @@ func SocialInviteGuestProtocol(i SocialInviteGuestInterface) rpc.ProtocolV2 {
 
 var SocialInviteProtocolID rpc.ProtocolUniqueID = rpc.ProtocolUniqueID(0xee2c9d1c)
 
-type CreateArg struct {
+type CreateSocialInviteArg struct {
 	Id         lib.SocialInviteID
 	Team       lib.TeamID
 	SeedBox    lib.SharedKeyBox
@@ -547,7 +547,7 @@ type CreateArg struct {
 	InviteCode *InviteCode
 	Etime      lib.Time
 }
-type CreateArgInternal__ struct {
+type CreateSocialInviteArgInternal__ struct {
 	_struct    struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Id         *lib.SocialInviteIDInternal__
 	Team       *lib.TeamIDInternal__
@@ -558,8 +558,8 @@ type CreateArgInternal__ struct {
 	Etime      *lib.TimeInternal__
 }
 
-func (c CreateArgInternal__) Import() CreateArg {
-	return CreateArg{
+func (c CreateSocialInviteArgInternal__) Import() CreateSocialInviteArg {
+	return CreateSocialInviteArg{
 		Id: (func(x *lib.SocialInviteIDInternal__) (ret lib.SocialInviteID) {
 			if x == nil {
 				return ret
@@ -610,8 +610,8 @@ func (c CreateArgInternal__) Import() CreateArg {
 		})(c.Etime),
 	}
 }
-func (c CreateArg) Export() *CreateArgInternal__ {
-	return &CreateArgInternal__{
+func (c CreateSocialInviteArg) Export() *CreateSocialInviteArgInternal__ {
+	return &CreateSocialInviteArgInternal__{
 		Id:       c.Id.Export(),
 		Team:     c.Team.Export(),
 		SeedBox:  c.SeedBox.Export(),
@@ -626,12 +626,12 @@ func (c CreateArg) Export() *CreateArgInternal__ {
 		Etime: c.Etime.Export(),
 	}
 }
-func (c *CreateArg) Encode(enc rpc.Encoder) error {
+func (c *CreateSocialInviteArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(c.Export())
 }
 
-func (c *CreateArg) Decode(dec rpc.Decoder) error {
-	var tmp CreateArgInternal__
+func (c *CreateSocialInviteArg) Decode(dec rpc.Decoder) error {
+	var tmp CreateSocialInviteArgInternal__
 	err := dec.Decode(&tmp)
 	if err != nil {
 		return err
@@ -640,26 +640,26 @@ func (c *CreateArg) Decode(dec rpc.Decoder) error {
 	return nil
 }
 
-func (c *CreateArg) Bytes() []byte { return nil }
+func (c *CreateSocialInviteArg) Bytes() []byte { return nil }
 
-type ListArg struct {
+type ListSocialInvitesArg struct {
 }
-type ListArgInternal__ struct {
+type ListSocialInvitesArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 }
 
-func (l ListArgInternal__) Import() ListArg {
-	return ListArg{}
+func (l ListSocialInvitesArgInternal__) Import() ListSocialInvitesArg {
+	return ListSocialInvitesArg{}
 }
-func (l ListArg) Export() *ListArgInternal__ {
-	return &ListArgInternal__{}
+func (l ListSocialInvitesArg) Export() *ListSocialInvitesArgInternal__ {
+	return &ListSocialInvitesArgInternal__{}
 }
-func (l *ListArg) Encode(enc rpc.Encoder) error {
+func (l *ListSocialInvitesArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(l.Export())
 }
 
-func (l *ListArg) Decode(dec rpc.Decoder) error {
-	var tmp ListArgInternal__
+func (l *ListSocialInvitesArg) Decode(dec rpc.Decoder) error {
+	var tmp ListSocialInvitesArgInternal__
 	err := dec.Decode(&tmp)
 	if err != nil {
 		return err
@@ -668,15 +668,15 @@ func (l *ListArg) Decode(dec rpc.Decoder) error {
 	return nil
 }
 
-func (l *ListArg) Bytes() []byte { return nil }
+func (l *ListSocialInvitesArg) Bytes() []byte { return nil }
 
-type ReplyArg struct {
+type ReplySocialInviteArg struct {
 	Id        lib.SocialInviteID
 	Wk        lib.SocialInviteWriteKey
 	InReplyTo uint64
 	Msg       lib.SecretBox
 }
-type ReplyArgInternal__ struct {
+type ReplySocialInviteArgInternal__ struct {
 	_struct   struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Id        *lib.SocialInviteIDInternal__
 	Wk        *lib.SocialInviteWriteKeyInternal__
@@ -684,8 +684,8 @@ type ReplyArgInternal__ struct {
 	Msg       *lib.SecretBoxInternal__
 }
 
-func (r ReplyArgInternal__) Import() ReplyArg {
-	return ReplyArg{
+func (r ReplySocialInviteArgInternal__) Import() ReplySocialInviteArg {
+	return ReplySocialInviteArg{
 		Id: (func(x *lib.SocialInviteIDInternal__) (ret lib.SocialInviteID) {
 			if x == nil {
 				return ret
@@ -712,20 +712,20 @@ func (r ReplyArgInternal__) Import() ReplyArg {
 		})(r.Msg),
 	}
 }
-func (r ReplyArg) Export() *ReplyArgInternal__ {
-	return &ReplyArgInternal__{
+func (r ReplySocialInviteArg) Export() *ReplySocialInviteArgInternal__ {
+	return &ReplySocialInviteArgInternal__{
 		Id:        r.Id.Export(),
 		Wk:        r.Wk.Export(),
 		InReplyTo: &r.InReplyTo,
 		Msg:       r.Msg.Export(),
 	}
 }
-func (r *ReplyArg) Encode(enc rpc.Encoder) error {
+func (r *ReplySocialInviteArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(r.Export())
 }
 
-func (r *ReplyArg) Decode(dec rpc.Decoder) error {
-	var tmp ReplyArgInternal__
+func (r *ReplySocialInviteArg) Decode(dec rpc.Decoder) error {
+	var tmp ReplySocialInviteArgInternal__
 	err := dec.Decode(&tmp)
 	if err != nil {
 		return err
@@ -734,20 +734,20 @@ func (r *ReplyArg) Decode(dec rpc.Decoder) error {
 	return nil
 }
 
-func (r *ReplyArg) Bytes() []byte { return nil }
+func (r *ReplySocialInviteArg) Bytes() []byte { return nil }
 
-type AskAgainArg struct {
+type AskAgainSocialInviteArg struct {
 	Id  lib.SocialInviteID
 	Msg lib.SecretBox
 }
-type AskAgainArgInternal__ struct {
+type AskAgainSocialInviteArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Id      *lib.SocialInviteIDInternal__
 	Msg     *lib.SecretBoxInternal__
 }
 
-func (a AskAgainArgInternal__) Import() AskAgainArg {
-	return AskAgainArg{
+func (a AskAgainSocialInviteArgInternal__) Import() AskAgainSocialInviteArg {
+	return AskAgainSocialInviteArg{
 		Id: (func(x *lib.SocialInviteIDInternal__) (ret lib.SocialInviteID) {
 			if x == nil {
 				return ret
@@ -762,18 +762,18 @@ func (a AskAgainArgInternal__) Import() AskAgainArg {
 		})(a.Msg),
 	}
 }
-func (a AskAgainArg) Export() *AskAgainArgInternal__ {
-	return &AskAgainArgInternal__{
+func (a AskAgainSocialInviteArg) Export() *AskAgainSocialInviteArgInternal__ {
+	return &AskAgainSocialInviteArgInternal__{
 		Id:  a.Id.Export(),
 		Msg: a.Msg.Export(),
 	}
 }
-func (a *AskAgainArg) Encode(enc rpc.Encoder) error {
+func (a *AskAgainSocialInviteArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(a.Export())
 }
 
-func (a *AskAgainArg) Decode(dec rpc.Decoder) error {
-	var tmp AskAgainArgInternal__
+func (a *AskAgainSocialInviteArg) Decode(dec rpc.Decoder) error {
+	var tmp AskAgainSocialInviteArgInternal__
 	err := dec.Decode(&tmp)
 	if err != nil {
 		return err
@@ -782,20 +782,20 @@ func (a *AskAgainArg) Decode(dec rpc.Decoder) error {
 	return nil
 }
 
-func (a *AskAgainArg) Bytes() []byte { return nil }
+func (a *AskAgainSocialInviteArg) Bytes() []byte { return nil }
 
-type CloseArg struct {
+type CloseSocialInviteArg struct {
 	Id lib.SocialInviteID
 	St lib.SocialInviteState
 }
-type CloseArgInternal__ struct {
+type CloseSocialInviteArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Id      *lib.SocialInviteIDInternal__
 	St      *lib.SocialInviteStateInternal__
 }
 
-func (c CloseArgInternal__) Import() CloseArg {
-	return CloseArg{
+func (c CloseSocialInviteArgInternal__) Import() CloseSocialInviteArg {
+	return CloseSocialInviteArg{
 		Id: (func(x *lib.SocialInviteIDInternal__) (ret lib.SocialInviteID) {
 			if x == nil {
 				return ret
@@ -810,18 +810,18 @@ func (c CloseArgInternal__) Import() CloseArg {
 		})(c.St),
 	}
 }
-func (c CloseArg) Export() *CloseArgInternal__ {
-	return &CloseArgInternal__{
+func (c CloseSocialInviteArg) Export() *CloseSocialInviteArgInternal__ {
+	return &CloseSocialInviteArgInternal__{
 		Id: c.Id.Export(),
 		St: c.St.Export(),
 	}
 }
-func (c *CloseArg) Encode(enc rpc.Encoder) error {
+func (c *CloseSocialInviteArg) Encode(enc rpc.Encoder) error {
 	return enc.Encode(c.Export())
 }
 
-func (c *CloseArg) Decode(dec rpc.Decoder) error {
-	var tmp CloseArgInternal__
+func (c *CloseSocialInviteArg) Decode(dec rpc.Decoder) error {
+	var tmp CloseSocialInviteArgInternal__
 	err := dec.Decode(&tmp)
 	if err != nil {
 		return err
@@ -830,14 +830,14 @@ func (c *CloseArg) Decode(dec rpc.Decoder) error {
 	return nil
 }
 
-func (c *CloseArg) Bytes() []byte { return nil }
+func (c *CloseSocialInviteArg) Bytes() []byte { return nil }
 
 type SocialInviteInterface interface {
-	Create(context.Context, CreateArg) error
-	List(context.Context) ([]SocialInviteRow, error)
-	Reply(context.Context, ReplyArg) error
-	AskAgain(context.Context, AskAgainArg) error
-	Close(context.Context, CloseArg) error
+	CreateSocialInvite(context.Context, CreateSocialInviteArg) error
+	ListSocialInvites(context.Context) ([]SocialInviteRow, error)
+	ReplySocialInvite(context.Context, ReplySocialInviteArg) error
+	AskAgainSocialInvite(context.Context, AskAgainSocialInviteArg) error
+	CloseSocialInvite(context.Context, CloseSocialInviteArg) error
 	ErrorWrapper() func(error) lib.Status
 	CheckArgHeader(ctx context.Context, h lib.Header) error
 	MakeResHeader() lib.Header
@@ -883,15 +883,15 @@ type SocialInviteClient struct {
 	CheckResHeader func(context.Context, lib.Header) error
 }
 
-func (c SocialInviteClient) Create(ctx context.Context, arg CreateArg) (err error) {
-	warg := &rpc.DataWrap[lib.Header, *CreateArgInternal__]{
+func (c SocialInviteClient) CreateSocialInvite(ctx context.Context, arg CreateSocialInviteArg) (err error) {
+	warg := &rpc.DataWrap[lib.Header, *CreateSocialInviteArgInternal__]{
 		Data: arg.Export(),
 	}
 	if c.MakeArgHeader != nil {
 		warg.Header = c.MakeArgHeader()
 	}
 	var tmp rpc.DataWrap[lib.Header, interface{}]
-	err = c.Cli.Call2(ctx, rpc.NewMethodV2(SocialInviteProtocolID, 0, "SocialInvite.create"), warg, &tmp, 0*time.Millisecond, socialInviteErrorUnwrapperAdapter{h: c.ErrorUnwrapper})
+	err = c.Cli.Call2(ctx, rpc.NewMethodV2(SocialInviteProtocolID, 0, "SocialInvite.createSocialInvite"), warg, &tmp, 0*time.Millisecond, socialInviteErrorUnwrapperAdapter{h: c.ErrorUnwrapper})
 	if err != nil {
 		return
 	}
@@ -903,16 +903,16 @@ func (c SocialInviteClient) Create(ctx context.Context, arg CreateArg) (err erro
 	}
 	return
 }
-func (c SocialInviteClient) List(ctx context.Context) (res []SocialInviteRow, err error) {
-	var arg ListArg
-	warg := &rpc.DataWrap[lib.Header, *ListArgInternal__]{
+func (c SocialInviteClient) ListSocialInvites(ctx context.Context) (res []SocialInviteRow, err error) {
+	var arg ListSocialInvitesArg
+	warg := &rpc.DataWrap[lib.Header, *ListSocialInvitesArgInternal__]{
 		Data: arg.Export(),
 	}
 	if c.MakeArgHeader != nil {
 		warg.Header = c.MakeArgHeader()
 	}
 	var tmp rpc.DataWrap[lib.Header, [](*SocialInviteRowInternal__)]
-	err = c.Cli.Call2(ctx, rpc.NewMethodV2(SocialInviteProtocolID, 1, "SocialInvite.list"), warg, &tmp, 0*time.Millisecond, socialInviteErrorUnwrapperAdapter{h: c.ErrorUnwrapper})
+	err = c.Cli.Call2(ctx, rpc.NewMethodV2(SocialInviteProtocolID, 1, "SocialInvite.listSocialInvites"), warg, &tmp, 0*time.Millisecond, socialInviteErrorUnwrapperAdapter{h: c.ErrorUnwrapper})
 	if err != nil {
 		return
 	}
@@ -942,15 +942,15 @@ func (c SocialInviteClient) List(ctx context.Context) (res []SocialInviteRow, er
 	})(&tmp.Data)
 	return
 }
-func (c SocialInviteClient) Reply(ctx context.Context, arg ReplyArg) (err error) {
-	warg := &rpc.DataWrap[lib.Header, *ReplyArgInternal__]{
+func (c SocialInviteClient) ReplySocialInvite(ctx context.Context, arg ReplySocialInviteArg) (err error) {
+	warg := &rpc.DataWrap[lib.Header, *ReplySocialInviteArgInternal__]{
 		Data: arg.Export(),
 	}
 	if c.MakeArgHeader != nil {
 		warg.Header = c.MakeArgHeader()
 	}
 	var tmp rpc.DataWrap[lib.Header, interface{}]
-	err = c.Cli.Call2(ctx, rpc.NewMethodV2(SocialInviteProtocolID, 2, "SocialInvite.reply"), warg, &tmp, 0*time.Millisecond, socialInviteErrorUnwrapperAdapter{h: c.ErrorUnwrapper})
+	err = c.Cli.Call2(ctx, rpc.NewMethodV2(SocialInviteProtocolID, 2, "SocialInvite.replySocialInvite"), warg, &tmp, 0*time.Millisecond, socialInviteErrorUnwrapperAdapter{h: c.ErrorUnwrapper})
 	if err != nil {
 		return
 	}
@@ -962,15 +962,15 @@ func (c SocialInviteClient) Reply(ctx context.Context, arg ReplyArg) (err error)
 	}
 	return
 }
-func (c SocialInviteClient) AskAgain(ctx context.Context, arg AskAgainArg) (err error) {
-	warg := &rpc.DataWrap[lib.Header, *AskAgainArgInternal__]{
+func (c SocialInviteClient) AskAgainSocialInvite(ctx context.Context, arg AskAgainSocialInviteArg) (err error) {
+	warg := &rpc.DataWrap[lib.Header, *AskAgainSocialInviteArgInternal__]{
 		Data: arg.Export(),
 	}
 	if c.MakeArgHeader != nil {
 		warg.Header = c.MakeArgHeader()
 	}
 	var tmp rpc.DataWrap[lib.Header, interface{}]
-	err = c.Cli.Call2(ctx, rpc.NewMethodV2(SocialInviteProtocolID, 3, "SocialInvite.askAgain"), warg, &tmp, 0*time.Millisecond, socialInviteErrorUnwrapperAdapter{h: c.ErrorUnwrapper})
+	err = c.Cli.Call2(ctx, rpc.NewMethodV2(SocialInviteProtocolID, 3, "SocialInvite.askAgainSocialInvite"), warg, &tmp, 0*time.Millisecond, socialInviteErrorUnwrapperAdapter{h: c.ErrorUnwrapper})
 	if err != nil {
 		return
 	}
@@ -982,15 +982,15 @@ func (c SocialInviteClient) AskAgain(ctx context.Context, arg AskAgainArg) (err 
 	}
 	return
 }
-func (c SocialInviteClient) Close(ctx context.Context, arg CloseArg) (err error) {
-	warg := &rpc.DataWrap[lib.Header, *CloseArgInternal__]{
+func (c SocialInviteClient) CloseSocialInvite(ctx context.Context, arg CloseSocialInviteArg) (err error) {
+	warg := &rpc.DataWrap[lib.Header, *CloseSocialInviteArgInternal__]{
 		Data: arg.Export(),
 	}
 	if c.MakeArgHeader != nil {
 		warg.Header = c.MakeArgHeader()
 	}
 	var tmp rpc.DataWrap[lib.Header, interface{}]
-	err = c.Cli.Call2(ctx, rpc.NewMethodV2(SocialInviteProtocolID, 4, "SocialInvite.close"), warg, &tmp, 0*time.Millisecond, socialInviteErrorUnwrapperAdapter{h: c.ErrorUnwrapper})
+	err = c.Cli.Call2(ctx, rpc.NewMethodV2(SocialInviteProtocolID, 4, "SocialInvite.closeSocialInvite"), warg, &tmp, 0*time.Millisecond, socialInviteErrorUnwrapperAdapter{h: c.ErrorUnwrapper})
 	if err != nil {
 		return
 	}
@@ -1010,20 +1010,20 @@ func SocialInviteProtocol(i SocialInviteInterface) rpc.ProtocolV2 {
 			0: {
 				ServeHandlerDescription: rpc.ServeHandlerDescription{
 					MakeArg: func() interface{} {
-						var ret rpc.DataWrap[lib.Header, *CreateArgInternal__]
+						var ret rpc.DataWrap[lib.Header, *CreateSocialInviteArgInternal__]
 						return &ret
 					},
 					Handler: func(ctx context.Context, args interface{}) (interface{}, error) {
-						typedWrappedArg, ok := args.(*rpc.DataWrap[lib.Header, *CreateArgInternal__])
+						typedWrappedArg, ok := args.(*rpc.DataWrap[lib.Header, *CreateSocialInviteArgInternal__])
 						if !ok {
-							err := rpc.NewTypeError((*rpc.DataWrap[lib.Header, *CreateArgInternal__])(nil), args)
+							err := rpc.NewTypeError((*rpc.DataWrap[lib.Header, *CreateSocialInviteArgInternal__])(nil), args)
 							return nil, err
 						}
 						if err := i.CheckArgHeader(ctx, typedWrappedArg.Header); err != nil {
 							return nil, err
 						}
 						typedArg := typedWrappedArg.Data
-						err := i.Create(ctx, (typedArg.Import()))
+						err := i.CreateSocialInvite(ctx, (typedArg.Import()))
 						if err != nil {
 							return nil, err
 						}
@@ -1033,24 +1033,24 @@ func SocialInviteProtocol(i SocialInviteInterface) rpc.ProtocolV2 {
 						return &ret, nil
 					},
 				},
-				Name: "create",
+				Name: "createSocialInvite",
 			},
 			1: {
 				ServeHandlerDescription: rpc.ServeHandlerDescription{
 					MakeArg: func() interface{} {
-						var ret rpc.DataWrap[lib.Header, *ListArgInternal__]
+						var ret rpc.DataWrap[lib.Header, *ListSocialInvitesArgInternal__]
 						return &ret
 					},
 					Handler: func(ctx context.Context, args interface{}) (interface{}, error) {
-						typedWrappedArg, ok := args.(*rpc.DataWrap[lib.Header, *ListArgInternal__])
+						typedWrappedArg, ok := args.(*rpc.DataWrap[lib.Header, *ListSocialInvitesArgInternal__])
 						if !ok {
-							err := rpc.NewTypeError((*rpc.DataWrap[lib.Header, *ListArgInternal__])(nil), args)
+							err := rpc.NewTypeError((*rpc.DataWrap[lib.Header, *ListSocialInvitesArgInternal__])(nil), args)
 							return nil, err
 						}
 						if err := i.CheckArgHeader(ctx, typedWrappedArg.Header); err != nil {
 							return nil, err
 						}
-						tmp, err := i.List(ctx)
+						tmp, err := i.ListSocialInvites(ctx)
 						if err != nil {
 							return nil, err
 						}
@@ -1073,25 +1073,25 @@ func SocialInviteProtocol(i SocialInviteInterface) rpc.ProtocolV2 {
 						return &ret, nil
 					},
 				},
-				Name: "list",
+				Name: "listSocialInvites",
 			},
 			2: {
 				ServeHandlerDescription: rpc.ServeHandlerDescription{
 					MakeArg: func() interface{} {
-						var ret rpc.DataWrap[lib.Header, *ReplyArgInternal__]
+						var ret rpc.DataWrap[lib.Header, *ReplySocialInviteArgInternal__]
 						return &ret
 					},
 					Handler: func(ctx context.Context, args interface{}) (interface{}, error) {
-						typedWrappedArg, ok := args.(*rpc.DataWrap[lib.Header, *ReplyArgInternal__])
+						typedWrappedArg, ok := args.(*rpc.DataWrap[lib.Header, *ReplySocialInviteArgInternal__])
 						if !ok {
-							err := rpc.NewTypeError((*rpc.DataWrap[lib.Header, *ReplyArgInternal__])(nil), args)
+							err := rpc.NewTypeError((*rpc.DataWrap[lib.Header, *ReplySocialInviteArgInternal__])(nil), args)
 							return nil, err
 						}
 						if err := i.CheckArgHeader(ctx, typedWrappedArg.Header); err != nil {
 							return nil, err
 						}
 						typedArg := typedWrappedArg.Data
-						err := i.Reply(ctx, (typedArg.Import()))
+						err := i.ReplySocialInvite(ctx, (typedArg.Import()))
 						if err != nil {
 							return nil, err
 						}
@@ -1101,25 +1101,25 @@ func SocialInviteProtocol(i SocialInviteInterface) rpc.ProtocolV2 {
 						return &ret, nil
 					},
 				},
-				Name: "reply",
+				Name: "replySocialInvite",
 			},
 			3: {
 				ServeHandlerDescription: rpc.ServeHandlerDescription{
 					MakeArg: func() interface{} {
-						var ret rpc.DataWrap[lib.Header, *AskAgainArgInternal__]
+						var ret rpc.DataWrap[lib.Header, *AskAgainSocialInviteArgInternal__]
 						return &ret
 					},
 					Handler: func(ctx context.Context, args interface{}) (interface{}, error) {
-						typedWrappedArg, ok := args.(*rpc.DataWrap[lib.Header, *AskAgainArgInternal__])
+						typedWrappedArg, ok := args.(*rpc.DataWrap[lib.Header, *AskAgainSocialInviteArgInternal__])
 						if !ok {
-							err := rpc.NewTypeError((*rpc.DataWrap[lib.Header, *AskAgainArgInternal__])(nil), args)
+							err := rpc.NewTypeError((*rpc.DataWrap[lib.Header, *AskAgainSocialInviteArgInternal__])(nil), args)
 							return nil, err
 						}
 						if err := i.CheckArgHeader(ctx, typedWrappedArg.Header); err != nil {
 							return nil, err
 						}
 						typedArg := typedWrappedArg.Data
-						err := i.AskAgain(ctx, (typedArg.Import()))
+						err := i.AskAgainSocialInvite(ctx, (typedArg.Import()))
 						if err != nil {
 							return nil, err
 						}
@@ -1129,25 +1129,25 @@ func SocialInviteProtocol(i SocialInviteInterface) rpc.ProtocolV2 {
 						return &ret, nil
 					},
 				},
-				Name: "askAgain",
+				Name: "askAgainSocialInvite",
 			},
 			4: {
 				ServeHandlerDescription: rpc.ServeHandlerDescription{
 					MakeArg: func() interface{} {
-						var ret rpc.DataWrap[lib.Header, *CloseArgInternal__]
+						var ret rpc.DataWrap[lib.Header, *CloseSocialInviteArgInternal__]
 						return &ret
 					},
 					Handler: func(ctx context.Context, args interface{}) (interface{}, error) {
-						typedWrappedArg, ok := args.(*rpc.DataWrap[lib.Header, *CloseArgInternal__])
+						typedWrappedArg, ok := args.(*rpc.DataWrap[lib.Header, *CloseSocialInviteArgInternal__])
 						if !ok {
-							err := rpc.NewTypeError((*rpc.DataWrap[lib.Header, *CloseArgInternal__])(nil), args)
+							err := rpc.NewTypeError((*rpc.DataWrap[lib.Header, *CloseSocialInviteArgInternal__])(nil), args)
 							return nil, err
 						}
 						if err := i.CheckArgHeader(ctx, typedWrappedArg.Header); err != nil {
 							return nil, err
 						}
 						typedArg := typedWrappedArg.Data
-						err := i.Close(ctx, (typedArg.Import()))
+						err := i.CloseSocialInvite(ctx, (typedArg.Import()))
 						if err != nil {
 							return nil, err
 						}
@@ -1157,7 +1157,7 @@ func SocialInviteProtocol(i SocialInviteInterface) rpc.ProtocolV2 {
 						return &ret, nil
 					},
 				},
-				Name: "close",
+				Name: "closeSocialInvite",
 			},
 		},
 		WrapError: SocialInviteMakeGenericErrorWrapper(i.ErrorWrapper()),
