@@ -4,6 +4,7 @@
 package libkv
 
 import (
+	"errors"
 	"sync"
 	"time"
 
@@ -196,7 +197,13 @@ func (k *KVParty) fillAuthToken(
 	}
 	tok := k.plcn.ViewTok()
 	if tok == nil {
-		return core.PermissionError("no VO token")
+		// A nil token here means the team came up from its offline snapshot
+		// (tokens are server-minted; nothing else produces a token-less
+		// node). That is an outage, not a refusal: report it transport-class
+		// so retry and queueing layers classify it correctly.
+		return core.NewConnectError(
+			"no view token: team was loaded from an offline snapshot",
+			errors.New("server unreachable"))
 	}
 	*auth = rem.NewKVAuthWithTeam(*tok)
 	return nil
@@ -984,6 +991,19 @@ func (k *Minder) lookupDirent(
 		return nil, core.VerifyError("dirent binding mac")
 	}
 
+	// The binding MAC holds for any dirent in this directory, so also check
+	// that the server returned the name we asked for.
+	askedFor := false
+	for _, c := range comps {
+		if c.DirVers == res.De.DirVersion && c.Mac.Eq(res.De.NameMac) {
+			askedFor = true
+			break
+		}
+	}
+	if !askedFor || res.De.ParentDir != wd.Id() {
+		return nil, core.VerifyError("dirent name mac")
+	}
+
 	tmpComp := comp
 
 	de := Dirent{
@@ -1003,7 +1023,11 @@ func (k *Minder) lookupDirent(
 	}
 	switch typ {
 	case proto.KVNodeType_None:
-		return nil, core.KVNoentError{}
+		// A tombstone: absent to a read, but a put overwrites it, as it does when
+		// the dirent-cache hit above returns one.
+		if !opts.forPut {
+			return nil, core.KVNoentError{}
+		}
 	case proto.KVNodeType_Dir:
 		raw := res.Data.Dir()
 		dir := NewDirPair(kvp.Id(), raw, nil)

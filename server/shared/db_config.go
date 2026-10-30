@@ -21,7 +21,14 @@ type DbConfigJSON struct {
 	Name     string `json:"name"`
 	CA       string `json:"CA"`
 	NoTLS    bool   `json:"no-tls"`
+	// PoolMaxConns caps each process's pool for this database. Every server
+	// process opens its own pool per database it uses, so the sum across a
+	// deployment must stay under postgres's max_connections. 0 means the
+	// default of 100.
+	PoolMaxConns int32 `json:"pool-max-conns"`
 }
+
+const defaultPoolMaxConns = 100
 
 // It's slightly preposterous that we need to build a string just so the library can parse it
 // but this does seem to be the safest approach.
@@ -51,7 +58,11 @@ func (d DbConfigJSON) ToString() string {
 	// timezone GUC or the host's local zone.
 	pairs = append(pairs, "timezone=UTC")
 	// Tune this way down to expose leaks and recurives db acquires
-	pairs = append(pairs, "pool_max_conns=100")
+	poolMaxConns := d.PoolMaxConns
+	if poolMaxConns == 0 {
+		poolMaxConns = defaultPoolMaxConns
+	}
+	pairs = append(pairs, fmt.Sprintf("pool_max_conns=%d", poolMaxConns))
 	ret := strings.Join(pairs, " ")
 	return ret
 }
