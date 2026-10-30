@@ -64,8 +64,8 @@ func AuthorizeUserForTeam(
 	return rk, nil
 }
 
-// activeTeamMembers returns the subset of uids that are active, direct, local
-// user members of the team, with their roles. Same membership rules as
+// activeTeamMembers returns which of uids are active, direct, local user
+// members of the team, with their roles. Same membership rules as
 // AuthorizeUserForTeam, for users other than the caller.
 func activeTeamMembers(
 	m shared.MetaContext,
@@ -76,17 +76,45 @@ func activeTeamMembers(
 	map[proto.UID]core.RoleKey,
 	error,
 ) {
-	ret := make(map[proto.UID]core.RoleKey, len(uids))
 	if len(uids) == 0 {
-		return ret, nil
-	}
-	ownerType, ownerViz, err := proto.OwnerRole.ExportToDB()
-	if err != nil {
-		return nil, err
+		return map[proto.UID]core.RoleKey{}, nil
 	}
 	raw := make([][]byte, len(uids))
 	for i, u := range uids {
 		raw[i] = u.ExportToDB()
+	}
+	return queryActiveTeamMembers(m, db, team, raw)
+}
+
+// allActiveTeamMembers returns every active, direct, local user member of the
+// team, with their roles.
+func allActiveTeamMembers(
+	m shared.MetaContext,
+	db shared.Querier,
+	team proto.TeamID,
+) (
+	map[proto.UID]core.RoleKey,
+	error,
+) {
+	return queryActiveTeamMembers(m, db, team, nil)
+}
+
+// queryActiveTeamMembers holds the Stage 1a membership rule for every caller
+// but AuthorizeUserForTeam: direct, local user members (source role Owner,
+// active row), at their latest role. A nil uids matches every member.
+func queryActiveTeamMembers(
+	m shared.MetaContext,
+	db shared.Querier,
+	team proto.TeamID,
+	uids [][]byte,
+) (
+	map[proto.UID]core.RoleKey,
+	error,
+) {
+	ret := make(map[proto.UID]core.RoleKey, len(uids))
+	ownerType, ownerViz, err := proto.OwnerRole.ExportToDB()
+	if err != nil {
+		return nil, err
 	}
 	rows, err := db.Query(
 		m.Ctx(),
@@ -98,14 +126,14 @@ func activeTeamMembers(
 		 AND src_role_type=$4
 		 AND src_viz_level=$5
 		 AND active=true
-		 AND member_id = ANY($6)
+		 AND ($6::bytea[] IS NULL OR member_id = ANY($6))
 		 ORDER BY member_id, seqno DESC`,
 		m.ShortHostID(),
 		team.ExportToDB(),
 		shared.ExportHostP(nil),
 		ownerType,
 		ownerViz,
-		raw,
+		uids,
 	)
 	if err != nil {
 		return nil, err

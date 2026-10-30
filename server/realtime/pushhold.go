@@ -14,6 +14,10 @@ package realtime
 //
 // The server stores only who holds. Why the holder keeps a member's push back
 // is never sent to it.
+//
+// This repo writes push_outbox but has no reader of it yet; the relay that
+// sends pushes lives elsewhere. 'held' is a contract with that relay: it must
+// never claim a held row.
 
 import (
 	"github.com/foks-proj/go-foks/lib/core"
@@ -31,32 +35,15 @@ const (
 	// handed to the push provider as is, so it stays small.
 	maxPushHandleLen = 32
 
-	// maxPushNotifyEntries bounds the entries of one rtNotifyMembers call.
-	maxPushNotifyEntries = 10000
+	// maxPushListLen bounds each list argument of rtReleasePushes (keep,
+	// drop) and rtNotifyMembers (entries).
+	maxPushListLen = 10000
 )
 
-// readPushHolder returns the holder of the push hold on the channel's team and
-// app, or nil if there is no hold.
-func readPushHolder(
-	m shared.MetaContext,
-	db shared.Querier,
-	channelID int64,
-) (
-	*proto.UID,
-	error,
-) {
+// scanPushHolder reads a holder_uid row, or nil if there is none.
+func scanPushHolder(row pgx.Row) (*proto.UID, error) {
 	var raw []byte
-	err := db.QueryRow(
-		m.Ctx(),
-		`SELECT h.holder_uid
-		 FROM push_holds h
-		 JOIN channels c ON (c.short_host_id=h.short_host_id
-		                     AND c.parent_team_id=h.team_id
-		                     AND c.app_id=h.app_id)
-		 WHERE c.short_host_id=$1 AND c.channel_id=$2`,
-		m.ShortHostID(),
-		channelID,
-	).Scan(&raw)
+	err := row.Scan(&raw)
 	if err == pgx.ErrNoRows {
 		return nil, nil
 	}
@@ -69,6 +56,66 @@ func readPushHolder(
 		return nil, err
 	}
 	return &uid, nil
+}
+
+// readPushHolder returns the holder of the (team, app) push hold, or nil if
+// there is no hold.
+func readPushHolder(
+	m shared.MetaContext,
+	db shared.Querier,
+	team proto.TeamID,
+	app proto.RTAppID,
+) (
+	*proto.UID,
+	error,
+) {
+	appDB, err := app.ExportToDB()
+	if err != nil {
+		return nil, err
+	}
+	return scanPushHolder(db.QueryRow(
+		m.Ctx(),
+		`SELECT holder_uid FROM push_holds
+		 WHERE short_host_id=$1 AND team_id=$2 AND app_id=$3`,
+		m.ShortHostID(),
+		team.ExportToDB(),
+		appDB,
+	))
+}
+
+// readPushHolderForChannel returns the holder of the push hold on the
+// channel's team and app, or nil if there is no hold.
+func readPushHolderForChannel(
+	m shared.MetaContext,
+	db shared.Querier,
+	channelID int64,
+) (
+	*proto.UID,
+	error,
+) {
+	return scanPushHolder(db.QueryRow(
+		m.Ctx(),
+		`SELECT h.holder_uid
+		 FROM push_holds h
+		 JOIN channels c ON (c.short_host_id=h.short_host_id
+		                     AND c.parent_team_id=h.team_id
+		                     AND c.app_id=h.app_id)
+		 WHERE c.short_host_id=$1 AND c.channel_id=$2`,
+		m.ShortHostID(),
+		channelID,
+	))
+}
+
+// queueHeldInChannel queues every row held in one channel.
+func queueHeldInChannel(m shared.MetaContext, tx pgx.Tx, channelID int64) error {
+	_, err := tx.Exec(
+		m.Ctx(),
+		`UPDATE push_outbox SET status='queued', mtime=NOW()
+		 WHERE short_host_id=$1 AND channel_id=$2 AND status='held'`,
+		m.ShortHostID(),
+		channelID,
+	)
+	return err
 }
 
 // endPushHold deletes the (team, app) push hold, if any, and queues every row
@@ -117,10 +164,16 @@ func roleCanRead(role core.RoleKey, readRole proto.Role) (bool, error) {
 }
 
 // pushStatusForSend returns the status for a send's push rows. It runs in the
-// send transaction, before the push fan-out. If the holder has left the team,
-// the hold ends here and the send's rows are queued.
+// send transaction, before the push fan-out.
+//
+// A holder who can no longer decide is noticed here, lazily, on the next send:
+// if the holder has left the team the hold ends, and if the holder can no
+// longer read this channel (demoted, or replaced by a lower-role holder) the
+// channel's held rows are queued. Either way the send's rows are queued. So if
+// the channel then goes quiet, the rows held for its last message are never
+// delivered; that is accepted for now, and clearing the hold delivers them.
 func (s *messageSender) pushStatusForSend(m shared.MetaContext) (string, error) {
-	holder, err := readPushHolder(m, s.tx, s.channelID())
+	holder, err := readPushHolder(m, s.tx, s.parentTeam, s.appID)
 	if err != nil {
 		return "", err
 	}
@@ -144,6 +197,11 @@ func (s *messageSender) pushStatusForSend(m shared.MetaContext) (string, error) 
 		return "", err
 	}
 	if !readable {
+		// holderTx refuses this holder here, so nothing could decide these.
+		err = queueHeldInChannel(m, s.tx, s.channelID())
+		if err != nil {
+			return "", err
+		}
 		return pushStatusQueued, nil
 	}
 	return pushStatusHeld, nil
@@ -157,12 +215,17 @@ func adminTx(
 	which string,
 	fn func(m shared.MetaContext, tx pgx.Tx) error,
 ) error {
-	userdb, err := m.Db(shared.DbTypeUsers)
-	if err != nil {
-		return err
-	}
-	defer userdb.Release()
-	role, err := AuthorizeUserForTeam(m, userdb, team)
+	// The users connection is released before the realtime one is taken, so
+	// this never holds users while waiting on realtime; the send path and
+	// holderTx take them the other way round.
+	role, err := func() (*core.RoleKey, error) {
+		userdb, err := m.Db(shared.DbTypeUsers)
+		if err != nil {
+			return nil, err
+		}
+		defer userdb.Release()
+		return AuthorizeUserForTeam(m, userdb, team)
+	}()
 	if err != nil {
 		return err
 	}
@@ -251,7 +314,7 @@ func holderTx(
 		if !readable {
 			return core.PermissionError("user role too low to read channel")
 		}
-		holder, err := readPushHolder(m, tx, chid.Short().Int64())
+		holder, err := readPushHolderForChannel(m, tx, chid.Short().Int64())
 		if err != nil {
 			return err
 		}
@@ -268,9 +331,13 @@ func holderTx(
 // others deleted, so each member gets at most one push per call. Only held
 // rows change, so repeating a call is a no-op.
 func ReleasePushes(m shared.MetaContext, arg rem.RtReleasePushesArg) error {
+	if len(arg.Keep) > maxPushListLen || len(arg.Drop) > maxPushListLen {
+		return core.BadArgsError("too many push release entries")
+	}
 	return holderTx(m, arg.ChannelID, "realtime.ReleasePushes",
 		func(m shared.MetaContext, tx pgx.Tx, _ holderChannel, _ shared.Querier) error {
 			chid := arg.ChannelID.Short().Int64()
+			through := arg.ThroughSeq.Int64()
 			if len(arg.Drop) > 0 {
 				uids := make([][]byte, len(arg.Drop))
 				seqs := make([]int64, len(arg.Drop))
@@ -283,8 +350,8 @@ func ReleasePushes(m shared.MetaContext, arg rem.RtReleasePushesArg) error {
 					`DELETE FROM push_outbox p
 					 USING unnest($3::bytea[], $4::bigint[]) AS d(uid, seq)
 					 WHERE p.short_host_id=$1 AND p.channel_id=$2 AND p.status='held'
-					   AND p.uid=d.uid AND p.seq=d.seq`,
-					m.ShortHostID(), chid, uids, seqs,
+					   AND p.uid=d.uid AND p.seq=d.seq AND p.seq <= $5`,
+					m.ShortHostID(), chid, uids, seqs, through,
 				)
 				if err != nil {
 					return err
@@ -294,7 +361,6 @@ func ReleasePushes(m shared.MetaContext, arg rem.RtReleasePushesArg) error {
 			for i, u := range arg.Keep {
 				keep[i] = u.ExportToDB()
 			}
-			through := arg.ThroughSeq.Int64()
 			_, err := tx.Exec(
 				m.Ctx(),
 				`UPDATE push_outbox p SET status='queued', mtime=NOW()
@@ -325,7 +391,7 @@ func ReleasePushes(m shared.MetaContext, arg rem.RtReleasePushesArg) error {
 // Members who cannot read the channel are skipped without error. A member
 // listed more than once gets one push.
 func NotifyMembers(m shared.MetaContext, arg rem.RtNotifyMembersArg) error {
-	if len(arg.Entries) > maxPushNotifyEntries {
+	if len(arg.Entries) > maxPushListLen {
 		return core.BadArgsError("too many push notify entries")
 	}
 	seen := make(map[proto.UID]bool, len(arg.Entries))
@@ -348,6 +414,7 @@ func NotifyMembers(m shared.MetaContext, arg rem.RtNotifyMembersArg) error {
 			if err != nil {
 				return err
 			}
+			var toUIDs, toData [][]byte
 			for _, e := range entries {
 				role, ok := live[e.Uid]
 				if !ok {
@@ -364,21 +431,24 @@ func NotifyMembers(m shared.MetaContext, arg rem.RtNotifyMembersArg) error {
 				if len(e.Handle) > 0 {
 					data = e.Handle
 				}
-				// Only members with a user_channels row, the same set the
-				// send fan-out pushes to.
-				_, err = tx.Exec(
-					m.Ctx(),
-					`INSERT INTO push_outbox
-					   (short_host_id, uid, channel_id, kind, seq, data, status, ctime, mtime)
-					 SELECT uc.short_host_id, uc.uid, uc.channel_id, 'system', NULL, $4, 'queued', NOW(), NOW()
-					   FROM user_channels uc
-					  WHERE uc.short_host_id=$1 AND uc.channel_id=$2 AND uc.uid=$3`,
-					m.ShortHostID(), arg.ChannelID.Short().Int64(), e.Uid.ExportToDB(), data,
-				)
-				if err != nil {
-					return err
-				}
+				toUIDs = append(toUIDs, e.Uid.ExportToDB())
+				toData = append(toData, data)
 			}
-			return nil
+			if len(toUIDs) == 0 {
+				return nil
+			}
+			// Only members with a user_channels row, the same set the send
+			// fan-out pushes to.
+			_, err = tx.Exec(
+				m.Ctx(),
+				`INSERT INTO push_outbox
+				   (short_host_id, uid, channel_id, kind, seq, data, status, ctime, mtime)
+				 SELECT uc.short_host_id, uc.uid, uc.channel_id, 'system', NULL, e.data, 'queued', NOW(), NOW()
+				   FROM unnest($3::bytea[], $4::bytea[]) AS e(uid, data)
+				   JOIN user_channels uc
+				     ON uc.short_host_id=$1 AND uc.channel_id=$2 AND uc.uid=e.uid`,
+				m.ShortHostID(), arg.ChannelID.Short().Int64(), toUIDs, toData,
+			)
+			return err
 		})
 }

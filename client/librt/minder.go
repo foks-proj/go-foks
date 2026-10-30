@@ -2574,11 +2574,11 @@ func (d *Minder) pushHoldTeam(m MetaContext, team lcl.ConfigTeam) (proto.TeamID,
 	if err != nil {
 		return zed, err
 	}
-	fqt := rtp.plcn.FQParty().FQTeam()
-	if fqt == nil {
-		return zed, core.InternalError("teamID of chat party was unexpectedly nil")
+	tid, err := rtp.TeamID()
+	if err != nil {
+		return zed, err
 	}
-	return fqt.Team, nil
+	return *tid, nil
 }
 
 // SetPushHold places the team's push hold for the app with this user as the

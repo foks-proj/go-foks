@@ -6,7 +6,7 @@
 //     push rows, not 'queued' ones;
 //   - only the holder decides held rows (keep, drop, one push per member);
 //   - when the hold ends (cleared, or the holder left the team) the held rows
-//     are queued.
+//     are queued, and so are a channel's when the holder can no longer read it.
 package lib
 
 import (
@@ -264,11 +264,17 @@ func TestRTPushReleaseKeepDropCoalesce(t *testing.T) {
 	release(nil, nil)
 	require.Equal(t, queued(1), sc.pushRows(t, ch, sc.cleo))
 	require.Equal(t, []int64{s3.Int64()}, sc.queuedSeqs(t, ch, sc.cleo))
+
+	// keep and drop are capped like notify's entries.
+	err := sc.dara.minder.ReleasePushes(sc.dara.m, ch, s3, make([]proto.UID, 10001), nil)
+	require.Error(t, err)
+	err = sc.dara.minder.ReleasePushes(sc.dara.m, ch, s3, nil, make([]rem.RTPushDrop, 10001))
+	require.Error(t, err)
 }
 
-// A release only touches rows up to throughSeq. A member kept in a call for a
-// newer seq and dropped in a call for an older one ends with the older rows
-// decided and the newer ones still held.
+// A release only touches rows up to throughSeq, drops included. A member kept
+// in a call for a newer seq and dropped in a call for an older one ends with
+// the older rows decided and the newer ones still held.
 func TestRTPushReleaseThroughSeq(t *testing.T) {
 	sc := setupPushHoldScene(t)
 	ch := sc.makeChannel(t, sc.bob, proto.DefaultRole, librt.MakeChannelOpts{})
@@ -280,8 +286,9 @@ func TestRTPushReleaseThroughSeq(t *testing.T) {
 
 	require.NoError(t, sc.dara.minder.ReleasePushes(sc.dara.m, ch, s4,
 		[]proto.UID{sc.eddie.u.uid}, nil))
+	// The drop of seq 4 is past this call's throughSeq, so it is ignored.
 	require.NoError(t, sc.dara.minder.ReleasePushes(sc.dara.m, ch, s2,
-		nil, []rem.RTPushDrop{{Uid: sc.eddie.u.uid, Seq: s1}}))
+		nil, []rem.RTPushDrop{{Uid: sc.eddie.u.uid, Seq: s1}, {Uid: sc.eddie.u.uid, Seq: s4}}))
 
 	require.Equal(t, []int64{s4.Int64()}, sc.queuedSeqs(t, ch, sc.alice))
 	require.Equal(t, queued(1), sc.pushRows(t, ch, sc.alice))
@@ -324,12 +331,17 @@ func TestRTPushNotify(t *testing.T) {
 		{Uid: sc.cleo.u.uid, Handle: []byte("again")}, // listed twice: one push
 		{Uid: sc.eddie.u.uid, Handle: handle},         // role too low
 		{Uid: sc.bob.u.uid, Handle: handle},           // never in the channel
+		{Uid: sc.alice.u.uid},                         // no handle
 	}))
 	require.Equal(t, queued(1), sc.pushRows(t, ch, sc.cleo))
 	require.Equal(t, 1, sc.rtdbCount(t,
 		`SELECT count(*) FROM push_outbox
 		 WHERE channel_id=$1 AND uid=$2 AND kind='system' AND seq IS NULL AND data=$3`,
 		ch.Short().Int64(), sc.cleo.u.uid.ExportToDB(), handle))
+	require.Equal(t, 1, sc.rtdbCount(t,
+		`SELECT count(*) FROM push_outbox
+		 WHERE channel_id=$1 AND uid=$2 AND kind='system' AND data IS NULL`,
+		ch.Short().Int64(), sc.alice.u.uid.ExportToDB()))
 	require.Empty(t, sc.pushRows(t, ch, sc.eddie))
 	require.Empty(t, sc.pushRows(t, ch, sc.bob))
 
@@ -374,4 +386,31 @@ func TestRTPushHoldHolderLeftEndsOnSend(t *testing.T) {
 	require.Equal(t, queued(2), sc.pushRows(t, ch, sc.cleo),
 		"the held row is queued, and so is the new one")
 	require.Equal(t, 0, sc.holdCount(t))
+}
+
+// A holder who can no longer read a channel (here demoted from admin) cannot
+// decide its held rows, so the next send there queues them. Channels the
+// holder still reads stay held.
+func TestRTPushHoldHolderDemotedQueuesOnSend(t *testing.T) {
+	sc := setupPushHoldScene(t)
+	admins := sc.makeChannel(t, sc.alice, proto.AdminRole, librt.MakeChannelOpts{})
+	ch := sc.makeChannel(t, sc.bob, proto.DefaultRole, librt.MakeChannelOpts{})
+	sc.setHold(t, sc.dara)
+	sc.send(t, sc.alice, admins, "held for the admins")
+	require.Equal(t, held(1), sc.pushRows(t, admins, sc.cleo))
+
+	sc.tm.makeChanges(t, sc.tew.MetaContext(), sc.alice.u,
+		[]proto.MemberRole{
+			sc.dara.u.toMemberRole(t, proto.DefaultRole, sc.tm.hepks),
+		}, nil)
+
+	sc.send(t, sc.alice, admins, "the next send")
+	require.Equal(t, queued(2), sc.pushRows(t, admins, sc.cleo),
+		"the held row is queued, and so is the new one")
+
+	// dara is still a member and still holds, so the hold goes on where
+	// dara can read.
+	require.Equal(t, 1, sc.holdCount(t))
+	sc.send(t, sc.bob, ch, "still held")
+	require.Equal(t, held(1), sc.pushRows(t, ch, sc.cleo))
 }
