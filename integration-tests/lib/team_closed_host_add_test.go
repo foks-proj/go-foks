@@ -39,22 +39,42 @@ func newClosedHostTeam(t *testing.T) *closedHostTeam {
 }
 
 // newUser makes a user who, if grant is set, grants the team a local view
-// permission on themself.
+// permission on themself at the default role.
 func (c *closedHostTeam) newUser(t *testing.T, grant bool) *TestUser {
 	u := c.tew.NewTestUserOpts(t, &TestUserOpts{RealTreeRoot: true})
 	c.tew.DirectDoubleMerklePokeInTest(t)
 	if grant {
-		cli := c.tew.userCli(t, u)
-		_, err := cli.GrantLocalViewPermissionForUser(
-			c.tew.MetaContext().Ctx(),
-			rem.GrantLocalViewPermissionPayload{
-				Viewee: u.uid.ToPartyID(),
-				Viewer: c.tid.ToPartyID(),
-			},
-		)
-		require.NoError(t, err)
+		c.grant(t, u, nil)
 	}
 	return u
+}
+
+// grant gives the team a local view permission on u, usable by members at
+// role or above (the default member-load floor if nil).
+func (c *closedHostTeam) grant(t *testing.T, u *TestUser, role *proto.Role) {
+	cli := c.tew.userCli(t, u)
+	_, err := cli.GrantLocalViewPermissionForUser(
+		c.tew.MetaContext().Ctx(),
+		rem.GrantLocalViewPermissionPayload{
+			Viewee:     u.uid.ToPartyID(),
+			Viewer:     c.tid.ToPartyID(),
+			ViewerRole: role,
+		},
+	)
+	require.NoError(t, err)
+}
+
+func atHost(u *TestUser, host proto.ParsedHostname) lcl.FQPartyParsedAndRole {
+	return lcl.FQPartyParsedAndRole{
+		Fqp: proto.FQPartyParsed{
+			Party: proto.NewParsedPartyWithFalse(u.uid.ToPartyID()),
+			Host:  &host,
+		},
+	}
+}
+
+func hostnameOnly(h proto.Hostname) proto.ParsedHostname {
+	return proto.NewParsedHostnameWithTrue(proto.NewTCPAddrPortOpt(h, nil))
 }
 
 func (c *closedHostTeam) add(t *testing.T, member lcl.FQPartyParsedAndRole) error {
@@ -117,32 +137,28 @@ func TestTeamClosedHostAddByUID(t *testing.T) {
 	require.True(t, found, "team not in the new member's membership chain")
 }
 
-// Naming the team's own host alongside the UID is still a local add.
+// Naming the team's own host alongside the UID, by host ID or by hostname, is
+// still a local add.
 func TestTeamClosedHostAddByUIDAtLocalHost(t *testing.T) {
 	c := newClosedHostTeam(t)
 	bob := c.newUser(t, true)
-	host := proto.NewParsedHostnameWithFalse(c.alice.host)
-	require.NoError(t, c.add(t, lcl.FQPartyParsedAndRole{
-		Fqp: proto.FQPartyParsed{
-			Party: proto.NewParsedPartyWithFalse(bob.uid.ToPartyID()),
-			Host:  &host,
-		},
-	}))
+	require.NoError(t, c.add(t, atHost(bob, proto.NewParsedHostnameWithFalse(c.alice.host))))
+	dave := c.newUser(t, true)
+	require.NoError(t, c.add(t, atHost(dave, hostnameOnly(c.tew.Hostname()))))
 }
 
 func TestTeamClosedHostAddOtherHostRefused(t *testing.T) {
 	c := newClosedHostTeam(t)
 	bob := c.newUser(t, true)
 	other := c.tew.VHostMakeI(t, 4)
-	host := proto.NewParsedHostnameWithFalse(other.HostID.Id)
-	err := c.add(t, lcl.FQPartyParsedAndRole{
-		Fqp: proto.FQPartyParsed{
-			Party: proto.NewParsedPartyWithFalse(bob.uid.ToPartyID()),
-			Host:  &host,
-		},
-	})
-	require.Error(t, err)
-	require.IsType(t, core.HostMismatchError{}, err)
+	for _, host := range []proto.ParsedHostname{
+		proto.NewParsedHostnameWithFalse(other.HostID.Id),
+		hostnameOnly(other.Hostname),
+	} {
+		err := c.add(t, atHost(bob, host))
+		require.Error(t, err)
+		require.IsType(t, core.HostMismatchError{}, err)
+	}
 }
 
 func TestTeamClosedHostAddNeedsGrant(t *testing.T) {
@@ -150,9 +166,48 @@ func TestTeamClosedHostAddNeedsGrant(t *testing.T) {
 	bob := c.newUser(t, false)
 	err := c.add(t, byUID(bob))
 	require.Error(t, err)
-	var cle core.ChainLoaderError
-	require.ErrorAs(t, err, &cle)
-	require.ErrorIs(t, cle.Err, core.PermissionError("no view permission"))
+	require.IsType(t, core.PermissionError(""), err)
+	require.Contains(t, err.Error(), "no view permission")
+	require.Contains(t, err.Error(), "member-load floor")
+}
+
+// A grant usable only at admin would let the admin's add through, but the
+// members at the member-load floor could not load the new member afterwards.
+// The add is checked at the floor, so it fails instead.
+func TestTeamClosedHostAddGrantAboveFloorRefused(t *testing.T) {
+	c := newClosedHostTeam(t)
+	carol := c.newUser(t, true)
+	require.NoError(t, c.add(t, byUID(carol)))
+
+	dave := c.newUser(t, false)
+	c.grant(t, dave, &proto.AdminRole)
+	err := c.add(t, byUID(dave))
+	require.Error(t, err)
+	require.IsType(t, core.PermissionError(""), err)
+
+	// Asking to be checked at a role above the token's own does not widen
+	// what the token can load: carol, a member, cannot load dave as owner.
+	mc, tm := memberMinder(t, c.tew, carol)
+	_, err = tm.ListMemberships(mc, nil)
+	require.NoError(t, err)
+	tr, err := tm.LoadTeamWithFQTeam(
+		mc,
+		proto.FQTeam{Team: c.tid, Host: c.alice.host},
+		libclient.LoadTeamOpts{Refresh: true},
+	)
+	require.NoError(t, err)
+	// Without the token the loader would fall back to carol's own view, which
+	// fails the same way and would prove nothing.
+	tok := tr.Tw().VOBearerToken()
+	require.NotNil(t, tok)
+	_, err = libclient.LoadUser(mc, libclient.LoadUserArg{
+		Uid:               dave.uid,
+		LoadMode:          libclient.LoadModeOthers,
+		TeamVOBearerToken: tok,
+		AsTeamRole:        &proto.OwnerRole,
+	})
+	require.Error(t, err)
+	require.ErrorIs(t, err, core.PermissionError("no view permission"))
 }
 
 // Loading a team on a closed host loads every member on the team's behalf, so

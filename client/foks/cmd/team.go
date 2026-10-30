@@ -298,7 +298,8 @@ possible for an admin to add other members directly to a team. This command (`+"
 does this addition.
 
 On a closed-view host, a user can be added directly once they have granted the team
-a local view permission on themselves; name them by user ID, since usernames do not
+a local view permission on themselves, usable at the team's member-load floor (member/0
+unless the team says otherwise); name them by user ID, since usernames do not
 resolve there. Teams cannot be added directly on a closed-view host.
 
 Each user added can be specified with or without a source role. If source roles are not provided:
