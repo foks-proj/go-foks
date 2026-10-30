@@ -237,7 +237,22 @@ func (p *PUKMinder) loadUser(m MetaContext) (*UserWrapper, error) {
 	}
 	var err error
 	p.chain, err = LoadMe(m, p.u)
-	if err != nil {
+	switch {
+	case core.IsTransportError(err):
+		// Offline fallback, mirroring PopulateWithDevkey: the verified local
+		// sigchain snapshot serves when the server is unreachable, so PUK
+		// consumers (parcel decryption, generation lookups) keep working
+		// from their local caches. A device that never completed an online
+		// load has no snapshot and keeps the original error.
+		cached, cerr := LoadMeFromCache(m, p.u)
+		if cerr != nil {
+			m.Warnw("PUKMinder.loadUser", "stage", "cacheFallback", "err", cerr)
+			return nil, err
+		}
+		m.Warnw("PUKMinder.loadUser", "err", err,
+			"note", "server unreachable; user served from verified snapshot")
+		p.chain = cached
+	case err != nil:
 		return nil, err
 	}
 	return p.chain, nil

@@ -99,9 +99,13 @@ func (c *connectionMgr) checkIdle(m RpcClientMetaContexter) {
 	}
 	now := c.opts.Clock.Now()
 	if c.rc.i == 0 && now.Sub(c.rc.time) > c.opts.IdleTimeout {
-		m.Infow("closing idle connection", "remote", c.remote)
-		c.xp.Close()
-		c.xp = nil
+		// xp is already nil when resetXp or getXp's dead-connection branch
+		// dropped it and no re-dial succeeded since; the record still expires.
+		if c.xp != nil {
+			m.Infow("closing idle connection", "remote", c.remote)
+			c.xp.Close()
+			c.xp = nil
+		}
 		c.rc = nil
 		if c.opts.testIdleDisconnectCh != nil {
 			c.opts.testIdleDisconnectCh <- struct{}{}

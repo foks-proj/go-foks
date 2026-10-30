@@ -445,18 +445,26 @@ func (t *TeamEditor) makeTeamLink(m MetaContext) error {
 	return nil
 }
 
+// newAdminBoxer returns a boxer for the team's admin PTK, for sealing data
+// (such as removal keys) that the team admins must be able to open. Boxing
+// needs only the public half of that key: the new one if this edit rotates
+// it, otherwise the current one from the team chain, which every member has.
+// The editor therefore does not need to hold the admin PTK itself.
 func (t *TeamEditor) newAdminBoxer(m MetaContext) (*core.SPSBoxer, error) {
-	key := t.newAdminPtk
-	if key == nil {
-		if t.tw == nil {
-			return nil, core.KeyNotFoundError{Which: "admin PTK"}
-		}
-		key = t.tw.KeyRing().CurrentPrivateKeyAtRole(core.AdminRole)
+	if t.newAdminPtk != nil {
+		return core.PublicizeToSPSBoxer(t.newAdminPtk, t.cp.FQParty())
 	}
-	if key == nil {
+	if t.tw == nil {
 		return nil, core.KeyNotFoundError{Which: "admin PTK"}
 	}
-	return core.PublicizeToSPSBoxer(key, t.cp.FQParty())
+	sps, err := t.tw.KeyRing().CurrentPublicSuiteAtRole(core.AdminRole)
+	if err != nil {
+		return nil, err
+	}
+	if sps == nil {
+		return nil, core.KeyNotFoundError{Which: "admin PTK"}
+	}
+	return &core.SPSBoxer{SharedPublicSuite: *sps, Parent: t.cp.FQParty()}, nil
 }
 
 func (t *TeamEditor) fqTeam() proto.FQTeam {
