@@ -541,10 +541,22 @@ func (w *TeamRecord) findDstLocked() (*proto.RoleAndSeqno, error) {
 	if err != nil {
 		return nil, err
 	}
+	if mrq == nil {
+		return nil, core.TeamExploreError("load as party not found in team")
+	}
 	return &proto.RoleAndSeqno{
 		Role:  mrq.Mr.DstRole,
 		Seqno: mrq.Seqno,
 	}, nil
+}
+
+// actorRoleLocked is the role this record's loading party holds in the team.
+func (w *TeamRecord) actorRoleLocked() (*core.RoleKey, error) {
+	dst, err := w.findDstLocked()
+	if err != nil {
+		return nil, err
+	}
+	return core.ImportRole(dst.Role)
 }
 
 func (r *TeamRecord) ExportToTeamMembership() (*lcl.TeamMembership, error) {
@@ -1352,7 +1364,13 @@ func (t *TeamMinder) ExploreAndIndex(m MetaContext, opts *LoadTeamOpts) error {
 	if err != nil {
 		return err
 	}
-	err = t.reindex(state)
+	return t.indexExplored(m, state)
+}
+
+// indexExplored makes state the minder's loaded teams and name index, and
+// mirrors the names into the soft DB for offline cold start.
+func (t *TeamMinder) indexExplored(m MetaContext, state *ExploreState) error {
+	err := t.reindex(state)
 	if err != nil {
 		return err
 	}

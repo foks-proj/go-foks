@@ -60,22 +60,10 @@ func (c *CLKR) explore(m MetaContext) error {
 	if err != nil {
 		return err
 	}
-	// Index the exploration into the minder, so the records this sweep
-	// reasons about are the records it goes on to load.
-	//
-	// Two things depend on that. The sweep decides whether it may act on a
-	// team from the exploration's TeamRecord, while CLKROneTeam.loadTeam
-	// resolves the team through TeamMinder.loadedTeams; a team reachable by
-	// more than one membership path can be claimed by a different path in two
-	// different explorations -- explorePool claims concurrently -- and the two
-	// paths can carry different roles, so without this the sweep could decline
-	// a team on one path's role and never load it on the other's.
-	//
-	// It also stops the sweep exploring twice. loadedTeams was left empty
-	// here, so the first loadTeam reached getTeamWithRefresh with no record
-	// and Refresh set, which walks the whole graph again before loading its
-	// first team.
-	return c.tm.reindex(c.estate)
+	// Index the exploration, so the first loadTeam finds a record instead
+	// of walking the whole graph again, and the skip check below reads the
+	// same records loadTeam goes on to use.
+	return c.tm.indexExplored(m, c.estate)
 }
 
 func (c *CLKR) loadOrder(m MetaContext) error {
@@ -97,26 +85,12 @@ func (c *CLKR) Skipped() []proto.FQTeam {
 	return c.skipped
 }
 
-// actorRoleFromExplore reports the role this client holds in fqt according to
-// the exploration that opened this sweep, or nil when the sweep cannot say.
-//
-// Explore walks every team at MemberLoadNames and the roster it leaves behind
-// carries each member's role, so this answers without touching the server.
-// CLKROneTeam.loadTeam answers the same question, but only after refreshing
-// the team and every member's user chain from the server (MemberLoadFull) --
-// work that is discarded for a team this client has no standing to change.
-//
-// It reports only what the exploration saw. A promotion landing between that
-// exploration and this loop is missed and the team is swept on the next run:
-// CLKR is a lazy sweep on a timer, so deferring one pass costs a rotation
-// nothing. Whenever the answer is unclear -- no record, no roster entry, a
-// role that will not import -- it returns nil and the caller takes the old
-// path and loads the team.
+// actorRoleFromExplore is the role this client holds in fqt according to the
+// indexed exploration, or nil if it cannot tell (the caller then loads the
+// team). Exploration loads named teams at MemberLoadNone, but the roster
+// still carries every member's role, so this needs no server round trip.
 func (c *CLKR) actorRoleFromExplore(fqt proto.FQTeam) *core.RoleKey {
-	if c.estate == nil {
-		return nil
-	}
-	tr := c.estate.team(fqt)
+	tr := c.tm.getTeam(fqt)
 	if tr == nil {
 		return nil
 	}
@@ -125,11 +99,7 @@ func (c *CLKR) actorRoleFromExplore(fqt proto.FQTeam) *core.RoleKey {
 	if tr.tw == nil || tr.ldr == nil {
 		return nil
 	}
-	tmem, err := tr.tw.GetMember(tr.ldr.Arg.As, tr.ldr.Arg.SrcRole)
-	if err != nil || tmem == nil {
-		return nil
-	}
-	rk, err := core.ImportRole(tmem.Mr.DstRole)
+	rk, err := tr.actorRoleLocked()
 	if err != nil {
 		return nil
 	}
@@ -141,12 +111,9 @@ func (c *CLKR) visitAllTeams(m MetaContext) error {
 
 	for _, fqteam := range c.order {
 
-		// Drop teams this client cannot act on before they cost anything.
 		// CLKROneTeam.run reaches the same verdict, but only after loadTeam
-		// has refreshed the team and every member's user chain, and only
-		// after the delay below has paced a round trip that need not happen
-		// at all. The delay stays ahead of the teams that are actually
-		// visited, so the pacing it exists for is unchanged.
+		// has refreshed the team and every member's user chain. A promotion
+		// since the exploration is picked up on the next sweep.
 		if rk := c.actorRoleFromExplore(fqteam); rk != nil && !rk.IsAdminOrAbove() {
 			m.Infow("clkr", "team", fqteam, "actorRole", rk.Export(),
 				"why", "not admin or above (from exploration)", "action", "skip")
@@ -360,16 +327,9 @@ func (c *CLKROneTeam) loadTeam(m MetaContext) error {
 	ldr := tr.ldr
 	tw := tr.tw
 
-	tmem, err := tw.GetMember(ldr.Arg.As, ldr.Arg.SrcRole)
-	if err != nil {
-		return err
-	}
-
-	if tmem == nil {
-		return core.TeamExploreError("load as party not found in team")
-	}
-
-	actorRole, err := core.ImportRole(tmem.Mr.DstRole)
+	tr.Lock()
+	actorRole, err := tr.actorRoleLocked()
+	tr.Unlock()
 	if err != nil {
 		return err
 	}
