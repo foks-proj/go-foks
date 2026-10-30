@@ -288,7 +288,8 @@ protocol RealTime
     // Holder only. For the channel's held rows with seq <= throughSeq: rows of
     // members in keep stay held, rows named in drop are deleted, and for every
     // other member the highest seq is queued and the lower ones deleted.
-    // Only held rows change, so repeating a call is a no-op.
+    // Only held rows change, so repeating a call is a no-op. keep and drop
+    // take at most 10,000 entries each.
     rtReleasePushes @14 (
         channelID @0 : lib.RTChannelID,
         throughSeq @1 : lib.RTMsgSeq,
@@ -298,7 +299,7 @@ protocol RealTime
 
     // Holder only. Queue one content-free 'system' push for each listed member
     // who can read the channel; other members are skipped. A member listed
-    // more than once gets one push.
+    // more than once gets one push. At most 10,000 entries.
     rtNotifyMembers @15 (
         channelID @0 : lib.RTChannelID,
         entries @1 : List(RTPushNotify)

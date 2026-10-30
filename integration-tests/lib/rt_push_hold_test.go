@@ -388,14 +388,23 @@ func TestRTPushHoldHolderLeftEndsOnSend(t *testing.T) {
 	require.Equal(t, 0, sc.holdCount(t))
 }
 
-// A holder who can no longer read a channel (here demoted from admin) cannot
-// decide its held rows, so the next send there queues them. Channels the
-// holder still reads stay held.
+// A holder who can no longer read a channel cannot decide its held rows, so
+// the next send there queues them: first when an owner hands the hold to an
+// admin, then when that admin is demoted. Channels the holder still reads
+// stay held.
 func TestRTPushHoldHolderDemotedQueuesOnSend(t *testing.T) {
 	sc := setupPushHoldScene(t)
+	owners := sc.makeChannel(t, sc.alice, proto.OwnerRole, librt.MakeChannelOpts{})
 	admins := sc.makeChannel(t, sc.alice, proto.AdminRole, librt.MakeChannelOpts{})
 	ch := sc.makeChannel(t, sc.bob, proto.DefaultRole, librt.MakeChannelOpts{})
-	sc.setHold(t, sc.dara)
+
+	sc.setHold(t, sc.alice)
+	sc.send(t, sc.alice, owners, "held for the owners")
+	require.Equal(t, held(1), sc.pushRows(t, owners, sc.cleo))
+	sc.setHold(t, sc.dara) // replaces alice with a holder who cannot read owners
+	sc.send(t, sc.alice, owners, "after the handover")
+	require.Equal(t, queued(2), sc.pushRows(t, owners, sc.cleo))
+
 	sc.send(t, sc.alice, admins, "held for the admins")
 	require.Equal(t, held(1), sc.pushRows(t, admins, sc.cleo))
 
