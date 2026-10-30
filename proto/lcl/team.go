@@ -289,13 +289,15 @@ func (f *FQTeamParsedAndRole) Decode(dec rpc.Decoder) error {
 func (f *FQTeamParsedAndRole) Bytes() []byte { return nil }
 
 type TeamRoster struct {
-	Fqp     NamedFQParty
-	Members []TeamRosterMember
+	Fqp        NamedFQParty
+	Members    []TeamRosterMember
+	VerifiedAt lib.Time
 }
 type TeamRosterInternal__ struct {
-	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
-	Fqp     *NamedFQPartyInternal__
-	Members *[](*TeamRosterMemberInternal__)
+	_struct    struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
+	Fqp        *NamedFQPartyInternal__
+	Members    *[](*TeamRosterMemberInternal__)
+	VerifiedAt *lib.TimeInternal__
 }
 
 func (t TeamRosterInternal__) Import() TeamRoster {
@@ -324,6 +326,12 @@ func (t TeamRosterInternal__) Import() TeamRoster {
 			}
 			return ret
 		})(t.Members),
+		VerifiedAt: (func(x *lib.TimeInternal__) (ret lib.Time) {
+			if x == nil {
+				return ret
+			}
+			return x.Import()
+		})(t.VerifiedAt),
 	}
 }
 func (t TeamRoster) Export() *TeamRosterInternal__ {
@@ -339,6 +347,7 @@ func (t TeamRoster) Export() *TeamRosterInternal__ {
 			}
 			return &ret
 		})(t.Members),
+		VerifiedAt: t.VerifiedAt.Export(),
 	}
 }
 func (t *TeamRoster) Encode(enc rpc.Encoder) error {
@@ -940,19 +949,21 @@ func (r *RoleChange) Decode(dec rpc.Decoder) error {
 func (r *RoleChange) Bytes() []byte { return nil }
 
 type TeamMembership struct {
-	Team    NamedFQParty
-	SrcRole lib.Role
-	DstRole lib.Role
-	Via     *NamedFQParty
-	Tir     lib.RationalRange
+	Team       NamedFQParty
+	SrcRole    lib.Role
+	DstRole    lib.Role
+	Via        *NamedFQParty
+	Tir        lib.RationalRange
+	VerifiedAt lib.Time
 }
 type TeamMembershipInternal__ struct {
-	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
-	Team    *NamedFQPartyInternal__
-	SrcRole *lib.RoleInternal__
-	DstRole *lib.RoleInternal__
-	Via     *NamedFQPartyInternal__
-	Tir     *lib.RationalRangeInternal__
+	_struct    struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
+	Team       *NamedFQPartyInternal__
+	SrcRole    *lib.RoleInternal__
+	DstRole    *lib.RoleInternal__
+	Via        *NamedFQPartyInternal__
+	Tir        *lib.RationalRangeInternal__
+	VerifiedAt *lib.TimeInternal__
 }
 
 func (t TeamMembershipInternal__) Import() TeamMembership {
@@ -993,6 +1004,12 @@ func (t TeamMembershipInternal__) Import() TeamMembership {
 			}
 			return x.Import()
 		})(t.Tir),
+		VerifiedAt: (func(x *lib.TimeInternal__) (ret lib.Time) {
+			if x == nil {
+				return ret
+			}
+			return x.Import()
+		})(t.VerifiedAt),
 	}
 }
 func (t TeamMembership) Export() *TeamMembershipInternal__ {
@@ -1006,7 +1023,8 @@ func (t TeamMembership) Export() *TeamMembershipInternal__ {
 			}
 			return (*x).Export()
 		})(t.Via),
-		Tir: t.Tir.Export(),
+		Tir:        t.Tir.Export(),
+		VerifiedAt: t.VerifiedAt.Export(),
 	}
 }
 func (t *TeamMembership) Encode(enc rpc.Encoder) error {

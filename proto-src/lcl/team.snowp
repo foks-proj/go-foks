@@ -37,6 +37,12 @@ struct FQTeamParsedAndRole {
 struct TeamRoster {
     fqp @0 : NamedFQParty; // Will always be a team
     members @1 : List(TeamRosterMember);
+    // When the snapshot this roster came from was last confirmed against the
+    // server's merkle root. A roster is exactly the thing a staleness window
+    // hides changes to -- a member added or removed since this time is not
+    // reflected below -- so the age travels with it. Zero means the snapshot
+    // predates the field.
+    verifiedAt @2 : lib.Time;
 }
 
 struct FQNamedTeam {
@@ -95,6 +101,12 @@ struct TeamMembership {
     dstRole @2 : lib.Role;
     via @3 : Option(NamedFQParty); // If membership via team, return the team details; nil means direct
     tir @4 : lib.RationalRange; // The index range of the team
+    // When this team's local snapshot was last confirmed against the server's
+    // merkle root. Offline, the client serves that snapshot without
+    // re-verifying it, so this is how far behind the row might be. Zero means
+    // the snapshot predates the field, which is not the same as "just now" and
+    // should not be rendered as though it were.
+    verifiedAt @5 : lib.Time;
 }
 
 // One item in a user or team's TeamMembershipChain; can be multiple

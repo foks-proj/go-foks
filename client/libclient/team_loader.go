@@ -576,6 +576,9 @@ func (w *TeamWrapper) ExportToNamedFQParty() lcl.NamedFQParty {
 func (w *TeamWrapper) ExportToRoster() (*lcl.TeamRoster, error) {
 	ret := lcl.TeamRoster{
 		Fqp: w.ExportToNamedFQParty(),
+		// A roster is precisely what a staleness window hides changes to, so
+		// it does not travel without the age of the verification behind it.
+		VerifiedAt: w.prot.VerifiedAt,
 	}
 	var roster []lcl.TeamRosterMember
 	for _, l := range w.rosterDetails {
