@@ -538,7 +538,26 @@ func outputTeamListTable(m libclient.MetaContext, opts outputTableOpts, roster l
 		return ret, nil
 	}
 
-	return convertAndOutputRows(m, opts, roster.Members, conv, nil)
+	err := convertAndOutputRows(m, opts, roster.Members, conv, nil)
+	if err != nil {
+		return err
+	}
+	return writeVerifiedFooter(m, roster.VerifiedAt)
+}
+
+// writeVerifiedFooter prints how old the snapshot behind a listing is. It goes
+// under the table rather than into a column because it describes the whole
+// listing, not any one row -- and repeating one value down every row would
+// bury the fact rather than state it.
+//
+// The wording is deliberately about the data, not the connection: a reader
+// looking at a roster wants to know how far behind these members might be, and
+// "offline" would not answer that even when it is true.
+func writeVerifiedFooter(m libclient.MetaContext, v proto.Time) error {
+	line := fmt.Sprintf("Snapshot verified: %s\n",
+		describeVerifiedAge(v, m.G().Now()))
+	_, err := m.G().UIs().Terminal.OutputStream().Write([]byte(line))
+	return err
 }
 
 type teamInboxRow struct {
@@ -631,20 +650,42 @@ func outputTeamInboxTable(m libclient.MetaContext, opts outputTableOpts, inbox l
 }
 
 type teamMembershipsRow struct {
-	idx     int
-	srcRole string
-	team    string
-	dstRole string
-	via     string
-	tir     string
+	idx      int
+	srcRole  string
+	team     string
+	dstRole  string
+	via      string
+	tir      string
+	verified string
 }
 
 func (t teamMembershipsRow) toTableRow() table.Row {
-	return table.Row{t.srcRole, t.team, t.dstRole, t.via, t.tir}
+	return table.Row{t.srcRole, t.team, t.dstRole, t.via, t.tir, t.verified}
+}
+
+// describeVerifiedAge renders how long ago a team's snapshot was last
+// confirmed against the merkle root. Offline the client serves that snapshot
+// unchecked, so this column is the only thing telling a reader whether they
+// are looking at something current or something from last month.
+//
+// An absent stamp prints "unknown" rather than a duration: a snapshot written
+// before the field existed is the *most* likely to be stale, and showing it as
+// "0s" would say the opposite of the truth.
+func describeVerifiedAge(v proto.Time, now time.Time) string {
+	if v.IsZero() {
+		return "unknown"
+	}
+	d := now.Sub(v.Import())
+	if d < 0 {
+		// The stamp is attested by the load, the clock is not; a clock that
+		// has moved backwards should not print a negative age.
+		return "clock skew"
+	}
+	return d.Round(time.Second).String() + " ago"
 }
 
 func (t teamMembershipsRow) headers() table.Row {
-	return table.Row{"Src Role", "Team", "Dst Role", "Via", "Index Range"}
+	return table.Row{"Src Role", "Team", "Dst Role", "Via", "Index Range", "Verified"}
 }
 
 func (t teamMembershipsRow) lessThan(other tableRow) bool {
@@ -680,11 +721,12 @@ func outputTeamListMembershipsTable(
 			RationalRange: t.Tir,
 		}
 		ret := teamMembershipsRow{
-			idx:     i,
-			srcRole: srcRole,
-			dstRole: dstRole,
-			team:    teamName(t.Team),
-			tir:     rr.String(),
+			idx:      i,
+			srcRole:  srcRole,
+			dstRole:  dstRole,
+			team:     teamName(t.Team),
+			tir:      rr.String(),
+			verified: describeVerifiedAge(t.VerifiedAt, m.G().Now()),
 		}
 		if t.Via != nil {
 			ret.via = teamName(*t.Via)

@@ -313,13 +313,21 @@ in-memory preload.
 *`TestTeamSnapshotVerifiedAt`; fails when the stamp is zeroed on read.*
 
 **R6.** A staleness reading SHALL distinguish "no stamp recorded" from "zero
-age".
+age", at the API and where it is rendered.
 *`VerifiedAge` returns the age with a bool that is false when the snapshot
-carries no stamp. `TestUserSnapshotVerifiedAt` exercises the stamped case; the
-absent-stamp case is not asserted here. Carrying the stamp to what a person
-reads — the team listing and the roster — and rendering the absent stamp as
-"unknown" rather than a zero age is a separate, follow-up change, which pins
-both.*
+carries no stamp, and `describeVerifiedAge` renders that as "unknown".
+`TestDescribeVerifiedAge` covers the absent stamp, an elapsed age, and a future
+stamp (clock skew rather than a negative age); `TestUserSnapshotVerifiedAt`
+exercises the stamped case at the loader.*
+
+**R6a.** The verification time SHALL reach the surfaces a person reads, not
+only the loader.
+*`TestListMembershipsCarriesVerifiedAt` and `TestRosterCarriesVerifiedAt`: a
+team listing and an exported roster each carry the stamp, dating the load that
+produced them. Both fail when the export drops the field. `foks team
+list-memberships` renders it as a "Verified" column; `foks team list` prints a
+"Snapshot verified" footer under the roster, since one value describing a whole
+listing belongs under it rather than repeated down every row.*
 
 ### Availability
 
@@ -399,12 +407,12 @@ requires a chain and zone an earlier probe accepted.*
 
 ### Coverage
 
-Twelve requirements are pinned by tests that fail when the behaviour is
-removed (R1, R3, R4, R5, R7, R8, R12, R13, R14, R15, R16, R17). R2 is
-half-pinned by R1's test, its failed-verification half still structural. Four
-hold along a tested path without being fully asserted (R6's stamped case, R9 in
-part, R10, R11), as does R17's "previously verified" condition, which is
-structural rather than asserted.
+Fourteen requirements are pinned by tests that fail when the behaviour is
+removed (R1, R3, R4, R5, R6, R6a, R7, R8, R12, R13, R14, R15, R16, R17). R2 is
+half-pinned by R1's test, its failed-verification half still structural. Three
+hold along a tested path without being fully asserted (R9 in part, R10, R11),
+as does R17's "previously verified" condition, which is structural rather than
+asserted.
 
 Nothing on this list is unverified any more. What remains is the weakest tier,
 not a missing one: R9's stays-locked half, R10, and R11 are exercised without
@@ -495,15 +503,16 @@ something, and the shape that works is sealed-to-self while queued. The two
 documents no longer contradict each other; what remains is the decision, which
 belongs with whoever owns the outbox.
 
-**`verifiedAt` is recorded, and next has to reach a person.**
+**`verifiedAt` now reaches a person, and should reach more of them.**
 `TeamWrapper.VerifiedAge()` returns the age with a bool for "no stamp on this
 snapshot" — not knowable and not stale are different answers, and folding them
-together fails open on the oldest snapshots. Today one surface reads it: the
-offline fallback in `TeamLoader.Run` logs it when it serves a snapshot, which an
-operator sees and a user does not. The follow-up change carries it on the team
-listing and the roster and renders it in the CLI, which is the first step Q1
-asks for — surface the age before any policy acts on it. The roster matters
-most, since a roster is exactly what a staleness window hides changes to.
+together fails open on the oldest snapshots. The offline fallback in
+`TeamLoader.Run` logs it when it serves a snapshot, which an operator sees; the
+team listing (`lcl.TeamMembership.verifiedAt`) and the roster
+(`lcl.TeamRoster.verifiedAt`) carry it outward, and the CLI renders both. That
+is the first step Q1 asks for — surface the age before any policy acts on it.
+The roster matters most, since a roster is exactly what a staleness window
+hides changes to.
 
 Beyond those two, what remains uncovered is the chat side. A
 thread view served from cache and an inbox rendered from a stale snapshot carry

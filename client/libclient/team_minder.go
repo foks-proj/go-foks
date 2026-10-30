@@ -561,6 +561,10 @@ func (r *TeamRecord) ExportToTeamMembership() (*lcl.TeamMembership, error) {
 		DstRole: dr.Role,
 		SrcRole: r.member.SrcRole(),
 		Tir:     r.tw.prot.Tir,
+		// Carry the verification time outward: a listing is where a person
+		// sees teams, so it is where "this may be behind" has to be visible.
+		// Offline, every row here comes from a snapshot nobody re-checked.
+		VerifiedAt: r.tw.prot.VerifiedAt,
 	}
 
 	via := r.member.FQParty()

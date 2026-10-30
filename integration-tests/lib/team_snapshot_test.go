@@ -499,3 +499,76 @@ func TestOfflineReadsWriteNothing(t *testing.T) {
 	require.Equal(t, before, snapshotSoftDB(t, coldM),
 		"an offline read must not write to local state")
 }
+
+// TestListMembershipsCarriesVerifiedAt: the stamp is useless if it stops at
+// the loader. A team listing is where a person sees their teams, so it is
+// where "this may be behind" has to reach -- and offline, every row in that
+// listing comes from a snapshot nobody re-checked.
+func TestListMembershipsCarriesVerifiedAt(t *testing.T) {
+	tew := testEnvBeta(t)
+	bluey := tew.NewTestUser(t)
+	tew.DirectDoubleMerklePokeInTest(t)
+
+	m := tew.NewClientMetaContextAtHome(t, bluey, t.TempDir())
+	au := m.G().ActiveUser()
+	_, err := au.RefreshPUKs(m)
+	require.NoError(t, err)
+
+	tm := libclient.NewTeamMinder(au)
+	_, err = tm.Create(m, randomTeamname(t))
+	require.NoError(t, err)
+	tew.DirectDoubleMerklePokeInTest(t)
+
+	before := m.G().Now()
+	res, err := tm.ListMemberships(m, &libclient.LoadTeamOpts{Refresh: true})
+	require.NoError(t, err)
+	require.NotEmpty(t, res.Teams)
+
+	for _, row := range res.Teams {
+		require.False(t, row.VerifiedAt.IsZero(),
+			"every listed team must carry the time its snapshot was verified")
+		require.False(t, row.VerifiedAt.Import().Before(before.Add(-time.Minute)),
+			"the stamp must date this load, not some earlier one")
+	}
+}
+
+// TestRosterCarriesVerifiedAt: a roster is precisely what a staleness window
+// hides changes to -- a member added or removed since the last verification is
+// simply not in it -- so the age has to travel with it, not stop at the
+// loader.
+func TestRosterCarriesVerifiedAt(t *testing.T) {
+	tew := testEnvBeta(t)
+	bluey := tew.NewTestUser(t)
+	tew.DirectDoubleMerklePokeInTest(t)
+
+	m := tew.NewClientMetaContextAtHome(t, bluey, t.TempDir())
+	au := m.G().ActiveUser()
+	_, err := au.RefreshPUKs(m)
+	require.NoError(t, err)
+
+	host, err := au.HostID().StringErr()
+	require.NoError(t, err)
+
+	tm := libclient.NewTeamMinder(au)
+	nm := randomTeamname(t)
+	_, err = tm.Create(m, nm)
+	require.NoError(t, err)
+	tew.DirectDoubleMerklePokeInTest(t)
+
+	parsed, err := core.ParseFQTeam(proto.FQTeamString(string(nm) + "@" + host))
+	require.NoError(t, err)
+
+	before := m.G().Now()
+	tw, err := tm.LoadTeam(m, team.WrapNamed(*parsed), libclient.LoadTeamOpts{
+		Refresh: true,
+		Members: libclient.MemberLoadNames,
+	})
+	require.NoError(t, err)
+
+	roster, err := tw.ExportToRoster()
+	require.NoError(t, err)
+	require.False(t, roster.VerifiedAt.IsZero(),
+		"an exported roster must carry the time its snapshot was verified")
+	require.False(t, roster.VerifiedAt.Import().Before(before.Add(-time.Minute)),
+		"the stamp must date this load, not some earlier one")
+}
