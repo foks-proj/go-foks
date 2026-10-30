@@ -874,13 +874,18 @@ func SweepSocialInvites(m MetaContext) error {
 	shid := m.ShortHostID().ExportToDB()
 
 	return RetryTxUserDB(m, "SweepSocialInvites", func(m MetaContext, tx pgx.Tx) error {
-		// Codes first, while the rows that reference them still exist.
+		// Codes first, while the rows that reference them still exist. The
+		// rows are locked before their codes, the order CloseSocialInvite
+		// takes them in, so a close and a sweep of the same invitation
+		// cannot deadlock.
 		codes, err := queryByteaColumn(m, tx,
 			`SELECT invite_code FROM social_invites
 			 WHERE short_host_id=$1 AND invite_code IS NOT NULL
 			 AND (etime < $2
 			      OR (state IN ('accepted', 'declined', 'canceled')
-			          AND mtime < $3))`,
+			          AND mtime < $3))
+			 ORDER BY id
+			 FOR UPDATE`,
 			shid, now, cutoff,
 		)
 		if err != nil {
@@ -903,6 +908,11 @@ func SweepSocialInvites(m MetaContext) error {
 	})
 }
 
+// socialInviteSweepTimeout bounds each database step of a sweep (listing the
+// hosts, then each host's sweep). Like the poll loops' database timeout, it
+// only fires on a wedged connection.
+const socialInviteSweepTimeout = time.Minute
+
 // SweepSocialInvitesAllHosts sweeps every host that has invitations. A host
 // whose sweep fails is logged and skipped, so one bad host does not stop the
 // others; row deletion is tidiness, and the next sweep retries.
@@ -911,11 +921,12 @@ func SweepSocialInvitesAllHosts(m MetaContext) error {
 	if err != nil {
 		return err
 	}
+	hosts, err = m.G().HostIDMap().Filter(m, hosts)
+	if err != nil {
+		return err
+	}
 	for _, h := range hosts {
-		mh, err := m.WithShortHostID(h)
-		if err == nil {
-			err = SweepSocialInvites(mh)
-		}
+		err := sweepSocialInvitesForHost(m, h)
 		if err != nil {
 			m.Warnw("SweepSocialInvitesAllHosts", "host", h, "err", err)
 		}
@@ -923,9 +934,21 @@ func SweepSocialInvitesAllHosts(m MetaContext) error {
 	return nil
 }
 
+func sweepSocialInvitesForHost(m MetaContext, h core.ShortHostID) error {
+	m, err := m.WithShortHostID(h)
+	if err != nil {
+		return err
+	}
+	m, cancel := m.WithContextTimeout(socialInviteSweepTimeout)
+	defer cancel()
+	return SweepSocialInvites(m)
+}
+
 // socialInviteHosts lists the hosts that have any invitation rows, which are
 // the only ones a sweep can change.
 func socialInviteHosts(m MetaContext) ([]core.ShortHostID, error) {
+	m, cancel := m.WithContextTimeout(socialInviteSweepTimeout)
+	defer cancel()
 	db, err := m.Db(DbTypeUsers)
 	if err != nil {
 		return nil, err

@@ -12,8 +12,8 @@ import (
 )
 
 // Social invites (docs/social_signup_spec.md), inviter side. All calls but
-// ReplySocialInvite authorize on the caller being the row's inviter; Reply is made by
-// the invitee and carries the write key instead.
+// ReplySocialInvite authorize on the caller being the row's inviter; that one
+// is made by the invitee and carries the write key instead.
 
 func (c *UserClientConn) CreateSocialInvite(ctx context.Context, arg rem.CreateSocialInviteArg) error {
 	m := shared.NewMetaContextConn(ctx, c)
@@ -55,10 +55,6 @@ func (c *UserClientConn) NewInviteCode(ctx context.Context) (rem.InviteCode, err
 
 var _ rem.SocialInviteInterface = (*UserClientConn)(nil)
 
-// socialInviteSweepTimeout bounds one sweep over every host. Like the poll
-// loops' database timeout, it only fires on a wedged connection.
-const socialInviteSweepTimeout = time.Minute
-
 // RunBackgroundLoops sweeps social invitations on a timer. The sweep lives on
 // the user server because every deployment runs one, standalone included. It
 // takes no run-lock: replicas may sweep at the same time, which is safe since
@@ -72,18 +68,18 @@ func (s *UserServer) RunBackgroundLoops(m shared.MetaContext, _ chan<- error) er
 	return nil
 }
 
+// sweepSocialInvitesLoop sweeps once at startup, so a server restarted more
+// often than the interval still sweeps, and then on every tick.
 func sweepSocialInvitesLoop(m shared.MetaContext, every time.Duration) {
 	tick := time.NewTicker(every)
 	defer tick.Stop()
 	for {
+		err := shared.SweepSocialInvitesAllHosts(m)
+		if err != nil {
+			m.Warnw("sweepSocialInvitesLoop", "err", err)
+		}
 		select {
 		case <-tick.C:
-			mt, cancel := m.WithContextTimeout(socialInviteSweepTimeout)
-			err := shared.SweepSocialInvitesAllHosts(mt)
-			cancel()
-			if err != nil {
-				m.Warnw("sweepSocialInvitesLoop", "err", err)
-			}
 		case <-m.Ctx().Done():
 			return
 		}
