@@ -417,6 +417,9 @@ type Settings struct {
 	Siml    core.Duration `json:"social_invite_max_lifespan"`
 	Sig     core.Duration `json:"social_invite_grace"`
 	Simo    int           `json:"social_invite_max_open"`
+	Simb    int           `json:"social_invite_max_box_bytes"`
+	Simt    int           `json:"social_invite_max_turns"`
+	Sisi    core.Duration `json:"social_invite_sweep_interval"`
 	Muic    int           `json:"max_unused_invite_codes"`
 }
 
@@ -555,6 +558,35 @@ func (s Settings) SocialInviteMaxOpen() int {
 		return 25
 	}
 	return s.Simo
+}
+
+// SocialInviteMaxBoxBytes caps each encrypted box a social invite stores (the
+// seed box and every turn's message), since the whole transcript is served to
+// every guest fetch and list. A greeting, a code and a team id fit easily.
+func (s Settings) SocialInviteMaxBoxBytes() int {
+	if s.Simb == 0 {
+		return 4096
+	}
+	return s.Simb
+}
+
+// SocialInviteMaxTurns caps how many turns one invitation's exchange holds.
+func (s Settings) SocialInviteMaxTurns() int {
+	if s.Simt == 0 {
+		return 16
+	}
+	return s.Simt
+}
+
+// SocialInviteSweepInterval is how often the user server sweeps expired and
+// terminal invitations. It bounds how long an expired invitation's unused
+// signup code stays redeemable.
+func (s Settings) SocialInviteSweepInterval() time.Duration {
+	var zed core.Duration
+	if s.Sisi == zed {
+		return 10 * time.Minute
+	}
+	return s.Sisi.Duration
 }
 
 // MaxUnusedInviteCodes caps how many unredeemed standard codes one user can

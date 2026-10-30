@@ -5,6 +5,7 @@ package lib
 
 import (
 	"context"
+	"strings"
 	"testing"
 	"time"
 
@@ -155,13 +156,13 @@ func newSocialInviteFixture(t *testing.T) *socialInviteFixture {
 func (f *socialInviteFixture) createArg(
 	t *testing.T,
 	code *rem.InviteCode,
-) rem.CreateArg {
+) rem.CreateSocialInviteArg {
 	payload := rem.SocialInviteMsgPayload{
 		Text:       "hi Bob, join my team?",
 		InviteCode: code,
 		Team:       &proto.FQTeam{Team: f.tid, Host: f.alice.host},
 	}
-	return rem.CreateArg{
+	return rem.CreateSocialInviteArg{
 		Id:         f.kit.id,
 		Team:       f.tid,
 		SeedBox:    makeSocialInviteSeedBox(t, f.alice, f.kit.seed),
@@ -173,7 +174,7 @@ func (f *socialInviteFixture) createArg(
 
 func (f *socialInviteFixture) create(t *testing.T, code *rem.InviteCode) {
 	m := f.tew.MetaContext()
-	err := f.cli.Create(m.Ctx(), f.createArg(t, code))
+	err := f.cli.CreateSocialInvite(m.Ctx(), f.createArg(t, code))
 	require.NoError(t, err)
 }
 
@@ -182,13 +183,13 @@ func (f *socialInviteFixture) replyArg(
 	bob *TestUser,
 	inReplyTo uint64,
 	text string,
-) rem.ReplyArg {
+) rem.ReplySocialInviteArg {
 	fqu := bob.FQUser()
 	payload := rem.SocialInviteMsgPayload{
 		Text: text,
 		User: &fqu,
 	}
-	return rem.ReplyArg{
+	return rem.ReplySocialInviteArg{
 		Id:        f.kit.id,
 		Wk:        f.kit.wk,
 		InReplyTo: inReplyTo,
@@ -198,7 +199,7 @@ func (f *socialInviteFixture) replyArg(
 
 func (f *socialInviteFixture) listOne(t *testing.T) rem.SocialInviteRow {
 	m := f.tew.MetaContext()
-	rows, err := f.cli.List(m.Ctx())
+	rows, err := f.cli.ListSocialInvites(m.Ctx())
 	require.NoError(t, err)
 	for _, row := range rows {
 		if row.Id == f.kit.id {
@@ -211,7 +212,7 @@ func (f *socialInviteFixture) listOne(t *testing.T) rem.SocialInviteRow {
 
 func (f *socialInviteFixture) close(t *testing.T, st proto.SocialInviteState) error {
 	m := f.tew.MetaContext()
-	return f.cli.Close(m.Ctx(), rem.CloseArg{Id: f.kit.id, St: st})
+	return f.cli.CloseSocialInvite(m.Ctx(), rem.CloseSocialInviteArg{Id: f.kit.id, St: st})
 }
 
 // setSocialInviteTimes rewrites timestamp columns straight in the DB, to
@@ -229,7 +230,7 @@ func setSocialInviteTime(
 	q := `UPDATE social_invites SET ` + col + `=$3
 	      WHERE short_host_id=$1 AND id=$2`
 	tags, err := db.Exec(m.Ctx(), q,
-		m.ShortHostID().ExportToDB(), id[:], time.Now().Add(-age))
+		m.ShortHostID().ExportToDB(), id[:], time.Now().UTC().Add(-age))
 	require.NoError(t, err)
 	require.Equal(t, int64(1), tags.RowsAffected())
 }
@@ -266,7 +267,7 @@ func TestSocialInviteHappyPath(t *testing.T) {
 	// and reads M_1.
 	gcli, closeGuest := tew.newSocialInviteGuestClient(t)
 	defer closeGuest()
-	view, err := gcli.Fetch(m.Ctx(), f.kit.id)
+	view, err := gcli.FetchSocialInvite(m.Ctx(), f.kit.id)
 	require.NoError(t, err)
 	require.Equal(t, proto.SocialInviteState_Open, view.State)
 	require.Equal(t, 1, len(view.Msgs))
@@ -292,7 +293,7 @@ func TestSocialInviteHappyPath(t *testing.T) {
 	// Step 5: Bob replies with wk, naming U_B inside the box.
 	bcli, closeBob := bob.newSocialInviteClient(t, m.Ctx())
 	defer closeBob()
-	err = bcli.Reply(m.Ctx(), f.replyArg(t, bob, 1, "sure, it's me"))
+	err = bcli.ReplySocialInvite(m.Ctx(), f.replyArg(t, bob, 1, "sure, it's me"))
 	require.NoError(t, err)
 
 	// Step 6: Alice lists, opens the seed box with her PUK, rederives the
@@ -321,7 +322,7 @@ func TestSocialInviteHappyPath(t *testing.T) {
 
 	// Bob's poll still reads the decision; the consumed code stays as the
 	// audit trail.
-	view, err = gcli.Fetch(m.Ctx(), f.kit.id)
+	view, err = gcli.FetchSocialInvite(m.Ctx(), f.kit.id)
 	require.NoError(t, err)
 	require.Equal(t, proto.SocialInviteState_Accepted, view.State)
 	var usedBy []byte
@@ -339,7 +340,7 @@ func TestSocialInviteGuestFetchUnknown(t *testing.T) {
 	gcli, closeFn := tew.newSocialInviteGuestClient(t)
 	defer closeFn()
 	kit := newSocialInviteKit(t)
-	_, err := gcli.Fetch(m.Ctx(), kit.id)
+	_, err := gcli.FetchSocialInvite(m.Ctx(), kit.id)
 	require.Error(t, err)
 	require.Equal(t, core.SocialInviteNotFoundError{}, err)
 }
@@ -356,7 +357,7 @@ func TestSocialInviteBadWriteKey(t *testing.T) {
 
 	arg := f.replyArg(t, bob, 1, "let me in")
 	arg.Wk[0] ^= 0x1
-	err := bcli.Reply(m.Ctx(), arg)
+	err := bcli.ReplySocialInvite(m.Ctx(), arg)
 	require.Error(t, err)
 	require.True(t, core.IsPermissionError(err))
 
@@ -377,12 +378,12 @@ func TestSocialInviteStaleTurn(t *testing.T) {
 	defer closeFn()
 
 	// A reply must name the current inviter turn.
-	err := bcli.Reply(m.Ctx(), f.replyArg(t, bob, 0, "early"))
+	err := bcli.ReplySocialInvite(m.Ctx(), f.replyArg(t, bob, 0, "early"))
 	require.Error(t, err)
 	require.Equal(t, core.SocialInviteStaleTurnError{}, err)
 
-	require.NoError(t, bcli.Reply(m.Ctx(), f.replyArg(t, bob, 1, "answer")))
-	err = f.cli.AskAgain(m.Ctx(), rem.AskAgainArg{
+	require.NoError(t, bcli.ReplySocialInvite(m.Ctx(), f.replyArg(t, bob, 1, "answer")))
+	err = f.cli.AskAgainSocialInvite(m.Ctx(), rem.AskAgainSocialInviteArg{
 		Id:  f.kit.id,
 		Msg: f.kit.seal(t, &rem.SocialInviteMsgPayload{Text: "who is this really?"}),
 	})
@@ -390,7 +391,7 @@ func TestSocialInviteStaleTurn(t *testing.T) {
 
 	// A client that fetched before the ask-again answers turn 1, which is no
 	// longer current.
-	err = bcli.Reply(m.Ctx(), f.replyArg(t, bob, 1, "stale"))
+	err = bcli.ReplySocialInvite(m.Ctx(), f.replyArg(t, bob, 1, "stale"))
 	require.Error(t, err)
 	require.Equal(t, core.SocialInviteStaleTurnError{}, err)
 }
@@ -405,9 +406,9 @@ func TestSocialInviteReplyRetryReplaces(t *testing.T) {
 	bcli, closeFn := bob.newSocialInviteClient(t, m.Ctx())
 	defer closeFn()
 
-	require.NoError(t, bcli.Reply(m.Ctx(), f.replyArg(t, bob, 1, "first answer")))
+	require.NoError(t, bcli.ReplySocialInvite(m.Ctx(), f.replyArg(t, bob, 1, "first answer")))
 	// A lost-ack retry of the same turn replaces rather than appends.
-	require.NoError(t, bcli.Reply(m.Ctx(), f.replyArg(t, bob, 1, "second answer")))
+	require.NoError(t, bcli.ReplySocialInvite(m.Ctx(), f.replyArg(t, bob, 1, "second answer")))
 
 	row := f.listOne(t)
 	require.Equal(t, proto.SocialInviteState_Replied, row.State)
@@ -422,7 +423,7 @@ func TestSocialInviteAskAgainFlow(t *testing.T) {
 	f.create(t, nil)
 
 	// Ask-again needs a reply first.
-	err := f.cli.AskAgain(m.Ctx(), rem.AskAgainArg{
+	err := f.cli.AskAgainSocialInvite(m.Ctx(), rem.AskAgainSocialInviteArg{
 		Id:  f.kit.id,
 		Msg: f.kit.seal(t, &rem.SocialInviteMsgPayload{Text: "hello?"}),
 	})
@@ -433,9 +434,9 @@ func TestSocialInviteAskAgainFlow(t *testing.T) {
 	f.tew.DirectDoubleMerklePokeInTest(t)
 	bcli, closeBob := bob.newSocialInviteClient(t, m.Ctx())
 	defer closeBob()
-	require.NoError(t, bcli.Reply(m.Ctx(), f.replyArg(t, bob, 1, "it's bob")))
+	require.NoError(t, bcli.ReplySocialInvite(m.Ctx(), f.replyArg(t, bob, 1, "it's bob")))
 
-	err = f.cli.AskAgain(m.Ctx(), rem.AskAgainArg{
+	err = f.cli.AskAgainSocialInvite(m.Ctx(), rem.AskAgainSocialInviteArg{
 		Id:  f.kit.id,
 		Msg: f.kit.seal(t, &rem.SocialInviteMsgPayload{Text: "prove it"}),
 	})
@@ -445,18 +446,40 @@ func TestSocialInviteAskAgainFlow(t *testing.T) {
 	// and what she asked.
 	gcli, closeGuest := f.tew.newSocialInviteGuestClient(t)
 	defer closeGuest()
-	view, err := gcli.Fetch(m.Ctx(), f.kit.id)
+	view, err := gcli.FetchSocialInvite(m.Ctx(), f.kit.id)
 	require.NoError(t, err)
 	require.Equal(t, proto.SocialInviteState_AskAgain, view.State)
 	require.Equal(t, 3, len(view.Msgs))
 	m3 := f.kit.open(t, view.Msgs[2].Box)
 	require.Equal(t, "prove it", m3.Text)
 
-	// He answers the new turn; the exchange is append-only with no limit.
-	require.NoError(t, bcli.Reply(m.Ctx(), f.replyArg(t, bob, 3, "fine: proof")))
+	// He answers the new turn; the exchange is append-only.
+	require.NoError(t, bcli.ReplySocialInvite(m.Ctx(), f.replyArg(t, bob, 3, "fine: proof")))
 	row := f.listOne(t)
 	require.Equal(t, proto.SocialInviteState_Replied, row.State)
 	require.Equal(t, 4, len(row.Msgs))
+
+	// Up to the host's turn cap: past it, the next turn is refused, whoever
+	// takes it.
+	settings, err := m.G().Config().Settings(m.Ctx())
+	require.NoError(t, err)
+	maxTurns := uint64(settings.SocialInviteMaxTurns())
+	next := func(seq uint64) error {
+		if seq%2 == 1 {
+			return f.cli.AskAgainSocialInvite(m.Ctx(), rem.AskAgainSocialInviteArg{
+				Id:  f.kit.id,
+				Msg: f.kit.seal(t, &rem.SocialInviteMsgPayload{Text: "again"}),
+			})
+		}
+		return bcli.ReplySocialInvite(m.Ctx(), f.replyArg(t, bob, seq-1, "again"))
+	}
+	for seq := uint64(5); seq <= maxTurns; seq++ {
+		require.NoError(t, next(seq))
+	}
+	err = next(maxTurns + 1)
+	require.Error(t, err)
+	require.IsType(t, core.SocialInviteTooBigError{}, err)
+	require.Equal(t, int(maxTurns), len(f.listOne(t).Msgs))
 }
 
 func TestSocialInviteWrongStateAndNotFound(t *testing.T) {
@@ -473,7 +496,7 @@ func TestSocialInviteWrongStateAndNotFound(t *testing.T) {
 	err := f.close(t, proto.SocialInviteState_Accepted)
 	require.Equal(t, core.SocialInviteWrongStateError{}, err)
 
-	require.NoError(t, bcli.Reply(m.Ctx(), f.replyArg(t, bob, 1, "me")))
+	require.NoError(t, bcli.ReplySocialInvite(m.Ctx(), f.replyArg(t, bob, 1, "me")))
 
 	// close(canceled) on a replied row: decline is the retraction there.
 	err = f.close(t, proto.SocialInviteState_Canceled)
@@ -482,7 +505,7 @@ func TestSocialInviteWrongStateAndNotFound(t *testing.T) {
 	require.NoError(t, f.close(t, proto.SocialInviteState_Accepted))
 
 	// Replying to a decided row fails loudly; the decision is visible anyway.
-	err = bcli.Reply(m.Ctx(), f.replyArg(t, bob, 1, "again"))
+	err = bcli.ReplySocialInvite(m.Ctx(), f.replyArg(t, bob, 1, "again"))
 	require.Equal(t, core.SocialInviteWrongStateError{}, err)
 
 	// A lost-ack retry of the same close succeeds; a different terminal
@@ -501,9 +524,9 @@ func TestSocialInviteWrongStateAndNotFound(t *testing.T) {
 
 	gcli, closeGuest := f.tew.newSocialInviteGuestClient(t)
 	defer closeGuest()
-	_, err = gcli.Fetch(m.Ctx(), f2.kit.id)
+	_, err = gcli.FetchSocialInvite(m.Ctx(), f2.kit.id)
 	require.Equal(t, core.SocialInviteNotFoundError{}, err)
-	err = bcli.Reply(m.Ctx(), f2.replyArg(t, bob, 1, "hello?"))
+	err = bcli.ReplySocialInvite(m.Ctx(), f2.replyArg(t, bob, 1, "hello?"))
 	require.Equal(t, core.SocialInviteNotFoundError{}, err)
 	// A retry of the cancel is idempotent, but any other close on the
 	// canceled row reads it as never-existed.
@@ -526,7 +549,7 @@ func TestSocialInviteCancelReclaimsCode(t *testing.T) {
 		tew: f.tew, alice: f.alice, tm: f.tm, tid: f.tid,
 		kit: newSocialInviteKit(t), cli: f.cli,
 	}
-	err = f2.cli.Create(m.Ctx(), f2.createArg(t, code))
+	err = f2.cli.CreateSocialInvite(m.Ctx(), f2.createArg(t, code))
 	require.Equal(t, core.BadInviteCodeError{}, err)
 
 	require.NoError(t, f.close(t, proto.SocialInviteState_Canceled))
@@ -551,7 +574,7 @@ func TestSocialInviteCancelReclaimsCode(t *testing.T) {
 	// The canceled row reads as never-existed.
 	gcli, closeGuest := f.tew.newSocialInviteGuestClient(t)
 	defer closeGuest()
-	_, err = gcli.Fetch(m.Ctx(), f.kit.id)
+	_, err = gcli.FetchSocialInvite(m.Ctx(), f.kit.id)
 	require.Equal(t, core.SocialInviteNotFoundError{}, err)
 }
 
@@ -567,7 +590,7 @@ func TestSocialInviteDeclineReclaimsCodeButStaysReadable(t *testing.T) {
 	f.tew.DirectDoubleMerklePokeInTest(t)
 	bcli, closeBob := bob.newSocialInviteClient(t, m.Ctx())
 	defer closeBob()
-	require.NoError(t, bcli.Reply(m.Ctx(), f.replyArg(t, bob, 1, "me")))
+	require.NoError(t, bcli.ReplySocialInvite(m.Ctx(), f.replyArg(t, bob, 1, "me")))
 
 	require.NoError(t, f.close(t, proto.SocialInviteState_Declined))
 
@@ -581,16 +604,71 @@ func TestSocialInviteDeclineReclaimsCodeButStaysReadable(t *testing.T) {
 
 	gcli, closeGuest := f.tew.newSocialInviteGuestClient(t)
 	defer closeGuest()
-	view, err := gcli.Fetch(m.Ctx(), f.kit.id)
+	view, err := gcli.FetchSocialInvite(m.Ctx(), f.kit.id)
 	require.NoError(t, err)
 	require.Equal(t, proto.SocialInviteState_Declined, view.State)
 
 	// The decision outlives the row's own expiry: a decline made just
 	// before etime stays readable until the sweeper's grace elapses.
 	setSocialInviteTime(t, m, f.kit.id, "etime", time.Hour)
-	view, err = gcli.Fetch(m.Ctx(), f.kit.id)
+	view, err = gcli.FetchSocialInvite(m.Ctx(), f.kit.id)
 	require.NoError(t, err)
 	require.Equal(t, proto.SocialInviteState_Declined, view.State)
+}
+
+// An accepted close revokes an attached code the invitee never used (he
+// already had an account here) but leaves a consumed one, with its reference,
+// as the audit trail.
+func TestSocialInviteAcceptRevokesUnusedCode(t *testing.T) {
+	f := newSocialInviteFixture(t)
+	m := f.tew.MetaContext()
+	bob := f.tew.NewTestUser(t)
+	f.tew.DirectDoubleMerklePokeInTest(t)
+	bcli, closeBob := bob.newSocialInviteClient(t, m.Ctx())
+	defer closeBob()
+
+	db, err := m.G().Db(m.Ctx(), shared.DbTypeUsers)
+	require.NoError(t, err)
+	defer db.Release()
+	shid := m.ShortHostID().ExportToDB()
+	codeRows := func(code *rem.InviteCode) int {
+		var n int
+		err := db.QueryRow(m.Ctx(),
+			`SELECT COUNT(*) FROM invite_codes WHERE short_host_id=$1 AND code=$2`,
+			shid, code.Standard()).Scan(&n)
+		require.NoError(t, err)
+		return n
+	}
+	accept := func(code *rem.InviteCode) {
+		f.kit = newSocialInviteKit(t)
+		f.create(t, code)
+		require.NoError(t, bcli.ReplySocialInvite(m.Ctx(), f.replyArg(t, bob, 1, "me")))
+		require.NoError(t, f.close(t, proto.SocialInviteState_Accepted))
+	}
+
+	unused, err := shared.GenerateStandardInviteCode(m, f.alice.uid)
+	require.NoError(t, err)
+	accept(unused)
+	require.Equal(t, 0, codeRows(unused))
+
+	used, err := shared.GenerateStandardInviteCode(m, f.alice.uid)
+	require.NoError(t, err)
+	f.kit = newSocialInviteKit(t)
+	f.create(t, used)
+	_, err = db.Exec(m.Ctx(),
+		`UPDATE invite_codes SET used_by=$3, used_on=NOW()
+		 WHERE short_host_id=$1 AND code=$2`,
+		shid, used.Standard(), bob.uid.ExportToDB())
+	require.NoError(t, err)
+	require.NoError(t, bcli.ReplySocialInvite(m.Ctx(), f.replyArg(t, bob, 1, "me")))
+	require.NoError(t, f.close(t, proto.SocialInviteState_Accepted))
+	require.Equal(t, 1, codeRows(used))
+	var refs int
+	err = db.QueryRow(m.Ctx(),
+		`SELECT COUNT(*) FROM social_invites WHERE short_host_id=$1 AND invite_code=$2`,
+		shid, used.Standard()).Scan(&refs)
+	require.NoError(t, err)
+	require.Equal(t, 1, refs)
 }
 
 func TestSocialInviteExpiry(t *testing.T) {
@@ -602,10 +680,10 @@ func TestSocialInviteExpiry(t *testing.T) {
 
 	gcli, closeGuest := f.tew.newSocialInviteGuestClient(t)
 	defer closeGuest()
-	_, err := gcli.Fetch(m.Ctx(), f.kit.id)
+	_, err := gcli.FetchSocialInvite(m.Ctx(), f.kit.id)
 	require.Equal(t, core.SocialInviteNotFoundError{}, err)
 
-	rows, err := f.cli.List(m.Ctx())
+	rows, err := f.cli.ListSocialInvites(m.Ctx())
 	require.NoError(t, err)
 	for _, row := range rows {
 		require.NotEqual(t, f.kit.id, row.Id)
@@ -615,7 +693,7 @@ func TestSocialInviteExpiry(t *testing.T) {
 	f.tew.DirectDoubleMerklePokeInTest(t)
 	bcli, closeBob := bob.newSocialInviteClient(t, m.Ctx())
 	defer closeBob()
-	err = bcli.Reply(m.Ctx(), f.replyArg(t, bob, 1, "too late"))
+	err = bcli.ReplySocialInvite(m.Ctx(), f.replyArg(t, bob, 1, "too late"))
 	require.Equal(t, core.SocialInviteNotFoundError{}, err)
 }
 
@@ -656,7 +734,7 @@ func TestSocialInviteSweeper(t *testing.T) {
 	f.create(t, codeFresh)
 	setSocialInviteTime(t, m, expiredFresh.id, "etime", time.Hour)
 
-	err = shared.SweepSocialInvites(m)
+	err = shared.SweepSocialInvitesAllHosts(m)
 	require.NoError(t, err)
 
 	db, err := m.G().Db(m.Ctx(), shared.DbTypeUsers)
@@ -704,7 +782,7 @@ func TestSocialInviteCreateValidation(t *testing.T) {
 	err := core.RandomFill(badTeam[:])
 	require.NoError(t, err)
 	arg.Team = badTeam
-	err = f.cli.Create(m.Ctx(), arg)
+	err = f.cli.CreateSocialInvite(m.Ctx(), arg)
 	require.Equal(t, core.TeamNotFoundError{}, err)
 
 	// Another user's code.
@@ -712,19 +790,26 @@ func TestSocialInviteCreateValidation(t *testing.T) {
 	f.tew.DirectDoubleMerklePokeInTest(t)
 	otherCode, err := shared.GenerateStandardInviteCode(m, other.uid)
 	require.NoError(t, err)
-	err = f.cli.Create(m.Ctx(), f.createArg(t, otherCode))
+	err = f.cli.CreateSocialInvite(m.Ctx(), f.createArg(t, otherCode))
 	require.Equal(t, core.BadInviteCodeError{}, err)
 
 	// A multiuse code never attaches to a row.
 	mu := rem.NewInviteCodeWithMultiuse("sekrit-code")
-	err = f.cli.Create(m.Ctx(), f.createArg(t, &mu))
+	err = f.cli.CreateSocialInvite(m.Ctx(), f.createArg(t, &mu))
 	require.Equal(t, core.BadInviteCodeError{}, err)
+
+	// A message over the host's box cap.
+	arg = f.createArg(t, nil)
+	arg.Msg = f.kit.seal(t, &rem.SocialInviteMsgPayload{Text: strings.Repeat("x", 5000)})
+	err = f.cli.CreateSocialInvite(m.Ctx(), arg)
+	require.Error(t, err)
+	require.IsType(t, core.SocialInviteTooBigError{}, err)
 
 	// A nonzero etime in the past is a client bug and refused: the row
 	// would be born expired, invisible to every reader.
 	arg = f.createArg(t, nil)
 	arg.Etime = proto.ExportTime(m.Now().Add(-time.Hour))
-	err = f.cli.Create(m.Ctx(), arg)
+	err = f.cli.CreateSocialInvite(m.Ctx(), arg)
 	require.Error(t, err)
 	require.IsType(t, core.BadArgsError(""), err)
 
@@ -732,12 +817,12 @@ func TestSocialInviteCreateValidation(t *testing.T) {
 	arg = f.createArg(t, nil)
 	farOut := proto.ExportTime(m.Now().Add(365 * 24 * time.Hour))
 	arg.Etime = farOut
-	require.NoError(t, f.cli.Create(m.Ctx(), arg))
+	require.NoError(t, f.cli.CreateSocialInvite(m.Ctx(), arg))
 	row := f.listOne(t)
 	require.True(t, row.Etime.Import().Before(farOut.Import()))
 
 	// Duplicate id.
-	err = f.cli.Create(m.Ctx(), f.createArg(t, nil))
+	err = f.cli.CreateSocialInvite(m.Ctx(), f.createArg(t, nil))
 	require.Error(t, err)
 
 	// Open-invite cap; the fixture's row above counts toward it.
@@ -749,7 +834,7 @@ func TestSocialInviteCreateValidation(t *testing.T) {
 		f.create(t, nil)
 	}
 	f.kit = newSocialInviteKit(t)
-	err = f.cli.Create(m.Ctx(), f.createArg(t, nil))
+	err = f.cli.CreateSocialInvite(m.Ctx(), f.createArg(t, nil))
 	require.Equal(t, core.RateLimitError{}, err)
 }
 
@@ -801,24 +886,24 @@ func TestSocialInviteAuthz(t *testing.T) {
 	defer closeFn()
 
 	// Rows the caller doesn't own read as absent.
-	rows, err := mcli.List(m.Ctx())
+	rows, err := mcli.ListSocialInvites(m.Ctx())
 	require.NoError(t, err)
 	for _, row := range rows {
 		require.NotEqual(t, f.kit.id, row.Id)
 	}
-	err = mcli.AskAgain(m.Ctx(), rem.AskAgainArg{
+	err = mcli.AskAgainSocialInvite(m.Ctx(), rem.AskAgainSocialInviteArg{
 		Id:  f.kit.id,
 		Msg: f.kit.seal(t, &rem.SocialInviteMsgPayload{Text: "mallory asks"}),
 	})
 	require.Equal(t, core.SocialInviteNotFoundError{}, err)
-	err = mcli.Close(m.Ctx(), rem.CloseArg{
+	err = mcli.CloseSocialInvite(m.Ctx(), rem.CloseSocialInviteArg{
 		Id: f.kit.id,
 		St: proto.SocialInviteState_Canceled,
 	})
 	require.Equal(t, core.SocialInviteNotFoundError{}, err)
 
 	// Close only takes terminal states.
-	err = f.cli.Close(m.Ctx(), rem.CloseArg{
+	err = f.cli.CloseSocialInvite(m.Ctx(), rem.CloseSocialInviteArg{
 		Id: f.kit.id,
 		St: proto.SocialInviteState_Replied,
 	})

@@ -161,6 +161,7 @@ enum StatusCode {
     SOCIAL_INVITE_NOT_FOUND_ERROR @13001;
     SOCIAL_INVITE_WRONG_STATE_ERROR @13002;
     SOCIAL_INVITE_STALE_TURN_ERROR @13003;
+    SOCIAL_INVITE_TOO_BIG_ERROR @13004;
 }
 
 struct HostPinError {
@@ -300,7 +301,7 @@ variant Status switch (sc : StatusCode) {
     case KV_STALE_CACHE_ERROR @11: PathVersionVector;
     case SESSION_NOT_FOUND_ERROR @12: UISessionID;
     case TEAM_CYCLE_ERROR @13: TeamCycleError;
-    case KV_TOO_BIG_ERROR @14: TooBigError;
+    case KV_TOO_BIG_ERROR, SOCIAL_INVITE_TOO_BIG_ERROR @14: TooBigError;
     case CONNECT_ERROR @15: ConnectError;
     case HTTP_ERROR @16: HttpError;
     case DNS_ERROR @17: DNSError;

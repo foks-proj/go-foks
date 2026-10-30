@@ -1017,7 +1017,6 @@ CREATE TABLE social_invites (
     invite_code BYTEA,           /* standard single-use code, if one is attached */
     wk_commit BYTEA NOT NULL,    /* hash of wk; gates the reply */
     seed_box BYTEA NOT NULL,     /* Enc(PUK_inviter, s) */
-    seed_box_gen INTEGER NOT NULL, /* PUK generation the box was sealed to */
     invitee BYTEA,               /* from the replying session; a hint, not proof */
     ctime TIMESTAMP NOT NULL,
     mtime TIMESTAMP NOT NULL,
@@ -1025,10 +1024,11 @@ CREATE TABLE social_invites (
     PRIMARY KEY(short_host_id, id),
     FOREIGN KEY(short_host_id, inviter) REFERENCES users(short_host_id, uid),
     FOREIGN KEY(short_host_id, team_id) REFERENCES teams(short_host_id, team_id),
-    /* The column list (PostgreSQL 15+) keeps short_host_id: a bare SET NULL
-       nulls every referencing column, and short_host_id is NOT NULL. */
+    /* No ON DELETE action: SET NULL would null short_host_id too, and naming
+       just invite_code needs PostgreSQL 15. Revoking a code clears this
+       reference first (revokeUnusedSocialInviteCodes). */
     FOREIGN KEY(short_host_id, invite_code)
-        REFERENCES invite_codes(short_host_id, code) ON DELETE SET NULL (invite_code)
+        REFERENCES invite_codes(short_host_id, code)
 );
 
 CREATE INDEX social_invites_inviter_idx

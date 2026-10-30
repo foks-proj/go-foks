@@ -168,6 +168,7 @@ const (
 	StatusCode_SOCIAL_INVITE_NOT_FOUND_ERROR           StatusCode = 13001
 	StatusCode_SOCIAL_INVITE_WRONG_STATE_ERROR         StatusCode = 13002
 	StatusCode_SOCIAL_INVITE_STALE_TURN_ERROR          StatusCode = 13003
+	StatusCode_SOCIAL_INVITE_TOO_BIG_ERROR             StatusCode = 13004
 )
 
 var StatusCodeMap = map[string]StatusCode{
@@ -327,6 +328,7 @@ var StatusCodeMap = map[string]StatusCode{
 	"SOCIAL_INVITE_NOT_FOUND_ERROR":           13001,
 	"SOCIAL_INVITE_WRONG_STATE_ERROR":         13002,
 	"SOCIAL_INVITE_STALE_TURN_ERROR":          13003,
+	"SOCIAL_INVITE_TOO_BIG_ERROR":             13004,
 }
 var StatusCodeRevMap = map[StatusCode]string{
 	0:     "OK",
@@ -485,6 +487,7 @@ var StatusCodeRevMap = map[StatusCode]string{
 	13001: "SOCIAL_INVITE_NOT_FOUND_ERROR",
 	13002: "SOCIAL_INVITE_WRONG_STATE_ERROR",
 	13003: "SOCIAL_INVITE_STALE_TURN_ERROR",
+	13004: "SOCIAL_INVITE_TOO_BIG_ERROR",
 }
 
 type StatusCodeInternal__ StatusCode
@@ -1337,7 +1340,7 @@ func (s Status) GetSc() (ret StatusCode, err error) {
 		if s.F_13__ == nil {
 			return ret, errors.New("unexpected nil case for F_13__")
 		}
-	case StatusCode_KV_TOO_BIG_ERROR:
+	case StatusCode_KV_TOO_BIG_ERROR, StatusCode_SOCIAL_INVITE_TOO_BIG_ERROR:
 		if s.F_14__ == nil {
 			return ret, errors.New("unexpected nil case for F_14__")
 		}
@@ -2092,6 +2095,15 @@ func (s Status) KvTooBigError() TooBigError {
 	}
 	if s.Sc != StatusCode_KV_TOO_BIG_ERROR {
 		panic(fmt.Sprintf("unexpected switch value (%v) when KvTooBigError is called", s.Sc))
+	}
+	return *s.F_14__
+}
+func (s Status) SocialInviteTooBigError() TooBigError {
+	if s.F_14__ == nil {
+		panic("unexpected nil case; should have been checked")
+	}
+	if s.Sc != StatusCode_SOCIAL_INVITE_TOO_BIG_ERROR {
+		panic(fmt.Sprintf("unexpected switch value (%v) when SocialInviteTooBigError is called", s.Sc))
 	}
 	return *s.F_14__
 }
@@ -2983,6 +2995,12 @@ func NewStatusWithTeamCycleError(v TeamCycleError) Status {
 func NewStatusWithKvTooBigError(v TooBigError) Status {
 	return Status{
 		Sc:     StatusCode_KV_TOO_BIG_ERROR,
+		F_14__: &v,
+	}
+}
+func NewStatusWithSocialInviteTooBigError(v TooBigError) Status {
+	return Status{
+		Sc:     StatusCode_SOCIAL_INVITE_TOO_BIG_ERROR,
 		F_14__: &v,
 	}
 }

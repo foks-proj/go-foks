@@ -15,7 +15,7 @@ import (
 // The 32-byte id is derived by HMAC from the seed, so it can't be guessed
 // and needs no other gate. TODO: rate-limit per IP once the remote address
 // is plumbed through to handlers; nothing does that today.
-func (c *RegClientConn) Fetch(
+func (c *RegClientConn) FetchSocialInvite(
 	ctx context.Context,
 	id proto.SocialInviteID,
 ) (
