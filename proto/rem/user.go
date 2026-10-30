@@ -352,17 +352,19 @@ func (l *LoadUserChainAuth) Decode(dec rpc.Decoder) error {
 func (l *LoadUserChainAuth) Bytes() []byte { return nil }
 
 type LoadUserChainArg struct {
-	Uid      lib.UID
-	Start    lib.Seqno
-	Username *NameSeqnoPair
-	Auth     LoadUserChainAuth
+	Uid        lib.UID
+	Start      lib.Seqno
+	Username   *NameSeqnoPair
+	Auth       LoadUserChainAuth
+	AsTeamRole *lib.Role
 }
 type LoadUserChainArgInternal__ struct {
-	_struct  struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
-	Uid      *lib.UIDInternal__
-	Start    *lib.SeqnoInternal__
-	Username *NameSeqnoPairInternal__
-	Auth     *LoadUserChainAuthInternal__
+	_struct    struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
+	Uid        *lib.UIDInternal__
+	Start      *lib.SeqnoInternal__
+	Username   *NameSeqnoPairInternal__
+	Auth       *LoadUserChainAuthInternal__
+	AsTeamRole *lib.RoleInternal__
 }
 
 func (l LoadUserChainArgInternal__) Import() LoadUserChainArg {
@@ -397,6 +399,18 @@ func (l LoadUserChainArgInternal__) Import() LoadUserChainArg {
 			}
 			return x.Import()
 		})(l.Auth),
+		AsTeamRole: (func(x *lib.RoleInternal__) *lib.Role {
+			if x == nil {
+				return nil
+			}
+			tmp := (func(x *lib.RoleInternal__) (ret lib.Role) {
+				if x == nil {
+					return ret
+				}
+				return x.Import()
+			})(x)
+			return &tmp
+		})(l.AsTeamRole),
 	}
 }
 func (l LoadUserChainArg) Export() *LoadUserChainArgInternal__ {
@@ -410,6 +424,12 @@ func (l LoadUserChainArg) Export() *LoadUserChainArgInternal__ {
 			return (*x).Export()
 		})(l.Username),
 		Auth: l.Auth.Export(),
+		AsTeamRole: (func(x *lib.Role) *lib.RoleInternal__ {
+			if x == nil {
+				return nil
+			}
+			return (*x).Export()
+		})(l.AsTeamRole),
 	}
 }
 func (l *LoadUserChainArg) Encode(enc rpc.Encoder) error {

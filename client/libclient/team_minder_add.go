@@ -4,6 +4,8 @@
 package libclient
 
 import (
+	"errors"
+
 	"github.com/foks-proj/go-foks/lib/core"
 	"github.com/foks-proj/go-foks/proto/lcl"
 	"github.com/foks-proj/go-foks/proto/lib"
@@ -38,18 +40,6 @@ func newTeamAdder(tm *TeamMinder, tr *TeamRecord, tok *rem.TeamBearerToken, arg 
 		arg:   arg,
 		hepks: core.NewHEPKSet(),
 	}
-}
-
-func (t *TeamMinder) hasOpenUserViewership(m MetaContext) (bool, error) {
-	ucli, err := t.au.UserClient(m)
-	if err != nil {
-		return false, err
-	}
-	cfg, err := ucli.GetHostConfig(m.Ctx())
-	if err != nil {
-		return false, err
-	}
-	return cfg.Viewership.User == proto.ViewershipMode_Open, nil
 }
 
 func (t *teamAdder) loadMember(m MetaContext, u lcl.FQPartyParsedAndRole) error {
@@ -127,16 +117,14 @@ func (t *teamAdder) loadUserAsTeam(m MetaContext, u lib.FQUserParsed, srcRole co
 	if arg.Username != "" {
 		return core.BadArgsError("host has closed viewership; add users by UID")
 	}
+	tw := t.tr.Tw()
 	if arg.Host != nil {
-		hid := arg.Host.HostID
-		if hid.IsZero() {
-			prb, err := m.ProbeByAddr(arg.Host.Addr, 0)
-			if err != nil {
-				return err
-			}
-			hid = prb.Chain().HostID()
-		}
-		if !hid.Eq(t.hostID()) {
+		same := core.Sel(
+			arg.Host.HostID.IsZero(),
+			arg.Host.Addr.Hostname().NormEq(tw.Hostname()),
+			arg.Host.HostID.Eq(t.hostID()),
+		)
+		if !same {
 			return core.HostMismatchError{}
 		}
 		// A named host sends the loader down its remote path, which wants a
@@ -148,8 +136,20 @@ func (t *teamAdder) loadUserAsTeam(m MetaContext, u lib.FQUserParsed, srcRole co
 		return core.InternalError("no team view token")
 	}
 	arg.LoadMode = LoadModeOthers
+	arg.ActiveUser = t.tm.au
 	arg.TeamVOBearerToken = tok
+
+	// Members at the team's member-load floor load the roster with their own
+	// token, so check the user's grant there rather than at our admin role.
+	floor := tw.MemberLoadFloor()
+	arg.AsTeamRole = &floor
+
 	uw, err := LoadUser(m, arg)
+	var perr core.PermissionError
+	if errors.As(err, &perr) {
+		return core.PermissionError(string(perr) + "; on a closed host the user must grant this team " +
+			"a view permission at its member-load floor, or join through the team's invitation flow")
+	}
 	if err != nil {
 		return err
 	}
@@ -258,7 +258,7 @@ func (t *teamAdder) run(m MetaContext) error {
 
 func (t *TeamMinder) Add(m MetaContext, arg lcl.TeamAddArg) error {
 
-	open, err := t.hasOpenUserViewership(m)
+	open, err := t.au.HasOpenUserViewership(m)
 	if err != nil {
 		return err
 	}

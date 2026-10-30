@@ -306,6 +306,7 @@ type LoadUserArg struct {
 	ActiveUser        *UserContext
 	NoStore           bool
 	TeamVOBearerToken *rem.TeamVOBearerToken // Provide if loading a user on behalf of a team
+	AsTeamRole        *proto.Role            // With TeamVOBearerToken: be checked at this role, if lower than the token's
 }
 
 type LoadUserHost struct {
@@ -604,6 +605,7 @@ func (u *UserLoader) loadUserFromServer(m MetaContext) error {
 		auth = rem.NewLoadUserChainAuthWithSelftoken(*tok)
 	case u.arg.TeamVOBearerToken != nil:
 		auth = rem.NewLoadUserChainAuthWithAslocalteam(*u.arg.TeamVOBearerToken)
+		arg.AsTeamRole = u.arg.AsTeamRole
 	default:
 		auth = rem.NewLoadUserChainAuthWithAslocaluser()
 	}
