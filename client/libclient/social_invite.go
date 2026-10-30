@@ -134,7 +134,7 @@ func SocialInviteCreate(m MetaContext, arg lcl.SocialInviteCreateArg) (*lcl.Soci
 	if err != nil {
 		return nil, err
 	}
-	err = cli.Create(m.Ctx(), rem.CreateArg{
+	err = cli.CreateSocialInvite(m.Ctx(), rem.CreateSocialInviteArg{
 		Id:   keys.id,
 		Team: fqt.Team,
 		SeedBox: proto.SharedKeyBox{
@@ -165,7 +165,7 @@ func SocialInviteList(m MetaContext) ([]lcl.SocialInviteLocalRow, error) {
 	if err != nil {
 		return nil, err
 	}
-	rows, err := cli.List(m.Ctx())
+	rows, err := cli.ListSocialInvites(m.Ctx())
 	if err != nil {
 		return nil, err
 	}
@@ -225,7 +225,7 @@ func SocialInviteFetch(m MetaContext, prb *chains.Probe, seed proto.SocialInvite
 	}
 	defer gcli.Shutdown()
 	cli := core.NewSocialInviteGuestClient(gcli, m)
-	view, err := cli.Fetch(m.Ctx(), keys.id)
+	view, err := cli.FetchSocialInvite(m.Ctx(), keys.id)
 	if err != nil {
 		return nil, err
 	}
@@ -281,7 +281,7 @@ func SocialInviteReply(m MetaContext, arg lcl.SocialInviteReplyArg) error {
 	if err != nil {
 		return err
 	}
-	return cli.Reply(m.Ctx(), rem.ReplyArg{
+	return cli.ReplySocialInvite(m.Ctx(), rem.ReplySocialInviteArg{
 		Id:        keys.id,
 		Wk:        keys.wk,
 		InReplyTo: arg.InReplyTo,
@@ -303,7 +303,7 @@ func SocialInviteAskAgain(m MetaContext, arg lcl.SocialInviteAskAgainArg) error 
 	if err != nil {
 		return err
 	}
-	return cli.AskAgain(m.Ctx(), rem.AskAgainArg{Id: keys.id, Msg: *msg})
+	return cli.AskAgainSocialInvite(m.Ctx(), rem.AskAgainSocialInviteArg{Id: keys.id, Msg: *msg})
 }
 
 // SocialInviteClose records the inviter's decision. Accepting is bookkeeping:
@@ -313,5 +313,5 @@ func SocialInviteClose(m MetaContext, arg lcl.SocialInviteCloseArg) error {
 	if err != nil {
 		return err
 	}
-	return cli.Close(m.Ctx(), rem.CloseArg{Id: arg.Id, St: arg.St})
+	return cli.CloseSocialInvite(m.Ctx(), rem.CloseSocialInviteArg{Id: arg.Id, St: arg.St})
 }
