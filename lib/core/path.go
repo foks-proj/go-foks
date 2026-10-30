@@ -40,6 +40,35 @@ func (p Path) MakeParentDirs() error {
 	}
 	return nil
 }
+
+// MkdirAllMode creates p (and any missing parents) with the given mode and,
+// if p already existed with a different mode -- one made by an older release,
+// or by the more permissive MakeParentDirs -- chmods p to match. Only p itself
+// is ever chmod'ed, never its parents, so callers must pass a leaf the app
+// owns outright (~/.config/foks, ~/Library/Logs/foks, ...) and never a shared
+// dir like /tmp.
+//
+// The chmod is best-effort. If it fails (p is owned by another user, or sits
+// on a filesystem without POSIX modes), p is still usable since MkdirAll
+// succeeded, so we warn and carry on rather than refuse to start.
+func (p Path) MkdirAllMode(mode os.FileMode, log ThinLogger) error {
+	err := os.MkdirAll(p.String(), mode)
+	if err != nil {
+		return err
+	}
+	fi, err := p.Stat()
+	if err != nil {
+		return err
+	}
+	if fi.Mode().Perm() == mode.Perm() {
+		return nil
+	}
+	err = os.Chmod(p.String(), mode)
+	if err != nil {
+		log.Warnw("Path.MkdirAllMode: chmod failed; continuing", "path", p, "mode", mode, "err", err)
+	}
+	return nil
+}
 func (p Path) IsNil() bool {
 	return p == ""
 }
@@ -93,6 +122,9 @@ func (p Path) Append(s string) Path {
 
 func (p Path) Mkdir(mod os.FileMode) error {
 	return os.Mkdir(p.String(), mod)
+}
+func (p Path) Chmod(mode os.FileMode) error {
+	return os.Chmod(p.String(), mode)
 }
 func (p Path) OpenFile(flag int, perm os.FileMode) (*os.File, error) {
 	return os.OpenFile(p.String(), flag, perm)

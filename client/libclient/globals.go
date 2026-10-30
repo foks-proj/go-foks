@@ -133,6 +133,12 @@ type GlobalContext struct {
 	usernameLoader *UsernameLoader
 	teamnameLoader *TeamnameLoader
 
+	// One lock per user party for the realtime outbox and pending read-marks.
+	// That state is per user, but a process holds several librt Minders for
+	// the same user (one per team plus a user-scoped one), so a lock on any
+	// single Minder cannot serialize their read-modify-write cycles.
+	rtOutboxLocks core.Locktab[proto.FQEntityFixed]
+
 	logRotate *LogRotate
 
 	// We keep track of the last active server after a signup; this way we can debug signup
@@ -161,6 +167,10 @@ func (d *GlobalContext) DeviceNameCache() *DeviceNameCache {
 	d.Lock()
 	defer d.Unlock()
 	return &d.deviceNameCache
+}
+
+func (d *GlobalContext) RTOutboxLocks() *core.Locktab[proto.FQEntityFixed] {
+	return &d.rtOutboxLocks
 }
 
 func (d *GlobalContext) UsernameLoader() *UsernameLoader {
@@ -307,6 +317,17 @@ func (g *GlobalContext) Log() *zap.Logger {
 	g.logMu.RLock()
 	defer g.logMu.RUnlock()
 	return g.log
+}
+
+// SetLog replaces the process logger. Tests use it to install an observer
+// core, since some requirements live only in what gets logged -- a fallback
+// that declines a check, say -- and a claim that something "is logged" that no
+// test can see is a claim that rots. Follows the same harness-injection
+// pattern as SetNetworkConditioner and SetMerkleEracer.
+func (g *GlobalContext) SetLog(l *zap.Logger) {
+	g.logMu.Lock()
+	defer g.logMu.Unlock()
+	g.log = l
 }
 
 func NewGlobalContext() *GlobalContext {

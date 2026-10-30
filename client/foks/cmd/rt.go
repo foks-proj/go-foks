@@ -1,6 +1,9 @@
 package cmd
 
 import (
+	"errors"
+	"fmt"
+
 	"github.com/foks-proj/go-foks/client/libclient"
 	"github.com/foks-proj/go-foks/lib/core"
 	"github.com/foks-proj/go-foks/proto/lcl"
@@ -265,6 +268,85 @@ func rtNewChannel(m libclient.MetaContext, top *cobra.Command) {
 	)
 }
 
+func rtRenameChannel(m libclient.MetaContext, top *cobra.Command) {
+	var desc, nm string
+	var cmd *cobra.Command
+	quickRTCmd(
+		m, top,
+		"rename-channel", []string{"rename", "edit-channel"},
+		"rename a channel, or edit its description",
+		"rename a channel and/or set its description; admins only. Whatever "+
+			"is not passed is left as it is, and --description '' clears the "+
+			"description. The new name must not collide with another channel of "+
+			"the same tier, including an archived one, whose name stays reserved "+
+			"until it is renamed or the channel is un-archived. The team's "+
+			"default channel (the one used when no --channel is given) cannot "+
+			"be renamed, but its description can be edited.",
+		quickRTOpts{SupportChannel: true},
+		func(c *cobra.Command) {
+			cmd = c
+			cmd.Flags().StringVar(&nm, "name", "", "new channel name")
+			cmd.Flags().StringVar(&desc, "description", "", "new channel description (empty clears)")
+		},
+		func(args []string, cfg lcl.RTConfig, cli lcl.RealTimeClient) error {
+			if len(args) != 0 {
+				return ArgsError("no args; use --name and/or --description")
+			}
+			arg := lcl.ClientRTUpdateChannelArg{Cfg: cfg}
+			if cmd.Flags().Changed("name") {
+				if len(nm) > 0 && nm[0] == '#' {
+					nm = nm[1:]
+				}
+				var ch proto.RTChannelName
+				if err := ch.ParseFrom(nm); err != nil {
+					return err
+				}
+				if ch.IsEmpty() {
+					return ArgsError("--name cannot be empty")
+				}
+				arg.Name = &ch
+			}
+			if cmd.Flags().Changed("description") {
+				var cd proto.RTChannelDesc
+				if err := cd.ParseFrom(desc); err != nil {
+					return err
+				}
+				arg.Desc = &cd
+			}
+			if arg.Name == nil && arg.Desc == nil {
+				return ArgsError("nothing to change; pass --name and/or --description")
+			}
+			return cli.ClientRTUpdateChannel(m.Ctx(), arg)
+		},
+	)
+}
+
+func rtArchiveChannel(m libclient.MetaContext, top *cobra.Command) {
+	var unarchive bool
+	quickRTCmd(
+		m, top,
+		"archive-channel", []string{"archive"},
+		"archive a channel, or bring one back",
+		"archive a channel: it stops accepting messages and leaves everyone's "+
+			"inbox. Nothing is deleted -- the history stays, and the channel keeps "+
+			"its place in the team's channel list so its name stays reserved. "+
+			"Pass --unarchive to bring it back, with its history and membership "+
+			"intact. Admins only.",
+		quickRTOpts{SupportChannel: true},
+		func(cmd *cobra.Command) {
+			cmd.Flags().BoolVar(&unarchive, "unarchive", false, "bring an archived channel back")
+		},
+		func(args []string, cfg lcl.RTConfig, cli lcl.RealTimeClient) error {
+			if len(args) != 0 {
+				return ArgsError("no args; select the channel with --channel")
+			}
+			return cli.ClientRTSetChannelArchived(m.Ctx(),
+				lcl.ClientRTSetChannelArchivedArg{Cfg: cfg, Archived: !unarchive},
+			)
+		},
+	)
+}
+
 func rtListChannels(m libclient.MetaContext, top *cobra.Command) {
 	quickRTCmd(
 		m, top,
@@ -306,6 +388,16 @@ func rtSend(m libclient.MetaContext, top *cobra.Command) {
 					Body: []byte(args[0]),
 				},
 			)
+			var qerr core.RTMsgQueuedError
+			if errors.As(err, &qerr) {
+				// Soft failure: the server was unreachable, so the message
+				// sits durably in the outbox and drains on reconnect.
+				if m.G().Cfg().JSONOutput() {
+					return JSONOutput(m, qerr)
+				}
+				printOfflineNotice(m, "message queued for delivery, id "+rtMsgIDString(qerr.MsgID))
+				return nil
+			}
 			if err != nil {
 				return err
 			}
@@ -359,6 +451,9 @@ func rtRead(m libclient.MetaContext, top *cobra.Command) {
 // reached the start of the thread, prints how to page back to the previous page.
 func outputRTThread(m libclient.MetaContext, thread lcl.RTThreadView) error {
 	t := m.G().UIs().Terminal
+	if thread.Stale {
+		printOfflineNotice(m, "showing locally cached messages; may be incomplete")
+	}
 	for i := len(thread.Msgs) - 1; i >= 0; i-- {
 		msg := thread.Msgs[i]
 		sender := "<system>"
@@ -372,6 +467,24 @@ func outputRTThread(m libclient.MetaContext, thread lcl.RTThreadView) error {
 		}
 		when := msg.SentAtTime.Import().Local().Format("2006-01-02 15:04:05")
 		t.Printf("#%d  %s  %s\n      %s\n", msg.Seq, when, sender, string(msg.Body))
+	}
+	// The viewer's own undelivered messages (seq unassigned); they print
+	// after the thread, where they will eventually land. A Failed message
+	// was rejected and will NOT deliver without an explicit retry -- say so
+	// rather than showing it as queued.
+	for _, pv := range thread.Pending {
+		msg := pv.Msg
+		sender := "<me>"
+		if msg.SenderName != nil {
+			sender = string(*msg.SenderName)
+		}
+		when := msg.SentAtTime.Import().Local().Format("2006-01-02 15:04:05")
+		status := "queued"
+		if pv.State == lcl.RTOutboxState_Failed {
+			status = "FAILED; run `foks rt outbox retry` or `discard`"
+		}
+		t.Printf("#?  %s  %s  (%s, id %s)\n      %s\n",
+			when, sender, status, rtMsgIDString(msg.MsgID), string(msg.Body))
 	}
 	switch {
 	case thread.AtBeginning:
@@ -419,6 +532,172 @@ func rtInbox(m libclient.MetaContext, top *cobra.Command) {
 	)
 }
 
+// printOfflineNotice is the one shared voice for offline/degraded output, so
+// wording and any future routing (stderr, --quiet) live in one place.
+func printOfflineNotice(m libclient.MetaContext, detail string) {
+	m.G().UIs().Terminal.Printf("(offline: %s)\n", detail)
+}
+
+// parseRTMsgID accepts a message id in the canonical RTID form -- the same
+// base62 codec every other RT id on this CLI uses.
+func parseRTMsgID(s string) (proto.RTMsgID, error) {
+	var rtid proto.RTID
+	err := rtid.ImportFromString(s)
+	if err != nil {
+		return proto.RTMsgID{}, core.BadArgsError("bad message id")
+	}
+	msgID := rtid.RTMsgID()
+	if msgID == nil {
+		return proto.RTMsgID{}, core.BadArgsError("id is not a message id")
+	}
+	return *msgID, nil
+}
+
+func rtMsgIDString(id proto.RTMsgID) string {
+	s, err := id.StringErr()
+	if err != nil {
+		return "<bad-id>"
+	}
+	return s
+}
+
+func outputRTOutboxDrainRes(m libclient.MetaContext, res lcl.RTOutboxDrainRes) error {
+	if m.G().Cfg().JSONOutput() {
+		return JSONOutput(m, res)
+	}
+	t := m.G().UIs().Terminal
+	t.Printf("delivered %d; failed %d\n", res.NumAcked, res.NumFailed)
+	if res.Offline {
+		printOfflineNotice(m, "the rest stays queued and drains on the next trigger")
+	}
+	return nil
+}
+
+func rtOutbox(m libclient.MetaContext, top *cobra.Command) {
+	sub := &cobra.Command{
+		Use:   "outbox",
+		Short: "inspect and manage queued outgoing messages",
+		Long: "messages sent while the server was unreachable queue durably here " +
+			"and drain on reconnect; see ls, drain, retry, and discard",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return subcommandHelp(cmd, args)
+		},
+	}
+	quickRTCmd(
+		m, sub,
+		"ls", []string{"list"},
+		"list queued and failed outgoing messages",
+		"",
+		quickRTOpts{NoSupportTeam: true},
+		nil,
+		func(args []string, cfg lcl.RTConfig, cli lcl.RealTimeClient) error {
+			if len(args) != 0 {
+				return ArgsError("ls takes no arguments")
+			}
+			view, err := cli.ClientRTOutboxList(m.Ctx())
+			if err != nil {
+				return err
+			}
+			if m.G().Cfg().JSONOutput() {
+				return JSONOutput(m, view)
+			}
+			t := m.G().UIs().Terminal
+			if len(view.Rows) == 0 {
+				t.Printf("outbox is empty\n")
+				return nil
+			}
+			for _, r := range view.Rows {
+				chid, err := r.Chid.RTID().StringErr()
+				if err != nil {
+					return err
+				}
+				var state string
+				switch r.State {
+				case lcl.RTOutboxState_Queued:
+					state = "queued"
+				case lcl.RTOutboxState_Failed:
+					state = "FAILED"
+				default:
+					// Never mislabel an unknown state as queued.
+					state = fmt.Sprintf("state=%d", r.State)
+				}
+				when := r.SendTime.Import().Local().Format("2006-01-02 15:04:05")
+				t.Printf("%s  %s  %s  ch=%s  attempts=%d\n",
+					rtMsgIDString(r.MsgID), state, when, chid, r.Attempts)
+				if r.LastError != "" {
+					t.Printf("      last error: %s\n", r.LastError)
+				}
+			}
+			return nil
+		},
+	)
+	quickRTCmd(
+		m, sub,
+		"drain", nil,
+		"attempt delivery of all queued messages now",
+		"",
+		quickRTOpts{NoSupportTeam: true},
+		nil,
+		func(args []string, cfg lcl.RTConfig, cli lcl.RealTimeClient) error {
+			if len(args) != 0 {
+				return ArgsError("drain takes no arguments")
+			}
+			res, err := cli.ClientRTOutboxDrain(m.Ctx())
+			if err != nil {
+				return err
+			}
+			return outputRTOutboxDrainRes(m, res)
+		},
+	)
+	quickRTCmd(
+		m, sub,
+		"retry", nil,
+		"re-queue one failed message and attempt delivery",
+		"the manual escape hatch for a rejected message; note a retried message "+
+			"delivers after anything younger that already went out",
+		quickRTOpts{NoSupportTeam: true},
+		nil,
+		func(args []string, cfg lcl.RTConfig, cli lcl.RealTimeClient) error {
+			if len(args) != 1 {
+				return ArgsError("must provide exactly one message id (see outbox ls)")
+			}
+			msgID, err := parseRTMsgID(args[0])
+			if err != nil {
+				return err
+			}
+			res, err := cli.ClientRTOutboxRetry(m.Ctx(), msgID)
+			if err != nil {
+				return err
+			}
+			return outputRTOutboxDrainRes(m, res)
+		},
+	)
+	quickRTCmd(
+		m, sub,
+		"discard", []string{"rm"},
+		"drop one queued or failed message without sending it",
+		"",
+		quickRTOpts{NoSupportTeam: true},
+		nil,
+		func(args []string, cfg lcl.RTConfig, cli lcl.RealTimeClient) error {
+			if len(args) != 1 {
+				return ArgsError("must provide exactly one message id (see outbox ls)")
+			}
+			msgID, err := parseRTMsgID(args[0])
+			if err != nil {
+				return err
+			}
+			err = cli.ClientRTOutboxDiscard(m.Ctx(), msgID)
+			if err != nil {
+				return err
+			}
+			m.G().UIs().Terminal.Printf("discarded\n")
+			return nil
+		},
+	)
+	top.AddCommand(sub)
+}
+
 func rtCmd(m libclient.MetaContext) *cobra.Command {
 	top := &cobra.Command{
 		Use:     "rt",
@@ -430,10 +709,13 @@ func rtCmd(m libclient.MetaContext) *cobra.Command {
 		},
 	}
 	rtNewChannel(m, top)
+	rtRenameChannel(m, top)
+	rtArchiveChannel(m, top)
 	rtListChannels(m, top)
 	rtSend(m, top)
 	rtRead(m, top)
 	rtInbox(m, top)
+	rtOutbox(m, top)
 	return top
 }
 

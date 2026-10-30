@@ -1694,6 +1694,7 @@ func (i KVNodeID) MarshalJSON() ([]byte, error)               { return marsh(i) 
 func (n NaclNonce) String() string                            { return B62Encode(n[:]) }
 func (n NaclNonce) MarshalJSON() ([]byte, error)              { return json.Marshal(n.String()) }
 func (c RTChannelID) MarshalJSON() ([]byte, error)            { return marsh(c) }
+func (c RTMsgID) MarshalJSON() ([]byte, error)                { return marsh(c) }
 
 func (d *DeviceID) UnmarshalJSON(data []byte) error {
 	return unmarshalJson(d, data, func(e EntityID) (DeviceID, error) { return e.ToDeviceID() })
@@ -1727,6 +1728,16 @@ func (k *KVNodeID) UnmarshalJSON(data []byte) error {
 
 func (r *RTChannelID) UnmarshalJSON(data []byte) error {
 	var tmp RTChannelID
+	err := unmarshViaImport(data, &tmp)
+	if err != nil {
+		return err
+	}
+	*r = tmp
+	return nil
+}
+
+func (r *RTMsgID) UnmarshalJSON(data []byte) error {
+	var tmp RTMsgID
 	err := unmarshViaImport(data, &tmp)
 	if err != nil {
 		return err
@@ -3601,6 +3612,20 @@ func (r *RTChannelID) ImportFromString(s string) error {
 	return nil
 }
 
+func (r *RTMsgID) ImportFromString(s string) error {
+	var tmp RTID
+	err := tmp.ImportFromString(s)
+	if err != nil {
+		return err
+	}
+	msgID := tmp.RTMsgID()
+	if msgID == nil {
+		return DataError("cannot convert RTID to RTMsgID")
+	}
+	*r = *msgID
+	return nil
+}
+
 func (k *KVNodeID) ImportFromString(s string) error {
 	if len(s) < 2 {
 		return DataError("bad kv node id")
@@ -5231,7 +5256,20 @@ func (r RTID) RTChannelID() *RTChannelID {
 
 }
 
+func (r RTID) RTMsgID() *RTMsgID {
+	if r[0] != byte(RTIDType_Msg) {
+		return nil
+	}
+	var ret RTMsgID
+	copy(ret[:], r[1:])
+	return &ret
+}
+
 func (i RTChannelID) StringErr() (string, error) {
+	return i.RTID().StringErr()
+}
+
+func (i RTMsgID) StringErr() (string, error) {
 	return i.RTID().StringErr()
 }
 

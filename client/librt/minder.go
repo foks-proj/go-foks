@@ -79,6 +79,25 @@ type MinderTestHooks struct {
 	MutateReadRes func(*rem.RTThreadPage)
 	// MutateRecentsRes, if set, rewrites each RtGetThreadRecents response.
 	MutateRecentsRes func(*rem.RTMsgList)
+	// SendRPC, if set, replaces the rtSend RPC for both the synchronous send
+	// path and the outbox drain -- the hook point for simulating transport
+	// failures, lost acks, and replays.
+	SendRPC func(MetaContext, rem.RTSendArg) (*rem.RTSendRes, error)
+	// MutateSendOutcome, if set, rewrites the outcome of each real rtSend RPC
+	// after it completes -- e.g. discarding a genuine ack to simulate a lost
+	// reply. Ignored when SendRPC replaces the RPC entirely.
+	MutateSendOutcome func(*rem.RTSendRes, error) (*rem.RTSendRes, error)
+	// ReadThroughRPC, if set, replaces the rtReadThrough RPC, for simulating
+	// transport failures on the read-mark path.
+	ReadThroughRPC func(MetaContext, rem.RTReadThroughArg) error
+	// ReadsFail, if set, makes every thread-read RPC (rtGetThread,
+	// rtGetThreadRecents) fail with this error without reaching the server,
+	// for exercising the degraded (stale) read paths.
+	ReadsFail error
+	// ListFail, if set, makes the channel-list RPC fail with this error
+	// without reaching the server, for exercising the stale channel-set
+	// fallback that keeps resolution working offline.
+	ListFail error
 }
 
 // SetTestHooks installs (or, with nil, clears) test hooks on the Minder.
@@ -167,6 +186,14 @@ type MakeChannelOpts struct {
 	// queued. For channels carrying app control traffic rather than
 	// conversation. Creation-time only.
 	NoPush bool
+
+	// AllowDuplicateName skips the team-wide name-collision check and the
+	// refusal of the name "general", for a caller that identifies channels by
+	// id and treats names as display text. Never for the EMPTY name, which
+	// stays unique so that None-specifier lookups of the default channel
+	// resolve. Off by default, because a caller that creates a channel on
+	// demand relies on the collision check to create it exactly once.
+	AllowDuplicateName bool
 }
 
 func (d *Minder) MakeChannelWithTestHooks(
@@ -197,7 +224,7 @@ func (d *Minder) MakeChannelWithOpts(
 	*proto.RTChannelID,
 	error,
 ) {
-	if nm.Eq(proto.RTGeneralChannel) {
+	if nm.Eq(proto.RTGeneralChannel) && !opts.AllowDuplicateName {
 		return nil, core.RTGenericError("cannot make channel named #general")
 	}
 	// The default channel may not be created no-push. Names are encrypted, so
@@ -207,28 +234,21 @@ func (d *Minder) MakeChannelWithOpts(
 	if nm.IsEmpty() && opts.NoPush {
 		return nil, core.RTGenericError("cannot make the default channel no-push")
 	}
-	sleepDur := time.Millisecond
-	numTries := 5
-	for i := range numTries {
-		ret, err := d.makeChannelOneAttempt(m, team, appId, nm, desc, roles, opts, test)
-		if err == nil {
-			return ret, nil
-		}
-		var raceErr core.RTRaceError
-		if !errors.As(err, &raceErr) || i == numTries-1 {
-			return nil, err
-		}
-
-		// Report any races we hit to the testing framework
-		if test != nil && test.HitRaceHook != nil {
-			test.HitRaceHook(i)
-		}
-
-		m.Warnw("race condition on team metadata update", "iter", i, "sleep", sleepDur)
-		time.Sleep(sleepDur)
-		sleepDur *= 2
+	// Report any races we hit to the testing framework
+	var onRace func(int)
+	if test != nil {
+		onRace = test.HitRaceHook
 	}
-	return nil, core.RTRaceError{Which: "channels"}
+	var ret *proto.RTChannelID
+	err := d.retryOnRace(m, onRace, func() error {
+		var err error
+		ret, err = d.makeChannelOneAttempt(m, team, appId, nm, desc, roles, opts, test)
+		return err
+	})
+	if err != nil {
+		return nil, err
+	}
+	return ret, nil
 }
 
 func assertTeam(team lcl.ConfigTeam) error {
@@ -263,7 +283,15 @@ func (d *Minder) makeChannelOneAttempt(
 	if err != nil {
 		return nil, err
 	}
-	chlst, err := d.listAllChannelsForTeam(m, rtp, appId)
+	// AllowDuplicateName never covers the EMPTY name: None-specifier lookups
+	// resolve a team's nameless default channel, and a second one would make
+	// them ambiguous.
+	checkNames := !opts.AllowDuplicateName || nm.IsEmpty()
+	listFn := d.listAllChannelsForTeam
+	if checkNames {
+		listFn = d.listAllChannelsForNameCheck
+	}
+	chlst, err := listFn(m, rtp, appId)
 	if err != nil {
 		return nil, err
 	}
@@ -291,7 +319,6 @@ func (d *Minder) makeChannelOneAttempt(
 	// for the admins (and above).
 	newChTier := proto.RTChannelTier_Bottom
 	readRole := roles.Read
-	nameRole := proto.MinRTRole
 
 	if readRole == nil {
 		readRole = rtp.PLCNode().DirectDstRole()
@@ -310,14 +337,16 @@ func (d *Minder) makeChannelOneAttempt(
 	}
 	if isAdmin {
 		newChTier = proto.RTChannelTier_Admin
-		nameRole = proto.AdminRole
 	}
+	nameRole := nameRoleForTier(newChTier)
 
-	if _, found := chMap[chKey{
-		name: nm.Normalize(),
-		tier: newChTier,
-	}]; found {
-		return nil, core.RTChannelExistsError{}
+	if checkNames {
+		if _, found := chMap[chKey{
+			name: nm.Normalize(),
+			tier: newChTier,
+		}]; found {
+			return nil, core.RTChannelExistsError{}
+		}
 	}
 	nameKeySeq, err := rtp.PLCNode().SKM().PrivateKeysForRole(m.Base(), nameRole)
 	if err != nil {
@@ -551,13 +580,22 @@ func (k *Minder) decryptChannelMetadata(
 ) {
 	var ret lcl.RTChannelMetadataPlaintext
 
+	// The NAME is identity: without it the channel cannot be addressed, told
+	// apart from another, or take part in collision detection, so a name that
+	// will not open fails the row.
 	nm, err := k.decryptChannelName(m, rtp, chmdenc.AppID, chmdenc.NameBox)
 	if err != nil {
 		return nil, err
 	}
+	// The DESCRIPTION is decoration, and must not be able to cost the row.
+	// Failing here would discard a perfectly good name -- and with it that
+	// name's entry in the caller's collision map, which is what reserves it
+	// against a new channel or an un-archive taking it.
 	desc, err := k.decryptChannelDesc(m, rtp, chmdenc.AppID, chmdenc.DescBox)
 	if err != nil {
-		return nil, err
+		m.Warnw("decryptChannelMetadata", "stage", "desc",
+			"chid", chmdenc.Id, "err", err)
+		desc = nil
 	}
 
 	ret.Name = nm
@@ -570,6 +608,8 @@ func (k *Minder) decryptChannelMetadata(
 	ret.UpdatedAt = chmdenc.UpdatedAt
 	ret.Unreadable = chmdenc.Unreadable
 	ret.NoPush = chmdenc.NoPush
+	ret.Seqno = chmdenc.Seqno
+	ret.Archived = chmdenc.Archived
 
 	return &ret, nil
 }
@@ -615,6 +655,12 @@ func (k *Minder) ListAllChannelsForTeam(
 	return ret, nil
 }
 
+// listAllChannelsForTeam lists the team's channels for display and for
+// resolving a channel specifier. A row whose NAME this device cannot decrypt
+// -- a PTK generation it has not fetched yet, or a corrupt box -- is skipped
+// with a warning rather than failing the listing, so one bad row costs one
+// channel, not every channel in the team. (A bad description does not cost
+// the row at all; see decryptChannelMetadata.)
 func (k *Minder) listAllChannelsForTeam(
 	m MetaContext,
 	rtp *RTParty,
@@ -623,16 +669,60 @@ func (k *Minder) listAllChannelsForTeam(
 	*lcl.RTChannelSetForTeam,
 	error,
 ) {
+	lst, _, err := k.listAllChannelsForTeamSkipping(m, rtp, appID)
+	return lst, err
+}
+
+// listAllChannelsForNameCheck is listAllChannelsForTeam for a caller about to
+// use the listing as the team's name registry: creating a channel, or renaming
+// one, after checking the name is free. It fails instead of skipping a row,
+// returning the error that row hit.
+//
+// The server cannot compare encrypted names, so this client-side check is the
+// only thing preventing two channels of one tier from sharing a name. A
+// skipped row is a name the check cannot see, and passing the check without
+// it would create the duplicate the check exists to stop. Failing leaves the
+// caller to retry once the device has the keys.
+func (k *Minder) listAllChannelsForNameCheck(
+	m MetaContext,
+	rtp *RTParty,
+	appID proto.RTAppID,
+) (
+	*lcl.RTChannelSetForTeam,
+	error,
+) {
+	lst, skipErr, err := k.listAllChannelsForTeamSkipping(m, rtp, appID)
+	if err != nil {
+		return nil, err
+	}
+	if skipErr != nil {
+		return nil, skipErr
+	}
+	return lst, nil
+}
+
+// listAllChannelsForTeamSkipping does the work for both listings above. It
+// returns the decrypted rows, and separately the error from the first row it
+// skipped (nil if none was).
+func (k *Minder) listAllChannelsForTeamSkipping(
+	m MetaContext,
+	rtp *RTParty,
+	appID proto.RTAppID,
+) (
+	*lcl.RTChannelSetForTeam,
+	error,
+	error,
+) {
 
 	chsid, err := DeriveRTChannelSetID(rtp.plcn.FQParty(), appID)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	var lastKnownVersion proto.RTChannelSetVersion
 	cached, _, err := rtp.caches.channelSets.Get(m.Base(), *chsid)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	d := make(map[proto.RTChannelID]rem.RTChannelMetadata)
 	if cached != nil {
@@ -642,13 +732,59 @@ func (k *Minder) listAllChannelsForTeam(
 		}
 	}
 
-	_, cli, err := k.clientLocal(m.Base(), k.au)
-	if err != nil {
-		return nil, err
-	}
 	fqt := rtp.plcn.FQParty().FQTeam()
 	if fqt == nil {
-		return nil, core.InternalError("teamID of chat party was inexpectedly nil")
+		return nil, nil, core.InternalError("teamID of chat party was inexpectedly nil")
+	}
+
+	// decryptAll decrypts every row it can, skipping the rest; see
+	// listAllChannelsForTeam for why a skip is not an error there.
+	var skipErr error
+	decryptAll := func(rows []rem.RTChannelMetadata) []lcl.RTChannelMetadataPlaintext {
+		var ret []lcl.RTChannelMetadataPlaintext
+		for _, chmdenc := range rows {
+			chmdpt, err := k.decryptChannelMetadata(m, rtp, chmdenc)
+			if err != nil {
+				m.Warnw("listAllChannelsForTeam", "stage", "decrypt",
+					"chid", chmdenc.Id, "err", err)
+				if skipErr == nil {
+					skipErr = err
+				}
+				continue
+			}
+			ret = append(ret, *chmdpt)
+		}
+		return ret
+	}
+
+	// staleFromCache serves the last-known channel set when the server is
+	// unreachable. Without this fallback, channel resolution -- the first step
+	// of every send, read, and read-mark -- would fail before any offline
+	// branch could run, making the whole offline mode unreachable in real
+	// disconnected use (docs/rt_offline.md, D4/D7). An empty cache still
+	// errors.
+	staleFromCache := func(rpcErr error) (*lcl.RTChannelSetForTeam, error, error) {
+		if !core.IsTransportError(rpcErr) || cached == nil {
+			return nil, nil, rpcErr
+		}
+		var out lcl.RTChannelSetForTeam
+		rows := make([]rem.RTChannelMetadata, 0, len(d))
+		for _, v := range d {
+			rows = append(rows, v)
+		}
+		out.Channels = decryptAll(rows)
+		out.Vers = lastKnownVersion
+		out.Team = fqt.Team
+		out.AppID = appID
+		return &out, skipErr, nil
+	}
+
+	if k.testHooks != nil && k.testHooks.ListFail != nil {
+		return staleFromCache(k.testHooks.ListFail)
+	}
+	_, cli, err := k.clientLocal(m.Base(), k.au)
+	if err != nil {
+		return staleFromCache(err)
 	}
 	encList, err := cli.RtListAllChannelsForTeam(m.Ctx(),
 		rem.RtListAllChannelsForTeamArg{
@@ -658,7 +794,7 @@ func (k *Minder) listAllChannelsForTeam(
 		},
 	)
 	if err != nil {
-		return nil, err
+		return staleFromCache(err)
 	}
 
 	// Stomp the cached version with the new versions, in case
@@ -675,13 +811,7 @@ func (k *Minder) listAllChannelsForTeam(
 	}
 
 	var out lcl.RTChannelSetForTeam
-	for _, chmdenc := range mdlist {
-		chmdpt, err := k.decryptChannelMetadata(m, rtp, chmdenc)
-		if err != nil {
-			return nil, err
-		}
-		out.Channels = append(out.Channels, *chmdpt)
-	}
+	out.Channels = decryptAll(mdlist)
 	out.Vers = encList.Vers
 	out.Team = fqt.Team
 	out.AppID = appID
@@ -690,10 +820,10 @@ func (k *Minder) listAllChannelsForTeam(
 
 	err = rtp.caches.channelSets.Put(m.Base(), *chsid, encList, nil)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	return &out, nil
+	return &out, skipErr, nil
 }
 
 // ThreadMessage is a single decrypted message, as returned by GetThread.
@@ -727,6 +857,19 @@ func (d *Minder) resolveChannel(
 	if err != nil {
 		return nil, err
 	}
+	return resolveChannelInList(lst, spc)
+}
+
+// resolveChannelInList is resolveChannel's second half, over a listing the
+// caller already has. Split out so the channel mutations, which must list
+// anyway to learn the channel's seqno, do not list a second time.
+func resolveChannelInList(
+	lst *lcl.RTChannelSetForTeam,
+	spc lcl.RTChannelSpecifier,
+) (
+	*lcl.RTChannelMetadataPlaintext,
+	error,
+) {
 
 	t, err := spc.GetT()
 	if err != nil {
@@ -859,6 +1002,24 @@ func (d *Minder) sealMessage(
 	return keyMgr.SealMsgWithNonce(&msgbody, nn)
 }
 
+// ThreadReadResult is the outcome of a thread read. Stale means the server
+// was needed and unreachable, so Msgs is the locally-cached subset (holes and
+// truncated edges included) rather than fresh truth; TransportErr then holds
+// the underlying failure so callers can distinguish offline from healthy but
+// empty. An empty cache plus an unreachable server is still an error -- an
+// empty result would be indistinguishable from a genuinely empty thread
+// (docs/rt_offline.md, D4).
+type ThreadReadResult struct {
+	Msgs         []ThreadMessage
+	Final        bool // bookended: nothing more in the paging direction; paged: at thread start
+	Stale        bool
+	TransportErr error
+	// Chid is the resolved channel, so callers layering on the result (e.g.
+	// the pending-message overlay) don't re-resolve -- resolution costs a
+	// server round trip when the channel-set cache is stale.
+	Chid proto.RTChannelID
+}
+
 // SendTestHooks lets tests perturb a send to exercise server-side validation.
 type SendTestHooks struct {
 	// EncryptRoleOverride encrypts the body at this role instead of the
@@ -888,7 +1049,9 @@ func (d *Minder) Send(
 // ReadThrough advances the caller's read pointer in a channel to seq, so
 // their other devices learn the read state via the resulting inbox-version
 // bump. The pointer is monotonic server-side: a stale or repeated mark is a
-// silent no-op (and bumps nothing).
+// silent no-op (and bumps nothing). If the server is unreachable the mark is
+// persisted locally and replayed by the outbox drain (docs/rt_offline.md,
+// D5); that path returns nil, since read-marks are fire-and-forget.
 func (d *Minder) ReadThrough(
 	m MetaContext,
 	team lcl.ConfigTeam,
@@ -908,14 +1071,14 @@ func (d *Minder) ReadThrough(
 	if err != nil {
 		return err
 	}
-	_, cli, err := d.clientLocal(m.Base(), d.au)
+	err = d.attemptReadThrough(m, ch.Id, seq)
 	if err != nil {
+		if core.IsTransportError(err) {
+			return d.queuePendingMark(m, ch.Id, seq)
+		}
 		return err
 	}
-	return cli.RtReadThrough(m.Ctx(), rem.RTReadThroughArg{
-		ChannelID: ch.Id,
-		Seq:       seq,
-	})
+	return d.clearPendingMarks(m, map[proto.RTChannelID]proto.RTMsgSeq{ch.Id: seq})
 }
 
 // GetInboxVersion returns the caller's current global inbox version for the
@@ -1101,10 +1264,6 @@ func (d *Minder) sendTyped(
 	if err != nil {
 		return nil, err
 	}
-	_, cli, err := d.clientLocal(m.Base(), d.au)
-	if err != nil {
-		return nil, err
-	}
 	mw := proto.NewRTMsgWrapperWithEncrypted(*box)
 
 	msgCached := proto.RTMsgCached{
@@ -1112,63 +1271,67 @@ func (d *Minder) sendTyped(
 		Mw: mw,
 	}
 
-	err = dbPutMsgToOutbox(
-		m,
-		d.au,
-		msgCached,
-	)
+	// Queue durably before the first network attempt: from here the message
+	// survives transport failures and crashes, and re-attempting is safe
+	// because rtSend is idempotent on msgID (docs/rt_offline.md, D1/D2).
+	hasEarlier, err := d.enqueueOutbox(m, msgCached)
 	if err != nil {
 		return nil, err
 	}
 
-	res, err := cli.RtSend(m.Ctx(), rem.RTSendArg{
-		Md:   md,
-		Mw:   mw,
-		Chid: ch.Id.Short(),
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	// The server assigns the insert time; record it so the cached copy matches
-	// what a server-fetched read would carry.
-	msgCached.Sit = res.InsertTime
-	msgCachedSeq := proto.RTMsgCachedWithSeq{
-		Cm:  msgCached,
-		Seq: res.Seq,
-	}
-
-	if prevSeq.IsValid() && res.Seq <= prevSeq {
-		// An acked seq at or below the last locally-seen one is normally
-		// server misbehavior -- except when the server replayed an earlier
-		// delivery of this same msgID (rtSend is idempotent on msg_id, so a
-		// retry of a landed send gets the original seq back). The cached copy
-		// at that seq settles which:
-		// our own msgID there means replay, anything else is a real violation.
-		cached, lookupErr := dbGetMsgs(m, d.au, ch.Id, res.Seq, res.Seq)
-		isReplay := res.WasReplay ||
-			(lookupErr == nil && len(cached) == 1 &&
-				cached[0].Cm.Md.Md.MsgID == md.MsgID)
-		if !isReplay {
-			return nil, core.RTMsgOrderError(
-				fmt.Sprintf(
-					"sent message has sequence (%d) <= last seen (%d)",
-					res.Seq.Int(), prevSeq.Int(),
-				),
-			)
+	if hasEarlier {
+		// No queue-jumping: earlier rows for this channel must reach the
+		// server first, so flush the channel in FIFO order -- ours is last.
+		// With connectivity up this typically delivers the whole channel,
+		// including this message, within the same call.
+		dres, derr := d.DrainChannel(m, ch.Id)
+		if derr != nil {
+			// The drain couldn't run (a local failure before any attempt),
+			// but the message is durably queued; a raw error here would
+			// invite a duplicate retype.
+			m.Warnw("SendWithTestHooks", "stage", "drainChannel", "err", derr)
+			return nil, core.RTMsgQueuedError{MsgID: md.MsgID}
 		}
-		// The cached copy at that seq is the delivered original, already
-		// validated on ingest; keep it rather than overwriting with this
-		// attempt's re-seal.
-		return &res, nil
+		if ack, ok := dres.Acked[md.MsgID]; ok {
+			return ack, nil
+		}
+		if ferr, ok := dres.FailedErrs[md.MsgID]; ok {
+			// The server (or a deterministic finalize check) rejected THIS
+			// message during the flush: surface it exactly as the direct
+			// path would, rather than claiming it is queued.
+			_, _ = d.removeOutbox(m, md.MsgID)
+			return nil, ferr
+		}
+		return nil, core.RTMsgQueuedError{MsgID: md.MsgID}
 	}
 
-	err = d.dbPutMsgs(m, []proto.RTMsgCachedWithSeq{msgCachedSeq})
+	res, err := d.attemptSend(m, &msgCached)
 	if err != nil {
+		if core.IsTransportError(err) {
+			// The message sits durably in the outbox, to drain on reconnect.
+			_ = d.setOutboxState(m, md.MsgID, lcl.RTOutboxState_Queued, err)
+			return nil, core.RTMsgQueuedError{MsgID: md.MsgID}
+		}
+		// Semantic refusal on the synchronous path: the caller sees the error
+		// directly, so keeping a failed row would just duplicate it.
+		_, _ = d.removeOutbox(m, md.MsgID)
 		return nil, err
 	}
 
-	return &res, nil
+	// Thread-cache put, then outbox delete, strictly in that order: a crash
+	// in between re-sends and converges via the replay path. finalizeAck also
+	// runs the fresh-send ordering check against prevSeq (with replay
+	// tolerance); on a deterministic failure the row steps aside as Failed so
+	// later drains aren't blocked behind it.
+	err = d.finalizeAck(m, msgCached, res, prevSeq)
+	if err != nil {
+		if !core.IsTransportError(err) {
+			_ = d.setOutboxState(m, md.MsgID, lcl.RTOutboxState_Failed, err)
+		}
+		return nil, err
+	}
+
+	return res, nil
 }
 
 func fillFQParty(hostId lib.HostID, p *proto.PartyID) *proto.FQParty {
@@ -1600,13 +1763,12 @@ func (d *Minder) GetThreadBookended(
 	start proto.RTMsgSeq,
 	end proto.RTMsgSeq,
 ) (
-	[]ThreadMessage,
-	bool,
+	*ThreadReadResult,
 	error,
 ) {
 	err := assertTeam(team)
 	if err != nil {
-		return nil, false, err
+		return nil, err
 	}
 
 	sess := newMsgSession()
@@ -1623,7 +1785,7 @@ func (d *Minder) GetThreadBookended(
 
 	irr, err := d.initReq(m, team, appID, channel)
 	if err != nil {
-		return nil, false, err
+		return nil, err
 	}
 
 	cachedMsgsEnc, err := dbGetMsgs(
@@ -1633,7 +1795,7 @@ func (d *Minder) GetThreadBookended(
 		end,
 	)
 	if err != nil {
-		return nil, false, err
+		return nil, err
 	}
 
 	cached, err := d.decodeMsgs(
@@ -1644,11 +1806,11 @@ func (d *Minder) GetThreadBookended(
 		cachedMsgsEnc,
 	)
 	if err != nil {
-		return nil, false, err
+		return nil, err
 	}
 	holes, err := findHoles(cached)
 	if err != nil {
-		return nil, false, err
+		return nil, err
 	}
 
 	var bookends []rem.RTThreadRangeBookends
@@ -1660,7 +1822,7 @@ func (d *Minder) GetThreadBookended(
 		// We had everything in cache! Cached messages were validated when they
 		// were first ingested, so by the trust model we don't re-verify here.
 		if len(holes) == 0 && start == cachedStart && end == cachedEnd {
-			return cached, false, nil
+			return &ThreadReadResult{Msgs: cached, Chid: irr.ch.Id}, nil
 		}
 
 		if start != cachedStart {
@@ -1685,40 +1847,56 @@ func (d *Minder) GetThreadBookended(
 	}
 
 	d.serverThreadReads.Add(1)
-	page, err := irr.cli.RtGetThread(m.Ctx(), rem.RTThreadQuery{
-		ChannelID: irr.ch.Id,
-		Bookends:  bookends,
-		Seqs:      holes,
-	})
+	var page rem.RTThreadPage
+	if d.testHooks != nil && d.testHooks.ReadsFail != nil {
+		err = d.testHooks.ReadsFail
+	} else {
+		page, err = irr.cli.RtGetThread(m.Ctx(), rem.RTThreadQuery{
+			ChannelID: irr.ch.Id,
+			Bookends:  bookends,
+			Seqs:      holes,
+		})
+	}
 	if err != nil {
-		return nil, false, err
+		// Degraded read (docs/rt_offline.md, D4): the server is unreachable
+		// but the cache has part of the range -- serve it, flagged stale,
+		// holes and truncated edges included. An empty cache still errors.
+		if core.IsTransportError(err) && len(cached) > 0 {
+			return &ThreadReadResult{
+				Msgs:         cached,
+				Stale:        true,
+				TransportErr: err,
+				Chid:         irr.ch.Id,
+			}, nil
+		}
+		return nil, err
 	}
 	d.hookReadRes(&page)
 
 	err = sess.loadFromServer(extractAllSeqIDPairsFromRTThreadPage(&page))
 	if err != nil {
-		return nil, false, err
+		return nil, err
 	}
 
 	ret := cached
 	for _, r := range page.RangeMsgs {
 		tmp, err := d.decodeAndCacheServerMsgs(m, sess, irr, r.Lst)
 		if err != nil {
-			return nil, false, err
+			return nil, err
 		}
 		ret = merge(ret, tmp, inc)
 	}
 
 	tmp, err := d.decodeAndCacheServerMsgs(m, sess, irr, page.SeqMsgs)
 	if err != nil {
-		return nil, false, err
+		return nil, err
 	}
 
 	// we have to sort these messages as they come back randomly from the server.
 	// since we are going to merge them just below
 	err = sortMsgs(tmp, inc)
 	if err != nil {
-		return nil, false, err
+		return nil, err
 	}
 
 	ret = merge(ret, tmp, inc)
@@ -1733,7 +1911,7 @@ func (d *Minder) GetThreadBookended(
 		(inc > 0 && core.Last(ret).Seq < end) ||
 		(inc < 0 && core.Last(ret).Seq > end)
 
-	return ret, isFinal, nil
+	return &ThreadReadResult{Msgs: ret, Final: isFinal, Chid: irr.ch.Id}, nil
 }
 
 // GetThreadPage fetches up to num messages, newest-first, ending just before the
@@ -1749,13 +1927,12 @@ func (d *Minder) GetThreadPage(
 	before proto.RTMsgSeq,
 	num uint,
 ) (
-	[]ThreadMessage,
-	bool,
+	*ThreadReadResult,
 	error,
 ) {
 	err := assertTeam(team)
 	if err != nil {
-		return nil, false, err
+		return nil, err
 	}
 	if num == 0 {
 		num = 128
@@ -1763,12 +1940,12 @@ func (d *Minder) GetThreadPage(
 
 	// before==0: start from the live head.
 	if before == 0 {
-		msgs, err := d.GetThreadRecentMsgs(m, team, appID, channel, num)
+		res, err := d.GetThreadRecentMsgs(m, team, appID, channel, num)
 		if err != nil {
-			return nil, false, err
+			return nil, err
 		}
-		atBeginning := len(msgs) == 0 || core.Last(msgs).Seq <= 1
-		return msgs, atBeginning, nil
+		res.Final = len(res.Msgs) == 0 || core.Last(res.Msgs).Seq <= 1
+		return res, nil
 	}
 
 	// Page backwards, newest-first, over the inclusive seq window [lo, hi].
@@ -1778,7 +1955,7 @@ func (d *Minder) GetThreadPage(
 	// the beginning once the window reaches seq 1.
 	hi := int(before) - 1
 	if hi < 1 {
-		return nil, true, nil
+		return &ThreadReadResult{Final: true}, nil
 	}
 	lo := hi - int(num) + 1
 	if lo < 1 {
@@ -1788,12 +1965,15 @@ func (d *Minder) GetThreadPage(
 
 	// Inclusive bookends: start=hi (newest), end=lo (oldest) ⇒ descending page.
 	// hi==lo (a single trailing message) is fine -- bookends are inclusive.
-	msgs, _, err := d.GetThreadBookended(m, team, appID, channel,
+	res, err := d.GetThreadBookended(m, team, appID, channel,
 		proto.RTMsgSeq(hi), proto.RTMsgSeq(lo))
 	if err != nil {
-		return nil, false, err
+		return nil, err
 	}
-	return msgs, atBeginning, nil
+	// A stale page can't claim completeness from window math alone: the
+	// window may reach seq 1 while the cached subset doesn't (D4).
+	res.Final = atBeginning && !res.Stale
+	return res, nil
 }
 
 // GetThreadView fetches a page (see GetThreadPage) and returns it as a decrypted,
@@ -1816,10 +1996,11 @@ func (d *Minder) GetThreadView(
 	if err != nil {
 		return nil, err
 	}
-	msgs, atBeginning, err := d.GetThreadPage(m, team, appID, channel, before, num)
+	page, err := d.GetThreadPage(m, team, appID, channel, before, num)
 	if err != nil {
 		return nil, err
 	}
+	msgs := page.Msgs
 	rtp, err := d.base.GetParty(m.Base(), team)
 	if err != nil {
 		return nil, err
@@ -1829,9 +2010,33 @@ func (d *Minder) GetThreadView(
 		return nil, err
 	}
 
-	ret := lcl.RTThreadView{AtBeginning: atBeginning}
+	ret := lcl.RTThreadView{AtBeginning: page.Final, Stale: page.Stale}
 	for i := range msgs {
 		ret.Msgs = append(ret.Msgs, threadMessageToView(&msgs[i], names))
+	}
+
+	// Overlay the viewer's own undelivered outbox messages for this channel
+	// (seq 0), so a sender sees their pending messages in the thread
+	// (docs/rt_offline.md, D4). Head page only -- deeper history pages are
+	// not "where they will eventually land". The channel comes from the read
+	// result rather than a second resolution (which costs an RPC and fails
+	// exactly when offline). Best-effort, like name resolution; anything
+	// already delivered into the page (the finalize race window) is deduped.
+	if before == 0 && page.Chid != (proto.RTChannelID{}) {
+		pend, perr := d.pendingMsgViews(m, rtp, appID, page.Chid)
+		if perr != nil {
+			m.Warnw("GetThreadView", "stage", "pending", "err", perr)
+		} else {
+			delivered := make(map[proto.RTMsgID]bool, len(msgs))
+			for i := range msgs {
+				delivered[msgs[i].MsgID] = true
+			}
+			for _, pv := range pend {
+				if !delivered[pv.Msg.MsgID] {
+					ret.Pending = append(ret.Pending, pv)
+				}
+			}
+		}
 	}
 
 	// Viewing a page implies reading it: advance the read pointer to the
@@ -1887,7 +2092,7 @@ func (d *Minder) GetThreadRecentMsgs(
 	channel lcl.RTChannelSpecifier,
 	num uint,
 ) (
-	[]ThreadMessage,
+	*ThreadReadResult,
 	error,
 ) {
 	err := assertTeam(team)
@@ -1929,15 +2134,31 @@ func (d *Minder) GetThreadRecentMsgs(
 		stopAt = cached[0].Seq
 	}
 	d.serverRecentReads.Add(1)
-	fresh, err := irr.cli.RtGetThreadRecents(
-		m.Ctx(),
-		rem.RtGetThreadRecentsArg{
-			Ch:     irr.ch.Id,
-			StopAt: stopAt,
-			Lim:    uint64(num),
-		},
-	)
+	var fresh rem.RTMsgList
+	if d.testHooks != nil && d.testHooks.ReadsFail != nil {
+		err = d.testHooks.ReadsFail
+	} else {
+		fresh, err = irr.cli.RtGetThreadRecents(
+			m.Ctx(),
+			rem.RtGetThreadRecentsArg{
+				Ch:     irr.ch.Id,
+				StopAt: stopAt,
+				Lim:    uint64(num),
+			},
+		)
+	}
 	if err != nil {
+		// Degraded read (docs/rt_offline.md, D4): serve the cached tail,
+		// flagged stale. An empty cache still errors.
+		if core.IsTransportError(err) && len(cached) > 0 {
+			end := min(int(num), len(cached))
+			return &ThreadReadResult{
+				Msgs:         cached[0:end],
+				Stale:        true,
+				TransportErr: err,
+				Chid:         irr.ch.Id,
+			}, nil
+		}
 		return nil, err
 	}
 	d.hookRecentsRes(&fresh)
@@ -1956,7 +2177,7 @@ func (d *Minder) GetThreadRecentMsgs(
 
 	// All of the fresh messages fill up the window, so can just return here.
 	if len(freshPlain) >= int(num) {
-		return freshPlain, nil
+		return &ThreadReadResult{Msgs: freshPlain, Chid: irr.ch.Id}, nil
 	}
 
 	// in order, but with holes
@@ -1967,18 +2188,33 @@ func (d *Minder) GetThreadRecentMsgs(
 	}
 	if len(holes) == 0 {
 		end := min(int(num), len(combined))
-		return combined[0:end], nil
+		return &ThreadReadResult{Msgs: combined[0:end], Chid: irr.ch.Id}, nil
 	}
 
 	d.serverThreadReads.Add(1)
-	fillers, err := irr.cli.RtGetThread(
-		m.Ctx(),
-		rem.RTThreadQuery{
-			ChannelID: irr.ch.Id,
-			Seqs:      holes,
-		},
-	)
+	var fillers rem.RTThreadPage
+	if d.testHooks != nil && d.testHooks.ReadsFail != nil {
+		err = d.testHooks.ReadsFail
+	} else {
+		fillers, err = irr.cli.RtGetThread(
+			m.Ctx(),
+			rem.RTThreadQuery{
+				ChannelID: irr.ch.Id,
+				Seqs:      holes,
+			},
+		)
+	}
 	if err != nil {
+		// Degraded fill: what we have, ordered but holey, flagged stale.
+		if core.IsTransportError(err) {
+			end := min(int(num), len(combined))
+			return &ThreadReadResult{
+				Msgs:         combined[0:end],
+				Stale:        true,
+				TransportErr: err,
+				Chid:         irr.ch.Id,
+			}, nil
+		}
 		return nil, err
 	}
 	d.hookReadRes(&fillers)
@@ -2004,7 +2240,7 @@ func (d *Minder) GetThreadRecentMsgs(
 	ret := merge(combined, fillerPlain, inc)
 	// Trim to the requested window, matching the no-holes path above.
 	end := min(int(num), len(ret))
-	return ret[0:end], nil
+	return &ThreadReadResult{Msgs: ret[0:end], Chid: irr.ch.Id}, nil
 }
 
 func (d *Minder) decodeMsgs(
@@ -2409,4 +2645,296 @@ func (d *Minder) NotifyMembers(
 		ChannelID: chid,
 		Entries:   entries,
 	})
+}
+
+// nameRoleForTier gives the role a channel's name box is sealed at.
+//
+// It is a property of the channel's TIER, never of the caller's own role: a
+// bottom-tier channel's name is readable by every member so that all of them
+// can detect a name collision, and an admin-tier channel's name only by
+// admins. Sealing a rename at the caller's role instead would either hand an
+// admin-tier channel's name to ordinary members, or seal a bottom-tier one so
+// the members who could read it a moment earlier no longer can.
+//
+// Both channel creation and rename derive the role here rather than inline, so
+// the two can never disagree. The server rejects a box sealed at any other
+// role, so a client that gets this wrong fails loudly instead of persisting an
+// unreadable or over-shared name.
+func nameRoleForTier(tier proto.RTChannelTier) proto.Role {
+	if tier == proto.RTChannelTier_Admin {
+		return proto.AdminRole
+	}
+	return proto.MinRTRole
+}
+
+// keyMgrForRole builds a sealing key manager for one role, turning "this
+// caller holds no key at that role" into an error rather than a panic.
+//
+// PrivateKeysForRole returns (nil, nil) when the caller has no keys for the
+// role -- an absence, not an error -- and calling Current() on that nil
+// sequence panics. It is reachable: a team admin may edit a channel whose read
+// role sits above their own, which asks for a key they do not hold.
+func keyMgrForRole(
+	m MetaContext,
+	rtp *RTParty,
+	appID proto.RTAppID,
+	role proto.Role,
+	what string,
+) (
+	*KeyMgr,
+	error,
+) {
+	seq, err := rtp.PLCNode().SKM().PrivateKeysForRole(m.Base(), role)
+	if err != nil {
+		return nil, err
+	}
+	if seq == nil {
+		return nil, core.KeyNotFoundError{Which: what}
+	}
+	cur := seq.Current()
+	if cur == nil {
+		return nil, core.KeyNotFoundError{Which: what}
+	}
+	return NewKeyMgr(cur, appID)
+}
+
+// ChannelUpdate is what UpdateChannel changes. A nil field is left as it is.
+type ChannelUpdate struct {
+	// Name is the channel's new name. It may not be empty, and the team's
+	// default (nameless) channel cannot be renamed.
+	Name *proto.RTChannelName
+	// Desc is the channel's new description. A pointer to the empty
+	// description clears it.
+	Desc *proto.RTChannelDesc
+	// AllowDuplicateName is as on MakeChannelOpts: it skips the name-collision
+	// check and the refusal of "general". The empty name stays refused.
+	AllowDuplicateName bool
+}
+
+// UpdateChannel renames a channel and/or sets or clears its description.
+// Admin-only, enforced by the server.
+//
+// Retries a lost metadata CAS the same way MakeChannel does: another device
+// mutating the same channel bumps its seqno, and the next attempt re-reads it.
+func (d *Minder) UpdateChannel(
+	m MetaContext,
+	team lcl.ConfigTeam,
+	appID proto.RTAppID,
+	spec lcl.RTChannelSpecifier,
+	upd ChannelUpdate,
+) error {
+	if upd.Name == nil && upd.Desc == nil {
+		return core.BadArgsError("channel update changes nothing")
+	}
+	// The default channel carries the EMPTY name, and "general" is its
+	// reserved alias (MakeChannel refuses both). Renaming onto either would
+	// produce a second default channel -- and at a different tier the
+	// collision check would not catch it, since names are compared per-tier.
+	// A caller that identifies channels by id (AllowDuplicateName) treats
+	// "general" as an ordinary name; the empty name stays refused, because
+	// None-specifier lookups resolve it.
+	if nm := upd.Name; nm != nil &&
+		(nm.IsEmpty() || (nm.Eq(proto.RTGeneralChannel) && !upd.AllowDuplicateName)) {
+		return core.RTGenericError("cannot rename a channel to the default channel's name")
+	}
+	return d.retryOnRace(m, nil, func() error {
+		return d.updateChannelOneAttempt(m, team, appID, spec, upd)
+	})
+}
+
+// SetChannelArchived archives or un-archives a channel. Admin-only, enforced
+// by the server.
+//
+// Un-archiving needs no name-collision check: an archived channel keeps its
+// place in the team's channel list precisely so that nothing can take its name
+// while it is away.
+func (d *Minder) SetChannelArchived(
+	m MetaContext,
+	team lcl.ConfigTeam,
+	appID proto.RTAppID,
+	spec lcl.RTChannelSpecifier,
+	archived bool,
+) error {
+	return d.retryOnRace(m, nil, func() error {
+		_, ch, _, cli, err := d.loadChannelForMutation(m, team, appID, spec, false)
+		if err != nil {
+			return err
+		}
+		// The team's default channel is the one a lookup that names no
+		// channel resolves (`foks rt send` without --channel, for one), so
+		// archiving it would make every such send fail. The server cannot
+		// recognise it, since names are encrypted, so the check is here.
+		// Un-archiving it stays allowed, so an archive made by a client
+		// without this check can be undone.
+		if archived && ch.Name.IsEmpty() {
+			return core.RTGenericError("cannot archive a team's default channel")
+		}
+		return cli.RtSetChannelArchived(m.Ctx(), rem.RtSetChannelArchivedArg{
+			Chid:     ch.Id,
+			Seqno:    ch.Seqno,
+			Archived: archived,
+		})
+	})
+}
+
+// retryOnRace runs f, retrying with backoff while it loses a metadata CAS
+// (RTRaceError). Shared by channel creation and the channel mutations. onRace,
+// if non-nil, is called with the attempt number before each retry; tests use
+// it to observe races.
+func (d *Minder) retryOnRace(
+	m MetaContext,
+	onRace func(int),
+	f func() error,
+) error {
+	sleepDur := time.Millisecond
+	numTries := 5
+	for i := range numTries {
+		err := f()
+		if err == nil {
+			return nil
+		}
+		var raceErr core.RTRaceError
+		if !errors.As(err, &raceErr) || i == numTries-1 {
+			return err
+		}
+		if onRace != nil {
+			onRace(i)
+		}
+		m.Warnw("race condition on channel metadata update", "iter", i, "sleep", sleepDur)
+		time.Sleep(sleepDur)
+		sleepDur *= 2
+	}
+	return core.RTRaceError{Which: "channels"}
+}
+
+// loadChannelForMutation resolves the channel a mutation addresses and returns
+// it with the party, the team's listing and the server client. The resolved
+// metadata carries the seqno the mutation CASes on, read fresh on every
+// attempt so a retry sees the winner's bump.
+//
+// One listing per attempt, reused for both jobs it has to do: resolving the
+// channel and, for a rename, checking the new name against the team. Pass
+// checkNames when the listing will be used for that check; see
+// listAllChannelsForNameCheck.
+func (d *Minder) loadChannelForMutation(
+	m MetaContext,
+	team lcl.ConfigTeam,
+	appID proto.RTAppID,
+	spec lcl.RTChannelSpecifier,
+	checkNames bool,
+) (
+	*RTParty,
+	*lcl.RTChannelMetadataPlaintext,
+	*lcl.RTChannelSetForTeam,
+	*rem.RealTimeClient,
+	error,
+) {
+	if err := assertTeam(team); err != nil {
+		return nil, nil, nil, nil, err
+	}
+	rtp, err := d.base.GetParty(m.Base(), team)
+	if err != nil {
+		return nil, nil, nil, nil, err
+	}
+	listFn := d.listAllChannelsForTeam
+	if checkNames {
+		listFn = d.listAllChannelsForNameCheck
+	}
+	lst, err := listFn(m, rtp, appID)
+	if err != nil {
+		return nil, nil, nil, nil, err
+	}
+	ch, err := resolveChannelInList(lst, spec)
+	if err != nil {
+		return nil, nil, nil, nil, err
+	}
+	_, cli, err := d.clientLocal(m.Base(), d.au)
+	if err != nil {
+		return nil, nil, nil, nil, err
+	}
+	return rtp, ch, lst, cli, nil
+}
+
+func (d *Minder) updateChannelOneAttempt(
+	m MetaContext,
+	team lcl.ConfigTeam,
+	appID proto.RTAppID,
+	spec lcl.RTChannelSpecifier,
+	upd ChannelUpdate,
+) error {
+	checkNames := upd.Name != nil && !upd.AllowDuplicateName
+	rtp, ch, lst, cli, err := d.loadChannelForMutation(m, team, appID, spec, checkNames)
+	if err != nil {
+		return err
+	}
+
+	arg := rem.RtUpdateChannelArg{
+		Chid:  ch.Id,
+		Seqno: ch.Seqno,
+		Desc:  rem.NewRTChannelDescUpdateDefault(rem.RTChannelDescUpdateType_Keep),
+	}
+
+	if upd.Name != nil {
+		nm := *upd.Name
+
+		// The team's default channel is the nameless one, and a lookup that
+		// names no channel (`foks rt send` without --channel, for one)
+		// resolves it by that empty name. Renamed, it would leave every such
+		// lookup with nothing to find. The server cannot recognise it, since
+		// names are encrypted, so the check is here. Its description can
+		// still be edited.
+		if ch.Name.IsEmpty() {
+			return core.RTGenericError("cannot rename a team's default channel")
+		}
+
+		// Name-collision check, against the same list the create path uses.
+		// Archived channels are NOT exempt: their names stay reserved, which
+		// is what makes un-archiving safe, and renaming an archived channel is
+		// how a name is released. Skipped for a caller that allows duplicate
+		// names.
+		if checkNames {
+			for _, other := range lst.Channels {
+				if other.Id.Eq(ch.Id) {
+					continue // renaming a channel to its own name is a no-op, not a clash
+				}
+				if other.Tier == ch.Tier && other.Name.Normalize().Eq(nm.Normalize()) {
+					return core.RTChannelExistsError{}
+				}
+			}
+		}
+
+		// The name is sealed at the channel's tier role -- a property of the
+		// CHANNEL, not of whoever is editing it. The server rejects a box at
+		// any other role.
+		nameKeyMgr, err := keyMgrForRole(m, rtp, appID, nameRoleForTier(ch.Tier), "channel name")
+		if err != nil {
+			return err
+		}
+		namePlain := proto.NewRTChannelNamePlaintextWithUtf8v1(nm)
+		nameEnc, err := nameKeyMgr.SealIntoSecretBox(proto.RTKeyType_ChannelName, &namePlain)
+		if err != nil {
+			return err
+		}
+		arg.NameBox = nameEnc
+	}
+
+	if upd.Desc != nil {
+		if upd.Desc.IsEmpty() {
+			arg.Desc = rem.NewRTChannelDescUpdateDefault(rem.RTChannelDescUpdateType_Clear)
+		} else {
+			// Sealed at the channel's read role, as at creation.
+			descKeyMgr, err := keyMgrForRole(m, rtp, appID, ch.Roles.Read, "channel description")
+			if err != nil {
+				return err
+			}
+			descPlain := proto.NewRTChannelDescPlaintextWithUtf8v1(*upd.Desc)
+			descEnc, err := descKeyMgr.SealIntoSecretBox(proto.RTKeyType_ChannelDesc, &descPlain)
+			if err != nil {
+				return err
+			}
+			arg.Desc = rem.NewRTChannelDescUpdateWithSet(*descEnc)
+		}
+	}
+
+	return cli.RtUpdateChannel(m.Ctx(), arg)
 }

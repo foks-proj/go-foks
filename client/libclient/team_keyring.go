@@ -257,6 +257,23 @@ func (r *TeamKeyRing) CurrentPublicKeyAtRole(rk core.RoleKey) *lcl.SharedKeyWith
 	return seq.CurrentPublic()
 }
 
+// CurrentPublicSuiteAtRole returns the public half of the current PTK at the
+// given role, with its HEPK. Every member has it, whatever their own role,
+// since the team chain carries the public keys for all roles. It returns nil
+// if the team has no key at that role.
+func (r *TeamKeyRing) CurrentPublicSuiteAtRole(rk core.RoleKey) (*core.SharedPublicSuite, error) {
+	ptk := r.CurrentPublicKeyAtRole(rk)
+	if ptk == nil {
+		return nil, nil
+	}
+	fp := ptk.Sk.HepkFp
+	hepk, ok := r.hepks.Lookup(&fp)
+	if !ok {
+		return nil, core.KeyNotFoundError{Which: "hepk"}
+	}
+	return core.ImportSharedPublicSuite(&ptk.Sk, hepk.Obj())
+}
+
 func (r *TeamKeyRing) CurrentPrivateKeyAtRole(rk core.RoleKey) core.SharedPrivateSuiter {
 	seq := r.KeysForRole(rk)
 	if seq == nil {

@@ -310,3 +310,38 @@ func TestRpcDisconnectReconnect(t *testing.T) {
 
 	testFast()
 }
+
+// A connection dropped outside checkIdle (Reset, CloseAllConnections + a
+// failed re-dial) leaves xp nil while the refcount record survives. The idle
+// timer must then expire that record without touching the missing xp.
+func TestRpcIdleAfterReset(t *testing.T) {
+	srv := testServer{}
+	srv.start(t)
+	defer srv.stop(t)
+	m := newRpcLogMetaContext()
+	clock := clockwork.NewFakeClock()
+	opts := NewRpcClientOpts()
+	opts.Clock = clock
+	idleDisconnectCh := make(chan struct{}, 10)
+	refcountCh := make(chan int, 10)
+	opts.testIdleDisconnectCh = idleDisconnectCh
+	opts.testRefcountUpdateCh = refcountCh
+
+	gcli := NewRpcClient(m, proto.TCPAddr(srv.connectTo), srv.tlsConfig.RootCAs, nil, opts)
+	defer gcli.Shutdown()
+	cli := lcl.TestLibsClient{Cli: gcli, ErrorUnwrapper: StatusToError}
+
+	res, err := cli.Fast(context.Background(), 1)
+	require.NoError(t, err)
+	require.Equal(t, int64(2), res)
+	for i := <-refcountCh; i != 0; i = <-refcountCh {
+	}
+
+	gcli.Reset()
+	require.Nil(t, gcli.cm.xp)
+
+	clock.Advance(opts.IdleTimeout * 2)
+	clock.Advance(opts.PollInterval * 2)
+	<-idleDisconnectCh
+	require.Nil(t, gcli.cm.xp)
+}

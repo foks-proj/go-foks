@@ -62,6 +62,49 @@ func (d *Minder) dbGetInboxSyncState(
 	return ret, nil
 }
 
+// InboxView is the one-stop inbox read: unless localOnly, it syncs from the
+// server first, degrading to the locally-persisted snapshot (flagged stale)
+// when the sync fails on transport -- with the D4 guard that a device that
+// has never synced still errors, rather than presenting an empty inbox as a
+// cached one. A successful sync is also a drain trigger (D2): it proves
+// connectivity, so any queued outbox rows and pending read-marks are flushed
+// before rendering, best-effort.
+func (d *Minder) InboxView(
+	m MetaContext,
+	appID proto.RTAppID,
+	localOnly bool,
+) (
+	*lcl.RTInboxView,
+	error,
+) {
+	var stale bool
+	var syncErr error
+	if !localOnly {
+		_, syncErr = d.SyncInbox(m, appID)
+		if syncErr != nil {
+			if !core.IsTransportError(syncErr) {
+				return nil, syncErr
+			}
+			stale = true
+		} else if d.hasOutboxWork(m) {
+			if _, err := d.Drain(m); err != nil {
+				m.Warnw("InboxView", "stage", "drain", "err", err)
+			}
+		}
+	}
+	view, err := d.LocalInbox(m, appID)
+	if err != nil {
+		return nil, err
+	}
+	view.Stale = stale
+	if stale && view.Vers == 0 && len(view.Rows) == 0 {
+		// Nothing was ever synced: there is no snapshot to show, and an
+		// empty inbox presented as one would be a lie (D4).
+		return nil, syncErr
+	}
+	return view, nil
+}
+
 // SyncInbox pages rtGetChangedThreads from the locally-stored cursor and
 // applies each page transactionally (channel rows + advanced cursor). Syncs
 // for the same (user × app) are serialized so they can't interleave. Returns
@@ -116,10 +159,27 @@ func (d *Minder) SyncInboxWithPageSize(
 		}
 		pageVers := state.Vers
 		args := make([]libclient.PutArg, 0, len(delta.Channels)+1)
+		var dropped []proto.RTChannelID
 		for i := range delta.Channels {
 			ch := &delta.Channels[i]
 			if ch.InboxVersion > pageVers {
 				pageVers = ch.InboxVersion
+			}
+			// An archived channel is delivered once, carrying the flag, so
+			// that this is reachable: drop it from the inbox rather than
+			// storing it. The server cannot do this for us -- a delta of rows
+			// cannot express a removal -- and nothing else ever removes an
+			// inbox row, so without this an archived channel would sit in the
+			// inbox forever. Un-archiving delivers it again with the flag
+			// clear and the ordinary path below re-adds it.
+			if ch.Md.Archived {
+				if _, ok := indexed[ch.Md.Id]; ok {
+					delete(indexed, ch.Md.Id)
+					state.Channels = slices.DeleteFunc(state.Channels,
+						func(id proto.RTChannelID) bool { return id.Eq(ch.Md.Id) })
+					dropped = append(dropped, ch.Md.Id)
+				}
+				continue
 			}
 			if _, ok := indexed[ch.Md.Id]; !ok {
 				indexed[ch.Md.Id] = struct{}{}
@@ -150,13 +210,27 @@ func (d *Minder) SyncInboxWithPageSize(
 		}
 		numChanged += uint64(len(delta.Channels))
 
+		// The index written above is what LocalInbox iterates, so an archived
+		// channel is already invisible. Deleting its row is housekeeping, and
+		// best-effort on purpose: a row nothing indexes is inert soft state.
+		for _, id := range dropped {
+			err := m.DbDelete(libclient.DbTypeSoft, &scope,
+				lcl.DataType_RTInboxChannel, id)
+			if err != nil {
+				m.Warnw("SyncInbox", "stage", "dropArchived", "chid", id, "err", err)
+			}
+		}
+
 		// Prefetch each changed channel's last message into the local message
 		// cache, so LocalInbox can render a snippet without the network.
 		// Best-effort and after the page apply: the rows are already durable,
 		// and a failure just means no snippet until the channel next bumps.
 		for i := range delta.Channels {
 			ch := &delta.Channels[i]
-			if ch.Md.LastMsg == nil {
+			// An archived channel was just dropped from the index; prefetching
+			// a snippet for a row nothing will render is a thread read and a
+			// cache write per member for nothing.
+			if ch.Md.LastMsg == nil || ch.Md.Archived {
 				continue
 			}
 			err := d.prefetchLastMsg(m, ch)
@@ -193,6 +267,23 @@ func (d *Minder) LocalInbox(
 	if err != nil {
 		return nil, err
 	}
+	// Offline decorations (docs/rt_offline.md, D4/D5): pending read-marks
+	// raise the effective read pointer (a channel read offline shouldn't keep
+	// showing unread here), and channels with queued/failed outbox messages
+	// carry a pending count for badging. Both best-effort.
+	marks, err := d.dbGetPendingMarks(m)
+	if err != nil {
+		m.Warnw("LocalInbox", "stage", "pendingMarks", "err", err)
+	}
+	pendingMark := make(map[proto.RTChannelID]proto.RTMsgSeq, len(marks.Entries))
+	for _, e := range marks.Entries {
+		pendingMark[e.Chid] = e.Seq
+	}
+	numPending, numFailed, err := d.outboxCounts(m)
+	if err != nil {
+		m.Warnw("LocalInbox", "stage", "outboxCounts", "err", err)
+	}
+
 	ret := lcl.RTInboxView{Vers: state.Vers}
 	for _, chid := range state.Channels {
 		var row rem.RTInboxChannel
@@ -202,11 +293,26 @@ func (d *Minder) LocalInbox(
 			m.Warnw("LocalInbox", "stage", "dbGet", "chid", chid, "err", err)
 			continue
 		}
+		// Defensive: an archived channel is removed from the index above, so
+		// this should not be reachable. A row that survived a partial apply
+		// must not resurface as a live conversation.
+		if row.Md.Archived {
+			continue
+		}
 		rv, err := d.renderInboxRow(m, &row)
 		if err != nil {
 			m.Warnw("LocalInbox", "stage", "render", "chid", chid, "err", err)
 			continue
 		}
+		if pm := pendingMark[chid]; pm > rv.ReadThrough {
+			rv.ReadThrough = pm
+			rv.NumUnread = 0
+			if rv.LastSeq > pm {
+				rv.NumUnread = uint64(rv.LastSeq - pm)
+			}
+		}
+		rv.NumPending = numPending[chid]
+		rv.NumFailed = numFailed[chid]
 		ret.Rows = append(ret.Rows, *rv)
 	}
 	slices.SortFunc(ret.Rows, func(a, b lcl.RTInboxRowView) int {

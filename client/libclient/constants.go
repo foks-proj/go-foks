@@ -20,7 +20,18 @@ const AppBundleID = "com.ne43.foks"
 
 const DefProbeAddr = proto.TCPAddr("foks.app")
 
-var MkdirAllMode = fs.FileMode(0o750)
+// MkdirAllMode is the mode for directories holding FOKS client state -- the
+// config dir, the log dir, and the dir holding the sqlite DBs. Nothing here is
+// meant to be read by another user or by the owner's group.
+var MkdirAllMode = fs.FileMode(0o700)
+
+// DbFileMode is the mode forced onto the client sqlite DBs after creation.
+var DbFileMode = fs.FileMode(0o600)
+
+// SocketFileMode is the mode forced onto the agent's unix socket after it is
+// bound. The agent does no peer-credential check, and connect() needs write
+// permission on the socket, so this mode is the whole access control.
+var SocketFileMode = fs.FileMode(0o600)
 
 func MacOSServiceName(isTest bool) string {
 	return KeychainServiceName(isTest)

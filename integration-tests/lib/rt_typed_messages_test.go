@@ -53,7 +53,7 @@ func TestRTTypedMessages(t *testing.T) {
 
 	// coco reads it (also establishes her local cache + read pointer), and
 	// grabs its MsgID as the peg target.
-	msgs, err := minderCoco.GetThreadRecentMsgs(mc, team.WrapNamedPtr(fqt),
+	msgs, err := recents(mc, minderCoco, team.WrapNamedPtr(fqt),
 		proto.RTAppID_Chat, ch, 0)
 	require.NoError(t, err)
 	require.Len(t, msgs, 1)
@@ -95,7 +95,7 @@ func TestRTTypedMessages(t *testing.T) {
 
 	// ── Cross-member decode: coco re-reads the thread and sees all four
 	// messages with their types intact ────────────────────────────────
-	msgs, err = minderCoco.GetThreadRecentMsgs(mc, team.WrapNamedPtr(fqt),
+	msgs, err = recents(mc, minderCoco, team.WrapNamedPtr(fqt),
 		proto.RTAppID_Chat, ch, 0)
 	require.NoError(t, err)
 	require.Len(t, msgs, 4)
