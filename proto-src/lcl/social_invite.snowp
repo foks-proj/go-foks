@@ -1,0 +1,87 @@
+// Copyright (c) 2025 ne43, Inc.
+// Licensed under the MIT License. See LICENSE in the project root for details.
+
+@0xa23b57fa6f621a61;
+
+go:import "github.com/foks-proj/go-foks/proto/lib" as lib;
+
+// Social invites (docs/social_signup_spec.md), client side. The agent derives
+// the keys off the seed and seals and opens every box; callers see plaintext.
+
+// One turn of the exchange, opened. team and user carry the payload
+// conventions: the opening message names the team, the invitee's replies
+// name the invitee.
+struct SocialInviteLocalMsg {
+    seq @0 : Uint;
+    sender @1 : lib.SocialInviteParty;
+    text @2 : Text;
+    team @3 : Option(lib.FQTeam);
+    user @4 : Option(lib.FQUser);
+}
+
+// What anyone holding the seed can read, with or without an account.
+struct SocialInviteLocalView {
+    id @0 : lib.SocialInviteID;
+    state @1 : lib.SocialInviteState;
+    msgs @2 : List(SocialInviteLocalMsg);
+}
+
+// One of the caller's own invitations, as the inviter sees it. The seed is
+// recovered from the box sealed to the inviter's PUK.
+struct SocialInviteLocalRow {
+    id @0 : lib.SocialInviteID;
+    seed @1 : lib.SocialInviteSeed;
+    team @2 : lib.FQTeam;
+    state @3 : lib.SocialInviteState;
+    msgs @4 : List(SocialInviteLocalMsg);
+    ctime @5 : lib.Time;
+    mtime @6 : lib.Time;
+    etime @7 : lib.Time;
+}
+
+struct SocialInviteCreateRes {
+    id @0 : lib.SocialInviteID;
+    seed @1 : lib.SocialInviteSeed;
+}
+
+protocol SocialInvite
+    errors lib.Status
+    argHeader Header
+    resHeader Header @0x91f668da {
+
+    // Opens an invitation into team; text is the opening message. A zero
+    // etime takes the host's maximum lifespan.
+    socialInviteCreate @0 (
+        team @0 : lib.FQTeamParsed,
+        text @1 : Text,
+        etime @2 : lib.Time
+    ) -> SocialInviteCreateRes;
+
+    socialInviteList @1 () -> List(SocialInviteLocalRow);
+
+    // Needs no active user: the invitee may not have an account yet.
+    socialInviteFetch @2 (
+        host @0 : lib.TCPAddr,
+        seed @1 : lib.SocialInviteSeed
+    ) -> SocialInviteLocalView;
+
+    // Answers the inviter turn inReplyTo as the active user. If the opening
+    // message names a team, first grants that team local view of the active
+    // user, so the inviter can add them on a closed-viewership host.
+    socialInviteReply @3 (
+        seed @0 : lib.SocialInviteSeed,
+        inReplyTo @1 : Uint,
+        text @2 : Text
+    );
+
+    socialInviteAskAgain @4 (
+        seed @0 : lib.SocialInviteSeed,
+        text @1 : Text
+    );
+
+    // st is accepted, declined or canceled.
+    socialInviteClose @5 (
+        id @0 : lib.SocialInviteID,
+        st @1 : lib.SocialInviteState
+    );
+}

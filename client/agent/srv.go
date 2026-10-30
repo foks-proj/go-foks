@@ -258,6 +258,7 @@ func (c *AgentConn) Serve(m libclient.MetaContext) {
 		lcl.LogSendProtocol(c),
 		lcl.BotTokenProtocol(c),
 		lcl.RealTimeProtocol(c),
+		lcl.SocialInviteProtocol(c),
 	}
 	otherProtocols := OtherProtocols(c)
 	protocols = append(protocols, otherProtocols...)
