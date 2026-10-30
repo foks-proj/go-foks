@@ -302,7 +302,23 @@ func (u *UserLoader) checkPerms(m MetaContext) error {
 			return core.BadArgsError("team id must be an ID")
 		}
 		teamID := creds.Req.Team.IdOrName.True()
-		rk, lev, err := creds.Role.ExportToDB()
+		role := creds.Role
+		// The caller may ask to be checked at a lower role than its token's,
+		// never a higher one.
+		if u.Arg.AsTeamRole != nil {
+			tokRole, err := core.ImportRole(creds.Role)
+			if err != nil {
+				return err
+			}
+			asRole, err := core.ImportRole(*u.Arg.AsTeamRole)
+			if err != nil {
+				return err
+			}
+			if asRole.LessThan(*tokRole) {
+				role = *u.Arg.AsTeamRole
+			}
+		}
+		rk, lev, err := role.ExportToDB()
 		if err != nil {
 			return err
 		}

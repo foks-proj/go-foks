@@ -797,6 +797,20 @@ func (c *UserContext) UserClient(m MetaContext) (*rem.UserClient, error) {
 	return &ret, nil
 }
 
+// HasOpenUserViewership reports whether this user's home host lets any of
+// its users load any other.
+func (c *UserContext) HasOpenUserViewership(m MetaContext) (bool, error) {
+	ucli, err := c.UserClient(m)
+	if err != nil {
+		return false, err
+	}
+	cfg, err := ucli.GetHostConfig(m.Ctx())
+	if err != nil {
+		return false, err
+	}
+	return cfg.Viewership.User == proto.ViewershipMode_Open, nil
+}
+
 func (c *UserContext) TeamAdminClient(m MetaContext) (*rem.TeamAdminClient, error) {
 	gcli, err := c.UserGCli(m)
 	if err != nil {

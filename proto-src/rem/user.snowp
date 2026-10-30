@@ -36,6 +36,11 @@ struct LoadUserChainArg {
     start @1 : lib.Seqno;
     username @2 : Option(NameSeqnoPair); // if already loaded a username, say which one. S is the next link to get
     auth @3 : LoadUserChainAuth;
+    // AsLocalTeam only: check the user's grant to the team at this role
+    // rather than the token's, if it is lower. A team admin adding a member
+    // passes the team's member-load floor, so the add fails if the members
+    // who load the roster could not load this user.
+    asTeamRole @4 : Option(lib.Role);
 }
 
 struct NameSeqnoPair {
