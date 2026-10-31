@@ -48,7 +48,7 @@ type QueueClientConn struct {
 	xp  rpc.Transporter
 }
 
-func (c *QueueClientConn) RegisterProtocols(m shared.MetaContext, srv *rpc.Server) error {
+func (c *QueueClientConn) RegisterProtocols(m shared.MetaContext, srv shared.RPCRegistrar) error {
 	return srv.RegisterV2(infra.QueueProtocol(c))
 }
 

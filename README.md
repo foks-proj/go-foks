@@ -287,6 +287,8 @@ Some important docs are:
    that some users will ask for them, and they would be hard to add later.
 - `docs/kv_store.md` - A pretty up-to-date description of how the KV store is working,
    and ideas for future work there.
+- `docs/telemetry.md` - Turning on OpenTelemetry traces and RPC latency metrics for
+   the server daemons.
 
 ## Future Work
 

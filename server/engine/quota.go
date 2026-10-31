@@ -92,7 +92,7 @@ func (q *QuotaServer) Setup(m shared.MetaContext) error {
 
 func (q *QuotaServer) IsInternal() bool { return true }
 
-func (c *QuotaClientConn) RegisterProtocols(m shared.MetaContext, srv *rpc.Server) error {
+func (c *QuotaClientConn) RegisterProtocols(m shared.MetaContext, srv shared.RPCRegistrar) error {
 	return srv.RegisterV2(infra.QuotaProtocol(c))
 }
 

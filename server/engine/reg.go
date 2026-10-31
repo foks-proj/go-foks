@@ -73,7 +73,7 @@ type RegClientConn struct {
 
 var _ shared.ClientConn = (*RegClientConn)(nil)
 
-func (c *RegClientConn) RegisterProtocols(m shared.MetaContext, srv *rpc.Server) error {
+func (c *RegClientConn) RegisterProtocols(m shared.MetaContext, srv shared.RPCRegistrar) error {
 
 	prots := []rpc.ProtocolV2{
 		rem.RegProtocol(c),

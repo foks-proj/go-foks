@@ -173,7 +173,7 @@ func serveConnection(m MetaContext, s RPCServer, conn net.Conn, doneCh chan<- st
 	srv := rpc.NewServer(xp, wef)
 	cliCon := s.NewClientConn(xp, uhc)
 
-	rerr := cliCon.RegisterProtocols(m, srv)
+	rerr := cliCon.RegisterProtocols(m, newInstrumentedRegistrar(srv, s.ServerType()))
 
 	if rerr != nil {
 		m.Warnw("serveConnection",

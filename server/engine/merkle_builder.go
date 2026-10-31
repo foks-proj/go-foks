@@ -50,7 +50,7 @@ func (b *MerkleBuilderServer) Setup(m shared.MetaContext) error {
 	return nil
 }
 
-func (c *MerkleBuilderClientConn) RegisterProtocols(m shared.MetaContext, srv *rpc.Server) error {
+func (c *MerkleBuilderClientConn) RegisterProtocols(m shared.MetaContext, srv shared.RPCRegistrar) error {
 	return srv.RegisterV2(proto.MerkleBuilderProtocol(c))
 }
 

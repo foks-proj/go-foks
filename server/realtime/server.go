@@ -31,7 +31,7 @@ func (s *Server) NewClientConn(xp rpc.Transporter, uhc shared.UserHostContext) s
 		BaseClientConn: shared.NewBaseClientConn(s.G(), uhc),
 	}
 }
-func (c *ClientConn) RegisterProtocols(m shared.MetaContext, srv *rpc.Server) error {
+func (c *ClientConn) RegisterProtocols(m shared.MetaContext, srv shared.RPCRegistrar) error {
 	return srv.RegisterV2(rem.RealTimeProtocol(c))
 }
 

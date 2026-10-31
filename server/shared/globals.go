@@ -28,6 +28,11 @@ type GlobalContext struct {
 	sync.RWMutex
 	log         *zap.SugaredLogger
 	logCfg      zap.Config
+	// logTee, if set, receives a copy of every log entry (e.g. the OTel log
+	// bridge), filtered by logCfg's level and sampling. localLog is the same
+	// logger without the tee.
+	logTee   zapcore.Core
+	localLog *zap.SugaredLogger
 	cfg         Config
 	dbpools     map[DbType](*pgxpool.Pool)
 	typ         proto.ServerType
@@ -143,6 +148,7 @@ func NewGlobalContext(opts *GlobalContextOpts) *GlobalContext {
 	log := zap.Must(cfg.Build())
 	return &GlobalContext{
 		log:             log.Sugar(),
+		localLog:        log.Sugar(),
 		logCfg:          cfg,
 		cfg:             &EmptyConfig{},
 		dbpools:         make(map[DbType](*pgxpool.Pool)),
@@ -321,15 +327,46 @@ func (g *GlobalContext) TakeServerConfig(s Server, listener net.Listener) {
 	g.testPorts[g.typ] = port(listener)
 }
 
+// swapLog rebuilds the logger from logCfg (and logTee). Caller holds g's lock.
 func (g *GlobalContext) swapLog() error {
-	newLog, err := g.logCfg.Build()
+	localLog, err := g.logCfg.Build()
 	if err != nil {
 		return err
 	}
+	newLog := localLog
+	if g.logTee != nil {
+		tee, err := zapcore.NewIncreaseLevelCore(g.logTee, g.logCfg.Level)
+		if err != nil {
+			return err
+		}
+		if smp := g.logCfg.Sampling; smp != nil {
+			tee = zapcore.NewSamplerWithOptions(tee, time.Second, smp.Initial, smp.Thereafter)
+		}
+		newLog = localLog.WithOptions(zap.WrapCore(func(c zapcore.Core) zapcore.Core {
+			return zapcore.NewTee(c, tee)
+		}))
+	}
 	oldLog := g.log
 	g.log = newLog.Sugar()
+	g.localLog = localLog.Sugar()
 	_ = oldLog.Sync()
 	return nil
+}
+
+// TeeLogCore sends a copy of all subsequent log output to c, at the configured
+// level and sampling. Pass nil to stop. The tee survives later log reconfiguration.
+func (g *GlobalContext) TeeLogCore(c zapcore.Core) error {
+	g.Lock()
+	defer g.Unlock()
+	g.logTee = c
+	return g.swapLog()
+}
+
+// LocalLog is Log without any tee, for reporting failures of the tee itself.
+func (g *GlobalContext) LocalLog() *zap.SugaredLogger {
+	g.RLock()
+	defer g.RUnlock()
+	return g.localLog
 }
 
 type GlobalCLIConfigOpts struct {

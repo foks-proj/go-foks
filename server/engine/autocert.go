@@ -79,7 +79,7 @@ func (q *AutocertServer) Setup(m shared.MetaContext) error {
 
 func (q *AutocertServer) IsInternal() bool { return true }
 
-func (c *AutocertClientConn) RegisterProtocols(m shared.MetaContext, srv *rpc.Server) error {
+func (c *AutocertClientConn) RegisterProtocols(m shared.MetaContext, srv shared.RPCRegistrar) error {
 	return srv.RegisterV2(infra.AutocertProtocol(c))
 }
 

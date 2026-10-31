@@ -47,7 +47,7 @@ type BeaconClientConn struct {
 
 var _ shared.ClientConn = (*BeaconClientConn)(nil)
 
-func (c *BeaconClientConn) RegisterProtocols(m shared.MetaContext, srv *rpc.Server) error {
+func (c *BeaconClientConn) RegisterProtocols(m shared.MetaContext, srv shared.RPCRegistrar) error {
 	return srv.RegisterV2(rem.BeaconProtocol(c))
 }
 

@@ -133,7 +133,7 @@ func (m MetaContext) Errorf(format string, args ...interface{}) {
 }
 
 func (m MetaContext) addCtxLog(keysAndValues ...interface{}) []interface{} {
-	return core.AddCtxLog(m.ctx, keysAndValues...)
+	return appendTraceLogField(m.ctx, core.AddCtxLog(m.ctx, keysAndValues...))
 }
 
 func (m MetaContext) Warnw(msg string, keysAndValues ...interface{}) {

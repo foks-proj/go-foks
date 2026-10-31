@@ -49,7 +49,7 @@ type MerkleQueryClientConn struct {
 	xp  rpc.Transporter
 }
 
-func (c *MerkleQueryClientConn) RegisterProtocols(m shared.MetaContext, srv *rpc.Server) error {
+func (c *MerkleQueryClientConn) RegisterProtocols(m shared.MetaContext, srv shared.RPCRegistrar) error {
 	return srv.RegisterV2(rem.MerkleQueryProtocol(c))
 }
 

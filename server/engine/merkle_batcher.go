@@ -911,7 +911,7 @@ type MerkleBatcherClientConn struct {
 	xp  rpc.Transporter
 }
 
-func (c *MerkleBatcherClientConn) RegisterProtocols(m shared.MetaContext, srv *rpc.Server) error {
+func (c *MerkleBatcherClientConn) RegisterProtocols(m shared.MetaContext, srv shared.RPCRegistrar) error {
 	return srv.RegisterV2(proto.MerkleBatcherProtocol(c))
 }
 

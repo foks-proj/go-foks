@@ -13,6 +13,7 @@ import (
 	"path/filepath"
 	"sync"
 	"syscall"
+	"time"
 
 	"github.com/foks-proj/go-foks/lib/core"
 	proto "github.com/foks-proj/go-foks/proto/lib"
@@ -22,7 +23,7 @@ import (
 )
 
 type ClientConn interface {
-	RegisterProtocols(m MetaContext, srv *rpc.Server) error
+	RegisterProtocols(m MetaContext, srv RPCRegistrar) error
 	UserHost() UserHostContext
 	G() *GlobalContext
 	SetHostID(h *core.HostID)
@@ -219,6 +220,19 @@ func setupSignalsAndServe(m MetaContext, rc *RootCommand, s Server) error {
 	if err != nil {
 		return err
 	}
+
+	otelShutdown, err := InitOTel(m, s.ServerType())
+	if err != nil {
+		return err
+	}
+	defer func() {
+		// m's context is canceled by now, so flush on a fresh, bounded one.
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		if err := otelShutdown(ctx); err != nil {
+			m.Warnw("otel", "stage", "shutdown", "err", err)
+		}
+	}()
 
 	sigc := make(chan os.Signal, 1)
 	signal.Notify(sigc,
