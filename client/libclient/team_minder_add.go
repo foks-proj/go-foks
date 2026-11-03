@@ -143,7 +143,33 @@ func (t *teamAdder) loadUserAsTeam(m MetaContext, u lib.FQUserParsed, srcRole co
 		// permission token rather than the team's view token.
 		arg.Host = nil
 	}
-	tok := t.tr.ldr.Tok()
+	if t.arg.LoadVia == nil {
+		return t.loadUserWithTeamToken(m, arg, t.tr, srcRole)
+	}
+	// Load through another team the adder belongs to, which the user has
+	// already granted view permission (e.g. by joining it). The target team
+	// usually has none yet: on a closed host that grant only comes with an
+	// RSVP, which a direct add skips.
+	return t.tm.withLoadedTeam(
+		m,
+		*t.arg.LoadVia,
+		LoadTeamOpts{},
+		func(m MetaContext, via *TeamRecord) error {
+			if !via.FQT().Host.Eq(t.hostID()) {
+				return core.HostMismatchError{}
+			}
+			return t.loadUserWithTeamToken(m, arg, via, srcRole)
+		},
+	)
+}
+
+func (t *teamAdder) loadUserWithTeamToken(
+	m MetaContext,
+	arg LoadUserArg,
+	tr *TeamRecord,
+	srcRole core.RoleKey,
+) error {
+	tok := tr.ldr.Tok()
 	if tok == nil {
 		return core.InternalError("no team view token")
 	}

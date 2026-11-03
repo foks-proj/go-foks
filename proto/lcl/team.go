@@ -1830,12 +1830,14 @@ type TeamAddArg struct {
 	Team    lib.FQTeamParsed
 	Members []FQPartyParsedAndRole
 	DstRole *lib.Role
+	LoadVia *lib.FQTeamParsed
 }
 type TeamAddArgInternal__ struct {
 	_struct struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
 	Team    *lib.FQTeamParsedInternal__
 	Members *[](*FQPartyParsedAndRoleInternal__)
 	DstRole *lib.RoleInternal__
+	LoadVia *lib.FQTeamParsedInternal__
 }
 
 func (t TeamAddArgInternal__) Import() TeamAddArg {
@@ -1876,6 +1878,18 @@ func (t TeamAddArgInternal__) Import() TeamAddArg {
 			})(x)
 			return &tmp
 		})(t.DstRole),
+		LoadVia: (func(x *lib.FQTeamParsedInternal__) *lib.FQTeamParsed {
+			if x == nil {
+				return nil
+			}
+			tmp := (func(x *lib.FQTeamParsedInternal__) (ret lib.FQTeamParsed) {
+				if x == nil {
+					return ret
+				}
+				return x.Import()
+			})(x)
+			return &tmp
+		})(t.LoadVia),
 	}
 }
 func (t TeamAddArg) Export() *TeamAddArgInternal__ {
@@ -1897,6 +1911,12 @@ func (t TeamAddArg) Export() *TeamAddArgInternal__ {
 			}
 			return (*x).Export()
 		})(t.DstRole),
+		LoadVia: (func(x *lib.FQTeamParsed) *lib.FQTeamParsedInternal__ {
+			if x == nil {
+				return nil
+			}
+			return (*x).Export()
+		})(t.LoadVia),
 	}
 }
 func (t *TeamAddArg) Encode(enc rpc.Encoder) error {
