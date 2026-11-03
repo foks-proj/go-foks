@@ -189,7 +189,12 @@ protocol Team
     teamAdd @13 (
         team @0 : lib.FQTeamParsed,
         members @1 : List(FQPartyParsedAndRole),
-        dstRole @2 : Option(lib.Role)
+        dstRole @2 : Option(lib.Role),
+        // On a closed-viewership host, load user members through this team's
+        // view token instead of the target team's: a team the adder belongs
+        // to, which the new member already granted view permission (e.g. by
+        // joining it). Members must still be given by UID.
+        loadVia @3 : Option(lib.FQTeamParsed)
     );
 
     teamChangeRoles @14 (
