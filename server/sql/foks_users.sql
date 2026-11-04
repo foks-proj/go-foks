@@ -675,6 +675,7 @@ CREATE TABLE team_vo_bearer_tokens (
             src_role_type, src_viz_level, seqno) 
 );
 CREATE INDEX team_vo_bearer_tokens_token_idx ON team_vo_bearer_tokens(short_host_id, token);
+CREATE INDEX team_vo_bearer_tokens_ctime_idx ON team_vo_bearer_tokens(ctime);
 
 /*
  * team_certs are used as "team invitations" -- they contain data needed to load the team
@@ -1080,3 +1081,4 @@ INSERT INTO schema_patches (id, ctime) VALUES (7, NOW());
 INSERT INTO schema_patches (id, ctime) VALUES (8, NOW());
 INSERT INTO schema_patches (id, ctime) VALUES (9, NOW());
 INSERT INTO schema_patches (id, ctime) VALUES (10, NOW());
+INSERT INTO schema_patches (id, ctime) VALUES (11, NOW());
