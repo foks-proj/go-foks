@@ -11,6 +11,7 @@ import (
 	"github.com/foks-proj/go-foks/lib/core"
 	proto "github.com/foks-proj/go-foks/proto/lib"
 	"github.com/foks-proj/go-foks/proto/rem"
+	"github.com/foks-proj/go-foks/server/shared"
 	"github.com/stretchr/testify/require"
 )
 
@@ -579,4 +580,60 @@ func TestTeamLoadMembersAsNonAdmin(t *testing.T) {
 		require.Equal(t, e.uid, uid, "unexpected UID for member %s", m.Mem.Name)
 	}
 
+}
+
+// A loader that runs again reuses the view token it minted rather than minting
+// another (two round trips and two server rows each), and mints a fresh one
+// when the server no longer knows the old one.
+func TestClientTeamLoaderReusesViewToken(t *testing.T) {
+	tew := testEnvBeta(t)
+	u := tew.NewTestUserFakeRoot(t)
+	tew.DirectDoubleMerklePokeInTest(t)
+	tm := tew.makeTeamForOwner(t, u)
+	mu := tew.NewClientMetaContext(t, u)
+
+	ms, err := tew.MetaContext().WithProtoHostID(&tm.host)
+	require.NoError(t, err)
+	db, err := ms.Db(shared.DbTypeUsers)
+	require.NoError(t, err)
+	defer db.Release()
+	countTokens := func() int {
+		var n int
+		err := db.QueryRow(ms.Ctx(),
+			`SELECT COUNT(*) FROM team_vo_bearer_tokens
+			 WHERE short_host_id=$1 AND team_id=$2`,
+			ms.ShortHostID().ExportToDB(), tm.FQTeam(t).Team.ExportToDB(),
+		).Scan(&n)
+		require.NoError(t, err)
+		return n
+	}
+
+	before := countTokens()
+	loader, _, err := libclient.LoadTeamReturnLoader(mu, libclient.LoadTeamArg{
+		Team:    tm.FQTeam(t),
+		As:      u.FQUser().FQParty(),
+		Keys:    u.KeySeq(t, proto.OwnerRole),
+		SrcRole: proto.OwnerRole,
+	})
+	require.NoError(t, err)
+	first := loader.Tok()
+	require.NotNil(t, first)
+	require.Equal(t, before+1, countTokens())
+
+	_, err = loader.Run(mu)
+	require.NoError(t, err)
+	require.Equal(t, *first, *loader.Tok())
+	require.Equal(t, before+1, countTokens())
+
+	// As the server's GC would.
+	_, err = db.Exec(ms.Ctx(),
+		`DELETE FROM team_vo_bearer_tokens WHERE short_host_id=$1 AND token=$2`,
+		ms.ShortHostID().ExportToDB(), first.ExportToDB(),
+	)
+	require.NoError(t, err)
+
+	_, err = loader.Run(mu)
+	require.NoError(t, err)
+	require.NotEqual(t, *first, *loader.Tok())
+	require.Equal(t, before+1, countTokens())
 }

@@ -133,6 +133,10 @@ type TeamLoader struct {
 	stopFn          func()
 	voTok           *rem.TeamVOBearerToken
 	tok             rem.TokenVariant
+	voTokAt         time.Time // when, and for whom, voTok was minted (reuseViewToken)
+	voTokGen        proto.Generation
+	voTokMember     proto.FQParty
+	voTokRole       proto.Role
 	existing        *lcl.TeamChainState
 	newState        *lcl.TeamChainState
 	preload         *lcl.TeamChainState
@@ -857,7 +861,53 @@ func (l *TeamLoader) readyTeamMutation(m MetaContext) (*rem.TeamBearerToken, *re
 	return &tok, cli, nil
 }
 
+// voTokReuseWindow is how long a loader keeps presenting the view token it
+// minted instead of minting another on its next run. Minting costs two round
+// trips and leaves two rows on the server for good, and a long-lived loader
+// (a TeamMinder record, reloaded whenever TeamCacheTimeout lapses -- 1s on
+// some clients) used to mint on every run: over a thousand tokens per member
+// per hour on a busy host. The window sits well inside the server's token lifespan (6h by
+// default); a server that refuses the token sooner gets a fresh one (runOnce).
+const voTokReuseWindow = time.Hour
+
+// reuseViewToken points this run at the view token an earlier run minted, if
+// it is younger than voTokReuseWindow and was minted for the member, source
+// role and key generation this run would ask for. It reports whether it did.
+func (l *TeamLoader) reuseViewToken(m MetaContext) bool {
+	if l.voTok == nil || l.Arg.TestTokenVariant != nil || l.Arg.Tok != nil ||
+		l.Arg.LocalParentTeamTok != nil || l.Arg.Keys == nil {
+		return false
+	}
+	curr := l.Arg.Keys.Current()
+	if curr == nil || curr.Metadata().Gen != l.voTokGen {
+		return false
+	}
+	if m.G().Now().Sub(l.voTokAt) >= voTokReuseWindow {
+		return false
+	}
+	if !l.voTokMember.Eq(l.Arg.As) {
+		return false
+	}
+	if same, err := l.voTokRole.Eq(l.Arg.SrcRole); err != nil || !same {
+		return false
+	}
+	l.tok = rem.NewTokenVariantWithTeamvobearer(*l.voTok)
+	return true
+}
+
+// isRefusedViewTokenError reports the server refusing a view token that a
+// fresh mint would cure: aged out, superseded by a roster change, or gone.
+func isRefusedViewTokenError(err error) bool {
+	var stale core.TeamBearerTokenStaleError
+	var nf core.TeamVOBearerTokenNotFoundError
+	return errors.As(err, &stale) || errors.As(err, &nf)
+}
+
 func (l *TeamLoader) makeViewToken(m MetaContext) error {
+
+	// Taken before the challenge, so the reuse window never outlasts the
+	// server's view of the token's age.
+	mintedAt := m.G().Now()
 
 	// In test, we can override the token to use
 	if l.Arg.TestTokenVariant != nil {
@@ -1012,6 +1062,10 @@ func (l *TeamLoader) makeViewToken(m MetaContext) error {
 	}
 	l.Arg.Team.Team = tok.Id
 	l.voTok = &tok.Tok
+	l.voTokAt = mintedAt
+	l.voTokGen = req.Gen
+	l.voTokMember = req.Member
+	l.voTokRole = req.SrcRole
 	l.tok = rem.NewTokenVariantWithTeamvobearer(tok.Tok)
 	return nil
 }
@@ -1520,11 +1574,22 @@ func (l *TeamLoader) runOnce(m MetaContext) error {
 	if err != nil {
 		return err
 	}
-	err = l.makeViewToken(m)
-	if err != nil {
-		return err
+	reused := l.reuseViewToken(m)
+	if !reused {
+		err = l.makeViewToken(m)
+		if err != nil {
+			return err
+		}
 	}
 	err = l.loadTeamFromServer(m)
+	if reused && isRefusedViewTokenError(err) {
+		m.Infow("TeamLoader.runOnce", "stage", "reusedViewTokenRefused", "err", err)
+		err = l.makeViewToken(m)
+		if err != nil {
+			return err
+		}
+		err = l.loadTeamFromServer(m)
+	}
 	if err != nil {
 		return err
 	}
