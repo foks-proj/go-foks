@@ -26,8 +26,14 @@ const (
 	// race a token or challenge that is still live.
 	voTokenGCMargin = 24 * time.Hour
 
-	voTokenGCInterval = time.Hour
-	voTokenGCBatch    = 10000
+	// voTokenGCStartDelay holds the first round back after startup. A restart
+	// is when every client reconnects at once, and a GC batch then has to wait
+	// for one of the user server's pooled connections behind that burst: on
+	// a 10-connection pool it waited out voTokenGCBatchTimeout, while the next
+	// hourly round deleted 30k rows in about a second.
+	voTokenGCStartDelay = 5 * time.Minute
+	voTokenGCInterval   = time.Hour
+	voTokenGCBatch      = 10000
 
 	// voTokenGCBatchTimeout bounds one batch, like looperDbTimeout does for the
 	// poll loops: a dead pooled connection must not wedge the loop.
@@ -103,22 +109,25 @@ func gcExpiredVOBearerTokens(m MetaContext) (int, error) {
 	}
 }
 
-// RunVOBearerTokenGC deletes expired team VO bearer tokens now and then every
-// voTokenGCInterval, until m's context ends. A failed round is logged and
-// retried on the next tick: a missed round only delays the cleanup. Running it
-// in more than one process is harmless, as the deletes are idempotent.
+// RunVOBearerTokenGC deletes expired team VO bearer tokens voTokenGCStartDelay
+// after startup and then every voTokenGCInterval, until m's context ends. A
+// failed round is logged and retried on the next tick: a missed round only
+// delays the cleanup. Running it in more than one process is harmless, as the
+// deletes are idempotent.
 func RunVOBearerTokenGC(m MetaContext) {
+	wait := voTokenGCStartDelay
 	for {
+		select {
+		case <-time.After(wait):
+		case <-m.Ctx().Done():
+			return
+		}
+		wait = voTokenGCInterval
 		n, err := gcExpiredVOBearerTokens(m)
 		if err != nil {
 			m.Warnw("RunVOBearerTokenGC", "deleted", n, "err", err)
 		} else if n > 0 {
 			m.Infow("RunVOBearerTokenGC", "deleted", n)
-		}
-		select {
-		case <-time.After(voTokenGCInterval):
-		case <-m.Ctx().Done():
-			return
 		}
 	}
 }
