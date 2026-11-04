@@ -288,7 +288,18 @@ func (b *BaseChainLoader) runMany(m MetaContext, runOnce func(m MetaContext) err
 				return err
 			}
 		} else {
-			time.Sleep(wait)
+			// Never wait past the caller's deadline. A plain sleep kept a
+			// bounded caller (an app cold start restoring its user) stuck for
+			// the rest of the backoff after its deadline had passed. The
+			// context error is a transport error, so the caller's offline
+			// fallbacks take over instead of seeing a retry-exhausted race.
+			timer := time.NewTimer(wait)
+			select {
+			case <-timer.C:
+			case <-m.Ctx().Done():
+				timer.Stop()
+				return m.Ctx().Err()
+			}
 			wait *= 2
 		}
 	}
