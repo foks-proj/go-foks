@@ -506,7 +506,7 @@ func (r *RTParty) keysAtRoleGen(
 	*KeyMgr,
 	error,
 ) {
-	seq, err := r.PLCNode().SKM().PrivateKeysForRole(m.Base(), rg.Role)
+	seq, err := r.PLCNode().PrivateKeysForRoleAtGen(m.Base(), rg.Role, rg.Gen)
 	if err != nil {
 		return nil, err
 	}
