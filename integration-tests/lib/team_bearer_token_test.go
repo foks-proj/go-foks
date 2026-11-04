@@ -281,3 +281,59 @@ func TestTeamVOBearerTokenSadPaths(t *testing.T) {
 	require.Error(t, err)
 	require.Equal(t, bte, err)
 }
+
+func TestTeamVOBearerTokenGC(t *testing.T) {
+	tew := testEnvBeta(t)
+	u := tew.NewTestUserFakeRoot(t)
+	m := tew.MetaContext()
+	tew.DirectDoubleMerklePokeInTest(t)
+	tm := tew.makeTeamForOwner(t, u)
+
+	old := makeVOBearerTokenForUser(t, tm, u, nil)
+	fresh := makeVOBearerTokenForUser(t, tm, u, nil)
+
+	mh, err := m.WithProtoHostID(&tm.host)
+	require.NoError(t, err)
+	db, err := mh.Db(shared.DbTypeUsers)
+	require.NoError(t, err)
+	defer db.Release()
+
+	// Age one token far past any cutoff the environment's other tests could
+	// leave behind, so the GC below takes it and nothing of theirs.
+	_, err = db.Exec(mh.Ctx(),
+		`UPDATE team_vo_bearer_tokens SET ctime='2000-01-01'
+		 WHERE short_host_id=$1 AND token=$2`,
+		mh.ShortHostID().ExportToDB(), old.ExportToDB(),
+	)
+	require.NoError(t, err)
+
+	usedChallenge := func(tok rem.TeamVOBearerToken) bool {
+		var n int
+		err := db.QueryRow(mh.Ctx(),
+			`SELECT COUNT(*) FROM used_random_challenges
+			 WHERE short_host_id=$1 AND challenge=$2`,
+			mh.ShortHostID().ExportToDB(), tok.ExportToDB(),
+		).Scan(&n)
+		require.NoError(t, err)
+		return n == 1
+	}
+	require.True(t, usedChallenge(old))
+
+	cutoff := time.Date(2001, 1, 1, 0, 0, 0, 0, time.UTC)
+	n, err := shared.DeleteExpiredVOBearerTokens(mh, cutoff, 100)
+	require.NoError(t, err)
+	require.Equal(t, 1, n)
+
+	_, err = shared.CheckTeamVOBearerToken(mh, db, old, 0)
+	require.Equal(t, core.TeamVOBearerTokenNotFoundError{}, err)
+	require.False(t, usedChallenge(old))
+
+	// The token minted at the same time but left at its real age survives.
+	_, err = shared.CheckTeamVOBearerToken(mh, db, fresh, 0)
+	require.NoError(t, err)
+	require.True(t, usedChallenge(fresh))
+
+	n, err = shared.DeleteExpiredVOBearerTokens(mh, cutoff, 100)
+	require.NoError(t, err)
+	require.Equal(t, 0, n)
+}
