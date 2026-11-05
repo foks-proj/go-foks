@@ -6,7 +6,8 @@
 //     push rows, not 'queued' ones;
 //   - only the holder decides held rows (keep, drop, one push per member);
 //   - when the hold ends (cleared, or the holder left the team) the held rows
-//     are queued, and so are a channel's when the holder can no longer read it.
+//     are queued, and so are a channel's when the holder can no longer read it;
+//   - archiving a channel drops its held rows.
 package lib
 
 import (
@@ -223,6 +224,12 @@ func TestRTPushHoldMatrix(t *testing.T) {
 	// A no-push channel still writes no rows.
 	sc.send(t, sc.bob, quiet, "control traffic")
 	require.Empty(t, sc.pushRows(t, quiet, sc.cleo))
+
+	// Archiving a channel drops its held rows with its queued ones, so a
+	// later release cannot push for a closed room.
+	require.NoError(t, sc.alice.minder.SetChannelArchived(sc.alice.m, sc.teamCfg(),
+		proto.RTAppID_Chat, lcl.NewRTChannelSpecifierWithId(ch), true))
+	require.Empty(t, sc.pushRows(t, ch, sc.cleo))
 }
 
 func TestRTPushReleaseKeepDropCoalesce(t *testing.T) {

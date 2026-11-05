@@ -1093,13 +1093,15 @@ func (c *channelMutator) finish(m shared.MetaContext) error {
 // dropChannelPushes discards a closing channel's undelivered push rows.
 //
 // Queued rows would fire after the channel closed, buzzing members about a
-// room that has just been shut. Rows already 'sending' are left alone -- the
-// relay owns those, and racing it is worse than one late notification.
+// room that has just been shut. Held rows go too: a release, or the hold
+// ending, would queue them later for the same closed room. Rows already
+// 'sending' are left alone -- the relay owns those, and racing it is worse
+// than one late notification.
 func dropChannelPushes(m shared.MetaContext, tx pgx.Tx, channelID int64) error {
 	_, err := tx.Exec(
 		m.Ctx(),
 		`DELETE FROM push_outbox
-		 WHERE short_host_id=$1 AND channel_id=$2 AND status='queued'`,
+		 WHERE short_host_id=$1 AND channel_id=$2 AND status IN ('queued', 'held')`,
 		m.ShortHostID(),
 		channelID,
 	)
