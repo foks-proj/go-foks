@@ -634,7 +634,7 @@ func (kvp *KVParty) kvStoreKeyAtRoleGen(
 	*kv.KeyBundle,
 	error,
 ) {
-	ks, err := kvp.plcn.SKM().PrivateKeysForRole(m.Base(), role)
+	ks, err := kvp.plcn.PrivateKeysForRoleAtGen(m.Base(), role, gen)
 	if err != nil {
 		return nil, err
 	}

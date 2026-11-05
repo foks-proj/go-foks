@@ -6,10 +6,12 @@ package libclient
 import (
 	"bytes"
 	"runtime"
+	"slices"
 	"sync"
 	"testing"
 	"time"
 
+	"github.com/foks-proj/go-foks/lib/core"
 	proto "github.com/foks-proj/go-foks/proto/lib"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -104,4 +106,57 @@ func TestPartyLoaderCacheCreatesOneNodePerParty(t *testing.T) {
 		require.Same(t, nodes[0], node)
 	}
 	require.Len(t, p.parties, 1)
+}
+
+// fakeKeySeq holds private keys at the given generations; the highest is
+// Current.
+type fakeKeySeq []proto.Generation
+
+func (s fakeKeySeq) At(g proto.Generation) core.SharedPrivateSuiter {
+	for _, h := range s {
+		if h == g {
+			return &core.SharedPrivateSuite25519{Md: core.SharedKeyMetadata{Gen: g}}
+		}
+	}
+	return nil
+}
+
+func (s fakeKeySeq) Current() core.SharedPrivateSuiter {
+	if len(s) == 0 {
+		return nil
+	}
+	return s.At(slices.Max(s))
+}
+
+// Only a generation newer than every one held means the cached team missed a
+// rekey; an older or held generation must never trigger a reload.
+func TestGenAhead(t *testing.T) {
+	tests := []struct {
+		name string
+		held fakeKeySeq
+		gen  proto.Generation
+		want bool
+	}{
+		{"held", fakeKeySeq{1, 2}, 2, false},
+		{"older and missing", fakeKeySeq{2, 3}, 1, false},
+		{"newer than current", fakeKeySeq{1, 2}, 3, true},
+		{"far newer", fakeKeySeq{1}, 1000, true},
+		{"nothing held", fakeKeySeq{}, 1, false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			require.Equal(t, tt.want, genAhead(tt.held, tt.gen))
+		})
+	}
+}
+
+// A sender picks the generation in its box, so reloads it can trigger on one
+// node are spaced at least genAheadReloadFloor apart.
+func TestClaimGenAheadReloadFloor(t *testing.T) {
+	n := &PLCNode{}
+	t0 := time.Unix(1_000_000, 0)
+	require.True(t, n.claimGenAheadReloadLocked(t0), "first claim")
+	require.False(t, n.claimGenAheadReloadLocked(t0.Add(genAheadReloadFloor-time.Second)), "inside the floor")
+	require.True(t, n.claimGenAheadReloadLocked(t0.Add(genAheadReloadFloor)), "at the floor")
+	require.False(t, n.claimGenAheadReloadLocked(t0.Add(genAheadReloadFloor+time.Second)), "floor restarts from the last claim")
 }

@@ -19,6 +19,13 @@ type PLCNode struct {
 	voTok         *rem.TeamVOBearerToken
 	refreshTime   time.Time
 	directDstRole *proto.Role // might be null if we don't have direct membership
+	// genAheadMu serializes the reloads PrivateKeysForRoleAtGen runs for a
+	// generation the node does not hold, and guards genAheadAt, when the last
+	// one started. It is held across the reload, so it is taken before the
+	// fqptLocks entry and the node lock, never while holding either.
+	genAheadMu sync.Mutex
+	genAheadAt time.Time
+	plc        *PartyLoaderCache // the cache that owns this node, for reloads
 }
 
 // Invalidate expires the node's cached state -- crucially its VO bearer token --
@@ -128,8 +135,9 @@ func (p *PartyLoaderCache) getLockedNode(
 	ret := p.lookupNode(*fqef, nil)
 	if ret == nil {
 		ret = p.lookupNode(*fqef, &PLCNode{
-			id: fqp,
-			au: p.au.FQU(),
+			id:  fqp,
+			au:  p.au.FQU(),
+			plc: p,
 		})
 	}
 	ret.Lock()
@@ -300,6 +308,70 @@ func (p *PartyLoaderCache) Refresh(m MetaContext, n *PLCNode) error {
 	n.Invalidate()
 	_, err := p.loadTeam(m, *tm, &PLCOpts{})
 	return err
+}
+
+// genAheadReloadFloor is the least time between two reloads of one node that a
+// key lookup may trigger for a generation the node does not hold. The
+// generation comes from the box being opened, which its sender chose, so
+// without a floor a crafted generation would force a team reload per lookup.
+const genAheadReloadFloor = 30 * time.Second
+
+// PrivateKeysForRoleAtGen returns n's private keys for role, first reloading n
+// once when gen is newer than every generation n holds for that role.
+//
+// That is the state after a rekey (a member removed) since n was cached. The
+// reader's own team_members row is untouched by it, so the node's view token
+// stays valid and nothing else reloads n before TeamCacheTimeout lapses --
+// minutes on mobile -- while every box sealed under the new generation fails
+// with KeyNotFoundError. A gen at or below the newest held is an ordinary miss
+// and never reloads.
+//
+// Lookups that miss at the same time wait for one reload and then look again.
+// A failed reload is returned as the error: the lookup could not have
+// succeeded without it. The returned sequence may still lack gen (a reload
+// inside the floor is skipped); callers report that exactly as before.
+func (n *PLCNode) PrivateKeysForRoleAtGen(
+	m MetaContext,
+	role proto.Role,
+	gen proto.Generation,
+) (
+	SharedKeySequence,
+	error,
+) {
+	seq, err := n.SKM().PrivateKeysForRole(m, role)
+	if err != nil || seq == nil || n.plc == nil || !genAhead(seq, gen) {
+		return seq, err
+	}
+	n.genAheadMu.Lock()
+	defer n.genAheadMu.Unlock()
+	// Another lookup may have reloaded n while this one waited.
+	seq, err = n.SKM().PrivateKeysForRole(m, role)
+	if err != nil || seq == nil || !genAhead(seq, gen) || !n.claimGenAheadReloadLocked(m.G().Now()) {
+		return seq, err
+	}
+	err = n.plc.Refresh(m, n)
+	if err != nil {
+		return nil, err
+	}
+	return n.SKM().PrivateKeysForRole(m, role)
+}
+
+func genAhead(seq SharedKeySequence, gen proto.Generation) bool {
+	if seq.At(gen) != nil {
+		return false
+	}
+	cur := seq.Current()
+	return cur != nil && gen > cur.Metadata().Gen
+}
+
+// claimGenAheadReloadLocked reports whether a generation-ahead reload of n may
+// run now, and if so records it. The caller holds n.genAheadMu.
+func (n *PLCNode) claimGenAheadReloadLocked(now time.Time) bool {
+	if !n.genAheadAt.IsZero() && now.Sub(n.genAheadAt) < genAheadReloadFloor {
+		return false
+	}
+	n.genAheadAt = now
+	return true
 }
 
 // Load a PLCNode, from a FQTeamParsed if specified. Return a PLCNode, which
