@@ -155,8 +155,8 @@ func TestGenAhead(t *testing.T) {
 func TestClaimGenAheadReloadFloor(t *testing.T) {
 	n := &PLCNode{}
 	t0 := time.Unix(1_000_000, 0)
-	require.True(t, n.claimGenAheadReload(t0), "first claim")
-	require.False(t, n.claimGenAheadReload(t0.Add(genAheadReloadFloor-time.Second)), "inside the floor")
-	require.True(t, n.claimGenAheadReload(t0.Add(genAheadReloadFloor)), "at the floor")
-	require.False(t, n.claimGenAheadReload(t0.Add(genAheadReloadFloor+time.Second)), "floor restarts from the last claim")
+	require.True(t, n.claimGenAheadReloadLocked(t0), "first claim")
+	require.False(t, n.claimGenAheadReloadLocked(t0.Add(genAheadReloadFloor-time.Second)), "inside the floor")
+	require.True(t, n.claimGenAheadReloadLocked(t0.Add(genAheadReloadFloor)), "at the floor")
+	require.False(t, n.claimGenAheadReloadLocked(t0.Add(genAheadReloadFloor+time.Second)), "floor restarts from the last claim")
 }

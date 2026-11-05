@@ -4,6 +4,7 @@
 package lib
 
 import (
+	"sync"
 	"testing"
 
 	"github.com/foks-proj/go-foks/client/libclient"
@@ -106,10 +107,25 @@ func TestKVReadAfterRekeyWithWarmTeamCache(t *testing.T) {
 	o2Kvm := libkv.NewMinderWithCacheSettings(o2Mc.G().ActiveUser(), cs)
 	put(o2Mc, o2Kvm, "/after.txt", "after")
 
-	// The reader's ring is a generation behind; the read must still succeed.
-	got, err = get(rMc, rKvm, "/after.txt")
-	require.NoError(t, err)
-	require.Equal(t, "after", got)
+	// The reader's ring is a generation behind; the reads must still succeed.
+	// They run at once, so all but one wait on the one reload rather than
+	// failing on the ring it is about to replace.
+	const readers = 4
+	var wg sync.WaitGroup
+	gots := make([]string, readers)
+	errs := make([]error, readers)
+	for i := range readers {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			gots[i], errs[i] = get(rMc, rKvm, "/after.txt")
+		}()
+	}
+	wg.Wait()
+	for i := range readers {
+		require.NoError(t, errs[i], "reader %d", i)
+		require.Equal(t, "after", gots[i], "reader %d", i)
+	}
 }
 
 func TestRTReadAfterRekeyWithWarmTeamCache(t *testing.T) {
