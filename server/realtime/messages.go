@@ -127,6 +127,49 @@ func (s *messageSender) checkEncryptionRole(rg proto.RoleAndGen) error {
 	return nil
 }
 
+// checkEncryptionGen verifies the client sealed the message under the team's
+// newest key generation for its role. After a rekey (a member removed) a
+// sender whose team cache predates it would otherwise keep sealing under the
+// generation the removed member holds, until the cache expires. Such a send is
+// refused with RTRaceError{RTRaceKeyGeneration}, so the sender reloads the team
+// and re-seals -- unless this msg_id already landed (a lost ack from before
+// the rekey), which is answered as a replay like any other.
+func (s *messageSender) checkEncryptionGen(m shared.MetaContext, rg proto.RoleAndGen) error {
+	roleType, vizLevel, err := rg.Role.ExportToDB()
+	if err != nil {
+		return err
+	}
+	var gen int
+	err = s.userdb.QueryRow(m.Ctx(),
+		`SELECT gen FROM shared_key_generations
+		 WHERE short_host_id=$1 AND entity_id=$2 AND role_type=$3 AND viz_level=$4`,
+		m.ShortHostID().ExportToDB(),
+		s.parentTeam.EntityID().ExportToDB(),
+		roleType,
+		vizLevel,
+	).Scan(&gen)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return core.BadArgsError("team has no key at the message's role")
+	}
+	if err != nil {
+		return err
+	}
+	switch {
+	case int(rg.Gen) > gen:
+		return core.BadArgsError("message sealed under a key generation the team does not have")
+	case int(rg.Gen) < gen:
+		exists, err := s.msgIDExists(m)
+		if err != nil {
+			return err
+		}
+		if exists {
+			return errMsgIDReplay
+		}
+		return core.RTRaceError{Which: core.RTRaceKeyGeneration}
+	}
+	return nil
+}
+
 // internSender maps the sending user to a small per-channel ordinal (party_no),
 // inserting a new channel_parties row the first time the user posts. Safe under
 // the channels row lock held by the caller.
@@ -186,6 +229,10 @@ func (s *messageSender) insertMessage(
 	}
 	naclctxt := ebody.Ctext.Nacl()
 	err = s.checkEncryptionRole(ebody.Rg)
+	if err != nil {
+		return zed, err
+	}
+	err = s.checkEncryptionGen(m, ebody.Rg)
 	if err != nil {
 		return zed, err
 	}

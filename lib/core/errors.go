@@ -1410,13 +1410,29 @@ func (s SocialInviteStaleTurnError) Error() string {
 
 // RTRaceError signals a lost optimistic-concurrency race in the realtime
 // service. Which names the table that raced ("channels" or "messages") so the
-// retry logic and logs aren't misleadingly channel-specific.
+// retry logic and logs aren't misleadingly channel-specific, or is
+// RTRaceKeyGeneration: the message was sealed under a team key generation
+// older than the team's newest, i.e. the sender's team cache missed a rekey.
 type RTRaceError struct {
 	Which string
 }
 
+// RTRaceKeyGeneration is the RTRaceError.Which of a send sealed under an old
+// key generation. The sender reloads the team and re-seals.
+const RTRaceKeyGeneration = "key generation"
+
 func (r RTRaceError) Error() string {
+	if r.Which == RTRaceKeyGeneration {
+		return "realtime message sealed under an old key generation"
+	}
 	return "race in realtime " + r.Which + " table"
+}
+
+// IsRTStaleKeyGenError reports whether err is a send refused for being sealed
+// under an old key generation.
+func IsRTStaleKeyGenError(err error) bool {
+	var r RTRaceError
+	return errors.As(err, &r) && r.Which == RTRaceKeyGeneration
 }
 
 // RTAmbiguousChannelError is returned when a channel is addressed by name only

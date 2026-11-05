@@ -294,14 +294,19 @@ A queued message is sealed at *queue* time with the then-current PTK (that is
 what the outbox stores today — the boxed wrapper, consistent with the rule
 that plaintext never hits the local DB). Two cases:
 
-**Regular teams.** PTK rotation happens on membership change. A message
-sealed to gen N and drained after a rotation to N+1 is accepted (the server
-stores `ptk_gen` per row and never validates it) and remains readable by
-current members, who hold all prior gens. The one wrinkle: a member removed
-during the offline window can still read a message sealed before their
-removal. This matches the security semantics of a message *sent* before the
-removal — which, from the sender's point of view, it was. Documented as
-accepted behavior.
+**Regular teams.** PTK rotation happens on membership change. The server
+refuses a message sealed under a generation older than the team's newest for
+its role (`RTRaceError` with `Which` = `core.RTRaceKeyGeneration`), unless its
+`msgID` already landed, which is answered as a replay. The sender's
+`attemptSend` then reloads the team, re-seals (as below) and sends once more.
+So a message sealed to gen N and drained after a rotation to N+1 goes out
+under N+1, and a member removed during the offline window cannot read it.
+
+The check exists for the online case more than the offline one: a sender
+whose team cache predates a removal would otherwise keep sealing under the
+removed member's generation until the cache expires (minutes on mobile),
+for messages written *after* the removal. The server cannot tell a message
+queued before a removal from one written after it, so both are re-sealed.
 
 **Ad-hoc teams.** These rotate lazily *before message send* precisely so that
 removals take effect at the next send. A drained message sealed pre-rotation
@@ -319,10 +324,11 @@ generation they hold, and the secretbox nonce is domain-separated from the
 noncer payload — re-boxing the same metadata under the new generation's key
 reuses the nonce only across *different* keys, which is sound.
 
-Re-sealing is the only part of this design that touches message crypto, and
-it is confined to the ad-hoc drain path. Stage 1 servers don't serve ad-hoc
-teams, so it can land as a later phase — but the outbox row format carries the
-sealed gen from day one so no migration is needed.
+Re-sealing is the only part of this design that touches message crypto. It
+runs in `attemptSend` (`resealAtNewestGen`), shared by the live send and the
+drain, whenever the server refuses a stale generation. The ad-hoc
+rotate-if-needed check before the send is still a later phase; Stage 1
+servers don't serve ad-hoc teams.
 
 ### D7 — Connectivity classification, not a connectivity service
 
@@ -437,10 +443,11 @@ Collected here in addition to the inline notes:
   hits the local DB is preserved. The failure envelope stores server error
   strings; server-controlled text lands in the local soft DB either way via
   cached metadata, so this adds no new class of stored content.
-- **Removed-member window.** A message sealed before a removal and drained
-  after it is readable by the removed member (regular teams, D6). This
-  matches the meaning of "sent before the removal" and is documented rather
-  than fought; ad-hoc teams, whose contract is stricter, get the re-seal.
+- **Removed-member window.** A message that reaches the server after a
+  removal is sealed under the post-removal generation: the server refuses an
+  older one and the sender re-seals (D6). Channel names and descriptions are
+  not checked yet; a warm-cache admin still seals them under the generation
+  it has cached.
 - **Resource bounds.** The outbox is attacker-free but not failure-free: a
   client stuck offline must not grow state unboundedly, hence the
   per-channel cap. Reconnect drains use per-channel serialization plus
@@ -570,16 +577,15 @@ eventually hook in).
 
 ### Phase 4 — Ad-hoc drain path (when ad-hoc channels exist end-to-end)
 
-1. Rotate-if-needed at drain time; re-seal on gen advance (D6).
-2. Tests: queue → rotate (member removal) → drain re-seals with new gen;
-   `msgID` stable across re-seal.
+1. Rotate-if-needed at drain time (D6). Re-sealing on a generation advance
+   already exists for every team (`resealAtNewestGen`; tested by
+   `TestRTDrainAfterRekeyResealsQueuedMessage`).
 
 ## Open Questions
 
-- Should the server *validate* `ptk_gen` against the team's current
-  generation window (rejecting gens that predate a removal by more than the
-  lazy-rotation contract allows), or is storing it opaquely — the current
-  behavior — the intended trust model? The design above assumes the latter.
+- Resolved: the server validates `ptk_gen` on message sends against the
+  team's newest generation for the role (D6). Whether channel name and
+  description boxes should get the same check is still open.
 - Backoff parameters and outbox caps (max queued messages per channel, max
   age before a queued row is declared failed) — proposed defaults: cap 256
   rows/channel, no age limit, backoff 1s→2m with jitter. Worth maintainer

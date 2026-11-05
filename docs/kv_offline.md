@@ -223,10 +223,9 @@ recording its `RoleAndGen`, exactly as a live put would seal it.
 **This is the KV analogue of `rt_offline.md` D6, and unlike that one it is a
 correctness requirement rather than a security refinement.**
 
-In chat, a queued message sealed to an old PTK generation still writes
-successfully and still reads correctly; re-sealing at drain is done only for
-ad-hoc teams, and only to honour their lazy-rotation contract. The server
-stores `ptk_gen` opaquely and validates nothing.
+In chat, a queued message sealed to an old PTK generation is refused by the
+server and re-sealed by the sender under the newest generation, which it holds
+along with every older one (`docs/rt_offline.md`, D6).
 
 KV is not like that. A dirent is bound to its parent directory's key material
 in three separate places:

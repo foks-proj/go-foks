@@ -344,7 +344,95 @@ func (d *Minder) setOutboxState(
 // call needs travels inside the stored RTMsgCached, so the drain never has to
 // re-resolve teams or channels, except noPush (fork-only), which the outbox
 // row keeps beside it (RTOutboxEntry.NoPush).
+//
+// The one exception: when the server refuses the box as sealed under an old
+// key generation (the team rekeyed since this client cached it, or since the
+// message was queued), attemptSend reloads the team, re-seals msgCached in
+// place under the newest generation and sends once more.
 func (d *Minder) attemptSend(
+	m MetaContext,
+	msgCached *proto.RTMsgCached,
+	noPush bool,
+) (
+	*rem.RTSendRes,
+	error,
+) {
+	res, err := d.sendRPC(m, msgCached, noPush)
+	if !core.IsRTStaleKeyGenError(err) {
+		return res, err
+	}
+	err = d.resealAtNewestGen(m, msgCached)
+	if err != nil {
+		return nil, err
+	}
+	return d.sendRPC(m, msgCached, noPush)
+}
+
+// resealAtNewestGen reloads the team cm was sent into and re-seals cm's body
+// under the newest key generation it now holds for the box's role. The body
+// is recovered by opening the box with the sender's own key at the old
+// generation, and the nonce is unchanged: it is derived from the message's
+// metadata, and the key it is used with is new.
+func (d *Minder) resealAtNewestGen(m MetaContext, cm *proto.RTMsgCached) error {
+	teamID, err := cm.Md.Team.Party.TeamID()
+	if err != nil {
+		return err
+	}
+	rtp, err := d.base.GetParty(m.Base(), configTeamByID(teamID))
+	if err != nil {
+		return err
+	}
+	err = d.au.PartyLoaderCache().Refresh(m.Base(), rtp.PLCNode())
+	if err != nil {
+		return err
+	}
+	typ, err := cm.Mw.GetT()
+	if err != nil {
+		return err
+	}
+	if typ != proto.MsgBodyType_Encrypted {
+		return core.VersionNotSupportedError("only encrypted message bodies are supported")
+	}
+	box := cm.Mw.Encrypted()
+	nn, err := cookNonce(&cm.Md)
+	if err != nil {
+		return err
+	}
+	old, err := rtp.keysAtRoleGen(m, cm.Md.AppID, box.Rg)
+	if err != nil {
+		return err
+	}
+	var body proto.RTMsgBody
+	err = old.OpenMsgWithNonce(&body, box.Ctext, nn)
+	if err != nil {
+		return err
+	}
+	seq, err := rtp.PLCNode().SKM().PrivateKeysForRole(m.Base(), box.Rg.Role)
+	if err != nil {
+		return err
+	}
+	if seq == nil {
+		return core.PermissionError("no write access to channel at this role")
+	}
+	cur := seq.Current()
+	if cur == nil || cur.Metadata().Gen <= box.Rg.Gen {
+		// The reload brought nothing newer; resending would be refused again.
+		return core.RTRaceError{Which: core.RTRaceKeyGeneration}
+	}
+	km, err := NewKeyMgr(cur, cm.Md.AppID)
+	if err != nil {
+		return err
+	}
+	nbox, err := km.SealMsgWithNonce(&body, nn)
+	if err != nil {
+		return err
+	}
+	cm.Mw = proto.NewRTMsgWrapperWithEncrypted(*nbox)
+	return nil
+}
+
+// sendRPC is one rtSend RPC for msgCached as it stands.
+func (d *Minder) sendRPC(
 	m MetaContext,
 	msgCached *proto.RTMsgCached,
 	noPush bool,
