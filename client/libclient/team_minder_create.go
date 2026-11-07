@@ -59,23 +59,6 @@ func (t *TeamCreator) TeamID() *proto.TeamID {
 	return &t.tid
 }
 
-// requireOpenViewership ensures the current host allows open viewership, which is
-// a prerequisite for ad-hoc teams (their founding membership is visible in the clear).
-func (t *TeamCreator) requireOpenViewership(m MetaContext) error {
-	ucli, err := t.au.UserClient(m)
-	if err != nil {
-		return err
-	}
-	cfg, err := ucli.GetHostConfig(m.Ctx())
-	if err != nil {
-		return err
-	}
-	if cfg.Viewership.User != proto.ViewershipMode_Open {
-		return core.TeamAdhocOpenViewershipError{}
-	}
-	return nil
-}
-
 func (t *TeamCreator) setup(m MetaContext) error {
 	au, err := t.tm.activeUser(m)
 	if err != nil {
@@ -576,10 +559,15 @@ func (t *TeamCreator) Run(m MetaContext) error {
 	if err != nil {
 		return err
 	}
+	// Ad-hoc teams need an open-viewership host, since their founding
+	// membership is visible in the clear.
 	if t.nm.IsZero() {
-		err = t.requireOpenViewership(m)
+		open, err := t.au.HasOpenUserViewership(m)
 		if err != nil {
 			return err
+		}
+		if !open {
+			return core.TeamAdhocOpenViewershipError{}
 		}
 	}
 	err = t.reserveTeamname(m)
