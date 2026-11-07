@@ -265,4 +265,9 @@ protocol User
     ) -> YubiEncryptedManagementKey;
     getAllYubiManagementKeys @29 (
     ) -> List(YubiEncryptedManagementKey);
+
+    // Mint a standard single-use invite code against the caller's basket
+    // (docs/social_signup_spec.md).
+    newInviteCode @30 (
+    ) -> InviteCode;
 }

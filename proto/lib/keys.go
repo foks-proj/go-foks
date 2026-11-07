@@ -428,6 +428,305 @@ func (k *KVKeyDerivation) GetTypeUniqueID() rpc.TypeUniqueID {
 }
 func (k *KVKeyDerivation) Bytes() []byte { return nil }
 
+type SocialInviteID [32]byte
+type SocialInviteIDInternal__ [32]byte
+
+func (s SocialInviteID) Export() *SocialInviteIDInternal__ {
+	tmp := (([32]byte)(s))
+	return ((*SocialInviteIDInternal__)(&tmp))
+}
+func (s SocialInviteIDInternal__) Import() SocialInviteID {
+	tmp := ([32]byte)(s)
+	return SocialInviteID((func(x *[32]byte) (ret [32]byte) {
+		if x == nil {
+			return ret
+		}
+		return *x
+	})(&tmp))
+}
+
+func (s *SocialInviteID) Encode(enc rpc.Encoder) error {
+	return enc.Encode(s.Export())
+}
+
+func (s *SocialInviteID) Decode(dec rpc.Decoder) error {
+	var tmp SocialInviteIDInternal__
+	err := dec.Decode(&tmp)
+	if err != nil {
+		return err
+	}
+	*s = tmp.Import()
+	return nil
+}
+
+func (s SocialInviteID) Bytes() []byte {
+	return (s)[:]
+}
+
+type SocialInviteWriteKey [32]byte
+type SocialInviteWriteKeyInternal__ [32]byte
+
+func (s SocialInviteWriteKey) Export() *SocialInviteWriteKeyInternal__ {
+	tmp := (([32]byte)(s))
+	return ((*SocialInviteWriteKeyInternal__)(&tmp))
+}
+func (s SocialInviteWriteKeyInternal__) Import() SocialInviteWriteKey {
+	tmp := ([32]byte)(s)
+	return SocialInviteWriteKey((func(x *[32]byte) (ret [32]byte) {
+		if x == nil {
+			return ret
+		}
+		return *x
+	})(&tmp))
+}
+
+func (s *SocialInviteWriteKey) Encode(enc rpc.Encoder) error {
+	return enc.Encode(s.Export())
+}
+
+func (s *SocialInviteWriteKey) Decode(dec rpc.Decoder) error {
+	var tmp SocialInviteWriteKeyInternal__
+	err := dec.Decode(&tmp)
+	if err != nil {
+		return err
+	}
+	*s = tmp.Import()
+	return nil
+}
+
+var SocialInviteWriteKeyTypeUniqueID = rpc.TypeUniqueID(0xbfc12c8ea6417d09)
+
+func (s *SocialInviteWriteKey) GetTypeUniqueID() rpc.TypeUniqueID {
+	return SocialInviteWriteKeyTypeUniqueID
+}
+func (s SocialInviteWriteKey) Bytes() []byte {
+	return (s)[:]
+}
+
+type SocialInviteWriteKeyCommitment StdHash
+type SocialInviteWriteKeyCommitmentInternal__ StdHashInternal__
+
+func (s SocialInviteWriteKeyCommitment) Export() *SocialInviteWriteKeyCommitmentInternal__ {
+	tmp := ((StdHash)(s))
+	return ((*SocialInviteWriteKeyCommitmentInternal__)(tmp.Export()))
+}
+func (s SocialInviteWriteKeyCommitmentInternal__) Import() SocialInviteWriteKeyCommitment {
+	tmp := (StdHashInternal__)(s)
+	return SocialInviteWriteKeyCommitment((func(x *StdHashInternal__) (ret StdHash) {
+		if x == nil {
+			return ret
+		}
+		return x.Import()
+	})(&tmp))
+}
+
+func (s *SocialInviteWriteKeyCommitment) Encode(enc rpc.Encoder) error {
+	return enc.Encode(s.Export())
+}
+
+func (s *SocialInviteWriteKeyCommitment) Decode(dec rpc.Decoder) error {
+	var tmp SocialInviteWriteKeyCommitmentInternal__
+	err := dec.Decode(&tmp)
+	if err != nil {
+		return err
+	}
+	*s = tmp.Import()
+	return nil
+}
+
+func (s SocialInviteWriteKeyCommitment) Bytes() []byte {
+	return ((StdHash)(s)).Bytes()
+}
+
+type SocialInviteSeed [32]byte
+type SocialInviteSeedInternal__ [32]byte
+
+func (s SocialInviteSeed) Export() *SocialInviteSeedInternal__ {
+	tmp := (([32]byte)(s))
+	return ((*SocialInviteSeedInternal__)(&tmp))
+}
+func (s SocialInviteSeedInternal__) Import() SocialInviteSeed {
+	tmp := ([32]byte)(s)
+	return SocialInviteSeed((func(x *[32]byte) (ret [32]byte) {
+		if x == nil {
+			return ret
+		}
+		return *x
+	})(&tmp))
+}
+
+func (s *SocialInviteSeed) Encode(enc rpc.Encoder) error {
+	return enc.Encode(s.Export())
+}
+
+func (s *SocialInviteSeed) Decode(dec rpc.Decoder) error {
+	var tmp SocialInviteSeedInternal__
+	err := dec.Decode(&tmp)
+	if err != nil {
+		return err
+	}
+	*s = tmp.Import()
+	return nil
+}
+
+var SocialInviteSeedTypeUniqueID = rpc.TypeUniqueID(0x9e60ab215fc0d3b4)
+
+func (s *SocialInviteSeed) GetTypeUniqueID() rpc.TypeUniqueID {
+	return SocialInviteSeedTypeUniqueID
+}
+func (s SocialInviteSeed) Bytes() []byte {
+	return (s)[:]
+}
+
+type SocialInviteKeyType int
+
+const (
+	SocialInviteKeyType_ID    SocialInviteKeyType = 1
+	SocialInviteKeyType_Box   SocialInviteKeyType = 2
+	SocialInviteKeyType_Write SocialInviteKeyType = 3
+)
+
+var SocialInviteKeyTypeMap = map[string]SocialInviteKeyType{
+	"ID":    1,
+	"Box":   2,
+	"Write": 3,
+}
+var SocialInviteKeyTypeRevMap = map[SocialInviteKeyType]string{
+	1: "ID",
+	2: "Box",
+	3: "Write",
+}
+
+type SocialInviteKeyTypeInternal__ SocialInviteKeyType
+
+func (s SocialInviteKeyTypeInternal__) Import() SocialInviteKeyType {
+	return SocialInviteKeyType(s)
+}
+func (s SocialInviteKeyType) Export() *SocialInviteKeyTypeInternal__ {
+	return ((*SocialInviteKeyTypeInternal__)(&s))
+}
+
+type SocialInviteKeyDerivation struct {
+	T SocialInviteKeyType
+}
+type SocialInviteKeyDerivationInternal__ struct {
+	_struct  struct{} `codec:",toarray"` //lint:ignore U1000 msgpack internal field
+	T        SocialInviteKeyType
+	Switch__ SocialInviteKeyDerivationInternalSwitch__
+}
+type SocialInviteKeyDerivationInternalSwitch__ struct {
+	_struct struct{} `codec:",omitempty"` //lint:ignore U1000 msgpack internal field
+}
+
+func (s SocialInviteKeyDerivation) GetT() (ret SocialInviteKeyType, err error) {
+	switch s.T {
+	default:
+		break
+	}
+	return s.T, nil
+}
+func NewSocialInviteKeyDerivationDefault(s SocialInviteKeyType) SocialInviteKeyDerivation {
+	return SocialInviteKeyDerivation{
+		T: s,
+	}
+}
+func (s SocialInviteKeyDerivationInternal__) Import() SocialInviteKeyDerivation {
+	return SocialInviteKeyDerivation{
+		T: s.T,
+	}
+}
+func (s SocialInviteKeyDerivation) Export() *SocialInviteKeyDerivationInternal__ {
+	return &SocialInviteKeyDerivationInternal__{
+		T:        s.T,
+		Switch__: SocialInviteKeyDerivationInternalSwitch__{},
+	}
+}
+func (s *SocialInviteKeyDerivation) Encode(enc rpc.Encoder) error {
+	return enc.Encode(s.Export())
+}
+
+func (s *SocialInviteKeyDerivation) Decode(dec rpc.Decoder) error {
+	var tmp SocialInviteKeyDerivationInternal__
+	err := dec.Decode(&tmp)
+	if err != nil {
+		return err
+	}
+	*s = tmp.Import()
+	return nil
+}
+
+var SocialInviteKeyDerivationTypeUniqueID = rpc.TypeUniqueID(0x8053b9737d1d8a37)
+
+func (s *SocialInviteKeyDerivation) GetTypeUniqueID() rpc.TypeUniqueID {
+	return SocialInviteKeyDerivationTypeUniqueID
+}
+func (s *SocialInviteKeyDerivation) Bytes() []byte { return nil }
+
+type SocialInviteState int
+
+const (
+	SocialInviteState_None     SocialInviteState = 0
+	SocialInviteState_Open     SocialInviteState = 1
+	SocialInviteState_Replied  SocialInviteState = 2
+	SocialInviteState_AskAgain SocialInviteState = 3
+	SocialInviteState_Accepted SocialInviteState = 4
+	SocialInviteState_Declined SocialInviteState = 5
+	SocialInviteState_Canceled SocialInviteState = 6
+)
+
+var SocialInviteStateMap = map[string]SocialInviteState{
+	"None":     0,
+	"Open":     1,
+	"Replied":  2,
+	"AskAgain": 3,
+	"Accepted": 4,
+	"Declined": 5,
+	"Canceled": 6,
+}
+var SocialInviteStateRevMap = map[SocialInviteState]string{
+	0: "None",
+	1: "Open",
+	2: "Replied",
+	3: "AskAgain",
+	4: "Accepted",
+	5: "Declined",
+	6: "Canceled",
+}
+
+type SocialInviteStateInternal__ SocialInviteState
+
+func (s SocialInviteStateInternal__) Import() SocialInviteState {
+	return SocialInviteState(s)
+}
+func (s SocialInviteState) Export() *SocialInviteStateInternal__ {
+	return ((*SocialInviteStateInternal__)(&s))
+}
+
+type SocialInviteParty int
+
+const (
+	SocialInviteParty_Inviter SocialInviteParty = 1
+	SocialInviteParty_Invitee SocialInviteParty = 2
+)
+
+var SocialInvitePartyMap = map[string]SocialInviteParty{
+	"Inviter": 1,
+	"Invitee": 2,
+}
+var SocialInvitePartyRevMap = map[SocialInviteParty]string{
+	1: "Inviter",
+	2: "Invitee",
+}
+
+type SocialInvitePartyInternal__ SocialInviteParty
+
+func (s SocialInvitePartyInternal__) Import() SocialInviteParty {
+	return SocialInviteParty(s)
+}
+func (s SocialInviteParty) Export() *SocialInvitePartyInternal__ {
+	return ((*SocialInvitePartyInternal__)(&s))
+}
+
 type KeyGenus int
 
 const (
@@ -956,4 +1255,7 @@ func init() {
 	rpc.AddUnique(ChainLocationDerivationTypeUniqueID)
 	rpc.AddUnique(AppKeyDerivationTypeUniqueID)
 	rpc.AddUnique(KVKeyDerivationTypeUniqueID)
+	rpc.AddUnique(SocialInviteWriteKeyTypeUniqueID)
+	rpc.AddUnique(SocialInviteSeedTypeUniqueID)
+	rpc.AddUnique(SocialInviteKeyDerivationTypeUniqueID)
 }

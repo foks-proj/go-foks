@@ -12,22 +12,17 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
-func GenerateStandardInviteCode(m MetaContext, creator proto.UID) (*rem.InviteCode, error) {
-	db, err := m.Db(DbTypeUsers)
-	if err != nil {
-		return nil, err
-	}
-	defer db.Release()
+// insertStandardInviteCode mints a random standard code for creator.
+func insertStandardInviteCode(m MetaContext, q DbExecer, creator proto.UID) (*rem.InviteCode, error) {
 	b := make([]byte, core.InviteCodeBytes)
-	err = core.RandomFill(b)
+	err := core.RandomFill(b)
 	if err != nil {
 		return nil, err
 	}
-	tags, err := db.Exec(m.Ctx(),
+	tags, err := q.Exec(m.Ctx(),
 		`INSERT INTO invite_codes(short_host_id, code, creator)
-		VALUES($1, $2, $3)`,
-		m.ShortHostID().ExportToDB(),
-		b, creator.ExportToDB(),
+		 VALUES($1, $2, $3)`,
+		m.ShortHostID().ExportToDB(), b, creator.ExportToDB(),
 	)
 	if err != nil {
 		return nil, err
@@ -37,6 +32,53 @@ func GenerateStandardInviteCode(m MetaContext, creator proto.UID) (*rem.InviteCo
 	}
 	ret := rem.NewInviteCodeWithStandard(b)
 	return &ret, nil
+}
+
+func GenerateStandardInviteCode(m MetaContext, creator proto.UID) (*rem.InviteCode, error) {
+	db, err := m.Db(DbTypeUsers)
+	if err != nil {
+		return nil, err
+	}
+	defer db.Release()
+	return insertStandardInviteCode(m, db, creator)
+}
+
+// NewUserInviteCode is the RPC path for minting a standard code: unlike
+// GenerateStandardInviteCode (tools and tests), it caps the caller's
+// outstanding unused codes. The count and the insert run in one transaction
+// under the same per-user advisory lock the social-invite create takes, so
+// concurrent calls cannot pass the count together and exceed the cap.
+func NewUserInviteCode(m MetaContext, creator proto.UID) (*rem.InviteCode, error) {
+	settings, err := m.G().Config().Settings(m.Ctx())
+	if err != nil {
+		return nil, err
+	}
+	shid := m.ShortHostID().ExportToDB()
+	var ret *rem.InviteCode
+	err = RetryTxUserDB(m, "NewUserInviteCode", func(m MetaContext, tx pgx.Tx) error {
+		err := lockSocialInviteInviter(m, tx, shid, creator)
+		if err != nil {
+			return err
+		}
+		var n int
+		err = tx.QueryRow(m.Ctx(),
+			`SELECT COUNT(*) FROM invite_codes
+			 WHERE short_host_id=$1 AND creator=$2 AND used_by IS NULL`,
+			shid, creator.ExportToDB(),
+		).Scan(&n)
+		if err != nil {
+			return err
+		}
+		if n >= settings.MaxUnusedInviteCodes() {
+			return core.RateLimitError{}
+		}
+		ret, err = insertStandardInviteCode(m, tx, creator)
+		return err
+	})
+	if err != nil {
+		return nil, err
+	}
+	return ret, nil
 }
 
 type MultiUseInviteCode struct {

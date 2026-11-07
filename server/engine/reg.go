@@ -82,6 +82,7 @@ func (c *RegClientConn) RegisterProtocols(m shared.MetaContext, srv *rpc.Server)
 		rem.TeamGuestProtocol(c),
 		rem.TeamLoaderProtocol(c),
 		rem.LogSendProtocol(c),
+		rem.SocialInviteGuestProtocol(c),
 	}
 	for _, p := range prots {
 		if err := srv.RegisterV2(p); err != nil {
