@@ -599,69 +599,18 @@ func eligibleReaderUIDs(
 	if err != nil {
 		return nil, err
 	}
-	ownerType, ownerViz, err := proto.OwnerRole.ExportToDB()
+	members, err := allActiveTeamMembers(m, userdb, team)
 	if err != nil {
 		return nil, err
 	}
-
-	rows, err := userdb.Query(
-		m.Ctx(),
-		`SELECT member_id, dst_role_type, dst_viz_level
-		 FROM team_members
-		 WHERE short_host_id=$1
-		 AND team_id=$2
-		 AND member_host_id=$3
-		 AND src_role_type=$4
-		 AND src_viz_level=$5
-		 AND active=true`,
-		m.ShortHostID(),
-		team.ExportToDB(),
-		shared.ExportHostP(nil),
-		ownerType,
-		ownerViz,
-	)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	// Collect every UID before the caller writes anything, since this cursor
-	// lives on the users DB while the fan-out writes go to a realtime
-	// transaction.
 	var uids []proto.UID
-	for rows.Next() {
-		var memRaw []byte
-		var dstType, dstViz int
-		err = rows.Scan(&memRaw, &dstType, &dstViz)
-		if err != nil {
-			return nil, err
-		}
-		var pid proto.PartyID
-		err = pid.ImportFromDB(memRaw)
-		if err != nil {
-			return nil, err
-		}
-		// Stage 1a is users-only; nested-team members are skipped here.
-		if !pid.IsUser() {
-			continue
-		}
-		memRole, err := core.ImportRoleKeyFromDB(dstType, dstViz)
-		if err != nil {
-			return nil, err
-		}
+	for uid, role := range members {
 		// The member can read the channel iff their team role is at or above
 		// the channel's read role.
-		if memRole.LessThan(*readKey) {
+		if role.LessThan(*readKey) {
 			continue
 		}
-		uid, err := pid.UID()
-		if err != nil {
-			return nil, err
-		}
 		uids = append(uids, uid)
-	}
-	if err = rows.Err(); err != nil {
-		return nil, err
 	}
 	sortUIDs(uids)
 	return uids, nil
@@ -1144,13 +1093,15 @@ func (c *channelMutator) finish(m shared.MetaContext) error {
 // dropChannelPushes discards a closing channel's undelivered push rows.
 //
 // Queued rows would fire after the channel closed, buzzing members about a
-// room that has just been shut. Rows already 'sending' are left alone -- the
-// relay owns those, and racing it is worse than one late notification.
+// room that has just been shut. Held rows go too: a release, or the hold
+// ending, would queue them later for the same closed room. Rows already
+// 'sending' are left alone -- the relay owns those, and racing it is worse
+// than one late notification.
 func dropChannelPushes(m shared.MetaContext, tx pgx.Tx, channelID int64) error {
 	_, err := tx.Exec(
 		m.Ctx(),
 		`DELETE FROM push_outbox
-		 WHERE short_host_id=$1 AND channel_id=$2 AND status='queued'`,
+		 WHERE short_host_id=$1 AND channel_id=$2 AND status IN ('queued', 'held')`,
 		m.ShortHostID(),
 		channelID,
 	)
