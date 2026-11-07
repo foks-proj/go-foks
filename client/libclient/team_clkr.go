@@ -37,8 +37,11 @@ type CLKR struct {
 
 	// collection of teams that have been rekeyed
 	rekeys []proto.FQTeam
-	estate *ExploreState
-	order  []proto.FQTeam
+	// teams the sweep declined to visit, because this client holds no role in
+	// them that could change anything
+	skipped []proto.FQTeam
+	estate  *ExploreState
+	order   []proto.FQTeam
 }
 
 func NewCLKR(
@@ -57,7 +60,10 @@ func (c *CLKR) explore(m MetaContext) error {
 	if err != nil {
 		return err
 	}
-	return nil
+	// Index the exploration, so the first loadTeam finds a record instead
+	// of walking the whole graph again, and the skip check below reads the
+	// same records loadTeam goes on to use.
+	return c.tm.indexExplored(m, c.estate)
 }
 
 func (c *CLKR) loadOrder(m MetaContext) error {
@@ -73,10 +79,47 @@ func (c *CLKR) Rekeys() []proto.FQTeam {
 	return c.rekeys
 }
 
+// Skipped lists the teams visitAllTeams passed over without loading, because
+// the exploration already showed this client is below admin in them.
+func (c *CLKR) Skipped() []proto.FQTeam {
+	return c.skipped
+}
+
+// actorRoleFromExplore is the role this client holds in fqt according to the
+// indexed exploration, or nil if it cannot tell (the caller then loads the
+// team). Exploration loads named teams at MemberLoadNone, but the roster
+// still carries every member's role, so this needs no server round trip.
+func (c *CLKR) actorRoleFromExplore(fqt proto.FQTeam) *core.RoleKey {
+	tr := c.tm.getTeam(fqt)
+	if tr == nil {
+		return nil
+	}
+	tr.Lock()
+	defer tr.Unlock()
+	if tr.tw == nil || tr.ldr == nil {
+		return nil
+	}
+	rk, err := tr.actorRoleLocked()
+	if err != nil {
+		return nil
+	}
+	return rk
+}
+
 func (c *CLKR) visitAllTeams(m MetaContext) error {
 	first := true
 
 	for _, fqteam := range c.order {
+
+		// CLKROneTeam.run reaches the same verdict, but only after loadTeam
+		// has refreshed the team and every member's user chain. A promotion
+		// since the exploration is picked up on the next sweep.
+		if rk := c.actorRoleFromExplore(fqteam); rk != nil && !rk.IsAdminOrAbove() {
+			m.Infow("clkr", "team", fqteam, "actorRole", rk.Export(),
+				"why", "not admin or above (from exploration)", "action", "skip")
+			c.skipped = append(c.skipped, fqteam)
+			continue
+		}
 
 		if first {
 			first = false
@@ -284,16 +327,9 @@ func (c *CLKROneTeam) loadTeam(m MetaContext) error {
 	ldr := tr.ldr
 	tw := tr.tw
 
-	tmem, err := tw.GetMember(ldr.Arg.As, ldr.Arg.SrcRole)
-	if err != nil {
-		return err
-	}
-
-	if tmem == nil {
-		return core.TeamExploreError("load as party not found in team")
-	}
-
-	actorRole, err := core.ImportRole(tmem.Mr.DstRole)
+	tr.Lock()
+	actorRole, err := tr.actorRoleLocked()
+	tr.Unlock()
 	if err != nil {
 		return err
 	}

@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/foks-proj/go-foks/client/libclient"
+	"github.com/foks-proj/go-foks/proto/lcl"
 	proto "github.com/foks-proj/go-foks/proto/lib"
 	"github.com/stretchr/testify/require"
 )
@@ -300,6 +301,9 @@ func TestMixedRoleCLKR(t *testing.T) {
 // the first team error. So a single stale owner used to abort the sweep for
 // every remaining team. The admin should now rekey what it may and leave the
 // owner to an owner-run CLKR.
+//
+// w is also only a reader in u's team B, so both sweeps must skip B before
+// loading it, and the second one must still rekey A.
 func TestAdminCLKRSkipsStaleHigherRoleMember(t *testing.T) {
 	tew := testEnvBeta(t)
 	v := tew.NewTestUser(t)
@@ -310,12 +314,16 @@ func TestAdminCLKRSkipsStaleHigherRoleMember(t *testing.T) {
 	m := tew.MetaContext()
 	A := tew.makeTeamForOwner(t, v)
 	A.setIndexRange(t, m, v, index0)
+	B := tew.makeTeamForOwner(t, u)
+	B.setIndexRange(t, m, u, index1)
 	readerRole := proto.NewRoleWithMember(0)
 	tew.DirectDoubleMerklePokeInTest(t)
 
 	runLocalJoinSequenceForUser(t, m, A, v, w, proto.AdminRole, nil)
 	tew.DirectDoubleMerklePokeInTest(t)
 	runLocalJoinSequenceForUser(t, m, A, v, u, readerRole, nil)
+	tew.DirectDoubleMerklePokeInTest(t)
+	runLocalJoinSequenceForUser(t, m, B, u, w, readerRole, nil)
 	tew.DirectDoubleMerklePokeInTest(t)
 
 	// w, an admin, is the one who will run the background rekey.
@@ -335,6 +343,21 @@ func TestAdminCLKRSkipsStaleHigherRoleMember(t *testing.T) {
 	err := clkr.Run(mw)
 	require.NoError(t, err)
 	require.Equal(t, 0, len(clkr.Rekeys()))
+	require.Equal(t, []proto.FQTeam{B.FQTeam(t)}, clkr.Skipped())
+
+	// B was only explored, never loaded, yet its names must still reach the
+	// soft DB, so it resolves by name on an offline cold start.
+	bFQT := B.FQTeam(t)
+	bID, err := bFQT.Team.StringErr()
+	require.NoError(t, err)
+	bHost, err := bFQT.Host.StringErr()
+	require.NoError(t, err)
+	var persisted proto.FQTeam
+	scope := aw.FQU()
+	_, err = mw.DbGet(&persisted, libclient.DbTypeSoft, &scope,
+		lcl.DataType_TeamNameLookup, "n:"+bID+"@"+bHost)
+	require.NoError(t, err)
+	require.True(t, persisted.Team.Eq(bFQT.Team))
 
 	// Both the owner and the reader go stale, so the admin's sweep sees one
 	// member it may not touch and one it may.
@@ -350,7 +373,8 @@ func TestAdminCLKRSkipsStaleHigherRoleMember(t *testing.T) {
 	clkr = libclient.NewCLKR(tmm, tew.clkrOpts(t))
 	err = clkr.Run(mw)
 	require.NoError(t, err, "a stale owner must not abort an admin's sweep")
-	require.Equal(t, 1, len(clkr.Rekeys()))
+	require.Equal(t, []proto.FQTeam{A.FQTeam(t)}, clkr.Rekeys())
+	require.Equal(t, []proto.FQTeam{B.FQTeam(t)}, clkr.Skipped())
 
 	twr, err := libclient.LoadTeam(mw, libclient.LoadTeamArg{
 		Team:       A.FQTeam(t),
